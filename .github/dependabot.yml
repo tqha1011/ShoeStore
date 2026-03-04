@@ -4,6 +4,10 @@ updates:
     directory: "/Backend"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: "build(deps)"
+      prefix-developement: "build(deps-dev)"
+      include: "scope"
 
   - package-ecosystem: "docker"
     # Look for a `Dockerfile` in the `root` directory
