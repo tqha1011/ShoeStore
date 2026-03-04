@@ -7,8 +7,10 @@ on:
       - "develop"
     paths:
       # Chỉ chạy khi có thay đổi code API hoặc Dockerfile
-      - 'Backend/src/ShoeStore.Api/**'
+      - 'Backend/src/**'
       - 'Backend/src/ShoeStore.Api/Dockerfile'
+      - '!**.md'
+      - '!**.txt'
 
 jobs:
   build_and_push:
