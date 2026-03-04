@@ -45,7 +45,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ./Backend/src/ShoeStore.Api # Đường dẫn chứa code
+          context: ./Backend
           file: ./Backend/src/ShoeStore.Api/Dockerfile # Đường dẫn file Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }} # Lấy kết quả của Docker Meta
