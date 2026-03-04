@@ -1,6 +1,6 @@
 ﻿services:
   shoestore.api:
-    image: shoestore.api
+    image: hatranquang2006/shoestore-api:${TAG:-latest}
     build:
       context: .
       dockerfile: src/ShoeStore.Api/Dockerfile
