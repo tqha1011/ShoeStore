@@ -6,7 +6,7 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "build(deps)"
-      prefix-developement: "build(deps-dev)"
+      prefix-development: "build(deps-dev)"
       include: "scope"
 
   - package-ecosystem: "docker"
