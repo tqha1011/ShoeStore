@@ -553,3 +553,6 @@ google-services.json
 *.hprof
 !gradle-wrapper.jar
 !**/gradle/wrapper/gradle-wrapper.jar
+
+# .env
+.env
