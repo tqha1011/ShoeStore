@@ -1,0 +1,7 @@
+﻿services:
+  shoestore.api:
+    image: shoestore.api
+    build:
+      context: .
+      dockerfile: src/ShoeStore.Api/Dockerfile
+
