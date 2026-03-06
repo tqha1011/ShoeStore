@@ -1,0 +1,49 @@
+name: Frontend SonarCloud Analysis
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+    paths:
+      - 'Frontend/**' # Chỉ chạy khi có thay đổi trong thư mục Frontend
+  pull_request:
+    branches: [ "main", "develop" ]
+    paths:
+      - 'Frontend/**'
+
+jobs:
+  build-and-analyze:
+    name: Build and Analyze
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./Frontend # Chuyển hướng làm việc vào thư mục Frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Quan trọng để SonarCloud so sánh code
+          sparse-checkout: |
+            Frontend # Chỉ tải thư mục Frontend để tối ưu tốc độ
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17 # Gradle và SonarCloud cho Android chạy trên Java 17
+          distribution: 'zulu' 
+
+      # BƯỚC QUAN TRỌNG: Cấp quyền thực thi cho Gradle Wrapper
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      # CHẠY QUÉT: Gradle sẽ tự động làm hết mọi việc trong 1 lệnh duy nhất
+      - name: Build and Analyze with Gradle
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
+        run: |
+          ./gradlew sonar \
+            -Dsonar.projectKey=tqha1011_ShoeStore \
+            -Dsonar.organization=tqha1011 \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.token=$SONAR_TOKEN
