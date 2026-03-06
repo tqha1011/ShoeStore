@@ -3,19 +3,37 @@ name: Backend SonarCloud Analysis
 on:
   push:
     branches: [ "main", "develop" ]
-    paths:
-      - 'Backend/**' # Chỉ chạy khi sửa code Backend
   pull_request:
     branches: [ "main", "develop" ]
-    paths:
-      - 'Backend/**'
 
 jobs:
+  # --- JOB 1: TRINH SÁT ---
+  detect-change:
+    name: Scan File Changes
+    runs-on: ubuntu-latest
+    outputs:
+      is_backend_changed: ${{ steps.filter.outputs.backend_code }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Check path filters
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend_code:
+              - 'Backend/**'
+
+  # --- JOB 2: THỢ XÂY & MÁY QUÉT ---
   build-and-analyze:
+    needs: detect-change # Lệnh chờ: Phải đợi thằng trinh sát làm xong
+    if: needs.detect-change.outputs.is_backend_changed == 'true' # Lệnh chạy: Cờ true mới làm
+    
     name: Build and Analyze
     runs-on: ubuntu-latest
-    
-    # Chuyển hướng làm việc vào thư mục Backend
+        
     defaults:
       run:
         working-directory: ./Backend
@@ -24,34 +42,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Quan trọng để SonarCloud so sánh code cũ/mới
+          fetch-depth: 0 
           sparse-checkout: |
             Backend
 
-      # 1. Cài Java 17 (SonarScanner chạy bằng Java)
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: 17
           distribution: 'zulu' 
 
-      # 2. Cài .NET 10
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-          cache: true
-          cache-dependency-path: 'Backend/**/*.csproj'
 
-      # 3. Cài SonarScanner
       - name: Install SonarCloud scanner
         run: dotnet tool install --global dotnet-sonarscanner
 
-      # 4. BẮT ĐẦU QUÉT 
       - name: Begin SonarCloud Analysis
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}  # Lấy trên Sonar
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
         run: |
           dotnet sonarscanner begin \
             /k:"tqha1011_ShoeStore" \
@@ -59,11 +71,9 @@ jobs:
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
-          # (Dòng cuối để sau này tích hợp coverage nếu cần)
 
-      # 5. Build Code 
       - name: Restore dependencies
-        run: dotnet restore # Tự tìm file .sln trong folder Backend
+        run: dotnet restore 
 
       - name: Build
         run: dotnet build --no-restore --configuration Release
