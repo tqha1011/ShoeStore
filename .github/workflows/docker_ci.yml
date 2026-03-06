@@ -5,19 +5,37 @@ on:
     branches:
       - "main"
       - "develop"
-    paths:
-      # Chỉ chạy khi có thay đổi code API hoặc Dockerfile
-      - 'Backend/src/**'
-      - 'Backend/src/ShoeStore.Api/Dockerfile'
-      - '!**.md'
-      - '!**.txt'
+  pull_request:
+    branches:
+      - "main"
+      - "develop"
 
 jobs:
+  detect-change:
+    name: Scan File Changes
+    runs-on: ubuntu-latest
+    outputs:
+      is_Dockerfile_changed: ${{ steps.filter.outputs.backend_code }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Check path filters
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend_code:
+              - 'Backend/src/**'
+              
   build_and_push:
+    needs: detect-change
+    if: needs.detect-change.outputs.is_Dockerfile_changed == 'true'
     runs-on: ubuntu-latest 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       # 1. Cài đặt Buildx để tận dụng cache
       - name: Set up Docker Buildx
