@@ -38,6 +38,7 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+          cache: true
 
       # 3. Cài SonarScanner
       - name: Install SonarCloud scanner
@@ -52,7 +53,7 @@ jobs:
           dotnet sonarscanner begin \
             /k:"tqha1011_ShoeStore" \
             /o:"tqha1011" \
-            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
           # (Dòng cuối để sau này tích hợp coverage nếu cần)
@@ -67,4 +68,4 @@ jobs:
       - name: End SonarCloud Analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+        run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
