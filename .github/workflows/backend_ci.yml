@@ -31,7 +31,7 @@ jobs:
     needs: detect-change # Lệnh chờ: Phải đợi thằng trinh sát làm xong
     if: needs.detect-change.outputs.is_backend_changed == 'true' # Lệnh chạy: Cờ true mới làm
     
-    name: Build and Analyze
+    name: Backend Build and Analyze
     runs-on: ubuntu-latest
         
     defaults:
