@@ -45,7 +45,16 @@ jobs:
           fetch-depth: 0 
           sparse-checkout: |
             Backend
-
+            
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          # Chìa khóa này chỉ thay đổi khi bạn thêm/bớt thư viện trong các file .csproj
+          key: ${{ runner.os }}-nuget-${{ hashFiles('Backend/**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+            
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
