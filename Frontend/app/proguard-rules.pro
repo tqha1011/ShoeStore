@@ -19,3 +19,20 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+# keep class model and dto
+-keep class com.example.shoestoreapp.data.dto.**{ *; }
+
+
+# rule for GSON
+-keep class com.google.gson.** { *; }
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer
+-keepattributes Signature
+-keepattributes *Annotation*
+
+# rule for Retrofit
+-dontwarn retrofit2.**
+-keep class retrofit2.** { *; }
+-keepattributes Signature, InnerClasses, EnclosingMethod
+-keepattributes *Annotation
