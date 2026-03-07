@@ -32,7 +32,8 @@ jobs:
   build_and_push:
     needs: detect-change
     if: needs.detect-change.outputs.is_Dockerfile_changed == 'true'
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-latest
+    name: Docker Build and Push
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
