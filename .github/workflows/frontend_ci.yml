@@ -28,7 +28,7 @@ jobs:
   build-and-analyze:
     needs: detect-change
     if: needs.detect-change.outputs.is_frontend_changed == 'true'
-    name: Build and Analyze
+    name: Frontend Build and Analyze
     runs-on: ubuntu-latest
     
     defaults:
