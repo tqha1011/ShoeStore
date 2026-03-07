@@ -33,7 +33,7 @@ jobs:
     
     defaults:
       run:
-        working-directory: ./Frontend 
+        working-directory: ./Frontend
 
     steps:
       - name: Checkout code
@@ -45,6 +45,17 @@ jobs:
       - name: debug
         working-directory: .
         run: ls -la
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          # Chìa khóa này sẽ thay đổi nếu bất kỳ file build.gradle hoặc wrapper nào thay đổi
+          key: ${{ runner.os }}-gradle-${{ hashFiles('Frontend/**/*.gradle*', 'Frontend/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       - name: Setup Java
         uses: actions/setup-java@v4
