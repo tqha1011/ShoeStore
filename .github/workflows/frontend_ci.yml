@@ -40,8 +40,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Quan trọng để SonarCloud so sánh code
+          # Chỉ tải thư mục Frontend để tối ưu tốc độ
           sparse-checkout: |
-            Frontend # Chỉ tải thư mục Frontend để tối ưu tốc độ
+            Frontend 
 
       - name: Setup Java
         uses: actions/setup-java@v4
