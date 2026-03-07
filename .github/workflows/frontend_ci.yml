@@ -41,7 +41,10 @@ jobs:
         with:
           fetch-depth: 0 # Quan trọng để SonarCloud so sánh code
           sparse-checkout: |
-            /Frontend 
+            Frontend 
+      - name: debug
+        working-directory: .
+        run: ls -la
 
       - name: Setup Java
         uses: actions/setup-java@v4
