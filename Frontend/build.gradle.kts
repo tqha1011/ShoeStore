@@ -6,7 +6,7 @@ plugins {
 
 sonar {
     properties {
-        property("sonar.projectKey", "tqha1011_ShoeStore")
+        property("sonar.projectKey", "tqha1011_ShoeStore_Frontend")
         property("sonar.organization", "tqha1011")
         property("sonar.host.url", "https://sonarcloud.io")
     }
