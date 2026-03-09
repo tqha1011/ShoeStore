@@ -3,7 +3,7 @@ updates:
   - package-ecosystem: "nuget"
     directory: "/Backend"
     schedule:
-      interval: "weekly"
+      interval: "daily"
     commit-message:
       prefix: "build(deps)"
       prefix-development: "build(deps-dev)"
@@ -14,4 +14,4 @@ updates:
     directory: "/Backend/src/ShoeStore.API"
     # Check for updates once a week
     schedule:
-      interval: "weekly"
+      interval: "daily"
