@@ -11,6 +11,7 @@ public static class DependencyInjection
     {
         // register dependency injection in infrastructure layer
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped(typeof(IGenericRepository<,>), typeof(GenericRepository<,>));
         return services;
     }
 }
