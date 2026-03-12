@@ -62,3 +62,5 @@ Navigate to `http://localhost:<port>/scalar/v1` to see the **API Docs**
 
 [CI/CD Pipeline Guildlines](docs/infrastructure/ci-cd.md)
 
+[Coventional Commit Guildlines](docs/guildlines/conventional-commit.md)
+
