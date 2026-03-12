@@ -56,7 +56,7 @@ Navigate to `http://localhost:<port>/scalar/v1` to see the **API Docs**
 
 ## Documentation
 
-[Backend Architecture](https://linktodocumentation)
+[Backend Architecture](docs/backend-architecture.md)
 
-[Frontend Architecture](https://linktodocumentation)
+[Frontend Architecture](docs/frontend-architecture.md)
 
