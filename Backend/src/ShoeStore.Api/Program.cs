@@ -1,6 +1,7 @@
 using ShoeStore.Application.DependencyInjection;
 using ShoeStore.Infrastructure.DependencyInjection;
 using Scalar.AspNetCore;
+using ShoeStore.Api.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,10 +11,13 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddControllers();
 
+builder.Services.AddProblemDetails(); // return 
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>(); // register global exception handler middleware
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
 var app = builder.Build();
 
+app.UseExceptionHandler(); // use GlobalExceptionHandler middleware to handle exceptions globally
 app.MapOpenApi();
 app.MapScalarApiReference();
 app.MapControllers();
