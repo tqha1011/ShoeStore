@@ -1,0 +1,388 @@
+package com.example.shoestoreapp.features.auth.ui.login
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.sharp.Dashboard
+import androidx.compose.material.icons.sharp.Login
+import androidx.compose.material.icons.sharp.MusicNote
+import androidx.compose.material.icons.sharp.ThumbUp
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.activity.SystemBarStyle
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+
+class LoginScreen : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            navigationBarStyle = SystemBarStyle.dark(
+                scrim = android.graphics.Color.TRANSPARENT
+            )
+        )
+        setContent {
+            MaterialTheme {
+                // Render main content
+                LoginScreenContent()
+            }
+        }
+    }
+}
+
+// Main UI Content
+@Composable
+fun LoginScreenContent() {
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+    var isVisible by remember { mutableStateOf(false) }
+
+    // Run animation on screen launch
+    LaunchedEffect(Unit) {
+        isVisible = true // Đổi state sang true để bắt đầu vẽ hiệu ứng
+    }
+
+    //
+    // Surf Animation
+    //
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn(
+            // Hiện rõ dần lên trong 800 mili-giây (0.8 giây)
+            animationSpec = tween(durationMillis = 800)
+        ) + slideInVertically(
+            // Trượt nhẹ từ dưới lên 100 pixel
+            initialOffsetY = { 100 },
+            animationSpec = tween(durationMillis = 800)
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+        ) {
+            //=============================
+            // BackGround White - Black
+            //============================
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val width = size.width
+                val height = size.height
+                val yBoundary = height / 3.8f
+
+                // Create path for curved background
+                val path = Path().apply {
+                    moveTo(0f, height) // Bottom-left corner
+                    lineTo(0f, yBoundary) // Draw line up
+
+                    cubicTo(
+                        x1 = width / 2f,
+                        y1 = yBoundary - 150f,  // Control point 1 (Top-left curve)
+                        x2 = width / 2f,
+                        y2 = yBoundary + 450f,  // Control point 2 (Top-right curve)
+                        x3 = width,
+                        y3 = yBoundary + 100f,  // End point at right edge
+                    )
+
+                    lineTo(width, height) // Draw line down to bottom-right
+                    close()
+                }
+                drawPath(
+                    path = path,
+                    color = Color.Black,
+                )
+            }
+
+
+            // Top Left Dashboard Icon
+            IconButton(
+                onClick = { /* Handle click event */ },
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = Color.White,
+                    contentColor = Color.Black
+                ),
+                modifier = Modifier
+                    .padding(start = 5.dp)
+                    .statusBarsPadding()
+                    .align(Alignment.TopStart)
+            ) {
+                Icon(
+                    Icons.Sharp.Dashboard,
+                    contentDescription = null,
+                    Modifier.size(30.dp)
+                )
+            }
+
+            // Top Right Sign Up Button
+            Button(
+                onClick = { /* Navigate to Sign Up */ },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color.Gray
+                ),
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .align(Alignment.TopEnd) // Align to top right
+            ) {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = "Sign up",
+                    modifier = Modifier.size(25.dp)
+                )
+                Spacer(modifier = Modifier.width(2.dp))
+                Text(
+                    "Sign up",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp
+                )
+            }
+
+            // ===============================
+            // MAIN CONTENT
+            //================================
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 35.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Spacer(modifier = Modifier.weight(1.8f))
+
+                AnimatedVisibility(
+                    visible = isVisible,
+                    enter = fadeIn(animationSpec = tween(durationMillis = 800)) +
+                            slideInVertically(
+                                initialOffsetY = { 100 }, // Giá trị âm -> TRƯỢT TỪ TRÊN XUỐNG
+                                animationSpec = tween(durationMillis = 800)
+                            )
+                ){
+                Text(
+                    "Sign In",
+                    fontSize = 45.sp,
+                    color = Color.Black,
+                    fontWeight = FontWeight.Normal
+                )}
+                Spacer(modifier = Modifier.weight(2f))
+                // Email Field
+                Text(
+                    "Email",
+                    fontSize = 17.sp,
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Normal,
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .padding(start = 8.dp)
+                )
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    shape = RoundedCornerShape(size = 20.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color(0xFF222222),
+                        unfocusedContainerColor = Color(0xFF222222),
+                        focusedBorderColor = Color.Gray,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.LightGray,
+                        cursorColor = Color.White
+                    )
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Password Field
+                Text(
+                    "Password",
+                    fontSize = 17.sp,
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Normal,
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .padding(start = 8.dp)
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    shape = RoundedCornerShape(size = 20.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = if (passwordVisible) {
+                        androidx.compose.ui.text.input.VisualTransformation.None
+                    } else {
+                        androidx.compose.ui.text.input.PasswordVisualTransformation()
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password
+                    ),
+                    trailingIcon = {
+                        val image = if (passwordVisible) {
+                            Icons.Filled.Visibility
+                        } else {
+                            Icons.Filled.VisibilityOff
+                        }
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = image,
+                                contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                                tint = Color.Gray
+                            )
+                        }
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color(0xFF222222),
+                        unfocusedContainerColor = Color(0xFF222222),
+                        focusedBorderColor = Color.Gray,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.LightGray,
+                        cursorColor = Color.White
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Main Gradient Login Button
+                Button(
+                    onClick = { /* Handle Login logic here */ },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(55.dp)
+                        .border(
+                            border = BorderStroke(
+                                width = 2.dp,
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(
+                                        Color(0xFFFE8F33), // Orange
+                                        Color(0xFFC246DE)  // Purple
+                                    )
+                                )
+                            ),
+                            shape = RoundedCornerShape(50.dp)
+                        ),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF1A1A1A),
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(50.dp)
+                ) {
+                    Icon(
+                        Icons.Sharp.Login,
+                        contentDescription = "Sign In"
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                    Text(
+                        text = "Sign in",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                // Forgot Password Link
+                Text(
+                    text = "Forgot password?",
+                    fontSize = 16.sp,
+                    color = Color.LightGray,
+                    fontWeight = FontWeight.Normal,
+                    modifier = Modifier
+                        .align(Alignment.End)
+                        .padding(top = 8.dp)
+                    // .clickable { /* Navigate to forgot password screen */ }
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Divider line "Or continue with"
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = Color.DarkGray)
+                    Text(
+                        text = "Or continue with",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                    HorizontalDivider(modifier = Modifier.weight(1f), color = Color.DarkGray)
+                }
+
+                Spacer(modifier = Modifier.height(30.dp))
+
+                // Social Login Buttons Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    SocialLoginButton(
+                        icon = Icons.Default.Email,
+                        contentDescription = "Login with Google",
+                        onClick = { /* Handle Google Login */ }
+                    )
+
+                    Spacer(modifier = Modifier.width(20.dp))
+
+                    SocialLoginButton(
+                        icon = Icons.Sharp.ThumbUp,
+                        contentDescription = "Login with Facebook",
+                        onClick = { /* Handle Facebook Login */ }
+                    )
+
+                    Spacer(modifier = Modifier.width(20.dp))
+
+                    SocialLoginButton(
+                        icon = Icons.Sharp.MusicNote,
+                        contentDescription = "Login with TikTok",
+                        onClick = { /* Handle TikTok Login */ }
+                    )
+                }
+                Spacer(modifier = Modifier.height(30.dp))
+            }
+        }
+    }
+}
+// Function SocialLoginButton
+@Composable
+fun SocialLoginButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .size(55.dp)
+            .background(Color(0xFF222222), shape = RoundedCornerShape(15.dp))
+            .border(1.dp, Color.DarkGray, shape = RoundedCornerShape(15.dp))
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = Color.White,
+            modifier = Modifier.size(28.dp)
+        )
+    }
+}
