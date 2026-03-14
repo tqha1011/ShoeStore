@@ -89,77 +89,10 @@ fun LoginScreenContent() {
             //=============================
             // BackGround White - Black
             //============================
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val width = size.width
-                val height = size.height
-                val yBoundary = height / 3.8f
-
-                // Create path for curved background
-                val path = Path().apply {
-                    moveTo(0f, height) // Bottom-left corner
-                    lineTo(0f, yBoundary) // Draw line up
-
-                    cubicTo(
-                        x1 = width / 2f,
-                        y1 = yBoundary - 150f,  // Control point 1 (Top-left curve)
-                        x2 = width / 2f,
-                        y2 = yBoundary + 450f,  // Control point 2 (Top-right curve)
-                        x3 = width,
-                        y3 = yBoundary + 100f,  // End point at right edge
-                    )
-
-                    lineTo(width, height) // Draw line down to bottom-right
-                    close()
-                }
-                drawPath(
-                    path = path,
-                    color = Color.Black,
-                )
-            }
-
-
+            LoginBackgroundCanvas();
+            LoginTopButtonActions();
             // Top Left Dashboard Icon
-            IconButton(
-                onClick = { /* Handle click event */ },
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = Color.White,
-                    contentColor = Color.Black
-                ),
-                modifier = Modifier
-                    .padding(start = 5.dp)
-                    .statusBarsPadding()
-                    .align(Alignment.TopStart)
-            ) {
-                Icon(
-                    Icons.Sharp.Dashboard,
-                    contentDescription = null,
-                    Modifier.size(30.dp)
-                )
-            }
 
-            // Top Right Sign Up Button
-            Button(
-                onClick = { /* Navigate to Sign Up */ },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color.Gray
-                ),
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .align(Alignment.TopEnd) // Align to top right
-            ) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = "Sign up",
-                    modifier = Modifier.size(25.dp)
-                )
-                Spacer(modifier = Modifier.width(2.dp))
-                Text(
-                    "Sign up",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
-            }
 
             // ===============================
             // MAIN CONTENT
@@ -364,6 +297,85 @@ fun LoginScreenContent() {
         }
     }
 }
+// Function BackgroudCanvas
+@Composable
+fun LoginBackgroundCanvas() {
+    Canvas(modifier = Modifier.fillMaxSize()) {
+        val width = size.width
+        val height = size.height
+        val yBoundary = height / 3.8f
+
+        // Create path for curved background
+        val path = Path().apply {
+            moveTo(0f, height) // Bottom-left corner
+            lineTo(0f, yBoundary) // Draw line up
+
+            cubicTo(
+                x1 = width / 2f,
+                y1 = yBoundary - 150f,  // Control point 1 (Top-left curve)
+                x2 = width / 2f,
+                y2 = yBoundary + 450f,  // Control point 2 (Top-right curve)
+                x3 = width,
+                y3 = yBoundary + 100f,  // End point at right edge
+            )
+
+            lineTo(width, height) // Draw line down to bottom-right
+            close()
+        }
+        drawPath(
+            path = path,
+            color = Color.Black,
+        )
+    }
+}
+//Function two button in top
+@Composable
+fun LoginTopButtonActions() {
+    Box(modifier = Modifier.fillMaxWidth()) {
+        IconButton(
+            onClick = { /* Handle click event */ },
+            colors = IconButtonDefaults.iconButtonColors(
+                containerColor = Color.White,
+                contentColor = Color.Black
+            ),
+            modifier = Modifier
+                .padding(start = 5.dp)
+                .statusBarsPadding()
+                .align(Alignment.TopStart)
+        ) {
+            Icon(
+                Icons.Sharp.Dashboard,
+                contentDescription = null,
+                Modifier.size(30.dp)
+            )
+        }
+
+        // Top Right Sign Up Button
+        Button(
+            onClick = { /* Navigate to Sign Up */ },
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White,
+                contentColor = Color.Gray
+            ),
+            modifier = Modifier
+                .statusBarsPadding()
+                .align(Alignment.TopEnd) // Align to top right
+        ) {
+            Icon(
+                Icons.Default.Person,
+                contentDescription = "Sign up",
+                modifier = Modifier.size(25.dp)
+            )
+            Spacer(modifier = Modifier.width(2.dp))
+            Text(
+                "Sign up",
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            )
+        }
+    }
+}
+
 // Function SocialLoginButton
 @Composable
 fun SocialLoginButton(
