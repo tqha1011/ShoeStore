@@ -17,7 +17,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.sharp.Dashboard
-import androidx.compose.material.icons.sharp.Login
 import androidx.compose.material.icons.sharp.MusicNote
 import androidx.compose.material.icons.sharp.ThumbUp
 import androidx.compose.material3.*
@@ -36,6 +35,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Login
+
 
 class LoginScreen : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -106,20 +108,13 @@ fun LoginScreenContent() {
 
                 Spacer(modifier = Modifier.weight(1.8f))
 
-                AnimatedVisibility(
-                    visible = isVisible,
-                    enter = fadeIn(animationSpec = tween(durationMillis = 800)) +
-                            slideInVertically(
-                                initialOffsetY = { 100 }, // Giá trị âm -> TRƯỢT TỪ TRÊN XUỐNG
-                                animationSpec = tween(durationMillis = 800)
-                            )
-                ){
+
                 Text(
                     "Sign In",
                     fontSize = 45.sp,
                     color = Color.Black,
                     fontWeight = FontWeight.Normal
-                )}
+                )
                 Spacer(modifier = Modifier.weight(2f))
                 // Email Field
                 Text(
@@ -158,43 +153,14 @@ fun LoginScreenContent() {
                         .align(Alignment.Start)
                         .padding(start = 8.dp)
                 )
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    shape = RoundedCornerShape(size = 20.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = if (passwordVisible) {
-                        androidx.compose.ui.text.input.VisualTransformation.None
-                    } else {
-                        androidx.compose.ui.text.input.PasswordVisualTransformation()
-                    },
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Password
-                    ),
-                    trailingIcon = {
-                        val image = if (passwordVisible) {
-                            Icons.Filled.Visibility
-                        } else {
-                            Icons.Filled.VisibilityOff
-                        }
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = image,
-                                contentDescription = if (passwordVisible) "Hide password" else "Show password",
-                                tint = Color.Gray
-                            )
-                        }
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFF222222),
-                        unfocusedContainerColor = Color(0xFF222222),
-                        focusedBorderColor = Color.Gray,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.LightGray,
-                        cursorColor = Color.White
-                    )
+                // Call Function Password
+                PasswordInputField(
+                    password = password,
+                    onPasswordChange = { password = it },
+                    passwordVisible = passwordVisible,
+                    onToggleVisibility = { passwordVisible = !passwordVisible }
                 )
+
 
                 Spacer(modifier = Modifier.height(32.dp))
 
@@ -223,7 +189,7 @@ fun LoginScreenContent() {
                     shape = RoundedCornerShape(50.dp)
                 ) {
                     Icon(
-                        Icons.Sharp.Login,
+                        Icons.Default.Key,
                         contentDescription = "Sign In"
                     )
                     Spacer(modifier = Modifier.width(5.dp))
@@ -297,6 +263,54 @@ fun LoginScreenContent() {
         }
     }
 }
+// Function Password
+@Composable
+fun PasswordInputField(
+    password: String,
+    onPasswordChange: (String) -> Unit,
+    passwordVisible: Boolean,
+    onToggleVisibility: () -> Unit
+) {
+
+    val visualTrans = if (passwordVisible) {
+        androidx.compose.ui.text.input.VisualTransformation.None
+    } else {
+        androidx.compose.ui.text.input.PasswordVisualTransformation()
+    }
+
+    val iconImage = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+    val iconDesc = if (passwordVisible) "Hide password" else "Show password"
+
+    OutlinedTextField(
+        value = password,
+        onValueChange = onPasswordChange,
+        shape = RoundedCornerShape(size = 20.dp),
+        modifier = Modifier.fillMaxWidth(),
+        visualTransformation = visualTrans,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.Password
+        ),
+        trailingIcon = {
+            IconButton(onClick = onToggleVisibility) {
+                Icon(
+                    imageVector = iconImage,
+                    contentDescription = iconDesc,
+                    tint = Color.Gray
+                )
+            }
+        },
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = Color(0xFF222222),
+            unfocusedContainerColor = Color(0xFF222222),
+            focusedBorderColor = Color.Gray,
+            unfocusedBorderColor = Color.Transparent,
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.LightGray,
+            cursorColor = Color.White
+        )
+    )
+}
+
 // Function BackgroudCanvas
 @Composable
 fun LoginBackgroundCanvas() {
