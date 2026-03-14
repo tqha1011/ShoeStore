@@ -56,7 +56,11 @@ Navigate to `http://localhost:<port>/scalar/v1` to see the **API Docs**
 
 ## Documentation
 
-[Backend Architecture](docs/backend-architecture.md)
+[Backend Architecture](docs/architecture/backend-architecture.md)
 
-[Frontend Architecture](docs/frontend-architecture.md)
+[Frontend Architecture](docs/architecture/frontend-architecture.md)
+
+[CI/CD Pipeline Guildlines](docs/infrastructure/ci-cd.md)
+
+[Coventional Commit Guildlines](docs/guildlines/conventional-commit.md)
 
