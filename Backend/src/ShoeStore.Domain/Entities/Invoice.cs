@@ -1,4 +1,5 @@
 using ShoeStore.Domain.Common;
+using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Domain.Entities;
 
@@ -6,12 +7,14 @@ public class Invoice(int id) : Entity<int>(id)
 {
     public required int UserId { get; set; }
     public required User User { get; set; }
-    public required int Status { get; set; }
+    public required InvoiceStatus Status { get; set; }
     public required int PaymentId { get; set; }
     public required Payment Payment { get; set; }
     public required decimal FinalPrice { get; set; }
     public required string ShippingAddress { get; set; }
     public required string Phone { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } 
     
     /// <summary>
     /// Gets the collection of all invoice details associated with this invoice.
