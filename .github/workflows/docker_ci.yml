@@ -5,6 +5,9 @@ on:
     branches:
       - "main"
       - "develop"
+  pull_request:
+    branches:
+      - "main"
 
 jobs:
   detect-change:
@@ -62,7 +65,7 @@ jobs:
         with:
           context: ./Backend
           file: ./Backend/src/ShoeStore.Api/Dockerfile # Đường dẫn file Dockerfile
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }} # Lấy kết quả của Docker Meta
           # Bật Cache để lần sau build nhanh hơn
           cache-from: type=gha
