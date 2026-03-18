@@ -39,7 +39,7 @@ public class VoucherConfiguration : IEntityTypeConfiguration<Voucher>
             .HasDefaultValue(0)
             .IsRequired();
 
-        builder.Property(c => c.MaxUsage)
+        builder.Property(c => c.MaxUsagePerUser)
             .HasDefaultValue(1);
 
         builder.Property(c => c.MinOrderPrice)
@@ -51,7 +51,7 @@ public class VoucherConfiguration : IEntityTypeConfiguration<Voucher>
         
         builder.HasIndex(c => c.IsDeleted);
         
-        builder.Property(c => c.TotalSlot)
+        builder.Property(c => c.TotalQuantity)
             .HasDefaultValue(100);
     }
 }
