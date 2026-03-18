@@ -1,10 +1,6 @@
 package com.example.shoestoreapp.features.auth.ui.auth.login
 
 import com.example.shoestoreapp.R
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -13,13 +9,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.sharp.Dashboard
-import androidx.compose.material.icons.sharp.MusicNote
-import androidx.compose.material.icons.sharp.ThumbUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,13 +24,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.activity.SystemBarStyle
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.material.icons.filled.Key
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -47,8 +38,8 @@ import androidx.compose.foundation.clickable
 // Main UI Content
 @Composable
 fun LoginScreenContent(
-    onNavigateToSignUp: () -> Unit = {}, // Dây nối sang trang Đăng ký
-    onNavigateToHome: () -> Unit = {}    // Dây nối vào trang chủ sau khi login
+    onNavigateToSignUp: () -> Unit = {}, // Navigate to sign up
+    onNavigateToForgotPassword: () -> Unit = {}, // Navigate to forgot password
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -66,10 +57,10 @@ fun LoginScreenContent(
     AnimatedVisibility(
         visible = isVisible,
         enter = fadeIn(
-            // Hiện rõ dần lên trong 800 mili-giây (0.8 giây)
+            // show up on 800 milisecond
             animationSpec = tween(durationMillis = 800)
         ) + slideInVertically(
-            // Trượt nhẹ từ dưới lên 100 pixel
+            // slide down to up 100 pixel
             initialOffsetY = { 100 },
             animationSpec = tween(durationMillis = 800)
         )
@@ -200,7 +191,7 @@ fun LoginScreenContent(
                     modifier = Modifier
                         .align(Alignment.End)
                         .padding(top = 8.dp)
-                    // .clickable { /* Navigate to forgot password screen */ }
+                        .clickable {onNavigateToForgotPassword()}
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
