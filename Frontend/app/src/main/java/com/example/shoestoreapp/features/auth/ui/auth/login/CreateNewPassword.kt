@@ -1,33 +1,31 @@
 package com.example.shoestoreapp.features.auth.ui.auth.login
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.shoestoreapp.features.auth.viewmodel.ForgotPasswordModel
+import com.example.shoestoreapp.features.auth.viewmodel.CreateNewPasswordModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ForgotPassword(
-    onNavigateCreateNewPassword: () -> Unit = {},
+fun CreateNewPassword(
     onNavigateToSignIn: () -> Unit = {},
-    viewModel: ForgotPasswordModel = viewModel()
+    viewModel: CreateNewPasswordModel = viewModel()
 ) {
     Scaffold(
         topBar = {
@@ -58,7 +56,7 @@ fun ForgotPassword(
 
             // Header title
             Text(
-                text = "Forgot Password",
+                text = "Create New Password",
                 fontSize = 32.sp,
                 fontWeight = FontWeight.Black,
                 color = Color.Black,
@@ -70,10 +68,7 @@ fun ForgotPassword(
 
             // Short Description
             Text(
-                text = if (!viewModel.isCodeSent)
-                    "Please enter your email. We will send a verification code to reset your password"
-                else 
-                    "The verification code has been sent! Please check your email and enter the code in the field below",
+                text = "Your new password must be different from previously used passwords.",
                 fontSize = 14.sp,
                 color = Color.Gray,
                 modifier = Modifier.align(Alignment.Start)
@@ -81,17 +76,24 @@ fun ForgotPassword(
 
             Spacer(modifier = Modifier.height(50.dp))
 
-            // Input Email
+            // New Password Input
             OutlinedTextField(
-                value = viewModel.email,
-                onValueChange = { viewModel.onEmailChange(it) },
-                label = { Text("Email Address", color = Color.Black) },
-                placeholder = { Text("yourname@gmail.com", color = Color.LightGray) },
+                value = viewModel.password,
+                onValueChange = { viewModel.onPasswordChange(it) },
+                label = { Text("New Password", color = Color.Gray) },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !viewModel.isCodeSent, // Lock input email when code is sent
-                isError = viewModel.emailError != null,
+                visualTransformation = if (viewModel.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 leadingIcon = {
-                    Icon(Icons.Default.Email, contentDescription = null, tint = Color.Black)
+                    Icon(Icons.Default.Key, contentDescription = null, tint = Color.Black)
+                },
+                trailingIcon = {
+                    IconButton(onClick = { viewModel.togglePasswordVisibility() }) {
+                        Icon(
+                            imageVector = if (viewModel.passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = null,
+                            tint = Color.Black
+                        )
+                    }
                 },
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
@@ -99,60 +101,59 @@ fun ForgotPassword(
                     focusedBorderColor = Color.Black,
                     unfocusedBorderColor = Color.Black.copy(alpha = 0.3f),
                     focusedLabelColor = Color.Black,
-                    cursorColor = Color.Black,
-                    disabledBorderColor = Color.Black.copy(alpha = 0.1f)
+                    cursorColor = Color.Black
                 )
             )
-            
-            if (viewModel.emailError != null) {
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Confirm Password Input
+            OutlinedTextField(
+                value = viewModel.confirmPassword,
+                onValueChange = { viewModel.onConfirmPasswordChange(it) },
+                label = { Text("Confirm Password", color = Color.Gray) },
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = if (viewModel.confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                leadingIcon = {
+                    Icon(Icons.Default.Key, contentDescription = null, tint = Color.Black)
+                },
+                trailingIcon = {
+                    IconButton(onClick = { viewModel.toggleConfirmPasswordVisibility() }) {
+                        Icon(
+                            imageVector = if (viewModel.confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = null,
+                            tint = Color.Black
+                        )
+                    }
+                },
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Black,
+                    unfocusedBorderColor = Color.Black.copy(alpha = 0.3f),
+                    focusedLabelColor = Color.Black,
+                    cursorColor = Color.Black
+                )
+            )
+
+            // Error Display
+            if (viewModel.passwordError != null) {
                 Text(
-                    text = viewModel.emailError ?: "",
+                    text = viewModel.passwordError ?: "",
                     color = Color.Red,
                     fontSize = 12.sp,
-                    modifier = Modifier.align(Alignment.Start).padding(start = 8.dp, top = 4.dp)
+                    modifier = Modifier.align(Alignment.Start).padding(start = 8.dp, top = 8.dp)
                 )
-            }
-
-          // when isCodeSent true, show verification code input
-            AnimatedVisibility(
-                visible = viewModel.isCodeSent,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                Column {
-                    Spacer(modifier = Modifier.height(20.dp))
-                    OutlinedTextField(
-                        value = viewModel.verificationCode,
-                        onValueChange = { viewModel.onVerificationCodeChange(it) },
-                        label = { Text("Verification Code", color = Color.Black) },
-                        placeholder = { Text("Enter your verification code", color = Color.LightGray) },
-                        modifier = Modifier.fillMaxWidth(),
-                        leadingIcon = {
-                            Icon(Icons.Default.Lock, contentDescription = null, tint = Color.Black)
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Black,
-                            unfocusedBorderColor = Color.Black.copy(alpha = 0.3f),
-                            focusedLabelColor = Color.Black,
-                            cursorColor = Color.Black
-                        )
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Sent Button
+            // Reset Password Button
             Button(
                 onClick = {
-                    if (!viewModel.isCodeSent) {
-                       // First click : Sent verify code
-                        viewModel.sendRequest()
-                    } else {
-                        // Second click : Navigate CreateNewPassword page
-                        onNavigateCreateNewPassword()
+                    if (viewModel.validateAndSubmit()) {
+                        // Success - navigate back to sign in
+                        onNavigateToSignIn()
                     }
                 },
                 modifier = Modifier
@@ -165,14 +166,14 @@ fun ForgotPassword(
                 )
             ) {
                 Text(
-                    text = if (!viewModel.isCodeSent) "Send Request" else "Confirm Code",
-                    fontSize = 16.sp,
+                    text = "Reset Password",
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
 
             Spacer(modifier = Modifier.weight(1f))
-            
+
             Text(
                 text = "Shoe Store App",
                 color = Color.LightGray,

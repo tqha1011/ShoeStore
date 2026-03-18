@@ -18,7 +18,7 @@ import com.example.shoestoreapp.R
 
 @Composable
 fun WelcomeScreen(
-    onNavigateToLogin: () -> Unit
+    onNavigateToSignIn: () -> Unit
 ) {
     // Lock navigate
     var hasNavigated by remember { mutableStateOf(false) }
@@ -28,11 +28,11 @@ fun WelcomeScreen(
             .fillMaxSize()
             .pointerInput(Unit) {
                 detectVerticalDragGestures { _, dragAmount ->
-                    // dragAmount < 0 là vuốt từ dưới lên
-                    // -50 là độ nhạy, vuốt một đoạn đủ dài mới chuyển màn hình
+                    // dragAmount < 0 : Swipe up
+
                     if (dragAmount < -50 && !hasNavigated) {
                         hasNavigated = true
-                        onNavigateToLogin()
+                        onNavigateToSignIn()
                     }
                 }
             }
