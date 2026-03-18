@@ -325,8 +325,17 @@ fun RegisterTopButtonActions(onNavigateToSignIn: () -> Unit) {
             ),
             modifier = Modifier.align(Alignment.TopEnd)
         ) {
-            Icon(Icons.Default.Person, contentDescription = null)
-            Text("Sign in", fontWeight = FontWeight.Bold)
+            Icon(
+                Icons.Default.Person,
+                contentDescription = "Sign up",
+                modifier = Modifier.size(25.dp)
+            )
+            Spacer(modifier = Modifier.width(2.dp))
+            Text(
+                "Sign in",
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp
+            )
         }
     }
 }
