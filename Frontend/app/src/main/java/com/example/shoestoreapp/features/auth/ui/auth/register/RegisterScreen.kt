@@ -36,6 +36,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.shoestoreapp.features.auth.viewmodel.RegisterViewModel
 
+
 @Composable
 fun RegisterScreenContent(
     onNavigateToSignIn: () -> Unit = {},

@@ -47,8 +47,7 @@ import androidx.compose.foundation.clickable
 // Main UI Content
 @Composable
 fun LoginScreenContent(
-    onNavigateToSignUp: () -> Unit = {}, // Dây nối sang trang Đăng ký
-    onNavigateToHome: () -> Unit = {}    // Dây nối vào trang chủ sau khi login
+    onNavigateToSignUp: () -> Unit = {}, // Navigate to sign up
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -66,10 +65,10 @@ fun LoginScreenContent(
     AnimatedVisibility(
         visible = isVisible,
         enter = fadeIn(
-            // Hiện rõ dần lên trong 800 mili-giây (0.8 giây)
+            // show up on 800 milisecond
             animationSpec = tween(durationMillis = 800)
         ) + slideInVertically(
-            // Trượt nhẹ từ dưới lên 100 pixel
+            // slide down to up 100 pixel
             initialOffsetY = { 100 },
             animationSpec = tween(durationMillis = 800)
         )
@@ -200,7 +199,7 @@ fun LoginScreenContent(
                     modifier = Modifier
                         .align(Alignment.End)
                         .padding(top = 8.dp)
-                    // .clickable { /* Navigate to forgot password screen */ }
+                        .clickable { }
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
