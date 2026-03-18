@@ -1,4 +1,5 @@
 using ShoeStore.Domain.Common;
+using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Domain.Entities;
 
@@ -11,6 +12,8 @@ public class User(int id) : Entity<int>(id)
     public string? Address { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
+    
+    public UserRole Role { get; set; } = UserRole.Customer;
     
     /// <summary>
     /// Gets the collection of cart items in user's shopping cart
