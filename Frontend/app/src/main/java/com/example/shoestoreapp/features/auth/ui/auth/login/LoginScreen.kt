@@ -1,9 +1,6 @@
-package com.example.shoestoreapp.features.auth.ui.login
+package com.example.shoestoreapp.features.auth.ui.auth.login
 
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
+import com.example.shoestoreapp.R
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -12,13 +9,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.sharp.Dashboard
-import androidx.compose.material.icons.sharp.MusicNote
-import androidx.compose.material.icons.sharp.ThumbUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,35 +24,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.activity.SystemBarStyle
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Login
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.foundation.clickable
 
-
-class LoginScreen : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge(
-            navigationBarStyle = SystemBarStyle.dark(
-                scrim = android.graphics.Color.TRANSPARENT
-            )
-        )
-        setContent {
-            MaterialTheme {
-                // Render main content
-                LoginScreenContent()
-            }
-        }
-    }
-}
 
 // Main UI Content
 @Composable
-fun LoginScreenContent() {
+fun LoginScreenContent(
+    onNavigateToSignUp: () -> Unit = {}, // Navigate to sign up
+    onNavigateToForgotPassword: () -> Unit = {}, // Navigate to forgot password
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -75,10 +57,10 @@ fun LoginScreenContent() {
     AnimatedVisibility(
         visible = isVisible,
         enter = fadeIn(
-            // Hiện rõ dần lên trong 800 mili-giây (0.8 giây)
+            // show up on 800 milisecond
             animationSpec = tween(durationMillis = 800)
         ) + slideInVertically(
-            // Trượt nhẹ từ dưới lên 100 pixel
+            // slide down to up 100 pixel
             initialOffsetY = { 100 },
             animationSpec = tween(durationMillis = 800)
         )
@@ -92,7 +74,7 @@ fun LoginScreenContent() {
             // BackGround White - Black
             //============================
             LoginBackgroundCanvas();
-            LoginTopButtonActions();
+            LoginTopButtonActions(onNavigateToSignUp = onNavigateToSignUp);
             // Top Left Dashboard Icon
 
 
@@ -209,7 +191,7 @@ fun LoginScreenContent() {
                     modifier = Modifier
                         .align(Alignment.End)
                         .padding(top = 8.dp)
-                    // .clickable { /* Navigate to forgot password screen */ }
+                        .clickable {onNavigateToForgotPassword()}
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -237,7 +219,7 @@ fun LoginScreenContent() {
                     horizontalArrangement = Arrangement.Center
                 ) {
                     SocialLoginButton(
-                        icon = Icons.Default.Email,
+                        iconRes = R.drawable.ic_google,
                         contentDescription = "Login with Google",
                         onClick = { /* Handle Google Login */ }
                     )
@@ -245,7 +227,7 @@ fun LoginScreenContent() {
                     Spacer(modifier = Modifier.width(20.dp))
 
                     SocialLoginButton(
-                        icon = Icons.Sharp.ThumbUp,
+                        iconRes = R.drawable.ic_facebook,
                         contentDescription = "Login with Facebook",
                         onClick = { /* Handle Facebook Login */ }
                     )
@@ -253,7 +235,7 @@ fun LoginScreenContent() {
                     Spacer(modifier = Modifier.width(20.dp))
 
                     SocialLoginButton(
-                        icon = Icons.Sharp.MusicNote,
+                        iconRes = R.drawable.ic_tiktok,
                         contentDescription = "Login with TikTok",
                         onClick = { /* Handle TikTok Login */ }
                     )
@@ -273,9 +255,9 @@ fun PasswordInputField(
 ) {
 
     val visualTrans = if (passwordVisible) {
-        androidx.compose.ui.text.input.VisualTransformation.None
+        VisualTransformation.None
     } else {
-        androidx.compose.ui.text.input.PasswordVisualTransformation()
+        PasswordVisualTransformation()
     }
 
     val iconImage = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
@@ -344,7 +326,9 @@ fun LoginBackgroundCanvas() {
 }
 //Function two button in top
 @Composable
-fun LoginTopButtonActions() {
+fun LoginTopButtonActions(
+    onNavigateToSignUp: () -> Unit
+) {
     Box(modifier = Modifier.fillMaxWidth()) {
         IconButton(
             onClick = { /* Handle click event */ },
@@ -366,7 +350,7 @@ fun LoginTopButtonActions() {
 
         // Top Right Sign Up Button
         Button(
-            onClick = { /* Navigate to Sign Up */ },
+            onClick = { onNavigateToSignUp() },
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.White,
                 contentColor = Color.Gray
@@ -393,22 +377,22 @@ fun LoginTopButtonActions() {
 // Function SocialLoginButton
 @Composable
 fun SocialLoginButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    iconRes : Int,
     contentDescription: String,
     onClick: () -> Unit
 ) {
-    IconButton(
-        onClick = onClick,
+    Box(
         modifier = Modifier
-            .size(55.dp)
-            .background(Color(0xFF222222), shape = RoundedCornerShape(15.dp))
-            .border(1.dp, Color.DarkGray, shape = RoundedCornerShape(15.dp))
-    ) {
+            .size(60.dp)
+            .background(Color(0xFF222222), shape = RoundedCornerShape(10.dp))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ){
         Icon(
-            imageVector = icon,
+            painter = painterResource(id = iconRes),
             contentDescription = contentDescription,
             tint = Color.White,
-            modifier = Modifier.size(28.dp)
+            modifier = Modifier.size(35.dp)
         )
     }
 }
