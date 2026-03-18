@@ -41,7 +41,7 @@ fun AppNavHost() {
             WelcomeScreen(
                 onNavigateToSignIn = {
                     navController.navigate("sign_in") {
-                        // Xóa màn hình welcome khỏi backstack để khi nhấn back không quay lại welcome nữa
+                        // Delete Welcome Screen 
                         popUpTo("welcome") { inclusive = true }
                     }
                 }
