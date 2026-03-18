@@ -31,6 +31,7 @@ fun CreateNewPassword(
         topBar = {
             ResetPasswordTopBar(onBackClick = onNavigateToSignIn)
         },
+        containerColor = Color.White
     ) { paddingValues ->
         ResetPasswordContent(
             paddingValues = paddingValues,
@@ -38,66 +39,11 @@ fun CreateNewPassword(
             description = "Your new password must be different from previously used passwords."
         ) {
             // New Password Input
-            OutlinedTextField(
-                value = viewModel.password,
-                onValueChange = { viewModel.onPasswordChange(it) },
-                label = { Text("New Password", color = Color.Gray) },
-                modifier = Modifier.fillMaxWidth(),
-                visualTransformation = if (viewModel.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                leadingIcon = {
-                    Icon(Icons.Default.Key, contentDescription = null, tint = Color.Black)
-                },
-                trailingIcon = {
-                    IconButton(onClick = { viewModel.togglePasswordVisibility() }) {
-                        Icon(
-                            imageVector = if (viewModel.passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = null,
-                            tint = Color.Black
-                        )
-                    }
-                },
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Black,
-                    unfocusedBorderColor = Color.Black.copy(alpha = 0.3f),
-                    focusedLabelColor = Color.Black,
-                    cursorColor = Color.Black
-                )
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
+            NewPasswordInput(viewModel = viewModel)
 
             // Confirm Password Input
-            OutlinedTextField(
-                value = viewModel.confirmPassword,
-                onValueChange = { viewModel.onConfirmPasswordChange(it) },
-                label = { Text("Confirm Password", color = Color.Gray) },
-                modifier = Modifier.fillMaxWidth(),
-                visualTransformation = if (viewModel.confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                leadingIcon = {
-                    Icon(Icons.Default.Key, contentDescription = null, tint = Color.Black)
-                },
-                trailingIcon = {
-                    IconButton(onClick = { viewModel.toggleConfirmPasswordVisibility() }) {
-                        Icon(
-                            imageVector = if (viewModel.confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                            contentDescription = null,
-                            tint = Color.Black
-                        )
-                    }
-                },
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Black,
-                    unfocusedBorderColor = Color.Black.copy(alpha = 0.3f),
-                    focusedLabelColor = Color.Black,
-                    cursorColor = Color.Black
-                )
-            )
+            ConfirmPasswordInput(viewModel = viewModel)
+
 
             // Error Display
             if (viewModel.passwordError != null) {
@@ -105,35 +51,16 @@ fun CreateNewPassword(
                     text = viewModel.passwordError ?: "",
                     color = Color.Red,
                     fontSize = 12.sp,
-                    modifier = Modifier.align(Alignment.Start).padding(start = 8.dp, top = 8.dp)
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .padding(start = 8.dp, top = 8.dp)
                 )
             }
 
             Spacer(modifier = Modifier.height(40.dp))
 
             // Reset Password Button
-            Button(
-                onClick = {
-                    if (viewModel.validateAndSubmit()) {
-                        // Success - navigate back to sign in
-                        onNavigateToSignIn()
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(55.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Black,
-                    contentColor = Color.White
-                )
-            ) {
-                Text(
-                    text = "Reset Password",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            ResetPasswordButton(viewModel = viewModel, onNavigateToSignIn = onNavigateToSignIn)
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -145,4 +72,96 @@ fun CreateNewPassword(
             )
         }
     }
+}
+
+@Composable
+fun ResetPasswordButton(viewModel: CreateNewPasswordModel, onNavigateToSignIn: () -> Unit) {
+    Button(
+        onClick = {
+            if (viewModel.validateAndSubmit()) {
+                // Success - navigate back to sign in
+                onNavigateToSignIn()
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(55.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Black,
+            contentColor = Color.White
+        )
+    ) {
+        Text(
+            text = "Reset Password",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+fun ConfirmPasswordInput(viewModel: CreateNewPasswordModel) {
+    OutlinedTextField(
+        value = viewModel.confirmPassword,
+        onValueChange = { viewModel.onConfirmPasswordChange(it) },
+        label = { Text("Confirm Password", color = Color.Gray) },
+        modifier = Modifier.fillMaxWidth(),
+        visualTransformation = if (viewModel.confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        leadingIcon = {
+            Icon(Icons.Default.Key, contentDescription = null, tint = Color.Black)
+        },
+        trailingIcon = {
+            IconButton(onClick = { viewModel.toggleConfirmPasswordVisibility() }) {
+                Icon(
+                    imageVector = if (viewModel.confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                    contentDescription = null,
+                    tint = Color.Black
+                )
+            }
+        },
+        shape = RoundedCornerShape(12.dp),
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color.Black,
+            unfocusedBorderColor = Color.Black.copy(alpha = 0.3f),
+            focusedLabelColor = Color.Black,
+            cursorColor = Color.Black
+        )
+    )
+}
+
+@Composable
+fun NewPasswordInput(viewModel: CreateNewPasswordModel) {
+    OutlinedTextField(
+        value = viewModel.password,
+        onValueChange = { viewModel.onPasswordChange(it) },
+        label = { Text("New Password", color = Color.Gray) },
+        modifier = Modifier.fillMaxWidth(),
+        visualTransformation = if (viewModel.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        leadingIcon = {
+            Icon(Icons.Default.Key, contentDescription = null, tint = Color.Black)
+        },
+        trailingIcon = {
+            IconButton(onClick = { viewModel.togglePasswordVisibility() }) {
+                Icon(
+                    imageVector = if (viewModel.passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                    contentDescription = null,
+                    tint = Color.Black
+                )
+            }
+        },
+        shape = RoundedCornerShape(12.dp),
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color.Black,
+            unfocusedBorderColor = Color.Black.copy(alpha = 0.3f),
+            focusedLabelColor = Color.Black,
+            cursorColor = Color.Black
+        )
+    )
+
+    Spacer(modifier = Modifier.height(20.dp))
 }
