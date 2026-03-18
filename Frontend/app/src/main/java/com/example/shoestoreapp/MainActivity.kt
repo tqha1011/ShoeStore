@@ -14,6 +14,10 @@ import com.example.shoestoreapp.features.auth.ui.sign_in.LoginScreenContent
 import com.example.shoestoreapp.features.auth.ui.sign_up.RegisterScreenContent
 import com.example.shoestoreapp.features.auth.ui.welcome.WelcomeScreen
 import com.example.shoestoreapp.features.auth.ui.reset_password.CreateNewPassword
+import com.example.shoestoreapp.features.product.ui.product_detail.ProductDetailScreen
+import com.example.shoestoreapp.features.product.ui.product_list.ProductListScreen
+import com.example.shoestoreapp.features.product.viewmodel.ProductDetailViewModel
+import com.example.shoestoreapp.features.product.viewmodel.ProductListViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,8 +38,10 @@ fun AppNavHost() {
     // Đặt startDestination là "welcome" để hiện màn hình chào đầu tiên
     NavHost(
         navController = navController,
-        startDestination = "welcome"
+        //startDestination = "welcome"
+        startDestination = "product_list"  // ← Test ProductListScreen
     ) {
+
         // Route 1: Welcome Screen
         composable("welcome") {
             WelcomeScreen(
@@ -86,6 +92,43 @@ fun AppNavHost() {
             RegisterScreenContent(
                 onNavigateToSignIn = {
                     navController.navigate("sign_in")
+                }
+            )
+        }
+
+        // Route: Product List Screen
+        composable("product_list") {
+            ProductListScreen(
+                viewModel = remember { ProductListViewModel() },
+                onNavigateToDetail = { productId ->
+                    println("🟢 onNavigateToDetail called - productId: $productId")
+                    navController.navigate("product_detail/$productId")
+                },
+                onTopMenuClick = {
+                    println("🔹 Menu clicked")
+                },
+                onNavigateToShoppingBag = {
+                    println("🔹 Shopping bag clicked")
+                }
+            )
+        }
+
+        // Route: Product Detail Screen
+        composable("product_detail/{productId}") { backStackEntry ->
+            // Lấy productId từ URL
+            val productId = backStackEntry.arguments?.getString("productId")?.toInt() ?: 1
+
+            ProductDetailScreen(
+                productId = productId,
+                viewModel = remember { ProductDetailViewModel() },
+                onBackClick = {
+                    // Click back -> quay lại ProductListScreen
+                    navController.popBackStack()
+                },
+                onNavigateToCart = {
+                    // Click "Add to Cart" -> điều hướng sang Cart screen
+                    println("🔹 Navigating to cart")
+                    // navController.navigate("cart")
                 }
             )
         }
