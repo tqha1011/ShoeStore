@@ -2,10 +2,9 @@ package com.example.shoestoreapp.features.auth.ui.auth.login
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -14,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -29,53 +29,14 @@ fun CreateNewPassword(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("", color = Color.Black) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateToSignIn) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBackIosNew,
-                            contentDescription = "Back",
-                            tint = Color.Black
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
-            )
+            ResetPasswordTopBar(onBackClick = onNavigateToSignIn)
         },
-        containerColor = Color.White
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 30.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        ResetPasswordContent(
+            paddingValues = paddingValues,
+            title = "Create New Password",
+            description = "Your new password must be different from previously used passwords."
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Header title
-            Text(
-                text = "Create New Password",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Black,
-                color = Color.Black,
-                lineHeight = 40.sp,
-                modifier = Modifier.align(Alignment.Start)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Short Description
-            Text(
-                text = "Your new password must be different from previously used passwords.",
-                fontSize = 14.sp,
-                color = Color.Gray,
-                modifier = Modifier.align(Alignment.Start)
-            )
-
-            Spacer(modifier = Modifier.height(50.dp))
-
             // New Password Input
             OutlinedTextField(
                 value = viewModel.password,
@@ -83,6 +44,7 @@ fun CreateNewPassword(
                 label = { Text("New Password", color = Color.Gray) },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = if (viewModel.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 leadingIcon = {
                     Icon(Icons.Default.Key, contentDescription = null, tint = Color.Black)
                 },
@@ -114,6 +76,7 @@ fun CreateNewPassword(
                 label = { Text("Confirm Password", color = Color.Gray) },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = if (viewModel.confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 leadingIcon = {
                     Icon(Icons.Default.Key, contentDescription = null, tint = Color.Black)
                 },

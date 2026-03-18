@@ -8,7 +8,6 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
@@ -31,56 +30,17 @@ fun ForgotPassword(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("", color = Color.Black) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateToSignIn) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBackIosNew,
-                            contentDescription = "Back",
-                            tint = Color.Black
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
-            )
+            ResetPasswordTopBar(onBackClick = onNavigateToSignIn)
         },
-        containerColor = Color.White
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(horizontal = 30.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        ResetPasswordContent(
+            paddingValues = paddingValues,
+            title = "Forgot Password",
+            description = if (!viewModel.isCodeSent) 
+                "Please enter your email address. We will send you a verification code to reset your password."
+            else 
+                "Verification code has been sent! Please check your email and enter the code below."
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Header title
-            Text(
-                text = "Forgot Password",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Black,
-                color = Color.Black,
-                lineHeight = 40.sp,
-                modifier = Modifier.align(Alignment.Start)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Short Description
-            Text(
-                text = if (!viewModel.isCodeSent)
-                    "Please enter your email. We will send a verification code to reset your password"
-                else 
-                    "The verification code has been sent! Please check your email and enter the code in the field below",
-                fontSize = 14.sp,
-                color = Color.Gray,
-                modifier = Modifier.align(Alignment.Start)
-            )
-
-            Spacer(modifier = Modifier.height(50.dp))
-
             // Input Email
             OutlinedTextField(
                 value = viewModel.email,
@@ -144,7 +104,7 @@ fun ForgotPassword(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Sent Button
+            // Submit Button
             Button(
                 onClick = {
                     if (!viewModel.isCodeSent) {
