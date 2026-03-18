@@ -11,6 +11,8 @@ jobs:
   detect-change:
     name: Scan File Changes
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     outputs:
       is_backend_changed: ${{ steps.filter.outputs.backend_code }}
       
