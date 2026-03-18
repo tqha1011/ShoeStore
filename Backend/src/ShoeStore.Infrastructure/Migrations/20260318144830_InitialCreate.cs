@@ -78,7 +78,8 @@ namespace ShoeStore.Infrastructure.Migrations
                     date_of_birth = table.Column<DateTime>(type: "date", nullable: true),
                     address = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    role = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -270,8 +271,7 @@ namespace ShoeStore.Infrastructure.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     invoice_id = table.Column<int>(type: "integer", nullable: false),
                     voucher_id = table.Column<int>(type: "integer", nullable: true),
-                    money_discount = table.Column<decimal>(type: "numeric", nullable: false),
-                    voucher_id1 = table.Column<int>(type: "integer", nullable: true)
+                    money_discount = table.Column<decimal>(type: "numeric", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -288,11 +288,6 @@ namespace ShoeStore.Infrastructure.Migrations
                         principalTable: "vouchers",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "fk_voucher_details_vouchers_voucher_id1",
-                        column: x => x.voucher_id1,
-                        principalTable: "vouchers",
-                        principalColumn: "id");
                 });
 
             migrationBuilder.CreateIndex(
@@ -380,11 +375,6 @@ namespace ShoeStore.Infrastructure.Migrations
                 table: "voucher_details",
                 columns: new[] { "voucher_id", "invoice_id" },
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_voucher_details_voucher_id1",
-                table: "voucher_details",
-                column: "voucher_id1");
 
             migrationBuilder.CreateIndex(
                 name: "ix_vouchers_is_deleted",

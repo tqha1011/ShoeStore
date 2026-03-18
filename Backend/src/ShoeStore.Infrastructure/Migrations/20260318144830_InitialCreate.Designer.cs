@@ -12,7 +12,7 @@ using ShoeStore.Infrastructure.Data;
 namespace ShoeStore.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260318093446_InitialCreate")]
+    [Migration("20260318144830_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -354,6 +354,10 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("password");
 
+                    b.Property<int>("Role")
+                        .HasColumnType("integer")
+                        .HasColumnName("role");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -516,18 +520,11 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("voucher_id");
 
-                    b.Property<int?>("VoucherId1")
-                        .HasColumnType("integer")
-                        .HasColumnName("voucher_id1");
-
                     b.HasKey("Id")
                         .HasName("pk_voucher_details");
 
                     b.HasIndex("InvoiceId")
                         .HasDatabaseName("ix_voucher_details_invoice_id");
-
-                    b.HasIndex("VoucherId1")
-                        .HasDatabaseName("ix_voucher_details_voucher_id1");
 
                     b.HasIndex("VoucherId", "InvoiceId")
                         .IsUnique()
@@ -660,15 +657,10 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasConstraintName("fk_voucher_details_invoices_invoice_id");
 
                     b.HasOne("ShoeStore.Domain.Entities.Voucher", "Voucher")
-                        .WithMany()
+                        .WithMany("VoucherDetails")
                         .HasForeignKey("VoucherId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_voucher_details_vouchers_voucher_id");
-
-                    b.HasOne("ShoeStore.Domain.Entities.Voucher", null)
-                        .WithMany("VoucherDetails")
-                        .HasForeignKey("VoucherId1")
-                        .HasConstraintName("fk_voucher_details_vouchers_voucher_id1");
 
                     b.Navigation("Invoice");
 
