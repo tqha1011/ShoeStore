@@ -21,4 +21,9 @@ public class User(int id) : Entity<int>(id)
     /// Gets the collection of invoices associated with the user, representing their purchase history and transactions.
     /// </summary>
     public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
+    
+    /// <summary>
+    /// Gets the collection of voucher associated with user
+    /// </summary>
+    public ICollection<UserVoucher> UserVouchers { get; set; } = new List<UserVoucher>();
 }

@@ -48,5 +48,10 @@ public class VoucherConfiguration : IEntityTypeConfiguration<Voucher>
         
         // HasQueryFilter automatically filter the condition
         builder.HasQueryFilter(c => !c.IsDeleted);
+        
+        builder.HasIndex(c => c.IsDeleted);
+        
+        builder.Property(c => c.TotalSlot)
+            .HasDefaultValue(100);
     }
 }

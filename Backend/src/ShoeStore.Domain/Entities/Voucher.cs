@@ -12,6 +12,8 @@ public class Voucher(int id) : Entity<int>(id)
     public DateTime? ValidFrom { get; set; }
     public DateTime? ValidTo { get; set; }
     public int? MaxUsage { get; set; }
+    
+    public int TotalSlot { get; set; }
     public required bool IsDeleted { get; set; } = false;
     public decimal? MinOrderPrice { get; set; } = 0;
     

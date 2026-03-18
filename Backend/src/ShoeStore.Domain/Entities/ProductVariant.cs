@@ -14,5 +14,5 @@ public class ProductVariant(int id) : Entity<int>(id)
     public required bool IsSelling { get; set; }
     public string? ImageUrl { get; set; }
     public required decimal Price { get; set; }
-    public required bool IsDeleted { get; set; }
+    public required bool IsDeleted { get; set; } = false;
 }
