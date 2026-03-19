@@ -8,18 +8,15 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /
 
-# Chú ý: Sửa thành .API (viết hoa) cho đúng tên thư mục của sếp
 COPY ["src/ShoeStore.API/ShoeStore.Api.csproj", "src/ShoeStore.API/"]
 COPY ["src/ShoeStore.Application/ShoeStore.Application.csproj", "src/ShoeStore.Application/"]
 COPY ["src/ShoeStore.Domain/ShoeStore.Domain.csproj", "src/ShoeStore.Domain/"]
 COPY ["src/ShoeStore.Infrastructure/ShoeStore.Infrastructure.csproj", "src/ShoeStore.Infrastructure/"]
 
-# Chạy restore (Nhớ khớp đường dẫn phía trên)
 RUN dotnet restore "src/ShoeStore.API/ShoeStore.Api.csproj"
 
 COPY . .
 
-# Chú ý: WORKDIR cũng phải là .API
 WORKDIR "/src/ShoeStore.API"
 RUN dotnet build "./ShoeStore.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
