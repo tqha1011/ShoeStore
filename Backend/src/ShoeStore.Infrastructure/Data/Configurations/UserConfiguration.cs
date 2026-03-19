@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ShoeStore.Domain.Entities;
@@ -36,7 +37,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
                 UserName = "admin1",
                 Email = "admin1@gmail.com",
                 Password = "$2a$20$OTMgqqRjT5H.eoJtIAWqvuGWjiVyq8L36wAYDUUS55hbiLDNkvV1K",
-                Role = UserRole.Admin
+                Role = UserRole.Admin,
+                CreatedAt = DateTime.SpecifyKind(new DateTime(2026,3,19), DateTimeKind.Utc)
             });
     }
 }

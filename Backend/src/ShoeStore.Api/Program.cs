@@ -6,7 +6,9 @@ using ShoeStore.Infrastructure.DependencyInjection;
 using Scalar.AspNetCore;
 using ShoeStore.Api.JsonSerialize;
 using ShoeStore.Api.Middlewares;
+using DotNetEnv;
 
+Env.TraversePath().Load(); // load environment variables from .env file
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.

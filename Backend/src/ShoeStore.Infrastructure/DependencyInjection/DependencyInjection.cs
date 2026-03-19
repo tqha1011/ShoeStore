@@ -14,7 +14,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration["DefaultConnection"];
+        var connectionString = configuration["DEFAULT_CONNECTION"];
         // register dependency injection in infrastructure layer
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddDbContext<AppDbContext>(options => 
