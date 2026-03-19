@@ -1,6 +1,6 @@
 ﻿namespace ShoeStore.Application.Interface
 {
-    internal interface IGenericService<TEntity> where TEntity : class 
+    public interface IGenericService<TEntity> where TEntity : class 
     {
         // Create
         Task<TEntity> AddAsync(TEntity entity);
