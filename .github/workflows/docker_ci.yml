@@ -66,7 +66,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./Backend
-          file: ./Backend/src/ShoeStore.Ap*/Dockerfile # Đường dẫn file Dockerfile
+          file: ./Backend/src/ShoeStore.Api/Dockerfile # Đường dẫn file Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }} # Lấy kết quả của Docker Meta
           # Bật Cache để lần sau build nhanh hơn
