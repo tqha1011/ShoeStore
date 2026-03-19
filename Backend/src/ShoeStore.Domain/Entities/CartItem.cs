@@ -2,7 +2,7 @@ using ShoeStore.Domain.Common;
 
 namespace ShoeStore.Domain.Entities;
 
-public class CartItem(int id) : Entity<int>(id)
+public class CartItem : Entity<int>
 {
     public required int UserId { get; set; }
     public required User User { get; set; }
