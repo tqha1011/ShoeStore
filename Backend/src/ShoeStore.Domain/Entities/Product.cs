@@ -2,7 +2,7 @@ using ShoeStore.Domain.Common;
 
 namespace ShoeStore.Domain.Entities;
 
-public class Product(int id) : Entity<int>(id)
+public class Product : Entity<int>
 {
     public required string ProductName { get; set; }
     public string? Brand { get; set; }

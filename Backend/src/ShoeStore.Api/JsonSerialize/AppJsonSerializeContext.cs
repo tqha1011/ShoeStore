@@ -1,9 +1,16 @@
 using System.Text.Json.Serialization;
-using ShoeStore.Application.DTOs;
+using Microsoft.AspNetCore.Mvc;
+using ShoeStore.Application.DTOs.AuthDTOs;
 
 namespace ShoeStore.Api.JsonSerialize;
 
 [JsonSerializable(typeof(LoginDto))]
+[JsonSerializable(typeof(RegisterDto))]
+[JsonSerializable(typeof(ProblemDetails))]
+[JsonSerializable(typeof(ValidationProblemDetails))]
+[JsonSerializable(typeof(IDictionary<string, string[]>))]
+[JsonSerializable(typeof(string[]))]
+[JsonSerializable(typeof(HttpValidationProblemDetails))]
 public partial class AppJsonSerializeContext : JsonSerializerContext 
 {
     

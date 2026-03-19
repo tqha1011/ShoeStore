@@ -1,9 +1,15 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using ShoeStore.Application.DependencyInjection;
 using ShoeStore.Infrastructure.DependencyInjection;
 using Scalar.AspNetCore;
 using ShoeStore.Api.JsonSerialize;
 using ShoeStore.Api.Middlewares;
+using DotNetEnv;
+using FluentValidation.AspNetCore;
 
+Env.TraversePath().Load(); // load environment variables from .env file
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -18,7 +24,29 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializeContext.Default);
     });
 
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["JWT_ISSUER"],
+        ValidAudience = builder.Configuration["JWT_AUDIENCE"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["JWT_KEY"] ?? throw new InvalidOperationException("JWT_KEY is null"))
+            ),
+        ClockSkew = TimeSpan.Zero // set clock skew to zero to prevent token expiration issues
+    };
+});
+
 builder.Services.AddProblemDetails(); // return 
+builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>(); // register global exception handler middleware
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -27,6 +55,8 @@ var app = builder.Build();
 app.UseExceptionHandler(); // use GlobalExceptionHandler middleware to handle exceptions globally
 app.MapOpenApi();
 app.MapScalarApiReference();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 app.Run();
 

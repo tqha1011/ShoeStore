@@ -3,7 +3,7 @@ using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Domain.Entities;
 
-public class Invoice(int id) : Entity<int>(id)
+public class Invoice : Entity<int>
 {
     public required int UserId { get; set; }
     public required User User { get; set; }

@@ -8,6 +8,9 @@
     
     environment:
       - ConnectionStrings__DefaultConnection=${DEFAULT_CONNECTION}
+      - Jwt_Key=${JWT_KEY}
+      - Jwt_Issuer=${JWT_ISSUER}
+      - Jwt_Audience=${JWT_AUDIENCE}
     
     ports:
       - "8080:8080"

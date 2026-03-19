@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ShoeStore.Infrastructure.Data;
@@ -11,9 +12,11 @@ using ShoeStore.Infrastructure.Data;
 namespace ShoeStore.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260319134841_DbSeedData3")]
+    partial class DbSeedData3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -378,9 +381,9 @@ namespace ShoeStore.Infrastructure.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2026, 3, 19, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedAt = new DateTime(2026, 3, 19, 13, 48, 41, 247, DateTimeKind.Utc).AddTicks(1888),
                             Email = "admin1@gmail.com",
-                            Password = "$2a$10$.X1JpcAQwVUxRr/pESfQsuf6DeBoh7kk6Li8h2Mc8jwOcdBVEyz1.",
+                            Password = "$2a$20$OTMgqqRjT5H.eoJtIAWqvuGWjiVyq8L36wAYDUUS55hbiLDNkvV1K",
                             Role = 1,
                             UserName = "admin1"
                         });

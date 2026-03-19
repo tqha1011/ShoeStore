@@ -2,7 +2,7 @@ using ShoeStore.Domain.Common;
 
 namespace ShoeStore.Domain.Entities;
 
-public class ProductVariant(int id) : Entity<int>(id)
+public class ProductVariant : Entity<int>
 {
     public required int SizeId { get; set; }
     public required ProductSize Size { get; set; } // foreign key relationship to ProductSize entity

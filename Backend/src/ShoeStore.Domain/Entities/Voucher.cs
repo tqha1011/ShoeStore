@@ -2,7 +2,7 @@ using ShoeStore.Domain.Common;
 
 namespace ShoeStore.Domain.Entities;
 
-public class Voucher(int id) : Entity<int>(id)
+public class Voucher : Entity<int>
 {
     public required string VoucherName { get; set; }
     public string? VoucherDescription { get; set; }

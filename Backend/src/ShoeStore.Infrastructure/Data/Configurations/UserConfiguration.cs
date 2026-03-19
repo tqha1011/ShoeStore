@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ShoeStore.Domain.Entities;
+using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Infrastructure.Data.Configurations;
 
@@ -27,5 +28,16 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasForeignKey(c => c.UserId);
         builder.HasMany(c => c.Invoices).WithOne(c => c.User)
             .HasForeignKey(c => c.UserId);
+
+        builder.HasData(
+            new User
+            {
+                Id = 1,
+                UserName = "admin1",
+                Email = "admin1@gmail.com",
+                Password = "$2a$10$.X1JpcAQwVUxRr/pESfQsuf6DeBoh7kk6Li8h2Mc8jwOcdBVEyz1.",
+                Role = UserRole.Admin,
+                CreatedAt = DateTime.SpecifyKind(new DateTime(2026,3,19), DateTimeKind.Utc)
+            });
     }
 }

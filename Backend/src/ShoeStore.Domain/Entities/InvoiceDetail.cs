@@ -2,7 +2,7 @@ using ShoeStore.Domain.Common;
 
 namespace ShoeStore.Domain.Entities;
 
-public class InvoiceDetail(int id) : Entity<int>(id)
+public class InvoiceDetail : Entity<int>
 {
     public int InvoiceId { get; set; }
     public required Invoice Invoice { get; set; }

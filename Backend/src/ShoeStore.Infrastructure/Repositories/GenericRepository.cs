@@ -5,26 +5,30 @@ using ShoeStore.Infrastructure.Data;
 
 namespace ShoeStore.Infrastructure.Repositories;
 
-public class GenericRepository<TEntity,TEntityId>(AppDbContext context) : IGenericRepository<TEntity,TEntityId> 
+public abstract class GenericRepository<TEntity, TEntityId>(AppDbContext context)
+    : IGenericRepository<TEntity, TEntityId>
     where TEntity : Entity<TEntityId>
 {
+    protected readonly AppDbContext Context = context;
+    protected readonly DbSet<TEntity> DbSet = context.Set<TEntity>();
+
     public void Add(TEntity entity)
     {
-        context.Set<TEntity>().Add(entity);
+        DbSet.Add(entity);
     }
 
     public void Update(TEntity entity)
     {
-        context.Set<TEntity>().Update(entity);
+        DbSet.Update(entity);
     }
 
     public void Delete(TEntity entity)
     {
-        context.Set<TEntity>().Remove(entity);
+        DbSet.Remove(entity);
     }
 
     public async Task<TEntity?> GetByIdAsync(TEntityId id,CancellationToken token)
     { 
-        return await context.Set<TEntity>().AsNoTracking().FirstOrDefaultAsync(x => x.Id!.Equals(id), token);
+        return await DbSet.AsNoTracking().FirstOrDefaultAsync(x => x.Id!.Equals(id), token);
     }
 }
