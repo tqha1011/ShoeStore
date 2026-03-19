@@ -9,11 +9,11 @@ import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.shoestoreapp.features.auth.ui.signin.ForgotPassword
-import com.example.shoestoreapp.features.auth.ui.signin.LoginScreenContent
-import com.example.shoestoreapp.features.auth.ui.signup.RegisterScreenContent
+import com.example.shoestoreapp.features.auth.ui.reset_password.ForgotPassword
+import com.example.shoestoreapp.features.auth.ui.sign_in.LoginScreenContent
+import com.example.shoestoreapp.features.auth.ui.sign_up.RegisterScreenContent
 import com.example.shoestoreapp.features.auth.ui.welcome.WelcomeScreen
-import com.example.shoestoreapp.features.auth.ui.signin.CreateNewPassword
+import com.example.shoestoreapp.features.auth.ui.reset_password.CreateNewPassword
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.auth.ui.signin
+package com.example.shoestoreapp.features.auth.ui.sign_in
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween

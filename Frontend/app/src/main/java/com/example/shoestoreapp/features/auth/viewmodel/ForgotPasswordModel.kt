@@ -16,34 +16,56 @@ class ForgotPasswordModel : ViewModel() {
     var isCodeSent by mutableStateOf(false)
         private set
 
+    var isVerificationSuccessful by mutableStateOf(false)
+        private set
+
     var emailError by mutableStateOf<String?>(null)
+        private set
+
+    var verificationError by mutableStateOf<String?>(null)
         private set
 
     fun onEmailChange(newValue: String) {
         email = newValue
         emailError = null
     }
+
+    fun onVerificationCodeChange(newValue: String) {
+        verificationCode = newValue
+        verificationError = null
+    }
+
     private fun validateEmail(email: String): Boolean {
         return Patterns.EMAIL_ADDRESS.matcher(email).matches()
     }
-    fun onVerificationCodeChange(newValue: String) {
-        verificationCode = newValue
-    }
 
     fun sendRequest() {
-
-        if (email.isNotBlank() && validateEmail(email)) {
-            // Simulate sending request
-            isCodeSent = true
-        } else {
+        if (email.isBlank()) {
             emailError = "Please enter your email"
+            return
         }
+        
+        if (!validateEmail(email)) {
+            emailError = "Invalid email format"
+            return
+        }
+
+        // Mock API call to send verification code
+        isCodeSent = true
+    }
+
+    fun verifyCode() {
+
+        // Mock API call to verify code
+        isVerificationSuccessful = true
     }
 
     fun resetState() {
         email = ""
         verificationCode = ""
         isCodeSent = false
+        isVerificationSuccessful = false
         emailError = null
+        verificationError = null
     }
 }

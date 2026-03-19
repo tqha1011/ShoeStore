@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.auth.ui.signin
+package com.example.shoestoreapp.features.auth.ui.reset_password
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -74,4 +74,13 @@ fun ResetPasswordContent(
         
         content()
     }
+}
+@Composable
+fun TitleBottom(){
+    Text(
+        text = "Shoe Store App",
+        color = Color.LightGray,
+        fontSize = 12.sp,
+        modifier = Modifier.padding(bottom = 20.dp)
+    )
 }
