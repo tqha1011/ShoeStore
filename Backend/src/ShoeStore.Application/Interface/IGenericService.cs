@@ -5,7 +5,6 @@
         // Create
         Task<TEntity> AddAsync(TEntity entity);
         // Read
-        Task<IEnumerable<TEntity>> GetAllAsync();
         Task<TEntity?> GetByIdAsync(Guid id);
         // Update
         Task UpdateAsync(TEntity entity);
