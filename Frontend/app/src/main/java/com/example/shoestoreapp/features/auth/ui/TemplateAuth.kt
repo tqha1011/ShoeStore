@@ -30,6 +30,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.R
 
+// StyleAuth
+data class AuthFieldStyle(
+    val label: String,
+    val containerColor: Color,
+    val textColor: Color,
+    val unfocusedBorderColor: Color = Color.Transparent
+)
 // Function Background for Template
 @Composable
 fun AuthBackground(canvasColor: Color) {
@@ -110,87 +117,15 @@ fun TitleText(text: String, color: Color) {
 // Function Email Input for Template
 @Composable
 fun AuthTextField(
-    label: String,
     value: String,
     onValueChange: (String) -> Unit,
     isError: Boolean,
     errorText: String?,
-    containerColor: Color,
-    textColor: Color,
-    unfocusedBorderColor: Color = Color.Transparent
+    style: AuthFieldStyle,
 ) {
-    AuthTextFieldBase(
-        label = label,
-        value = value,
-        onValueChange = onValueChange,
-        isError = isError,
-        errorText = errorText,
-        containerColor = containerColor,
-        textColor = textColor,
-        unfocusedBorderColor = unfocusedBorderColor,
-        keyboardType = KeyboardType.Text,
-        visualTransformation = VisualTransformation.None,
-        trailingIcon = null
-    )
-}
-
-// Function Password Input for Template
-@Composable
-fun AuthPasswordField(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    isError: Boolean,
-    errorText: String?,
-    containerColor: Color,
-    textColor: Color,
-    unfocusedBorderColor: Color = Color.Transparent,
-    passwordVisible: Boolean,
-    onToggleVisibility: () -> Unit
-) {
-    AuthTextFieldBase(
-        label = label,
-        value = value,
-        onValueChange = onValueChange,
-        isError = isError,
-        errorText = errorText,
-        containerColor = containerColor,
-        textColor = textColor,
-        unfocusedBorderColor = unfocusedBorderColor,
-        keyboardType = KeyboardType.Password,
-        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-        trailingIcon = {
-            IconButton(onClick = onToggleVisibility) {
-                Icon(
-                    if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                    contentDescription = null,
-                    tint = Color.Gray
-                )
-            }
-        }
-    )
-}
-
-//
-@Composable
-private fun AuthTextFieldBase(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    isError: Boolean,
-    errorText: String?,
-    containerColor: Color,
-    textColor: Color,
-    unfocusedBorderColor: Color,
-    keyboardType: KeyboardType,
-    visualTransformation: VisualTransformation,
-    trailingIcon: @Composable (() -> Unit)?
-) {
-    Column(modifier = Modifier
-        .fillMaxWidth()
-        .padding(top = 20.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 20.dp)) {
         Text(
-            text = label,
+            text = style.label,
             fontSize = 17.sp,
             color = Color.Gray,
             modifier = Modifier.padding(start = 8.dp)
@@ -202,22 +137,72 @@ private fun AuthTextFieldBase(
             supportingText = { errorText?.let { Text(it) } },
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth(),
-            visualTransformation = visualTransformation,
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-            trailingIcon = trailingIcon,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = containerColor,
-                unfocusedContainerColor = containerColor,
+                focusedContainerColor = style.containerColor,
+                unfocusedContainerColor = style.containerColor,
                 focusedBorderColor = Color.Gray,
-                unfocusedBorderColor = unfocusedBorderColor,
-                focusedTextColor = textColor,
-                unfocusedTextColor = textColor.copy(alpha = 0.7f),
-                cursorColor = textColor,
-                errorContainerColor = containerColor
+                unfocusedBorderColor = style.unfocusedBorderColor,
+                focusedTextColor = style.textColor,
+                unfocusedTextColor = style.textColor.copy(alpha = 0.7f),
+                cursorColor = style.textColor,
+                errorContainerColor = style.containerColor
             )
         )
     }
 }
+
+// Function Password Input for Template
+@Composable
+fun AuthPasswordField(
+    style: AuthFieldStyle,
+    value: String,
+    onValueChange: (String) -> Unit,
+    isError: Boolean,
+    errorText: String?,
+    passwordVisible: Boolean,
+    onToggleVisibility: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 20.dp)) {
+        Text(
+            text = style.label,
+            fontSize = 17.sp,
+            color = Color.Gray,
+            modifier = Modifier.padding(start = 8.dp)
+        )
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            isError = isError,
+            supportingText = { errorText?.let { Text(it) } },
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            trailingIcon = {
+                IconButton(onClick = onToggleVisibility) {
+                    Icon(
+                        if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                        contentDescription = null,
+                        tint = Color.Gray
+                    )
+                }
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = style.containerColor,
+                unfocusedContainerColor = style.containerColor,
+                focusedBorderColor = Color.Gray,
+                unfocusedBorderColor = style.unfocusedBorderColor,
+                focusedTextColor = style.textColor,
+                unfocusedTextColor = style.textColor.copy(alpha = 0.7f),
+                cursorColor = style.textColor,
+                errorContainerColor = style.containerColor
+            )
+        )
+    }
+}
+
+
 
 // Function Button for Template
 @Composable

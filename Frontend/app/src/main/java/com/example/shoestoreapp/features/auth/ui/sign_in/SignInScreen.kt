@@ -69,29 +69,35 @@ fun LoginScreenContent(
                 TitleText("Sign In", color = Color.Black)
                 
                 Spacer(modifier = Modifier.weight(2f))
-
-                // Use Template: Email Input
-                AuthTextField(
+                // Class Style Auth
+                val signInInputStyle = AuthFieldStyle(
                     label = "Email",
-                    value = signInViewModel.email,
-                    onValueChange = { signInViewModel.onEmailChange(it) },
-                    isError = signInViewModel.emailError != null,
-                    errorText = signInViewModel.emailError,
                     containerColor = Color(0xFF222222),
                     textColor = Color.White
                 )
-
+                // Class Style Auth
+                val signInPasswordStyle = AuthFieldStyle(
+                    label = "Password",
+                    containerColor = Color(0xFF222222),
+                    textColor = Color.White
+                )
+                // Use Template: Email Input
+                AuthTextField(
+                    value = signInViewModel.email,
+                    onValueChange = { signInViewModel.onEmailChange(it) },
+                    style = signInInputStyle,
+                    isError = signInViewModel.emailError != null,
+                    errorText = signInViewModel.emailError
+                )
                 Spacer(modifier = Modifier.height(20.dp))
                 
                 // Use Template: Password Input
                 AuthPasswordField(
-                    label = "Password",
                     value = signInViewModel.password,
                     onValueChange = { signInViewModel.onPasswordChange(it) },
+                    style = signInPasswordStyle,
                     isError = signInViewModel.passwordError != null,
                     errorText = signInViewModel.passwordError,
-                    containerColor = Color(0xFF222222),
-                    textColor = Color.White,
                     passwordVisible = signInViewModel.passwordVisible,
                     onToggleVisibility = { signInViewModel.onTogglePasswordVisibility() }
                 )

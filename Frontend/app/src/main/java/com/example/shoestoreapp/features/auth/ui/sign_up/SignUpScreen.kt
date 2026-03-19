@@ -59,36 +59,51 @@ fun RegisterScreenContent(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.weight(4f))
-                
+
                 // Use Template: Title
                 TitleText("Sign Up", color = Color.White)
-                
+
                 Spacer(modifier = Modifier.weight(4f))
 
-                // Use Template: Email Input
-                AuthTextField(
+                val signUpInputStyle = AuthFieldStyle(
                     label = "Email",
-                    value = signUpViewModel.email,
-                    onValueChange = { signUpViewModel.onEmailChange(it) },
-                    isError = signUpViewModel.emailError != null,
-                    errorText = signUpViewModel.emailError,
                     containerColor = Color(0xFFF5F5F5),
                     textColor = Color.Black,
                     unfocusedBorderColor = Color.LightGray
                 )
-                
+
+                val signUpPasswordStyle = AuthFieldStyle(
+                    label = "Password",
+                    containerColor = Color(0xFFF5F5F5),
+                    textColor = Color.Black,
+                    unfocusedBorderColor = Color.LightGray
+                )
+
+                val signUpConfirmPasswordStyle = AuthFieldStyle(
+                    label = "Confirm Password",
+                    containerColor = Color(0xFFF5F5F5),
+                    textColor = Color.Black,
+                    unfocusedBorderColor = Color.LightGray
+                )
+
+                // Use Template: Email Input
+                AuthTextField(
+                    value = signUpViewModel.email,
+                    onValueChange = { signUpViewModel.onEmailChange(it) },
+                    style = signUpInputStyle,
+                    isError = signUpViewModel.emailError != null,
+                    errorText = signUpViewModel.emailError
+                )
+
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Use Template: Password Input
                 AuthPasswordField(
-                    label = "Password",
                     value = signUpViewModel.password,
                     onValueChange = { signUpViewModel.onPasswordChange(it) },
+                    style = signUpPasswordStyle,
                     isError = signUpViewModel.passwordError != null,
                     errorText = signUpViewModel.passwordError,
-                    containerColor = Color(0xFFF5F5F5),
-                    textColor = Color.Black,
-                    unfocusedBorderColor = Color.LightGray,
                     passwordVisible = signUpViewModel.passwordVisible,
                     onToggleVisibility = { signUpViewModel.togglePasswordVisibility() }
                 )
@@ -97,14 +112,11 @@ fun RegisterScreenContent(
 
                 // Use Template: Confirm Password Input
                 AuthPasswordField(
-                    label = "Confirm Password",
                     value = signUpViewModel.confirmPassword,
                     onValueChange = { signUpViewModel.onConfirmPasswordChange(it) },
+                    style = signUpConfirmPasswordStyle,
                     isError = signUpViewModel.confirmPasswordError != null,
                     errorText = signUpViewModel.confirmPasswordError,
-                    containerColor = Color(0xFFF5F5F5),
-                    textColor = Color.Black,
-                    unfocusedBorderColor = Color.LightGray,
                     passwordVisible = signUpViewModel.confirmPasswordVisible,
                     onToggleVisibility = { signUpViewModel.toggleConfirmPasswordVisibility() }
                 )
@@ -129,7 +141,7 @@ fun RegisterScreenContent(
                     buttonContainerColor = Color(0xFFF5F5F5),
                     iconTint = Color.Black
                 )
-                
+
                 Spacer(modifier = Modifier.height(30.dp))
             }
         }
