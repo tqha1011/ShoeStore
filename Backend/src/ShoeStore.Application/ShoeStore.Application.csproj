@@ -11,6 +11,13 @@
   </ItemGroup>
 
   <ItemGroup>
+<<<<<<< HEAD
+=======
+    <Folder Include="Validations\" />
+  </ItemGroup>
+
+  <ItemGroup>
+>>>>>>> ff442e1 (feat: add ProductService.cs and IGenericService.cs)
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.5" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.5" />
