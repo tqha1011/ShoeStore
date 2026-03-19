@@ -6,14 +6,21 @@ EXPOSE 8081
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
-WORKDIR /src
-COPY ["src/ShoeStore.Api/ShoeStore.Api.csproj", "src/ShoeStore.Api/"]
+WORKDIR /
+
+# Chú ý: Sửa thành .API (viết hoa) cho đúng tên thư mục của sếp
+COPY ["src/ShoeStore.API/ShoeStore.Api.csproj", "src/ShoeStore.API/"]
 COPY ["src/ShoeStore.Application/ShoeStore.Application.csproj", "src/ShoeStore.Application/"]
 COPY ["src/ShoeStore.Domain/ShoeStore.Domain.csproj", "src/ShoeStore.Domain/"]
 COPY ["src/ShoeStore.Infrastructure/ShoeStore.Infrastructure.csproj", "src/ShoeStore.Infrastructure/"]
-RUN dotnet restore "src/ShoeStore.Api/ShoeStore.Api.csproj"
+
+# Chạy restore (Nhớ khớp đường dẫn phía trên)
+RUN dotnet restore "src/ShoeStore.API/ShoeStore.Api.csproj"
+
 COPY . .
-WORKDIR "/src/src/ShoeStore.Api"
+
+# Chú ý: WORKDIR cũng phải là .API
+WORKDIR "/src/ShoeStore.API"
 RUN dotnet build "./ShoeStore.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
