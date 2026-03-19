@@ -84,7 +84,7 @@ fun LoginScreenContent(
                 Spacer(modifier = Modifier.height(20.dp))
                 
                 // Use Template: Password Input
-                AuthTextField(
+                AuthPasswordField(
                     label = "Password",
                     value = signInViewModel.password,
                     onValueChange = { signInViewModel.onPasswordChange(it) },
@@ -92,7 +92,6 @@ fun LoginScreenContent(
                     errorText = signInViewModel.passwordError,
                     containerColor = Color(0xFF222222),
                     textColor = Color.White,
-                    isPassword = true,
                     passwordVisible = signInViewModel.passwordVisible,
                     onToggleVisibility = { signInViewModel.onTogglePasswordVisibility() }
                 )

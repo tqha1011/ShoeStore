@@ -107,7 +107,7 @@ fun TitleText(text: String, color: Color) {
     )
 }
 
-// Function TextField for Template
+// Function Email Input for Template
 @Composable
 fun AuthTextField(
     label: String,
@@ -117,10 +117,74 @@ fun AuthTextField(
     errorText: String?,
     containerColor: Color,
     textColor: Color,
+    unfocusedBorderColor: Color = Color.Transparent
+) {
+    AuthTextFieldBase(
+        label = label,
+        value = value,
+        onValueChange = onValueChange,
+        isError = isError,
+        errorText = errorText,
+        containerColor = containerColor,
+        textColor = textColor,
+        unfocusedBorderColor = unfocusedBorderColor,
+        keyboardType = KeyboardType.Text,
+        visualTransformation = VisualTransformation.None,
+        trailingIcon = null
+    )
+}
+
+// Function Password Input for Template
+@Composable
+fun AuthPasswordField(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    isError: Boolean,
+    errorText: String?,
+    containerColor: Color,
+    textColor: Color,
     unfocusedBorderColor: Color = Color.Transparent,
-    isPassword: Boolean = false,
-    passwordVisible: Boolean = false,
-    onToggleVisibility: (() -> Unit)? = null
+    passwordVisible: Boolean,
+    onToggleVisibility: () -> Unit
+) {
+    AuthTextFieldBase(
+        label = label,
+        value = value,
+        onValueChange = onValueChange,
+        isError = isError,
+        errorText = errorText,
+        containerColor = containerColor,
+        textColor = textColor,
+        unfocusedBorderColor = unfocusedBorderColor,
+        keyboardType = KeyboardType.Password,
+        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+        trailingIcon = {
+            IconButton(onClick = onToggleVisibility) {
+                Icon(
+                    if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
+                    contentDescription = null,
+                    tint = Color.Gray
+                )
+            }
+        }
+    )
+}
+
+//
+@Composable
+private fun AuthTextFieldBase(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    isError: Boolean,
+    errorText: String?,
+    containerColor: Color,
+    textColor: Color,
+    unfocusedBorderColor: Color,
+    keyboardType: KeyboardType,
+    visualTransformation: VisualTransformation,
+    trailingIcon: @Composable (() -> Unit)?
 ) {
     Column(modifier = Modifier
         .fillMaxWidth()
@@ -138,19 +202,9 @@ fun AuthTextField(
             supportingText = { errorText?.let { Text(it) } },
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth(),
-            visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
-            keyboardOptions = KeyboardOptions(keyboardType = if (isPassword) KeyboardType.Password else KeyboardType.Text),
-            trailingIcon = if (isPassword && onToggleVisibility != null) {
-                {
-                    IconButton(onClick = onToggleVisibility) {
-                        Icon(
-                            if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff,
-                            contentDescription = null,
-                            tint = Color.Gray
-                        )
-                    }
-                }
-            } else null,
+            visualTransformation = visualTransformation,
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            trailingIcon = trailingIcon,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = containerColor,
                 unfocusedContainerColor = containerColor,
@@ -203,7 +257,7 @@ fun AuthActionButton(
     }
 }
 
-// Function Social Formda for Template
+// Function Social Form for Template
 @Composable
 fun SocialLoginSection(
     dividerColor: Color,

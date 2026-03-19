@@ -80,7 +80,7 @@ fun RegisterScreenContent(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Use Template: Password Input
-                AuthTextField(
+                AuthPasswordField(
                     label = "Password",
                     value = signUpViewModel.password,
                     onValueChange = { signUpViewModel.onPasswordChange(it) },
@@ -89,7 +89,6 @@ fun RegisterScreenContent(
                     containerColor = Color(0xFFF5F5F5),
                     textColor = Color.Black,
                     unfocusedBorderColor = Color.LightGray,
-                    isPassword = true,
                     passwordVisible = signUpViewModel.passwordVisible,
                     onToggleVisibility = { signUpViewModel.togglePasswordVisibility() }
                 )
@@ -97,7 +96,7 @@ fun RegisterScreenContent(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Use Template: Confirm Password Input
-                AuthTextField(
+                AuthPasswordField(
                     label = "Confirm Password",
                     value = signUpViewModel.confirmPassword,
                     onValueChange = { signUpViewModel.onConfirmPasswordChange(it) },
@@ -106,7 +105,6 @@ fun RegisterScreenContent(
                     containerColor = Color(0xFFF5F5F5),
                     textColor = Color.Black,
                     unfocusedBorderColor = Color.LightGray,
-                    isPassword = true,
                     passwordVisible = signUpViewModel.confirmPasswordVisible,
                     onToggleVisibility = { signUpViewModel.toggleConfirmPasswordVisibility() }
                 )
