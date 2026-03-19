@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.auth.ui.auth.login
+package com.example.shoestoreapp.features.auth.ui.signin
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +27,14 @@ fun CreateNewPassword(
     onNavigateToSignIn: () -> Unit = {},
     viewModel: CreateNewPasswordModel = viewModel()
 ) {
+    // Listen for success state from ViewModel to navigate
+    LaunchedEffect(viewModel.isResetSuccessful) {
+        if (viewModel.isResetSuccessful) {
+            onNavigateToSignIn()
+            viewModel.resetState()
+        }
+    }
+
     Scaffold(
         topBar = {
             ResetPasswordTopBar(onBackClick = onNavigateToSignIn)
@@ -44,7 +52,6 @@ fun CreateNewPassword(
             // Confirm Password Input
             ConfirmPasswordInput(viewModel = viewModel)
 
-
             // Error Display
             if (viewModel.passwordError != null) {
                 Text(
@@ -60,7 +67,7 @@ fun CreateNewPassword(
             Spacer(modifier = Modifier.height(40.dp))
 
             // Reset Password Button
-            ResetPasswordButton(viewModel = viewModel, onNavigateToSignIn = onNavigateToSignIn)
+            ResetPasswordButton(viewModel = viewModel)
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -75,13 +82,10 @@ fun CreateNewPassword(
 }
 
 @Composable
-fun ResetPasswordButton(viewModel: CreateNewPasswordModel, onNavigateToSignIn: () -> Unit) {
+fun ResetPasswordButton(viewModel: CreateNewPasswordModel) {
     Button(
         onClick = {
-            if (viewModel.validateAndSubmit()) {
-                // Success - navigate back to sign in
-                onNavigateToSignIn()
-            }
+            viewModel.validateAndSubmit()
         },
         modifier = Modifier
             .fillMaxWidth()

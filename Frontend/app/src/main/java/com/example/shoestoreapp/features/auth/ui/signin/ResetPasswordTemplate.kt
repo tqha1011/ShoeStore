@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.auth.ui.auth.login
+package com.example.shoestoreapp.features.auth.ui.signin
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons

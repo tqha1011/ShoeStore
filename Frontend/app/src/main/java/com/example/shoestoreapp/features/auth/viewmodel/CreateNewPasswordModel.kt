@@ -21,6 +21,10 @@ class CreateNewPasswordModel : ViewModel() {
     var passwordError by mutableStateOf<String?>(null)
         private set
 
+    // State to notify UI of a successful reset
+    var isResetSuccessful by mutableStateOf(false)
+        private set
+
     fun onPasswordChange(newValue: String) {
         password = newValue
         passwordError = null
@@ -39,16 +43,22 @@ class CreateNewPasswordModel : ViewModel() {
         confirmPasswordVisible = !confirmPasswordVisible
     }
 
-    fun validateAndSubmit(): Boolean {
+    fun validateAndSubmit() {
         if (password.length < 6) {
             passwordError = "Password must be at least 6 characters long"
-            return false
+            return
         }
         if (password != confirmPassword) {
             passwordError = "Passwords do not match"
-            return false
+            return
         }
-        // Logic for successful password change
-        return true
+        
+        // Mock logic for API call...
+        // After success:
+        isResetSuccessful = true
+    }
+
+    fun resetState() {
+        isResetSuccessful = false
     }
 }
