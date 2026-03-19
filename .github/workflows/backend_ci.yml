@@ -83,6 +83,7 @@ jobs:
             /o:"tqha1011" \
             /d:sonar.token="$SONAR_TOKEN" \
             /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.inclusions="Backend/**" \
             /d:sonar.coverage.exclusions="**/*" 
            # /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml"
 
