@@ -9,7 +9,6 @@ public abstract class GenericRepository<TEntity, TEntityId>(AppDbContext context
     : IGenericRepository<TEntity, TEntityId>
     where TEntity : Entity<TEntityId>
 {
-    protected readonly AppDbContext Context = context;
     protected readonly DbSet<TEntity> DbSet = context.Set<TEntity>();
 
     public void Add(TEntity entity)
