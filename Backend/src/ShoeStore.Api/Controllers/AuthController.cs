@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using ShoeStore.Application.DTOs.AuthDTOs;
 using ShoeStore.Application.Interface;
 
@@ -22,6 +23,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     /// <response code="400"> Login failed </response>
     /// </returns>
     [HttpPost("signin")]
+    [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> Signin([FromBody] LoginDto loginDto,CancellationToken token)
     {
         var result = await authService.LoginAsync(loginDto, token);
@@ -48,6 +50,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     /// <response code="400"> Sign up failed </response>
     /// </returns>
     [HttpPost("signup")]
+    [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> Signup([FromBody] RegisterDto registerDto, CancellationToken token)
     {
         var result = await authService.RegisterAsync(registerDto, token);

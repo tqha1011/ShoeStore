@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using ShoeStore.Application.DependencyInjection;
@@ -8,6 +10,9 @@ using ShoeStore.Api.JsonSerialize;
 using ShoeStore.Api.Middlewares;
 using DotNetEnv;
 using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.RateLimiting;
 
 Env.TraversePath().Load(); // load environment variables from .env file
 var builder = WebApplication.CreateBuilder(args);
@@ -50,6 +55,66 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>(); // register global exception handler middleware
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Add rate-limit to protect API
+builder.Services.AddRateLimiter(options =>
+{
+    // return 429 Too Many Requests when the client exceeds the rate limit
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan retryAfter))
+        {
+            context.HttpContext.Response.Headers.RetryAfter = $"{retryAfter.TotalSeconds}";
+            ProblemDetailsFactory problemDetailsFactory = context.HttpContext.RequestServices
+                                                              .GetService<ProblemDetailsFactory>() ??
+                                                          throw new InvalidOperationException(
+                                                              "ProblemDetailsFactory is null");
+            ProblemDetails problemDetails = problemDetailsFactory
+                .CreateProblemDetails(
+                    context.HttpContext,
+                    StatusCodes.Status429TooManyRequests,
+                    "Too many requests",
+                    detail: $"Please retry after {retryAfter.TotalSeconds} seconds");
+
+            await context.HttpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+
+        }
+    };
+    // this is for heavy-load api
+    options.AddConcurrencyLimiter("concurrency", option =>
+    {
+        option.PermitLimit = 20;
+        option.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        option.QueueLimit = 0;
+    });
+
+    options.AddPolicy("limit-per-user", httpContext =>
+    {
+        var userId = httpContext.User.FindFirstValue("userId");
+        if (!string.IsNullOrEmpty(userId))
+        {
+            return RateLimitPartition.GetTokenBucketLimiter(
+                userId,
+                _ => new TokenBucketRateLimiterOptions
+                {
+                    TokenLimit = 10,
+                    TokensPerPeriod = 3,
+                    ReplenishmentPeriod = TimeSpan.FromMinutes(1)
+                });
+        }
+
+        return RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            });
+    });
+});
 var app = builder.Build();
 
 app.UseExceptionHandler(); // use GlobalExceptionHandler middleware to handle exceptions globally
@@ -57,6 +122,7 @@ app.MapOpenApi();
 app.MapScalarApiReference();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.MapControllers();
 app.Run();
 
