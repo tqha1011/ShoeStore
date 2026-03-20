@@ -1,32 +1,68 @@
 
-# Shoe Store App
+<div align="center">
+  
+# 👟 Shoe Store App
+**A Modern Full-Stack E-Commerce Mobile Application**
 
-**A project for SE114.Q22 - UIT-VNUHCM**
+*Capstone Project for SE114.Q22 - UIT-VNUHCM*
 
-
-![.NET Core](https://img.shields.io/badge/.NET%20Core-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
-
-![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
-
-![SQL Server](https://img.shields.io/badge/SQL%20Server-CC2927?style=for-the-badge&logo=microsoft-sql-server&logoColor=white)
-
+![.NET](https://img.shields.io/badge/.NET_10-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
+![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-4285F4?style=for-the-badge&logo=android&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-## 👥 Authors
+</div>
 
-- [Trần Quang Hạ](https://github.com/tqha1011)
-- [Phan Cao Minh Hiếu](https://github.com/hieupcm03)
-- [Lê Hữu Việt Hoàng](https://github.com/Hoang44444)
-- [Nguyễn Lê Hoàng Hảo](https://github.com/hoanghaoz)
+---
 
+## 📖 Brief Summary
+
+**Shoe Store App** is a comprehensive mobile e-commerce solution designed to deliver a seamless and highly responsive shoe-shopping experience. 
+
+Built with scalability and performance in mind, the project leverages a reactive and modern Android UI using **Kotlin Jetpack Compose**, backed by a robust, high-performance **ASP.NET Core Web API**. The architecture is heavily optimized and fortified with enterprise-level features, ensuring that whether you are an administrator managing the product catalog or a customer browsing the latest sneakers, the journey is fast, secure, and intuitive.
+
+---
+
+## ✨ Core Features & Technical Highlights
+
+* 🛡️ **Advanced Security:** Implemented **JWT Authentication** and sophisticated **Rate Limiting** algorithms. We utilize *Token Bucket* for authenticated users and *Fixed Window* (partitioned by IP) for anonymous traffic to prevent DDoS and Brute-force attacks.
+* ☁️ **Cloud Media Storage:** Integrated with **Cloudinary** for scalable, auto-optimized image hosting, avoiding heavy local server loads.
+* 📱 **Modern UI & MVVM:** Frontend Android application strictly follows the **MVVM (Model-View-ViewModel)** architecture pattern combined with **Jetpack Compose**, ensuring a highly reactive, testable, and robust state-driven user interface.
+* 🏗️ **Clean Architecture:** Backend structured with maintainability in mind, utilizing Result Pattern, FluentValidation, and robust Dependency Injection.
+* 🔄 **Agile Workflow:** Project managed entirely via **ClickUp** using 2-week Sprints, Time Tracking, and strictly adhering to Conventional Commits.
+
+---
+
+## 👥 Authors & Contributors
+
+| Name | GitHub Profile |
+| :--- | :--- |
+| **Trần Quang Hạ** | [@tqha1011](https://github.com/tqha1011) |
+| **Phan Cao Minh Hiếu** | [@hieupcm03](https://github.com/hieupcm03) |
+| **Lê Hữu Việt Hoàng** | [@Hoang44444](https://github.com/Hoang44444) |
+| **Nguyễn Lê Hoàng Hảo** | [@hoanghaoz](https://github.com/hoanghaoz) |
+
+---
 
 ## 🛠️ Tech Stack
 
-**Frontend:** Java, Kotlin
+**Frontend Mobile (Android)**
+* Language: Kotlin
+* UI Framework: Jetpack Compose
+* Network: Retrofit
+* Image Loading: Coil / Glide
 
-**Backend:** ASP.NET Core WebApi
+**Backend API**
+* Framework: ASP.NET Core Web API (.NET)
+* ORM: Entity Framework Core
+* Database: PostgreSQL
+* API Documentation: Scalar / OpenAPI
 
-**Database:** SQL Server
+**Infrastructure & Management**
+* Containerization: Docker & Docker Compose
+* Task Management: ClickUp
+* Version Control: GitHub
 
 
 ## Deployment
