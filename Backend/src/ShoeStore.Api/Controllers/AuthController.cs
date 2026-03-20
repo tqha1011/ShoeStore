@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using ShoeStore.Application.DTOs.AuthDTOs;
 using ShoeStore.Application.Interface;
 
 namespace ShoeStore.Api.Controllers;
 /// <summary>
 /// Controller for handling user authentication and registration related operations, such as signing in and signing up.
+/// Apply rate-limit to protect API
 /// </summary>
 /// <param name="authService"></param>
 [Route("api/[controller]")]
@@ -12,7 +14,8 @@ namespace ShoeStore.Api.Controllers;
 public class AuthController(IAuthService authService) : ControllerBase
 {
     /// <summary>
-    /// Authenticate user and return JWT token if successful, otherwise return error message
+    /// Sign in user
+    /// Authenticate user credentials and return JWT token if login is successful, otherwise return error message with description of the failure reason
     /// </summary>
     /// <param name="loginDto"></param>
     /// <param name="token"></param>
@@ -22,6 +25,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     /// <response code="400"> Login failed </response>
     /// </returns>
     [HttpPost("signin")]
+    [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> Signin([FromBody] LoginDto loginDto,CancellationToken token)
     {
         var result = await authService.LoginAsync(loginDto, token);
@@ -48,6 +52,7 @@ public class AuthController(IAuthService authService) : ControllerBase
     /// <response code="400"> Sign up failed </response>
     /// </returns>
     [HttpPost("signup")]
+    [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> Signup([FromBody] RegisterDto registerDto, CancellationToken token)
     {
         var result = await authService.RegisterAsync(registerDto, token);
