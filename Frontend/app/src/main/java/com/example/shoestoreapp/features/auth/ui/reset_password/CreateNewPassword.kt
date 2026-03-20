@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.auth.ui.auth.login
+package com.example.shoestoreapp.features.auth.ui.reset_password
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,9 +27,19 @@ fun CreateNewPassword(
     onNavigateToSignIn: () -> Unit = {},
     viewModel: CreateNewPasswordModel = viewModel()
 ) {
+    // Listen for success state from ViewModel to navigate
+    LaunchedEffect(viewModel.isResetSuccessful) {
+        if (viewModel.isResetSuccessful) {
+            onNavigateToSignIn()
+            viewModel.resetState()
+        }
+    }
+
     Scaffold(
         topBar = {
-            ResetPasswordTopBar(onBackClick = onNavigateToSignIn)
+            ResetPasswordTopBar(
+                onBackClick = onNavigateToSignIn
+            )
         },
         containerColor = Color.White
     ) { paddingValues ->
@@ -44,44 +54,42 @@ fun CreateNewPassword(
             // Confirm Password Input
             ConfirmPasswordInput(viewModel = viewModel)
 
-
             // Error Display
-            if (viewModel.passwordError != null) {
-                Text(
-                    text = viewModel.passwordError ?: "",
-                    color = Color.Red,
-                    fontSize = 12.sp,
-                    modifier = Modifier
-                        .align(Alignment.Start)
-                        .padding(start = 8.dp, top = 8.dp)
-                )
-            }
+            ErrorDisplay(viewModel = viewModel)
 
             Spacer(modifier = Modifier.height(40.dp))
 
             // Reset Password Button
-            ResetPasswordButton(viewModel = viewModel, onNavigateToSignIn = onNavigateToSignIn)
+            ResetPasswordButton(viewModel = viewModel)
 
             Spacer(modifier = Modifier.weight(1f))
 
+            TitleBottom()
+        }
+    }
+}
+
+@Composable
+fun ErrorDisplay(viewModel: CreateNewPasswordModel) {
+    if (viewModel.passwordError != null) {
+        Column() {
             Text(
-                text = "Shoe Store App",
-                color = Color.LightGray,
+                text = viewModel.passwordError ?: "",
+                color = Color.Red,
                 fontSize = 12.sp,
-                modifier = Modifier.padding(bottom = 20.dp)
+                modifier = Modifier
+                    .align(Alignment.Start)
+                    .padding(start = 8.dp, top = 8.dp)
             )
         }
     }
 }
 
 @Composable
-fun ResetPasswordButton(viewModel: CreateNewPasswordModel, onNavigateToSignIn: () -> Unit) {
+fun ResetPasswordButton(viewModel: CreateNewPasswordModel) {
     Button(
         onClick = {
-            if (viewModel.validateAndSubmit()) {
-                // Success - navigate back to sign in
-                onNavigateToSignIn()
-            }
+            viewModel.validateAndSubmit()
         },
         modifier = Modifier
             .fillMaxWidth()
