@@ -5,7 +5,7 @@ using ShoeStore.Application.Interface;
 
 namespace ShoeStore.Application.Services
 {
-    internal class ProductService<Product> : IGenericRepository<Product>
+    public class ProductService<Product> : IGenericRepository<Product>
     {
         private readonly IUnitOfWork _uow;
         private readonly IGenericRepository<Product> _productRepository;
