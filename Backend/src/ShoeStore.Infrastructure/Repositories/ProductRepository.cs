@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.Interface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Infrastructure.Data;
+using ShoeStore.Application.Extensions;
 
 namespace ShoeStore.Infrastructure.Repositories
 {
@@ -32,6 +33,13 @@ namespace ShoeStore.Infrastructure.Repositories
         public async Task<Product?> GetByIdAsync(int id, CancellationToken token)
         {
             return await _context.Products.AsNoTracking().FirstOrDefaultAsync(x => x.Id!.Equals(id), token);
+        }
+
+        public IQueryable<Product> SeachProduct(string? keyWord, string? brand, int? color, int? size, int? productId,
+            decimal? minPrice, decimal? maxPric, string? sort)
+        {
+            return _context.Products.ApplySearch(keyWord).ApplyBrand(brand).ApplyColorId(color).ApplySizeId(size).
+                ApplyProductId(productId).ApplyPriceRange(minPrice, maxPric).ApplySort(sort);
         }
     }
 }

@@ -76,5 +76,3 @@ namespace ShoeStore.Application.Extensions
         }
     }
 }
-}
-}

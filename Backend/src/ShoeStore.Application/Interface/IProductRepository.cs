@@ -13,7 +13,7 @@ namespace ShoeStore.Application.Interface
         void Delete(Product product);
         Task<Product?> GetByIdAsync(int id, CancellationToken token);
 
-        Task<IQueryable<Product>> SeachProduct(string? keyWord, string? brand, string? color, int? size, int? productId, 
-            decimal? minPrice,decimal? maxPric, string? sort);
+        IQueryable<Product> SeachProduct(string? keyWord, string? brand, int? color, int? size, int? productId,
+            decimal? minPrice, decimal? maxPric, string? sort);
     }
 }
