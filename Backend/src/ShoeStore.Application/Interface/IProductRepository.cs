@@ -6,11 +6,11 @@ using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Interface
 {
-    internal interface IProductRepository
+    public interface IProductRepository
     {
         void Add(Product product);
         void Update(Product product);
         void Delete(Product product);
-        Task<Product?> GetByIdAsync(Guid id);
+        Task<Product?> GetByIdAsync(Guid id, CancellationToken token);
     }
 }
