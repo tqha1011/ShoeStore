@@ -53,5 +53,10 @@ public class VoucherConfiguration : IEntityTypeConfiguration<Voucher>
         
         builder.Property(c => c.TotalQuantity)
             .HasDefaultValue(100);
+        
+        builder.Property(c => c.PublicId)
+            .HasDefaultValueSql("gen_random_uuid()");
+        
+        builder.HasIndex(c => c.PublicId).IsUnique();
     }
 }
