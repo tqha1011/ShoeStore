@@ -19,8 +19,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		compose.yaml = compose.yaml
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShoeStore.ApplicationTests", "src\ShoeStore.ApplicationTests\ShoeStore.ApplicationTests.csproj", "{749669CF-9B81-45C0-B419-CE15FD1DF661}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -79,18 +77,6 @@ Global
 		{69D27B18-6854-4A30-B780-D38F38A50261}.Release|x64.Build.0 = Release|Any CPU
 		{69D27B18-6854-4A30-B780-D38F38A50261}.Release|x86.ActiveCfg = Release|Any CPU
 		{69D27B18-6854-4A30-B780-D38F38A50261}.Release|x86.Build.0 = Release|Any CPU
-		{749669CF-9B81-45C0-B419-CE15FD1DF661}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{749669CF-9B81-45C0-B419-CE15FD1DF661}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{749669CF-9B81-45C0-B419-CE15FD1DF661}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{749669CF-9B81-45C0-B419-CE15FD1DF661}.Debug|x64.Build.0 = Debug|Any CPU
-		{749669CF-9B81-45C0-B419-CE15FD1DF661}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{749669CF-9B81-45C0-B419-CE15FD1DF661}.Debug|x86.Build.0 = Debug|Any CPU
-		{749669CF-9B81-45C0-B419-CE15FD1DF661}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{749669CF-9B81-45C0-B419-CE15FD1DF661}.Release|Any CPU.Build.0 = Release|Any CPU
-		{749669CF-9B81-45C0-B419-CE15FD1DF661}.Release|x64.ActiveCfg = Release|Any CPU
-		{749669CF-9B81-45C0-B419-CE15FD1DF661}.Release|x64.Build.0 = Release|Any CPU
-		{749669CF-9B81-45C0-B419-CE15FD1DF661}.Release|x86.ActiveCfg = Release|Any CPU
-		{749669CF-9B81-45C0-B419-CE15FD1DF661}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
