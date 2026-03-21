@@ -8,4 +8,6 @@ public interface IAuthService
     public Task<ErrorOr<Created>> RegisterAsync(RegisterDto registerDto,CancellationToken token);
     
     public Task<ErrorOr<string>> LoginAsync(LoginDto loginDto, CancellationToken token);
+
+    public Task<ErrorOr<string>> LoginWithGoogleAsync(string idToken,CancellationToken token);
 }
