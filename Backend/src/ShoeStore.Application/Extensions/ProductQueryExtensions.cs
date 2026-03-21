@@ -25,10 +25,22 @@ namespace ShoeStore.Application.Extensions
             return query.Where(s => s.Size == size); 
         }
 
-        public static IQueryable<ProductVariant> ApplyId(this IQueryable<ProductVariant> query, int? id)
+        public static IQueryable<ProductVariant> ApplyProductId(this IQueryable<ProductVariant> query, int? id)
         {
             if (!id.HasValue) return query;
-            return query.Where(i => i.ProductId == id || i.ColorId == id || i.SizeId == id);
+            return query.Where(i => i.ProductId == id);
+        }
+
+        public static IQueryable<ProductVariant> ApplyColorId(this IQueryable<ProductVariant> query, int? id)
+        {
+            if (!id.HasValue) return query;
+            return query.Where(i => i.ProductId == id);
+        }
+
+        public static IQueryable<ProductVariant> ApplySizeId(this IQueryable<ProductVariant> query, int? id)
+        {
+            if (!id.HasValue) return query;
+            return query.Where(i => i.ProductId == id);
         }
 
         public static IQueryable<Color> ApplyColor(this IQueryable<Color> query, string? color)
