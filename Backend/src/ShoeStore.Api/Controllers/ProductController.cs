@@ -2,13 +2,14 @@
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.Interface;
 
+/// <summary>
+/// Controller for handling product related operations for customers.
+/// </summary>
+[Route("api/[controller]")]
+[ApiController]
+
 namespace ShoeStore.Api.Controllers
 {
-    /// <summary>
-    /// Controller for handling product related operations for customers.
-    /// </summary>
-    [Route("api/[controller]")]
-    [ApiController]
     public class ProductsController(IProductService productService) : ControllerBase
     {
         /// <summary>
