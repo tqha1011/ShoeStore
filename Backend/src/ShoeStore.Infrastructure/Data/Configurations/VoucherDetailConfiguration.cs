@@ -21,5 +21,10 @@ public class VoucherDetailConfiguration : IEntityTypeConfiguration<VoucherDetail
             .OnDelete(DeleteBehavior.Restrict);
         
         builder.HasIndex(c => new { c.VoucherId, c.InvoiceId }).IsUnique();
+        
+        builder.Property(c => c.PublicId)
+            .HasDefaultValueSql("gen_random_uuid()");
+        
+        builder.HasIndex(c => c.PublicId).IsUnique();
     }
 }

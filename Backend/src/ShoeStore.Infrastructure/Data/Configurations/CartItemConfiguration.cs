@@ -15,9 +15,6 @@ public class CartItemConfiguration : IEntityTypeConfiguration<CartItem>
 
         // composite index for UserId and ProductVariantId to ensure a user cannot have duplicate product variants in their cart
         builder.HasIndex(c => new { c.UserId, c.ProductVariantId }).IsUnique();
-        
-        // composite index for UserId to optimize queries that retrieve all cart items for a specific user
-        builder.HasIndex(c => c.UserId);
 
         builder.HasOne(c => c.User)
             .WithMany(u => u.CartItems)
@@ -28,5 +25,10 @@ public class CartItemConfiguration : IEntityTypeConfiguration<CartItem>
             .WithMany()
             .HasForeignKey(c => c.ProductVariantId)
             .OnDelete(DeleteBehavior.Cascade);
+        
+        builder.Property(c => c.PublicId)
+            .HasDefaultValueSql("gen_random_uuid()");
+
+        builder.HasIndex(c => c.PublicId).IsUnique();
     }
 }

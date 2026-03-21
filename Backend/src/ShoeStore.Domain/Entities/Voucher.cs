@@ -4,6 +4,7 @@ namespace ShoeStore.Domain.Entities;
 
 public class Voucher : Entity<int>
 {
+    public Guid PublicId { get; set; }
     public required string VoucherName { get; set; }
     public string? VoucherDescription { get; set; }
     public required decimal Discount { get; set; }

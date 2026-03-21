@@ -5,6 +5,7 @@ namespace ShoeStore.Domain.Entities;
 
 public class User : Entity<int>
 {
+    public Guid PublicId { get; set; }
     public required string UserName { get; set; }
     public required string Password { get; set; }
     public required string Email { get; set; }
