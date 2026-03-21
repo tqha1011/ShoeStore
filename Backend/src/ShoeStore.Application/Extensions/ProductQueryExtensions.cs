@@ -9,67 +9,64 @@ namespace ShoeStore.Application.Extensions
     {
         public static IQueryable<Product> ApplySearch(this IQueryable<Product> query, string? keyWord)
         {
-            if(string.IsNullOrEmpty(keyWord)) return query;
+            if (string.IsNullOrEmpty(keyWord)) return query;
             return query.Where(p => p.ProductName.Contains(keyWord));
         }
 
         public static IQueryable<Product> ApplyBrand(this IQueryable<Product> query, string? brand)
         {
             if (string.IsNullOrEmpty(brand)) return query;
-            return query.Where(p => p.Brand.Contains(brand));
+            return query.Where(p => p.Brand != null && p.Brand.Contains(brand));
         }
 
-        public static IQueryable<ProductSize> ApplySize(this IQueryable<ProductSize> query, int? size)
+        public static IQueryable<Product> ApplySize(this IQueryable<Product> query, int? sizeId)
         {
-            if(!size.HasValue) return query;
-            return query.Where(s => s.Size == size); 
+            if (!sizeId.HasValue) return query;
+            return query.Where(p => p.ProductVariants.Any(v => v.SizeId == sizeId.Value));
         }
 
-        public static IQueryable<ProductVariant> ApplyProductId(this IQueryable<ProductVariant> query, int? id)
+        public static IQueryable<Product> ApplyColor(this IQueryable<Product> query, int? colorId)
         {
-            if (!id.HasValue) return query;
-            return query.Where(i => i.ProductId == id);
+            if (!colorId.HasValue) return query;
+            return query.Where(p => p.ProductVariants.Any(v => v.ColorId == colorId.Value));
         }
 
-        public static IQueryable<ProductVariant> ApplyColorId(this IQueryable<ProductVariant> query, int? id)
+        public static IQueryable<Product> ApplyProductId(this IQueryable<Product> query, int? productId)
         {
-            if (!id.HasValue) return query;
-            return query.Where(i => i.ProductId == id);
+            if (!productId.HasValue) return query;
+            return query.Where(p => p.Id == productId.Value);
         }
 
-        public static IQueryable<ProductVariant> ApplySizeId(this IQueryable<ProductVariant> query, int? id)
+        public static IQueryable<Product> ApplyPriceRange(this IQueryable<Product> query, decimal? min, decimal? max)
         {
-            if (!id.HasValue) return query;
-            return query.Where(i => i.ProductId == id);
-        }
+            if (min.HasValue && max.HasValue && min > max)
+                throw new ArgumentException("MinPrice không được lớn hơn MaxPrice");
 
-        public static IQueryable<Color> ApplyColor(this IQueryable<Color> query, string? color)
-        {
-            if(string.IsNullOrEmpty(color)) return query;
-            return query.Where(c => c.ColorName.Contains(color));
-        }
+            if (min.HasValue)
+                query = query.Where(p => p.ProductVariants.Any(v => v.Price >= min.Value && v.IsSelling && !v.IsDeleted));
 
-        public static IQueryable<ProductVariant> ApplyPriceRange(this IQueryable<ProductVariant> query, decimal? min, decimal? max)
-        {
-            if(min.HasValue && max.HasValue && min > max)
-            {
-                // Error
-            }
-            if (min.HasValue) query = query.Where(p => p.Price >= min.Value);
-            if (max.HasValue) query = query.Where(p => p.Price <= max.Value);
+            if (max.HasValue)
+                query = query.Where(p => p.ProductVariants.Any(v => v.Price <= max.Value && v.IsSelling && !v.IsDeleted));
+
             return query;
         }
 
-        public static IQueryable<ProductVariant> ApplySort(this IQueryable<ProductVariant> query, string? sort)
+        public static IQueryable<Product> ApplySort(this IQueryable<Product> query, string? sort)
         {
             return sort switch
             {
-                "name_asc" => query.OrderBy(v => v.Product.ProductName),
-                "name_desc" => query.OrderByDescending(v => v.Product.ProductName),
-                "price_asc" => query.OrderBy(v => v.Price),
-                "price_desc" => query.OrderByDescending(v => v.Price),
-                _ => query.OrderBy(v => v.Price) // default 
+                "name_asc" => query.OrderBy(p => p.ProductName),
+                "name_desc" => query.OrderByDescending(p => p.ProductName),
+                "price_asc" => query.OrderBy(p => p.ProductVariants
+                                    .Where(v => v.IsSelling && !v.IsDeleted)
+                                    .Min(v => v.Price)),
+                "price_desc" => query.OrderByDescending(p => p.ProductVariants
+                                    .Where(v => v.IsSelling && !v.IsDeleted)
+                                    .Max(v => v.Price)),
+                _ => query.OrderBy(p => p.ProductName) // default
             };
         }
     }
+}
+}
 }
