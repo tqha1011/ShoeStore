@@ -11,6 +11,8 @@ namespace ShoeStore.Application.Interface
         void Add(Product product);
         void Update(Product product);
         void Delete(Product product);
-        Task<Product?> GetByIdAsync(Guid id, CancellationToken token);
+        Task<Product?> GetByIdAsync(int id, CancellationToken token);
+
+        Task<IEnumerable<Product>>
     }
 }
