@@ -10,7 +10,15 @@ namespace ShoeStore.Application.Extensions
         public static IQueryable<Product> ApplySearch(this IQueryable<Product> query, string? keyWord)
         {
             if (string.IsNullOrEmpty(keyWord)) return query;
-            return query.Where(p => p.ProductName.Contains(keyWord));
+            int.TryParse(keyWord, out int sizeValue);
+
+            return query.Where(p =>
+                p.ProductName.Contains(keyWord) ||
+
+                p.ProductVariants.Any(v => v.Color != null && v.Color.ColorName.Contains(keyWord)) ||
+
+                (sizeValue > 0 && p.ProductVariants.Any(v => v.Size != null && v.Size.Size == sizeValue))
+            );
         }
 
         public static IQueryable<Product> ApplyBrand(this IQueryable<Product> query, string? brand)
@@ -19,13 +27,13 @@ namespace ShoeStore.Application.Extensions
             return query.Where(p => p.Brand != null && p.Brand.Contains(brand));
         }
 
-        public static IQueryable<Product> ApplySize(this IQueryable<Product> query, int? sizeId)
+        public static IQueryable<Product> ApplySizeId(this IQueryable<Product> query, int? sizeId)
         {
             if (!sizeId.HasValue) return query;
             return query.Where(p => p.ProductVariants.Any(v => v.SizeId == sizeId.Value));
         }
 
-        public static IQueryable<Product> ApplyColor(this IQueryable<Product> query, int? colorId)
+        public static IQueryable<Product> ApplyColorId(this IQueryable<Product> query, int? colorId)
         {
             if (!colorId.HasValue) return query;
             return query.Where(p => p.ProductVariants.Any(v => v.ColorId == colorId.Value));
