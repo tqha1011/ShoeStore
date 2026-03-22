@@ -59,6 +59,7 @@ dependencies {
     // DataStore
     implementation(libs.datastore.preferences)
     implementation(libs.lifecycle.runtime.ktx)
+    implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.activity.compose)
     implementation(platform(libs.compose.bom))
     implementation(libs.ui)
@@ -73,5 +74,4 @@ dependencies {
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
-    implementation("androidx.compose.material:material-icons-extended")
 }
