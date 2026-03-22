@@ -32,9 +32,9 @@ namespace ShoeStore.Infrastructure.Repositories
         {
             _context.Products.Remove(product);
         }
-        public async Task<Product?> GetByIdAsync(int id, CancellationToken token)
+        public async Task<Product?> GetByIdAsync(int id)
         {
-            return await _context.Products.AsNoTracking().FirstOrDefaultAsync(x => x.Id!.Equals(id), token);
+            return await _context.Products.AsNoTracking().FirstOrDefaultAsync(x => x.Id!.Equals(id));
         }
 
         public IQueryable<Product> SeachProduct(ProductSearchRequest request)
