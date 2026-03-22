@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ShoeStore.Application.Interface;
 using ErrorOr;
 using ShoeStore.Application.DTOs.AuthDTOs;
@@ -13,7 +14,8 @@ public class AuthService(
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,
     ITokenService tokenService,
-    IConfiguration configuration) : IAuthService
+    IConfiguration configuration,
+    IHttpClientFactory httpClientFactory) : IAuthService
 {
     public async Task<ErrorOr<Created>> RegisterAsync(RegisterDto registerDto, CancellationToken token)
     {
@@ -22,7 +24,7 @@ public class AuthService(
         var res = await userRepository.IsEmailExistAsync(email, token);
         if (res)
         {
-            return Error.Failure("Email.Exist","Email already exists");
+            return Error.Conflict("Email.Exist","Email already exists");
         }
         
         var passHashed = passwordHash.HashPassword(password);
@@ -50,7 +52,7 @@ public class AuthService(
         }
         
         // Generate JWT token
-        var jwtToken = tokenService.GenerateToken(correctUser.Id, correctUser.Email, correctUser.Role);
+        var jwtToken = tokenService.GenerateToken(correctUser.PublicId, correctUser.Email, correctUser.Role);
         return jwtToken;
     }
 
@@ -79,22 +81,74 @@ public class AuthService(
                     Role = UserRole.Customer,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
-                    Password = string.Empty // No password for Google sign-in users
+                    Password = passwordHash.HashPassword(Guid.NewGuid().ToString()) // Generate a random password for Google sign-in users, since they won't use it to log in
                 };
                 userRepository.Add(newUser);
                 await unitOfWork.SaveChangesAsync(token);
-                var jwtToken = tokenService.GenerateToken(newUser.Id, newUser.Email, newUser.Role);
+                var jwtToken = tokenService.GenerateToken(newUser.PublicId, newUser.Email, newUser.Role);
                 return jwtToken;
             }
             else
             {
-                var jwtToken = tokenService.GenerateToken(correctUser.Id, correctUser.Email, correctUser.Role);
+                var jwtToken = tokenService.GenerateToken(correctUser.PublicId, correctUser.Email, correctUser.Role);
                 return jwtToken;
             }
         }
         catch (Exception e)
         {
             return Error.Failure("Google.Exception",$"Exception occured: {e.Message}");
+        }
+    }
+
+    public async Task<ErrorOr<string>> LoginWithFacebookAsync(string accessToken, CancellationToken token)
+    {
+        try
+        {
+            var url = configuration["FACEBOOKAUTHENTICATION_URL"] 
+                      ?? throw new InvalidOperationException("Facebook.Url is missing");
+            var graphApi = $"{url}me?fields=id,name,email&access_token={accessToken}";
+            
+            var response = await httpClientFactory.CreateClient().GetAsync(graphApi,token);
+            if (!response.IsSuccessStatusCode)
+            {
+                return Error.Unauthorized("Facebook.InvalidToken", "Invalid Facebook access token");
+            }
+            // deserialize into the FacebookLoginDto to get the email
+            var json = await JsonSerializer.DeserializeAsync<FacebookLoginDto>(
+                await response.Content.ReadAsStreamAsync(token),cancellationToken: token);
+            
+            // validate if user don't give permission to access email, if so, return error message to ask for email access permission
+            if(json == null || string.IsNullOrEmpty(json.Email))
+            {
+                return Error.Validation("Facebook.EmailMissing","This app needs permission to access your email address. Please allow email access and try again.");
+            }
+            
+            var correctUser = await userRepository.GetUserByEmailAsync(json.Email, token);
+            if (correctUser == null)
+            {
+                var newUser = new User
+                {
+                    Email = json.Email,
+                    UserName = json.Name,
+                    Role = UserRole.Customer,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    Password = passwordHash.HashPassword(Guid.NewGuid().ToString())
+                };
+                userRepository.Add(newUser);
+                await unitOfWork.SaveChangesAsync(token);
+                var jwtToken = tokenService.GenerateToken(newUser.PublicId, newUser.Email, newUser.Role);
+                return jwtToken;
+            }
+            else
+            {
+                var jwtToken = tokenService.GenerateToken(correctUser.PublicId, correctUser.Email, correctUser.Role);
+                return jwtToken;
+            }
+        }
+        catch (Exception e)
+        {
+            return Error.Failure("Facebook.Exception",$"Exception occured: {e.Message}");
         }
     }
 }

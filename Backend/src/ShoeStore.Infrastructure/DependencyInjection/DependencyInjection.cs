@@ -5,6 +5,7 @@ using ShoeStore.Infrastructure.Data;
 using ShoeStore.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Infrastructure.Authentication;
+using System.Net.Http;
 
 namespace ShoeStore.Infrastructure.DependencyInjection;
 

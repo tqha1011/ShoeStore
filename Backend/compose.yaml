@@ -12,6 +12,7 @@
       - Jwt_Issuer=${JWT_ISSUER}
       - Jwt_Audience=${JWT_AUDIENCE}
       - GoogleAuthentication_ClientId=${GOOGLEAUTHENTICATION_CLIENTID}
+      - FacebookAuthentication_Url=${FACEBOOKAUTHENTICATION_URL}
     
     ports:
       - "8080:8080"
