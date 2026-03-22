@@ -30,10 +30,8 @@ fun ForgotPasswordScreen(
     onNavigateToSignIn: () -> Unit = {},
     viewModel: ForgotPasswordViewModel = viewModel()
 ) {
-    // 1. Collect State
     val state by viewModel.state.collectAsState()
 
-    // 2. Listen for Navigation Events
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collectLatest { event ->
             when (event) {
@@ -48,68 +46,85 @@ fun ForgotPasswordScreen(
     }
 
     Scaffold(
-        topBar = {
-            ResetPasswordTopBar(
-                onBackClick = onNavigateToSignIn
-            )
-        },
+        topBar = { ResetPasswordTopBar(onBackClick = onNavigateToSignIn) },
         containerColor = Color.White
     ) { paddingValues ->
-        ResetPasswordContent(
-            paddingValues = paddingValues,
-            title = "Forgot Password",
-            description = if (!state.isCodeSent)
-                "Please enter your email address. We will send you a verification code to reset your password."
-            else
-                "Verification code has been sent! Please check your email and enter the code below."
-        ) {
-            // Email Input Section
-            EmailInputField(
-                state = state,
-                onEvent = viewModel::onEvent
-            )
-
-            // Verification Code Input Section (Visible only when isCodeSent is true)
-            VerificationCodeInput(
-                state = state,
-                onEvent = viewModel::onEvent
-            )
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // Submit Button
-            Button(
-                onClick = {
-                    if (!state.isLoading) {
-                        if (!state.isCodeSent) {
-                            viewModel.onEvent(ForgotPasswordEvent.SubmitEmail)
-                        } else {
-                            viewModel.onEvent(ForgotPasswordEvent.SubmitCode)
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(55.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Black,
-                    contentColor = Color.White
-                )
-            ) {
-                Text(
-                    text = if (state.isLoading) "Loading..." else if (!state.isCodeSent) "Send Request" else "Confirm Code",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-            TitleBottom()
-        }
+        // Call the encapsulated form component
+        ForgotPasswordForm(
+            state = state,
+            onEvent = viewModel::onEvent,
+            paddingValues = paddingValues
+        )
     }
 }
+@Composable
+fun ForgotPasswordForm(
+    state: ForgotPasswordState,
+    onEvent: (ForgotPasswordEvent) -> Unit,
+    paddingValues: PaddingValues
+) {
+    val descriptionText = if (!state.isCodeSent) {
+        "Please enter your email address. We will send you a verification code to reset your password."
+    } else {
+        "Verification code has been sent! Please check your email and enter the code below."
+    }
 
+    ResetPasswordContent(
+        paddingValues = paddingValues,
+        title = "Forgot Password",
+        description = descriptionText
+    ) {
+        EmailInputField(state = state, onEvent = onEvent)
+
+        VerificationCodeInput(state = state, onEvent = onEvent)
+
+        Spacer(modifier = Modifier.height(40.dp))
+
+        ForgotPasswordSubmitButton(state = state, onEvent = onEvent)
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        TitleBottom()
+    }
+}
+@Composable
+fun ForgotPasswordSubmitButton(
+    state: ForgotPasswordState,
+    onEvent: (ForgotPasswordEvent) -> Unit
+) {
+    Button(
+        onClick = {
+            if (!state.isLoading) {
+                if (!state.isCodeSent) {
+                    onEvent(ForgotPasswordEvent.SubmitEmail)
+                } else {
+                    onEvent(ForgotPasswordEvent.SubmitCode)
+                }
+            }
+        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(55.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Black,
+            contentColor = Color.White
+        )
+    ) {
+        // Use 'when' expression instead of nested if-else for better readability
+        val buttonText = when {
+            state.isLoading -> "Loading..."
+            !state.isCodeSent -> "Send Request"
+            else -> "Confirm Code"
+        }
+
+        Text(
+            text = buttonText,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
 @Composable
 fun VerificationCodeInput(
     state: ForgotPasswordState,
