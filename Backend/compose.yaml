@@ -11,6 +11,7 @@
       - Jwt_Key=${JWT_KEY}
       - Jwt_Issuer=${JWT_ISSUER}
       - Jwt_Audience=${JWT_AUDIENCE}
+      - GoogleAuthentication_ClientId=${GOOGLEAUTHENTICATION_CLIENTID}
     
     ports:
       - "8080:8080"
