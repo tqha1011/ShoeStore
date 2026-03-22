@@ -7,7 +7,8 @@ using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Interface
 {
-    internal interface IProductService
+
+    public interface IProductService
     {
         // Get the product
         Task<IEnumerable<Product>> GetProductAsync(string? keyWord, string? brand, int? color, int? size, int? productId,

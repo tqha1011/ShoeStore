@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using ShoeStore.Application.DTOs;
+using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.Interface;
 using ShoeStore.Domain.Entities;
 
@@ -18,12 +20,37 @@ namespace ShoeStore.Application.Services
             _productRepository = productRepository;
         }
 
-        public async Task<IEnumerable<Product>> GetProductAsync(string? keyWord, string? brand, int? color, int? size, int? productId,
-            decimal? minPrice, decimal? maxPrice, string? sort, int pageIndex, int pageSize)
+        public async Task<IEnumerable<ProductResponseDTO>> GetProductAsync(ProductSearchRequest request)
         {
-            return await _productRepository
-        .SeachProduct(keyWord, brand, color, size, productId, minPrice, maxPrice, sort, pageIndex, pageSize)
-        .ToListAsync();
+            var query =  _productRepository.SeachProduct(request);
+            var itiems =  query.Select(p => new ProductResponseDTO
+            {
+                Id = p.Id,
+                ProductName = p.ProductName,
+                Brand = p.Brand,
+
+                // Lấy giá thấp nhất trong các biến thể của sản phẩm
+                MinPrice = p.ProductVariants.Any() ? p.ProductVariants.Min(v => v.Price) : 0,
+
+                // Lấy danh sách tên màu (distinct để không bị lặp)
+                AvailableColors = p.ProductVariants
+                        .Select(v => v.Color.ColorName)
+                        .Distinct()
+                        .ToList(),
+
+                // Lấy danh sách size số
+                AvailableSizes = p.ProductVariants
+                        .Select(v => v.Size.Size)
+                        .Distinct()
+                        .ToList(),
+
+                // Lấy cái ảnh đầu tiên làm Thumbnail
+                ThumbnailUrl = p.ProductVariants
+                        .Select(v => v.ImageUrl)
+                        .FirstOrDefault()
+            });
+
+            return await itiems.ToListAsync();
         }
     }
 }

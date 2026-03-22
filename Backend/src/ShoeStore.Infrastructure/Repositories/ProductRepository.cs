@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using ShoeStore.Application.DTOs;
+using ShoeStore.Application.DTOs.ProductDTOs;
+using ShoeStore.Application.Extensions;
 using ShoeStore.Application.Interface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Infrastructure.Data;
-using ShoeStore.Application.Extensions;
 
 namespace ShoeStore.Infrastructure.Repositories
 {
@@ -35,11 +37,10 @@ namespace ShoeStore.Infrastructure.Repositories
             return await _context.Products.AsNoTracking().FirstOrDefaultAsync(x => x.Id!.Equals(id), token);
         }
 
-        public IQueryable<Product> SeachProduct(string? keyWord, string? brand, int? color, int? size, int? productId,
-            decimal? minPrice, decimal? maxPric, string? sort, int pageIndex, int pageSize)
+        public IQueryable<Product> SeachProduct(ProductSearchRequest request)
         {
-            return _context.Products.ApplySearch(keyWord).ApplyBrand(brand).ApplyColorId(color).ApplySizeId(size).
-                ApplyProductId(productId).ApplyPriceRange(minPrice, maxPric).ApplySort(sort).ApplyPaging(pageIndex, pageSize);
+            return _context.Products.ApplySearch(request.Keyword).ApplyBrand(request.Brand).ApplyColorId(request.ColorId).ApplySizeId(request.SizeId).
+                ApplyProductId(request.ProductId).ApplyPriceRange(request.MinPrice, request.MaxPrice).ApplySort(request.Sort).ApplyPaging(request.PageIndex, request.PageSize);
         }
     }
 }

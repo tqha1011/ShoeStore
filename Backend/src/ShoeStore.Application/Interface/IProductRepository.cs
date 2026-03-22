@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Domain.Common;
-using ShoeStore.Domain.Entities; 
+using ShoeStore.Domain.Entities;
+using ShoeStore.Application.DTOs;
 
 namespace ShoeStore.Application.Interface
 {
@@ -13,7 +15,6 @@ namespace ShoeStore.Application.Interface
         void Delete(Product product);
         Task<Product?> GetByIdAsync(int id, CancellationToken token);
 
-        IQueryable<Product> SeachProduct(string? keyWord, string? brand, int? color, int? size, int? productId,
-            decimal? minPrice, decimal? maxPric, string? sort, int pageIndex, int pageSize);
+        IQueryable<Product> SeachProduct(ProductSearchRequest request);
     }
 }
