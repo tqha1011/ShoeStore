@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.auth.ui.sign_in
+package com.example.shoestoreapp.features.auth.presentation.sign_in
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -14,29 +14,66 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.shoestoreapp.features.auth.ui.*
-import com.example.shoestoreapp.features.auth.viewmodel.SignInViewModel
+import com.example.shoestoreapp.core.utils.TokenManager
+import com.example.shoestoreapp.features.auth.presentation.components.*
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun LoginScreenContent(
     onNavigateToSignUp: () -> Unit = {},
     onNavigateToForgotPassword: () -> Unit = {},
-    onNavigateToHomeScreen: () -> Unit = {},
-    signInViewModel: SignInViewModel = viewModel()
+    // ĐÃ UPDATE: Thay onNavigateToHomeScreen bằng 2 ngã rẽ Admin và User
+    onNavigateToUserHome: () -> Unit = {},
+    onNavigateToAdminDashboard: () -> Unit = {}
 ) {
+    // 1. Lấy Context để xài DataStore
+    val context = LocalContext.current
+
+    // 2. Tạo Thủ kho TokenManager
+    val tokenManager = remember { TokenManager(context) }
+
+    // 3. Khởi tạo ViewModel bằng Factory thủ công để truyền tokenManager vào
+    val viewModel: SignInViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return SignInViewModel(tokenManager = tokenManager) as T
+            }
+        }
+    )
+
+    // 4. Lấy State từ ViewModel ra để vẽ UI
+    val state by viewModel.state.collectAsState()
+
     var isVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         isVisible = true
     }
 
-    LaunchedEffect(signInViewModel.isSignInSuccessful) {
-        if (signInViewModel.isSignInSuccessful) {
-            onNavigateToHomeScreen()
-            signInViewModel.resetState()
+    // 5. Lắng nghe pháo hiệu chuyển trang rẽ nhánh từ ViewModel
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collectLatest { event ->
+            when (event) {
+                is SignInViewModel.UiEvent.NavigateToUserHome -> {
+                    onNavigateToUserHome()
+                }
+                is SignInViewModel.UiEvent.NavigateToAdminDashboard -> {
+                    onNavigateToAdminDashboard()
+                }
+                is SignInViewModel.UiEvent.NavigateToSignUp -> {
+                    onNavigateToSignUp()
+                }
+                is SignInViewModel.UiEvent.ShowError -> {
+                    // Future implementation: Show Snackbar with error message
+                }
+            }
         }
     }
 
@@ -48,10 +85,8 @@ fun LoginScreenContent(
         )
     ) {
         Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
-            // Use Template: Background
             AuthBackground(canvasColor = Color.Black)
 
-            // Use Template: TopBar
             AuthTopBar(
                 buttonText = "Sign up",
                 onButtonClick = onNavigateToSignUp,
@@ -64,55 +99,57 @@ fun LoginScreenContent(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Spacer(modifier = Modifier.weight(1.8f))
-                
-                // Use Template: Title
+
                 TitleText("Sign In", color = Color.Black)
-                
+
                 Spacer(modifier = Modifier.weight(2f))
-                // Class Style Auth
+
                 val signInInputStyle = AuthFieldStyle(
                     label = "Email",
                     containerColor = Color(0xFF222222),
                     textColor = Color.White
                 )
-                // Class Style Auth
+
                 val signInPasswordStyle = AuthFieldStyle(
                     label = "Password",
                     containerColor = Color(0xFF222222),
                     textColor = Color.White
                 )
-                // Use Template: Email Input
+
+                // Truyền state và onEvent vào các ô Input
                 AuthTextField(
-                    value = signInViewModel.email,
-                    onValueChange = { signInViewModel.onEmailChange(it) },
+                    value = state.email,
+                    onValueChange = { viewModel.onEvent(SignInEvent.EmailChanged(it)) },
                     style = signInInputStyle,
-                    isError = signInViewModel.emailError != null,
-                    errorText = signInViewModel.emailError
+                    isError = state.emailError != null,
+                    errorText = state.emailError
                 )
+
                 Spacer(modifier = Modifier.height(20.dp))
-                
-                // Use Template: Password Input
+
                 AuthPasswordField(
-                    value = signInViewModel.password,
-                    onValueChange = { signInViewModel.onPasswordChange(it) },
+                    value = state.password,
+                    onValueChange = { viewModel.onEvent(SignInEvent.PasswordChanged(it)) },
                     style = signInPasswordStyle,
-                    isError = signInViewModel.passwordError != null,
-                    errorText = signInViewModel.passwordError,
-                    passwordVisible = signInViewModel.passwordVisible,
-                    onToggleVisibility = { signInViewModel.onTogglePasswordVisibility() }
+                    isError = state.passwordError != null,
+                    errorText = state.passwordError,
+                    passwordVisible = state.isPasswordVisible,
+                    onToggleVisibility = { viewModel.onEvent(SignInEvent.TogglePasswordVisibility) }
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Use Template: Action Button
+                // Update UI based on loading state
                 AuthActionButton(
-                    text = "Sign in",
+                    text = if (state.isLoading) "Loading..." else "Sign in",
                     icon = Icons.Default.Key,
-                    onClick = { signInViewModel.onSignInClick() },
+                    onClick = {
+                        if (!state.isLoading) viewModel.onEvent(SignInEvent.Submit)
+                    },
                     containerColor = Color(0xFF1A1A1A),
                     contentColor = Color.White
                 )
-                
+
                 Text(
                     text = "Forgot password?",
                     fontSize = 16.sp,
@@ -125,14 +162,13 @@ fun LoginScreenContent(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Use Template: Social Login Section
                 SocialLoginSection(
                     dividerColor = Color.DarkGray,
                     textColor = Color.DarkGray,
                     buttonContainerColor = Color(0xFF222222),
                     iconTint = Color.White
                 )
-                
+
                 Spacer(modifier = Modifier.height(30.dp))
             }
         }

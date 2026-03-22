@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.auth.ui.reset_password
+package com.example.shoestoreapp.features.auth.presentation.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons

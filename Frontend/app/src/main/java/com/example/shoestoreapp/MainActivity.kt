@@ -9,11 +9,11 @@ import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.shoestoreapp.features.auth.ui.reset_password.ForgotPassword
-import com.example.shoestoreapp.features.auth.ui.sign_in.LoginScreenContent
-import com.example.shoestoreapp.features.auth.ui.sign_up.RegisterScreenContent
-import com.example.shoestoreapp.features.auth.ui.welcome.WelcomeScreen
-import com.example.shoestoreapp.features.auth.ui.reset_password.CreateNewPassword
+import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
+import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenContent
+import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
+import com.example.shoestoreapp.features.auth.presentation.welcome.WelcomeScreen
+import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.CreateNewPasswordScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,7 +62,7 @@ fun AppNavHost() {
 
         // Route 2.1: Forgot Password Screen
         composable ("forgot_password") {
-            ForgotPassword(
+            ForgotPasswordScreen(
                 onNavigateCreateNewPassword = {
                     navController.navigate("create_new_password")
                 },
@@ -74,7 +74,7 @@ fun AppNavHost() {
 
         // Route 2.2: Create New Password Screen
         composable("create_new_password") {
-            CreateNewPassword(
+            CreateNewPasswordScreen(
                 onNavigateToSignIn = {
                     navController.navigate("sign_in")
                 }

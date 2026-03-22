@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.auth.ui.reset_password
+package com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -18,19 +18,32 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.shoestoreapp.features.auth.viewmodel.ForgotPasswordModel
+import com.example.shoestoreapp.features.auth.presentation.components.ResetPasswordContent
+import com.example.shoestoreapp.features.auth.presentation.components.ResetPasswordTopBar
+import com.example.shoestoreapp.features.auth.presentation.components.TitleBottom
+import kotlinx.coroutines.flow.collectLatest
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ForgotPassword(
+fun ForgotPasswordScreen(
     onNavigateCreateNewPassword: () -> Unit = {},
     onNavigateToSignIn: () -> Unit = {},
-    viewModel: ForgotPasswordModel = viewModel()
+    viewModel: ForgotPasswordViewModel = viewModel()
 ) {
-    // Listen for verification success from ViewModel to navigate
-    LaunchedEffect(viewModel.isVerificationSuccessful) {
-        if (viewModel.isVerificationSuccessful) {
-            onNavigateCreateNewPassword()
-            viewModel.resetState()
+    // 1. Collect State
+    val state by viewModel.state.collectAsState()
+
+    // 2. Listen for Navigation Events
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collectLatest { event ->
+            when (event) {
+                is ForgotPasswordViewModel.UiEvent.NavigateToCreateNewPassword -> {
+                    onNavigateCreateNewPassword()
+                }
+                is ForgotPasswordViewModel.UiEvent.ShowError -> {
+                    // Show Snackbar
+                }
+            }
         }
     }
 
@@ -45,28 +58,21 @@ fun ForgotPassword(
         ResetPasswordContent(
             paddingValues = paddingValues,
             title = "Forgot Password",
-            description = if (!viewModel.isCodeSent)
+            description = if (!state.isCodeSent)
                 "Please enter your email address. We will send you a verification code to reset your password."
             else
                 "Verification code has been sent! Please check your email and enter the code below."
         ) {
             // Email Input Section
             EmailInputField(
-                email = viewModel.email,
-                onValueChange = { viewModel.onEmailChange(it) },
-                label = "Email",
-                isCodeSent = viewModel.isCodeSent,
-                isError = viewModel.emailError != null,
-                errorText = viewModel.emailError
+                state = state,
+                onEvent = viewModel::onEvent
             )
 
-            // Verification Code Input Section (Visible when isCodeSent is true)
+            // Verification Code Input Section (Visible only when isCodeSent is true)
             VerificationCodeInput(
-                isCodeSent = viewModel.isCodeSent,
-                verificationCode = viewModel.verificationCode,
-                onValueChange = { viewModel.onVerificationCodeChange(it) },
-                label = "Verification Code",
-                verificationError = viewModel.verificationError
+                state = state,
+                onEvent = viewModel::onEvent
             )
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -74,12 +80,12 @@ fun ForgotPassword(
             // Submit Button
             Button(
                 onClick = {
-                    if (!viewModel.isCodeSent) {
-                        // First click: Send verification code
-                        viewModel.sendRequest()
-                    } else {
-                        // Second click: Verify code
-                        viewModel.verifyCode()
+                    if (!state.isLoading) {
+                        if (!state.isCodeSent) {
+                            viewModel.onEvent(ForgotPasswordEvent.SubmitEmail)
+                        } else {
+                            viewModel.onEvent(ForgotPasswordEvent.SubmitCode)
+                        }
                     }
                 },
                 modifier = Modifier
@@ -92,7 +98,7 @@ fun ForgotPassword(
                 )
             ) {
                 Text(
-                    text = if (!viewModel.isCodeSent) "Send Request" else "Confirm Code",
+                    text = if (state.isLoading) "Loading..." else if (!state.isCodeSent) "Send Request" else "Confirm Code",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -106,26 +112,23 @@ fun ForgotPassword(
 
 @Composable
 fun VerificationCodeInput(
-    isCodeSent: Boolean,
-    verificationCode: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    verificationError: String?
+    state: ForgotPasswordState,
+    onEvent: (ForgotPasswordEvent) -> Unit
 ) {
     AnimatedVisibility(
-        visible = isCodeSent,
+        visible = state.isCodeSent,
         enter = fadeIn() + expandVertically(),
         exit = fadeOut() + shrinkVertically()
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Spacer(modifier = Modifier.height(20.dp))
             OutlinedTextField(
-                value = verificationCode,
-                onValueChange = onValueChange,
-                label = { Text(label, color = Color.Black) },
+                value = state.verificationCode,
+                onValueChange = { onEvent(ForgotPasswordEvent.VerificationCodeChanged(it)) },
+                label = { Text("Verification Code", color = Color.Black) },
                 placeholder = { Text("Enter your verification code", color = Color.LightGray) },
                 modifier = Modifier.fillMaxWidth(),
-                isError = verificationError != null,
+                isError = state.verificationError != null,
                 leadingIcon = {
                     Icon(Icons.Default.Lock, contentDescription = null, tint = Color.Black)
                 },
@@ -139,9 +142,9 @@ fun VerificationCodeInput(
                 )
             )
 
-            if (verificationError != null) {
+            if (state.verificationError != null) {
                 Text(
-                    text = verificationError,
+                    text = state.verificationError,
                     color = Color.Red,
                     fontSize = 12.sp,
                     modifier = Modifier.padding(start = 8.dp, top = 4.dp)
@@ -153,22 +156,18 @@ fun VerificationCodeInput(
 
 @Composable
 fun EmailInputField(
-    email: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    isCodeSent: Boolean,
-    isError: Boolean,
-    errorText: String?
+    state: ForgotPasswordState,
+    onEvent: (ForgotPasswordEvent) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
-            value = email,
-            onValueChange = onValueChange,
-            label = { Text(label, color = Color.Black) },
+            value = state.email,
+            onValueChange = { onEvent(ForgotPasswordEvent.EmailChanged(it)) },
+            label = { Text("Email", color = Color.Black) },
             placeholder = { Text("yourname@gmail.com", color = Color.LightGray) },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !isCodeSent,
-            isError = isError,
+            enabled = !state.isCodeSent,
+            isError = state.emailError != null,
             leadingIcon = {
                 Icon(Icons.Default.Email, contentDescription = null, tint = Color.Black)
             },
@@ -183,9 +182,9 @@ fun EmailInputField(
             )
         )
 
-        if (isError && errorText != null) {
+        if (state.emailError != null) {
             Text(
-                text = errorText,
+                text = state.emailError,
                 color = Color.Red,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(start = 8.dp, top = 4.dp)
