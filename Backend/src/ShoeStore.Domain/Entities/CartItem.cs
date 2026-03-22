@@ -4,6 +4,7 @@ namespace ShoeStore.Domain.Entities;
 
 public class CartItem : Entity<int>
 {
+    public Guid PublicId { get; set; }
     public required int UserId { get; set; }
     public required User User { get; set; }
     public required int Quantity { get; set; }

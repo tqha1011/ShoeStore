@@ -28,5 +28,10 @@ public class InvoiceDetailConfiguration : IEntityTypeConfiguration<InvoiceDetail
             .WithMany()
             .HasForeignKey(c => c.ProductVariantId)
             .OnDelete(DeleteBehavior.Restrict);
+        
+        builder.HasIndex(c => c.PublicId).IsUnique();
+        
+        builder.Property(c => c.PublicId)
+            .HasDefaultValueSql("gen_random_uuid()");
     }
 }

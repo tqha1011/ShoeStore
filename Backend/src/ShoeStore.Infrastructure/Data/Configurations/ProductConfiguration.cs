@@ -14,5 +14,10 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             .IsRequired();
         builder.Property(p => p.Brand)
             .HasMaxLength(255);
+
+        builder.HasIndex(p => p.PublicId).IsUnique();
+        
+        builder.Property(p => p.PublicId)
+            .HasDefaultValueSql("gen_random_uuid()");
     }
 }

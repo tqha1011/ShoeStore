@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using ShoeStore.Application.DTOs.AuthDTOs;
@@ -9,7 +10,7 @@ namespace ShoeStore.Api.Controllers;
 /// Apply rate-limit to protect API
 /// </summary>
 /// <param name="authService"></param>
-[Route("api/[controller]")]
+[Route("api/auth")]
 [ApiController]
 public class AuthController(IAuthService authService) : ControllerBase
 {
@@ -66,6 +67,30 @@ public class AuthController(IAuthService authService) : ControllerBase
             {
                 message = "Sign up failed",
                 description = errors[0].Description
+            }));
+        return response;
+    }
+
+    /// <summary>
+    /// Sign in user with Google account
+    /// API requires Frontend send a idToken taken from Google
+    /// </summary>
+    /// <param name="googleLoginDto"></param>
+    /// <param name="token"></param>
+    /// <returns></returns>
+    [HttpPost("signin-google")]
+    [EnableRateLimiting("limit-per-user")]
+    public async Task<IActionResult> SigninWithGoogle([FromBody] GoogleLoginDto googleLoginDto, CancellationToken token)
+    {
+        var idToken = googleLoginDto.IdToken;
+        var result = await authService.LoginWithGoogleAsync(idToken, token);
+
+        var response = result.Match<IActionResult>(
+            jwtToken => Ok(jwtToken),
+            errors => BadRequest(new
+            {
+                message = "Failed to login with Google",
+                detail = errors[0].Description
             }));
         return response;
     }
