@@ -11,6 +11,7 @@ namespace ShoeStore.Api.JsonSerialize;
 [JsonSerializable(typeof(IDictionary<string, string[]>))]
 [JsonSerializable(typeof(string[]))]
 [JsonSerializable(typeof(HttpValidationProblemDetails))]
+[JsonSerializable(typeof(GoogleLoginDto))]
 public partial class AppJsonSerializeContext : JsonSerializerContext 
 {
     
