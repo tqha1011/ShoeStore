@@ -14,6 +14,6 @@ namespace ShoeStore.Application.Interface
         Task<Product?> GetByIdAsync(int id, CancellationToken token);
 
         IQueryable<Product> SeachProduct(string? keyWord, string? brand, int? color, int? size, int? productId,
-            decimal? minPrice, decimal? maxPric, string? sort);
+            decimal? minPrice, decimal? maxPric, string? sort, int pageIndex, int pageSize);
     }
 }

@@ -36,10 +36,10 @@ namespace ShoeStore.Infrastructure.Repositories
         }
 
         public IQueryable<Product> SeachProduct(string? keyWord, string? brand, int? color, int? size, int? productId,
-            decimal? minPrice, decimal? maxPric, string? sort)
+            decimal? minPrice, decimal? maxPric, string? sort, int pageIndex, int pageSize)
         {
             return _context.Products.ApplySearch(keyWord).ApplyBrand(brand).ApplyColorId(color).ApplySizeId(size).
-                ApplyProductId(productId).ApplyPriceRange(minPrice, maxPric).ApplySort(sort);
+                ApplyProductId(productId).ApplyPriceRange(minPrice, maxPric).ApplySort(sort).ApplyPaging(pageIndex, pageSize);
         }
     }
 }
