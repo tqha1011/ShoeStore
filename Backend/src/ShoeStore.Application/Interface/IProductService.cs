@@ -10,6 +10,7 @@ namespace ShoeStore.Application.Interface
     internal interface IProductService
     {
         // Get the product
-        
+        Task<IEnumerable<Product>> GetProductAsync(string? keyWord, string? brand, int? color, int? size, int? productId,
+            decimal? minPrice, decimal? maxPric, string? sort, int pageIndex, int pageSize);
     }
 }
