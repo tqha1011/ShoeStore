@@ -30,7 +30,7 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddHttpClient();
-
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY");
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -46,7 +46,7 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = builder.Configuration["JWT_ISSUER"],
         ValidAudience = builder.Configuration["JWT_AUDIENCE"],
         IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["JWT_KEY"] ?? throw new InvalidOperationException("JWT_KEY is null"))
+            Encoding.UTF8.GetBytes(jwtKey ?? throw new InvalidOperationException("JWT_KEY is null"))
             ),
         ClockSkew = TimeSpan.Zero // set clock skew to zero to prevent token expiration issues
     };
