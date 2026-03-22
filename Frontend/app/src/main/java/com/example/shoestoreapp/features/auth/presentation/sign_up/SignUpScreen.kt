@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.auth.ui.sign_up
+package com.example.shoestoreapp.features.auth.presentation.sign_up
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -14,24 +14,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.shoestoreapp.features.auth.ui.*
-import com.example.shoestoreapp.features.auth.viewmodel.SignUpViewModel
+import com.example.shoestoreapp.features.auth.presentation.components.*
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun RegisterScreenContent(
     onNavigateToSignIn: () -> Unit = {},
-    signUpViewModel: SignUpViewModel = viewModel()
+    viewModel: SignUpViewModel = viewModel()
 ) {
+    // 1. Collect State from ViewModel
+    val state by viewModel.state.collectAsState()
+
     var isVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         isVisible = true
     }
 
-    LaunchedEffect(signUpViewModel.isSignUpSuccessful) {
-        if (signUpViewModel.isSignUpSuccessful) {
-            onNavigateToSignIn()
-            signUpViewModel.resetState()
+    // 2. Listen for one-time events (Navigation) from ViewModel
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collectLatest { event ->
+            when (event) {
+                is SignUpViewModel.UiEvent.NavigateToSignIn -> {
+                    onNavigateToSignIn()
+                }
+                is SignUpViewModel.UiEvent.ShowError -> {
+                    // Future implementation: Show Snackbar
+                }
+            }
         }
     }
 
@@ -43,10 +53,8 @@ fun RegisterScreenContent(
         )
     ) {
         Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-            // Use Template: Background (White for SignUp)
             AuthBackground(canvasColor = Color.White)
 
-            // Use Template: TopBar
             AuthTopBar(
                 buttonText = "Sign in",
                 onButtonClick = onNavigateToSignIn,
@@ -60,7 +68,6 @@ fun RegisterScreenContent(
             ) {
                 Spacer(modifier = Modifier.weight(4f))
 
-                // Use Template: Title
                 TitleText("Sign Up", color = Color.White)
 
                 Spacer(modifier = Modifier.weight(4f))
@@ -86,55 +93,54 @@ fun RegisterScreenContent(
                     unfocusedBorderColor = Color.LightGray
                 )
 
-                // Use Template: Email Input
+                // 3. Pass state down and trigger events up
                 AuthTextField(
-                    value = signUpViewModel.email,
-                    onValueChange = { signUpViewModel.onEmailChange(it) },
+                    value = state.email,
+                    onValueChange = { viewModel.onEvent(SignUpEvent.EmailChanged(it)) },
                     style = signUpInputStyle,
-                    isError = signUpViewModel.emailError != null,
-                    errorText = signUpViewModel.emailError
+                    isError = state.emailError != null,
+                    errorText = state.emailError
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Use Template: Password Input
                 AuthPasswordField(
-                    value = signUpViewModel.password,
-                    onValueChange = { signUpViewModel.onPasswordChange(it) },
+                    value = state.password,
+                    onValueChange = { viewModel.onEvent(SignUpEvent.PasswordChanged(it)) },
                     style = signUpPasswordStyle,
-                    isError = signUpViewModel.passwordError != null,
-                    errorText = signUpViewModel.passwordError,
-                    passwordVisible = signUpViewModel.passwordVisible,
-                    onToggleVisibility = { signUpViewModel.togglePasswordVisibility() }
+                    isError = state.passwordError != null,
+                    errorText = state.passwordError,
+                    passwordVisible = state.isPasswordVisible,
+                    onToggleVisibility = { viewModel.onEvent(SignUpEvent.TogglePasswordVisibility) }
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Use Template: Confirm Password Input
                 AuthPasswordField(
-                    value = signUpViewModel.confirmPassword,
-                    onValueChange = { signUpViewModel.onConfirmPasswordChange(it) },
+                    value = state.confirmPassword,
+                    onValueChange = { viewModel.onEvent(SignUpEvent.ConfirmPasswordChanged(it)) },
                     style = signUpConfirmPasswordStyle,
-                    isError = signUpViewModel.confirmPasswordError != null,
-                    errorText = signUpViewModel.confirmPasswordError,
-                    passwordVisible = signUpViewModel.confirmPasswordVisible,
-                    onToggleVisibility = { signUpViewModel.toggleConfirmPasswordVisibility() }
+                    isError = state.confirmPasswordError != null,
+                    errorText = state.confirmPasswordError,
+                    passwordVisible = state.isConfirmPasswordVisible,
+                    onToggleVisibility = { viewModel.onEvent(SignUpEvent.ToggleConfirmPasswordVisibility) }
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Use Template: Action Button
+                // Update UI based on loading state
                 AuthActionButton(
-                    text = "Sign up",
+                    text = if (state.isLoading) "Loading..." else "Sign up",
                     icon = Icons.Default.Key,
-                    onClick = { signUpViewModel.onSignUpClick() },
+                    onClick = {
+                        if (!state.isLoading) viewModel.onEvent(SignUpEvent.Submit)
+                    },
                     containerColor = Color.White,
                     contentColor = Color.Black
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Use Template: Social Login Section
                 SocialLoginSection(
                     dividerColor = Color.Black,
                     textColor = Color.Black,

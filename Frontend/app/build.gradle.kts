@@ -46,18 +46,26 @@ dependencies {
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation("com.google.code.gson:gson:2.9.1")
+    // Retrofit & Gson
+    implementation(libs.retrofit.core)
+    implementation(libs.retrofit.gson)
+    implementation(libs.androidx.navigation.compose)
+    // OkHttp Logging
+    implementation(libs.okhttp.logging)
+
+    // Coroutines
+    implementation(libs.coroutines.core)
+    implementation(libs.coroutines.android)
+    // DataStore
+    implementation(libs.datastore.preferences)
     implementation(libs.lifecycle.runtime.ktx)
+    implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.activity.compose)
     implementation(platform(libs.compose.bom))
     implementation(libs.ui)
     implementation(libs.ui.graphics)
     implementation(libs.ui.tooling.preview)
     implementation(libs.material3)
-    implementation("androidx.compose.material:material-icons-extended")
-    implementation("androidx.navigation:navigation-compose:2.8.5")
     implementation(libs.foundation) // Icons Library
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

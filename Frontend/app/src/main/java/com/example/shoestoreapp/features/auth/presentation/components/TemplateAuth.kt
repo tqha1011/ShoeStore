@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.auth.ui
+package com.example.shoestoreapp.features.auth.presentation.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -142,6 +142,7 @@ fun AuthTextField(
                 focusedContainerColor = style.containerColor,
                 unfocusedContainerColor = style.containerColor,
                 focusedBorderColor = Color.Gray,
+                errorTextColor = style.textColor,
                 unfocusedBorderColor = style.unfocusedBorderColor,
                 focusedTextColor = style.textColor,
                 unfocusedTextColor = style.textColor.copy(alpha = 0.7f),
@@ -192,6 +193,7 @@ fun AuthPasswordField(
                 focusedContainerColor = style.containerColor,
                 unfocusedContainerColor = style.containerColor,
                 focusedBorderColor = Color.Gray,
+                errorTextColor = style.textColor,
                 unfocusedBorderColor = style.unfocusedBorderColor,
                 focusedTextColor = style.textColor,
                 unfocusedTextColor = style.textColor.copy(alpha = 0.7f),

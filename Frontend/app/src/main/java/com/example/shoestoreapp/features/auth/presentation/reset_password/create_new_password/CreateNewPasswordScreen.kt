@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.auth.ui.reset_password
+package com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,7 +9,6 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -19,19 +18,31 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.shoestoreapp.features.auth.viewmodel.CreateNewPasswordModel
+import com.example.shoestoreapp.features.auth.presentation.components.ResetPasswordContent
+import com.example.shoestoreapp.features.auth.presentation.components.ResetPasswordTopBar
+import com.example.shoestoreapp.features.auth.presentation.components.TitleBottom
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateNewPassword(
+fun CreateNewPasswordScreen(
     onNavigateToSignIn: () -> Unit = {},
-    viewModel: CreateNewPasswordModel = viewModel()
+    viewModel: CreateNewPasswordViewModel = viewModel()
 ) {
-    // Listen for success state from ViewModel to navigate
-    LaunchedEffect(viewModel.isResetSuccessful) {
-        if (viewModel.isResetSuccessful) {
-            onNavigateToSignIn()
-            viewModel.resetState()
+    // 1. Collect State
+    val state by viewModel.state.collectAsState()
+
+    // 2. Listen for Navigation Events
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collectLatest { event ->
+            when (event) {
+                is CreateNewPasswordViewModel.UiEvent.NavigateToSignIn -> {
+                    onNavigateToSignIn()
+                }
+                is CreateNewPasswordViewModel.UiEvent.ShowError -> {
+                    // Show Snackbar
+                }
+            }
         }
     }
 
@@ -49,18 +60,27 @@ fun CreateNewPassword(
             description = "Your new password must be different from previously used passwords."
         ) {
             // New Password Input
-            NewPasswordInput(viewModel = viewModel)
+            NewPasswordInput(
+                state = state,
+                onEvent = viewModel::onEvent
+            )
 
             // Confirm Password Input
-            ConfirmPasswordInput(viewModel = viewModel)
+            ConfirmPasswordInput(
+                state = state,
+                onEvent = viewModel::onEvent
+            )
 
             // Error Display
-            ErrorDisplay(viewModel = viewModel)
+            ErrorDisplay(errorText = state.passwordError)
 
             Spacer(modifier = Modifier.height(40.dp))
 
             // Reset Password Button
-            ResetPasswordButton(viewModel = viewModel)
+            ResetPasswordButton(
+                isLoading = state.isLoading,
+                onEvent = viewModel::onEvent
+            )
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -70,15 +90,14 @@ fun CreateNewPassword(
 }
 
 @Composable
-fun ErrorDisplay(viewModel: CreateNewPasswordModel) {
-    if (viewModel.passwordError != null) {
-        Column() {
+fun ErrorDisplay(errorText: String?) {
+    if (errorText != null) {
+        Column {
             Text(
-                text = viewModel.passwordError ?: "",
+                text = errorText,
                 color = Color.Red,
                 fontSize = 12.sp,
                 modifier = Modifier
-                    .align(Alignment.Start)
                     .padding(start = 8.dp, top = 8.dp)
             )
         }
@@ -86,11 +105,12 @@ fun ErrorDisplay(viewModel: CreateNewPasswordModel) {
 }
 
 @Composable
-fun ResetPasswordButton(viewModel: CreateNewPasswordModel) {
+fun ResetPasswordButton(
+    isLoading: Boolean,
+    onEvent: (CreateNewPasswordEvent) -> Unit
+) {
     Button(
-        onClick = {
-            viewModel.validateAndSubmit()
-        },
+        onClick = { if (!isLoading) onEvent(CreateNewPasswordEvent.Submit) },
         modifier = Modifier
             .fillMaxWidth()
             .height(55.dp),
@@ -101,7 +121,7 @@ fun ResetPasswordButton(viewModel: CreateNewPasswordModel) {
         )
     ) {
         Text(
-            text = "Reset Password",
+            text = if (isLoading) "Loading..." else "Reset Password",
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold
         )
@@ -109,21 +129,24 @@ fun ResetPasswordButton(viewModel: CreateNewPasswordModel) {
 }
 
 @Composable
-fun ConfirmPasswordInput(viewModel: CreateNewPasswordModel) {
+fun ConfirmPasswordInput(
+    state: CreateNewPasswordState,
+    onEvent: (CreateNewPasswordEvent) -> Unit
+) {
     OutlinedTextField(
-        value = viewModel.confirmPassword,
-        onValueChange = { viewModel.onConfirmPasswordChange(it) },
+        value = state.confirmPassword,
+        onValueChange = { onEvent(CreateNewPasswordEvent.ConfirmPasswordChanged(it)) },
         label = { Text("Confirm Password", color = Color.Gray) },
         modifier = Modifier.fillMaxWidth(),
-        visualTransformation = if (viewModel.confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+        visualTransformation = if (state.isConfirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         leadingIcon = {
             Icon(Icons.Default.Key, contentDescription = null, tint = Color.Black)
         },
         trailingIcon = {
-            IconButton(onClick = { viewModel.toggleConfirmPasswordVisibility() }) {
+            IconButton(onClick = { onEvent(CreateNewPasswordEvent.ToggleConfirmPasswordVisibility) }) {
                 Icon(
-                    imageVector = if (viewModel.confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                    imageVector = if (state.isConfirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                     contentDescription = null,
                     tint = Color.Black
                 )
@@ -141,21 +164,24 @@ fun ConfirmPasswordInput(viewModel: CreateNewPasswordModel) {
 }
 
 @Composable
-fun NewPasswordInput(viewModel: CreateNewPasswordModel) {
+fun NewPasswordInput(
+    state: CreateNewPasswordState,
+    onEvent: (CreateNewPasswordEvent) -> Unit
+) {
     OutlinedTextField(
-        value = viewModel.password,
-        onValueChange = { viewModel.onPasswordChange(it) },
+        value = state.password,
+        onValueChange = { onEvent(CreateNewPasswordEvent.PasswordChanged(it)) },
         label = { Text("New Password", color = Color.Gray) },
         modifier = Modifier.fillMaxWidth(),
-        visualTransformation = if (viewModel.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+        visualTransformation = if (state.isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         leadingIcon = {
             Icon(Icons.Default.Key, contentDescription = null, tint = Color.Black)
         },
         trailingIcon = {
-            IconButton(onClick = { viewModel.togglePasswordVisibility() }) {
+            IconButton(onClick = { onEvent(CreateNewPasswordEvent.TogglePasswordVisibility) }) {
                 Icon(
-                    imageVector = if (viewModel.passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                    imageVector = if (state.isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                     contentDescription = null,
                     tint = Color.Black
                 )
