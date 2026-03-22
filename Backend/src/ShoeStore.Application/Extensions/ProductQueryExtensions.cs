@@ -74,5 +74,11 @@ namespace ShoeStore.Application.Extensions
                 _ => query.OrderBy(p => p.ProductName) // default
             };
         }
+
+        public static IQueryable<Product> ApplyPaging(this IQueryable<Product> query, int pageIndex, int pageSize)
+        {
+            return query.Skip((pageIndex - 1) *  pageSize).Take(pageSize);
+        }
+
     }
 }
