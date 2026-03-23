@@ -251,7 +251,8 @@ fun SocialLoginSection(
     textColor: Color,
     buttonContainerColor: Color,
     iconTint: Color,
-    onGoogleClick: () -> Unit
+    onGoogleClick: () -> Unit,
+    onFacebookClick: () -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -270,7 +271,7 @@ fun SocialLoginSection(
 
             Spacer(modifier = Modifier.width(20.dp))
 
-            SocialButton(R.drawable.ic_facebook, buttonContainerColor, iconTint, onClick = {})
+            SocialButton(R.drawable.ic_facebook, buttonContainerColor, iconTint, onClick = onFacebookClick)
         }
     }
 }

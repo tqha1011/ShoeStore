@@ -9,6 +9,7 @@ import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.auth.data.remote.RegisterRequest
 import com.example.shoestoreapp.features.auth.data.repository.AuthRepositoryImpl
 import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
+import com.example.shoestoreapp.features.auth.presentation.sign_in.SignInViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -170,6 +171,35 @@ class SignUpViewModel(
             }.onFailure { error ->
                 _uiEvent.send(UiEvent.ShowError(error.message ?: "Google Login failed"))
             }
+        }
+    }
+    fun loginWithFacebook(accessToken: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+
+            // Gọi hàm login bên Repository
+            val result = repository.loginWithFacebook(accessToken)
+
+            _state.update { it.copy(isLoading = false) }
+
+            result.fold(
+                onSuccess = { response ->
+                    val token = response.token
+                    val role = JwtUtils.getRoleFromToken(token)
+                    // Save token
+                    tokenManager.saveAuthInfo(token = token, role = role)
+                    _uiEvent.send(SignUpViewModel.UiEvent.NavigateToUserHome) // Navigate to HomeUser
+
+                },
+                onFailure = { error ->
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            passwordError = error.message ?: "Facebook Login failed"
+                        )
+                    }
+                }
+            )
         }
     }
 

@@ -138,11 +138,7 @@ class SignInViewModel(
                     val role = JwtUtils.getRoleFromToken(token)
                     tokenManager.saveAuthInfo(token = token, role = role)
 
-                    if (role.uppercase() == "ADMIN") {
-                        _uiEvent.send(UiEvent.NavigateToAdminHome)
-                    } else {
-                        _uiEvent.send(UiEvent.NavigateToUserHome)
-                    }
+                    _uiEvent.send(UiEvent.NavigateToUserHome) // Navigate to HomeUser
                 },
                 onFailure = { error ->
                     _state.update { it.copy(
@@ -153,6 +149,36 @@ class SignInViewModel(
             )
         }
     }
+    fun loginWithFacebook(accessToken: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+
+            // Gọi hàm login bên Repository
+            val result = repository.loginWithFacebook(accessToken)
+
+            _state.update { it.copy(isLoading = false) }
+
+            result.fold(
+                onSuccess = { response ->
+                    val token = response.token
+                    val role = JwtUtils.getRoleFromToken(token)
+                    // Save token
+                    tokenManager.saveAuthInfo(token = token, role = role)
+                    _uiEvent.send(UiEvent.NavigateToUserHome) // Navigate to HomeUser
+
+                },
+                onFailure = { error ->
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            passwordError = error.message ?: "Facebook Login failed"
+                        )
+                    }
+                }
+            )
+        }
+    }
+
 
     sealed interface UiEvent {
         object NavigateToUserHome : UiEvent

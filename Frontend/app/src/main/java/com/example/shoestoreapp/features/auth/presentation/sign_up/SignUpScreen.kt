@@ -43,7 +43,14 @@ fun RegisterScreenContent(
     val googleAuthClient = remember {
         com.example.shoestoreapp.core.utils.GoogleAuthClient(context)
     }
-
+    val triggerFacebookLogin = com.example.shoestoreapp.core.utils.rememberFacebookLogin(
+        onAuthComplete = { fbAccessToken ->
+            if (fbAccessToken != null) {
+                // If token is available, call ViewModel to handle it
+                viewModel.loginWithFacebook(fbAccessToken)
+            }
+        }
+    )
     // Collect state from ViewModel
     val state by viewModel.state.collectAsState()
     var isVisible by remember { mutableStateOf(false) }
@@ -82,6 +89,9 @@ fun RegisterScreenContent(
                 coroutineScope.launch {
                     googleAuthClient.signIn()?.let { viewModel.loginWithGoogle(it) }
                 }
+            },
+            onFacebookSignUpClick = {
+                triggerFacebookLogin()
             }
         )
     }
@@ -92,7 +102,8 @@ private fun SignUpUI(
     state: SignUpState, // Ensure this matches your actual state class name
     onEvent: (SignUpEvent) -> Unit,
     onNavigateToSignIn: () -> Unit,
-    onGoogleSignUpClick: () -> Unit
+    onGoogleSignUpClick: () -> Unit,
+    onFacebookSignUpClick: () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
         AuthBackground(canvasColor = Color.White)
@@ -176,7 +187,8 @@ private fun SignUpUI(
                 textColor = Color.Black,
                 buttonContainerColor = Color(0xFFF5F5F5),
                 iconTint = Color.Black,
-                onGoogleClick = onGoogleSignUpClick
+                onGoogleClick = onGoogleSignUpClick,
+                onFacebookClick = onFacebookSignUpClick,
             )
 
             Spacer(modifier = Modifier.height(30.dp))

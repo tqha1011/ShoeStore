@@ -17,7 +17,8 @@ if (localPropertiesFile.exists()) {
 // Fetch sensitive data from local.properties
 val googleClientId = properties.getProperty("GOOGLE_CLIENT_ID") ?: ""
 val baseUrl = properties.getProperty("BASE_URL") ?: ""
-
+val fbAppId = properties.getProperty("FACEBOOK_APP_ID") ?: ""
+val fbClientToken = properties.getProperty("FACEBOOK_CLIENT_TOKEN") ?: ""
 android {
     namespace = "com.example.shoestoreapp"
     compileSdk = 36
@@ -34,6 +35,11 @@ android {
         // Inject sensitive constants into BuildConfig for app-wide access
         buildConfigField("String", "GOOGLE_CLIENT_ID", "\"$googleClientId\"")
         buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
+
+        // Facebook
+        resValue("string", "facebook_app_id", fbAppId)
+        resValue("string", "facebook_client_token", fbClientToken)
+        resValue("string", "fb_login_protocol_scheme", "fb${fbAppId}")
     }
 
     buildTypes {
@@ -87,6 +93,7 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services)
     implementation(libs.googleid)
+    implementation(libs.facebook.login)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
