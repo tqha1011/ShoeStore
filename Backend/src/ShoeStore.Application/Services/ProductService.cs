@@ -6,7 +6,7 @@ using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.Interface;
 using ShoeStore.Domain.Entities;
-using ShoeStore.Application.DTOs.ProducVariantDTOs;
+using ShoeStore.Application.DTOs.ProductVariantDTOs;
 using ErrorOr;
 
 namespace ShoeStore.Application.Services
