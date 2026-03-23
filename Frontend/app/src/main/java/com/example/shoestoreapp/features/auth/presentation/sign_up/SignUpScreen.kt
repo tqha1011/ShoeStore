@@ -58,7 +58,6 @@ fun RegisterScreenContent(
     )
 
     AuthScreenTemplate(
-        title = "Sign Up",
         topBarButtonText = "Sign in",
         onTopBarButtonClick = onNavigateToSignIn,
         theme = signUpTheme

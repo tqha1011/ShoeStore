@@ -29,9 +29,9 @@ class SignUpViewModel(
         _state.update { it.copy(isLoading = isLoading) }
     }
 
-    override suspend fun handleSocialSuccess(role: String) {
+    override fun handleSocialSuccess(role: String) {
         // Social login users always go to User Home
-        _uiEvent.send(AuthUiEvent.NavigateToUserHome)
+        _uiEvent.trySend(AuthUiEvent.NavigateToUserHome)
     }
 
     override fun handleSocialError(message: String) {

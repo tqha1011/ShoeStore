@@ -30,8 +30,8 @@ class SignInViewModel(
         _state.update { it.copy(isLoading = isLoading) }
     }
 
-    override suspend fun handleSocialSuccess(role: String) {
-        _uiEvent.send(AuthUiEvent.NavigateToUserHome)
+    override fun handleSocialSuccess(role: String) {
+        _uiEvent.trySend(AuthUiEvent.NavigateToUserHome)
     }
 
     override fun handleSocialError(message: String) {

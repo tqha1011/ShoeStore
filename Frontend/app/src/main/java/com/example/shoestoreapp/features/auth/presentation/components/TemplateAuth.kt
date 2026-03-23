@@ -1,5 +1,6 @@
 package com.example.shoestoreapp.features.auth.presentation.components
 
+import androidx.appcompat.widget.DialogTitle
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -52,7 +53,6 @@ data class AuthThemeConfig(
 
 @Composable
 fun AuthScreenTemplate(
-    title: String,
     topBarButtonText: String,
     onTopBarButtonClick: () -> Unit,
     theme: AuthThemeConfig, // Now counts as 1 parameter instead of 4

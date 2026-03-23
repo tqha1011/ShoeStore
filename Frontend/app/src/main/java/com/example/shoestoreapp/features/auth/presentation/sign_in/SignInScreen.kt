@@ -65,10 +65,9 @@ fun LoginScreenContent(
     )
 
     AuthScreenTemplate(
-        title = "Sign In",
         topBarButtonText = "Sign up",
         onTopBarButtonClick = onNavigateToSignUp,
-        theme = signInTheme
+        theme = signInTheme,
     ) {
         Spacer(modifier = Modifier.weight(1.8f))
         TitleText("Sign In", color = Color.Black)
