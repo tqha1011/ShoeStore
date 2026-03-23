@@ -8,6 +8,7 @@ import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.auth.data.remote.LoginRequest
 import com.example.shoestoreapp.features.auth.data.repository.AuthRepositoryImpl
 import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
+import com.example.shoestoreapp.features.auth.presentation.common.AuthUiEvent
 import com.example.shoestoreapp.features.auth.presentation.common.BaseAuthViewModel // Nhớ check lại đường dẫn package chỗ này nhé
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,29 +21,21 @@ import kotlinx.coroutines.launch
 class SignInViewModel(
     repository: AuthRepository = AuthRepositoryImpl(RetrofitInstance.authApi),
     tokenManager: TokenManager
-) : BaseAuthViewModel(repository, tokenManager) {
+) : BaseAuthViewModel<SignInState>(repository, tokenManager, SignInState()) {
 
-    // 1. UI State Management
-    private val _state = MutableStateFlow(SignInState())
-    val state: StateFlow<SignInState> = _state.asStateFlow()
-
-    // 2. One-time Event Management
-    private val _uiEvent = Channel<UiEvent>()
+    private val _uiEvent = Channel<AuthUiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
-    // --- Implement BaseAuthViewModel abstract methods ---
-
-    override fun updateLoadingState(isLoading: Boolean) {
+    override fun updateLoading(isLoading: Boolean) {
         _state.update { it.copy(isLoading = isLoading) }
     }
 
-    override suspend fun onSocialLoginSuccess(role: String) {
-        // Navigate to UserHome directly for social logins
-        _uiEvent.send(UiEvent.NavigateToUserHome)
+    override suspend fun handleSocialSuccess(role: String) {
+        _uiEvent.send(AuthUiEvent.NavigateToUserHome)
     }
 
-    override suspend fun onSocialLoginFailure(errorMessage: String) {
-        _state.update { it.copy(passwordError = errorMessage) }
+    override fun handleSocialError(message: String) {
+        _state.update { it.copy(passwordError = message) }
     }
 
     // --- Standard Login Logic ---
@@ -52,12 +45,15 @@ class SignInViewModel(
             is SignInEvent.EmailChanged -> {
                 _state.update { it.copy(email = event.email, emailError = null) }
             }
+
             is SignInEvent.PasswordChanged -> {
                 _state.update { it.copy(password = event.password, passwordError = null) }
             }
+
             SignInEvent.TogglePasswordVisibility -> {
                 _state.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
             }
+
             SignInEvent.Submit -> {
                 validateAndSubmit()
             }
@@ -70,7 +66,9 @@ class SignInViewModel(
         var emailErr: String? = null
         var passErr: String? = null
 
-        if (currentState.email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(currentState.email).matches()) {
+        if (currentState.email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(currentState.email)
+                .matches()
+        ) {
             emailErr = "Invalid email format"
             hasError = true
         }
@@ -79,12 +77,14 @@ class SignInViewModel(
             hasError = true
         }
         if (hasError) {
-            _state.update { it.copy(
-                emailError = emailErr,
-                passwordError = passErr,
-                email = if (emailErr != null) "" else it.email,
-                password = if (passErr != null) "" else it.password
-            )}
+            _state.update {
+                it.copy(
+                    emailError = emailErr,
+                    passwordError = passErr,
+                    email = if (emailErr != null) "" else it.email,
+                    password = if (passErr != null) "" else it.password
+                )
+            }
             return
         }
 
@@ -122,28 +122,23 @@ class SignInViewModel(
 
                     // Navigate based on Role for standard login
                     if (role.uppercase() == "ADMIN") {
-                        _uiEvent.send(UiEvent.NavigateToAdminHome)
+                        _uiEvent.send(AuthUiEvent.NavigateToAdminHome)
                     } else {
-                        _uiEvent.send(UiEvent.NavigateToUserHome)
+                        _uiEvent.send(AuthUiEvent.NavigateToUserHome)
                     }
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(
-                        isLoading = false,
-                        emailError = error.message,
-                        passwordError = error.message,
-                        email = "",
-                        password = "",
-                    )}
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            emailError = error.message,
+                            passwordError = error.message,
+                            email = "",
+                            password = "",
+                        )
+                    }
                 }
             )
         }
-    }
-
-    sealed interface UiEvent {
-        object NavigateToUserHome : UiEvent
-        object NavigateToAdminHome : UiEvent
-        object NavigateToSignUp : UiEvent
-        data class ShowError(val message: String) : UiEvent
     }
 }

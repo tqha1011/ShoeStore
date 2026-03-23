@@ -24,6 +24,7 @@ import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.auth.presentation.components.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import com.example.shoestoreapp.features.auth.presentation.common.AuthUiEvent
 
 @Composable
 fun LoginScreenContent(
@@ -73,18 +74,19 @@ fun LoginScreenContent(
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collectLatest { event ->
             when (event) {
-                is SignInViewModel.UiEvent.NavigateToUserHome -> {
+                is AuthUiEvent.NavigateToUserHome -> {
                     onNavigateToUserHome()
                 }
-                is SignInViewModel.UiEvent.NavigateToAdminHome -> {
+                is AuthUiEvent.NavigateToAdminHome -> {
                     onNavigateToAdminHome()
                 }
-                is SignInViewModel.UiEvent.NavigateToSignUp -> {
+                is AuthUiEvent.NavigateToSignUp -> {
                     onNavigateToSignUp()
                 }
-                is SignInViewModel.UiEvent.ShowError -> {
+                is AuthUiEvent.ShowError -> {
                     // Future implementation: Show Snackbar with error message
                 }
+                else -> Unit
             }
         }
     }

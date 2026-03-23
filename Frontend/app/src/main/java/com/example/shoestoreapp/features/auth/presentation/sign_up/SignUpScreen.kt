@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.shoestoreapp.core.utils.TokenManager
+import com.example.shoestoreapp.features.auth.presentation.common.AuthUiEvent
 import com.example.shoestoreapp.features.auth.presentation.components.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -64,11 +65,12 @@ fun RegisterScreenContent(
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collectLatest { event ->
             when (event) {
-                is SignUpViewModel.UiEvent.NavigateToSignIn -> onNavigateToSignIn()
-                is SignUpViewModel.UiEvent.NavigateToUserHome -> onNavigateToUserHome()
-                is SignUpViewModel.UiEvent.ShowError -> {
+                is AuthUiEvent.NavigateToSignIn -> onNavigateToSignIn()
+                is AuthUiEvent.NavigateToUserHome -> onNavigateToUserHome()
+                is AuthUiEvent.ShowError -> {
                     // Future implementation: Show Snackbar
                 }
+                else -> Unit
             }
         }
     }

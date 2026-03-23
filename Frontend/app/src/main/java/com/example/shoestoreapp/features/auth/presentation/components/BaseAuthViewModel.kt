@@ -1,59 +1,58 @@
-package com.example.shoestoreapp.features.auth.presentation.common // Change package if needed
+package com.example.shoestoreapp.features.auth.presentation.common
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.core.utils.JwtUtils
 import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-abstract class BaseAuthViewModel(
+abstract class BaseAuthViewModel<S>(
     protected val repository: AuthRepository,
-    protected val tokenManager: TokenManager
+    protected val tokenManager: TokenManager,
+    initialState: S
 ) : ViewModel() {
 
-    // Force child classes to define their own UI update logic
-    protected abstract fun updateLoadingState(isLoading: Boolean)
-    protected abstract suspend fun onSocialLoginSuccess(role: String)
-    protected abstract suspend fun onSocialLoginFailure(errorMessage: String)
+    // Move state declaration here to avoid duplication in child classes
+    protected val _state = MutableStateFlow(initialState)
+    val state = _state.asStateFlow()
+
+    protected abstract fun updateLoading(isLoading: Boolean)
+    protected abstract suspend fun handleSocialSuccess(role: String)
+    protected abstract fun handleSocialError(message: String)
 
     fun loginWithGoogle(idToken: String) {
         viewModelScope.launch {
-            updateLoadingState(true)
-            val result = repository.loginWithGoogle(idToken)
-            updateLoadingState(false)
-
-            result.fold(
+            updateLoading(true)
+            repository.loginWithGoogle(idToken).fold(
                 onSuccess = { response ->
-                    val token = response.token
-                    val role = JwtUtils.getRoleFromToken(token)
-                    tokenManager.saveAuthInfo(token = token, role = role)
-                    onSocialLoginSuccess(role)
+                    val role = JwtUtils.getRoleFromToken(response.token)
+                    tokenManager.saveAuthInfo(response.token, role)
+                    handleSocialSuccess(role)
                 },
-                onFailure = { error ->
-                    onSocialLoginFailure(error.message ?: "Google Login failed")
-                }
+                onFailure = { handleSocialError(it.message ?: "Google Login failed") }
             )
+            updateLoading(false)
         }
     }
 
     fun loginWithFacebook(accessToken: String) {
         viewModelScope.launch {
-            updateLoadingState(true)
-            val result = repository.loginWithFacebook(accessToken)
-            updateLoadingState(false)
-
-            result.fold(
+            updateLoading(true)
+            repository.loginWithFacebook(accessToken).fold(
                 onSuccess = { response ->
-                    val token = response.token
-                    val role = JwtUtils.getRoleFromToken(token)
-                    tokenManager.saveAuthInfo(token = token, role = role)
-                    onSocialLoginSuccess(role)
+                    val role = JwtUtils.getRoleFromToken(response.token)
+                    tokenManager.saveAuthInfo(response.token, role)
+                    handleSocialSuccess(role)
                 },
-                onFailure = { error ->
-                    onSocialLoginFailure(error.message ?: "Facebook Login failed")
-                }
+                onFailure = { handleSocialError(it.message ?: "Facebook Login failed") }
             )
+            updateLoading(false)
         }
     }
 }
