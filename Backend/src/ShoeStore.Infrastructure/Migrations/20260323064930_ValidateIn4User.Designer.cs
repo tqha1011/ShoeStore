@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ShoeStore.Infrastructure.Data;
@@ -11,9 +12,11 @@ using ShoeStore.Infrastructure.Data;
 namespace ShoeStore.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260323064930_ValidateIn4User")]
+    partial class ValidateIn4User
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -462,16 +465,12 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnName("expired");
 
                     b.Property<bool>("IsRevoked")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasDefaultValue(false)
                         .HasColumnName("is_revoked");
 
                     b.Property<Guid>("PublicId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("public_id")
-                        .HasDefaultValueSql("gen_random_uuid()");
+                        .HasColumnName("public_id");
 
                     b.Property<string>("Token")
                         .IsRequired()
@@ -484,10 +483,6 @@ namespace ShoeStore.Infrastructure.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_user_refresh_tokens");
-
-                    b.HasIndex("PublicId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_user_refresh_tokens_public_id");
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_user_refresh_tokens_user_id");
@@ -513,10 +508,8 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnName("is_used");
 
                     b.Property<Guid>("PublicId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("public_id")
-                        .HasDefaultValueSql("gen_random_uuid()");
+                        .HasColumnName("public_id");
 
                     b.Property<string>("Token")
                         .IsRequired()
@@ -529,10 +522,6 @@ namespace ShoeStore.Infrastructure.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_user_restore_passwords");
-
-                    b.HasIndex("PublicId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_user_restore_passwords_public_id");
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_user_restore_passwords_user_id");

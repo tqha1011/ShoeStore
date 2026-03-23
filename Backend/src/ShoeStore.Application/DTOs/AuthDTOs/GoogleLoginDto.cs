@@ -1,6 +1,3 @@
 namespace ShoeStore.Application.DTOs.AuthDTOs;
 
-public sealed record GoogleLoginDto(string IdToken)
-{
-    
-}
+public sealed record GoogleLoginDto(string IdToken);
