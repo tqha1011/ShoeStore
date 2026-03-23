@@ -1,5 +1,9 @@
 package com.example.shoestoreapp.features.auth.presentation.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -14,7 +18,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.sharp.Dashboard
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -37,6 +41,53 @@ data class AuthFieldStyle(
     val textColor: Color,
     val unfocusedBorderColor: Color = Color.Transparent
 )
+
+// Group colors to satisfy Sonar's parameter count limit (max 7)
+data class AuthThemeConfig(
+    val backgroundColor: Color,
+    val canvasColor: Color,
+    val topBarContentColor: Color,
+    val topBarButtonContainerColor: Color
+)
+
+@Composable
+fun AuthScreenTemplate(
+    title: String,
+    topBarButtonText: String,
+    onTopBarButtonClick: () -> Unit,
+    theme: AuthThemeConfig, // Now counts as 1 parameter instead of 4
+    content: @Composable ColumnScope.() -> Unit
+) {
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { isVisible = true }
+
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn(animationSpec = tween(800)) + slideInVertically(
+            initialOffsetY = { 100 },
+            animationSpec = tween(800)
+        )
+    ) {
+        Box(modifier = Modifier.fillMaxSize().background(theme.backgroundColor)) {
+            AuthBackground(canvasColor = theme.canvasColor)
+
+            AuthTopBar(
+                buttonText = topBarButtonText,
+                onButtonClick = onTopBarButtonClick,
+                contentColor = theme.topBarContentColor,
+                buttonContainerColor = theme.topBarButtonContainerColor
+            )
+
+            Column(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 35.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                content()
+            }
+        }
+    }
+}
+
 // Function Background for Template
 @Composable
 fun AuthBackground(canvasColor: Color) {
@@ -204,8 +255,6 @@ fun AuthPasswordField(
     }
 }
 
-
-
 // Function Button for Template
 @Composable
 fun AuthActionButton(
@@ -268,9 +317,7 @@ fun SocialLoginSection(
         Spacer(modifier = Modifier.height(30.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
             SocialButton(R.drawable.ic_google, buttonContainerColor, iconTint, onClick = onGoogleClick)
-
             Spacer(modifier = Modifier.width(20.dp))
-
             SocialButton(R.drawable.ic_facebook, buttonContainerColor, iconTint, onClick = onFacebookClick)
         }
     }
