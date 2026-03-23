@@ -7,13 +7,16 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// Load properties from local.properties file
 val properties = Properties()
 val localPropertiesFile = project.rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     properties.load(localPropertiesFile.inputStream())
 }
 
+// Fetch sensitive data from local.properties
 val googleClientId = properties.getProperty("GOOGLE_CLIENT_ID") ?: ""
+val baseUrl = properties.getProperty("BASE_URL") ?: ""
 
 android {
     namespace = "com.example.shoestoreapp"
@@ -28,8 +31,9 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-
+        // Inject sensitive constants into BuildConfig for app-wide access
         buildConfigField("String", "GOOGLE_CLIENT_ID", "\"$googleClientId\"")
+        buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
     }
 
     buildTypes {
@@ -50,7 +54,7 @@ android {
     }
     buildFeatures {
         compose = true
-        buildConfig = true
+        buildConfig = true // Ensure BuildConfig is enabled
     }
 }
 

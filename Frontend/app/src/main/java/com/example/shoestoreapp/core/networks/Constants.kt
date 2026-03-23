@@ -1,5 +1,5 @@
 package com.example.shoestoreapp.core.utils
-
+import com.example.shoestoreapp.BuildConfig
 object Constants {
-    const val BASE_URL = "https://deploy-service-h6acgba9dkc0gvcw.eastasia-01.azurewebsites.net/"
+    const val BASE_URL = BuildConfig.BASE_URL
 }
