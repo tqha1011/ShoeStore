@@ -11,7 +11,7 @@ using ShoeStore.Infrastructure.Data;
 
 namespace ShoeStore.Infrastructure.Repositories
 {
-    public class ProductRepository : IProductRepository, IGenericRepository<Product, int>
+    public class ProductRepository : IProductRepository
     {
         private readonly AppDbContext _context;
 

@@ -10,14 +10,9 @@ namespace ShoeStore.Application.Extensions
         public static IQueryable<Product> ApplySearch(this IQueryable<Product> query, string? keyWord)
         {
             if (string.IsNullOrEmpty(keyWord)) return query;
-            int.TryParse(keyWord, out int sizeValue);
 
             return query.Where(p =>
-                p.ProductName.Contains(keyWord) ||
-
-                p.ProductVariants.Any(v => v.Color != null && v.Color.ColorName.Contains(keyWord)) ||
-
-                (sizeValue > 0 && p.ProductVariants.Any(v => v.Size != null && v.Size.Size == sizeValue))
+                p.ProductName.Contains(keyWord)
             );
         }
 
@@ -50,11 +45,12 @@ namespace ShoeStore.Application.Extensions
             if (min.HasValue && max.HasValue && min > max)
                 throw new ArgumentException("MinPrice không được lớn hơn MaxPrice");
 
-            if (min.HasValue)
-                query = query.Where(p => p.ProductVariants.Any(v => v.Price >= min.Value && v.IsSelling && !v.IsDeleted));
-
-            if (max.HasValue)
-                query = query.Where(p => p.ProductVariants.Any(v => v.Price <= max.Value && v.IsSelling && !v.IsDeleted));
+            if(min.HasValue && max.HasValue)
+            {
+                query = query.Where(p => p.ProductVariants.Any( v => 
+                    v.IsSelling && v.IsDeleted && (!min.HasValue || v.Price >= min.Value) &&
+                    (!max.HasValue || v.Price <= max.Value)));
+            }
 
             return query;
         }

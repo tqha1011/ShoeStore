@@ -10,14 +10,10 @@ namespace ShoeStore.Api.Controllers
     public class ProductsController(IProductService productService) : ControllerBase
     {
         [HttpGet("search")]
-        public async Task<IActionResult> Search([FromQuery] ProductSearchRequest request)
+        public async Task<IActionResult> Search([FromQuery] ProductSearchRequest request, CancellationToken token)
         {
-            var results = await productService.GetProductAsync(request);
+            var results = await productService.GetProductAsync(request, token);
 
-            if(results == null || !results.Any())
-            {
-                return NotFound(new { message = "Sorry we could not find that product" });
-            }
             return Ok(results);
         }
     }

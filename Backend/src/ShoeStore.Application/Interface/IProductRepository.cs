@@ -10,11 +10,6 @@ namespace ShoeStore.Application.Interface
 {
     public interface IProductRepository
     {
-        void Add(Product product);
-        void Update(Product product);
-        void Delete(Product product);
-        Task<Product?> GetByIdAsync(int id, CancellationToken token);
-
         IQueryable<Product> SeachProduct(ProductSearchRequest request);
     }
 }

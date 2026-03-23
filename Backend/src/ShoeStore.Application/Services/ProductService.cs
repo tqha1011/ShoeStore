@@ -25,37 +25,54 @@ namespace ShoeStore.Application.Services
         {
             var product = new Product
             {
-                PublicId = new Guid(),
+                PublicId = Guid.NewGuid(),
                 ProductName = dto.ProductName,
                 Brand = dto.Brand
             };
             _productRepository.Add(product);
             await _uow.SaveChangesAsync();
         }
-        public async Task UpdateProduct(int id, UpdateProductDTO dto, CancellationToken token)
+        public async Task<ErrorOr<Success>> UpdateProduct(int id, UpdateProductDTO dto, CancellationToken token)
         {
             var product = await _productRepository.GetByIdAsync(id, token);
             if (product == null)
-                throw new Exception("Could not find the product");
+            {
+                return Error.NotFound(
+                    code: "Product.NotFound",
+                    description: $"Không tìm thấy sản phẩm với Id: {id}");
+            }
 
             product.ProductName = dto.ProductName;
             product.Brand = dto.Brand;
 
-            _productRepository.Update(product);
-            await _uow.SaveChangesAsync();
+            try
+            {
+                _productRepository.Update(product);
+                await _uow.SaveChangesAsync(token);
+                return Result.Success;
+            }
+            catch (Exception)
+            {
+                return Error.Failure(
+                    code: "Product.UpdateError",
+                    description: "Có lỗi xảy ra trong quá trình lưu cập nhật.");
+            }
         }
 
-        public async Task<IEnumerable<ProductResponseDTO>> GetProductAsync(ProductSearchRequest request)
+        public async Task<ErrorOr<IEnumerable<ProductResponseDTO>>> GetProductAsync(ProductSearchRequest request, CancellationToken token)
         {
             var query =  _productRepository.SeachProduct(request);
-            var itiems =  query.Select(p => new ProductResponseDTO
+            var items =  query.Select(p => new ProductResponseDTO
             {
                 Id = p.Id,
                 ProductName = p.ProductName,
-                Brand = p.Brand,
+                Brand = p.Brand ?? string.Empty,
 
                 // Lấy giá thấp nhất trong các biến thể của sản phẩm
-                MinPrice = p.ProductVariants.Any() ? p.ProductVariants.Min(v => v.Price) : 0,
+                MinPrice = p.ProductVariants.Where(v => v.IsSelling && !v.IsDeleted)
+                                            .Any()? p.ProductVariants
+                                            .Where(v => v.IsSelling && !v.IsDeleted)
+                                            .Min(v => v.Price) : 0,
 
                 // Lấy danh sách tên màu (distinct để không bị lặp)
                 AvailableColors = p.ProductVariants
@@ -75,7 +92,7 @@ namespace ShoeStore.Application.Services
                         .FirstOrDefault()
             });
 
-            return await itiems.ToListAsync();
+            return await items.ToListAsync(token);
         }
     }
 }
