@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using ShoeStore.Domain.Entities;
 
-namespace ShoeStore.Application.DTOs.ProducVariantDTOs
+namespace ShoeStore.Application.DTOs.ProductVariantDTOs
 {
-    public class CreateProductVariantDTO
+    public class CreateProductVariantDto
     {
         public int SizeId { get; set; }
         public int? ColorId { get; set; }
@@ -13,6 +12,5 @@ namespace ShoeStore.Application.DTOs.ProducVariantDTOs
         public bool IsSelling { get; set; }
         public string? ImageUrl { get; set; }
         public decimal Price { get; set; }
-
     }
 }
