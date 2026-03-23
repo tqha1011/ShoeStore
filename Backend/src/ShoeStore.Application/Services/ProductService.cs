@@ -7,6 +7,7 @@ using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.Interface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Application.DTOs.ProducVariantDTOs;
+using ErrorOr;
 
 namespace ShoeStore.Application.Services
 {
@@ -21,7 +22,7 @@ namespace ShoeStore.Application.Services
             _productRepository = productRepository;
         }
 
-        public async Task AddProduct(CreateProductDTO dto)
+        public async Task AddProduct(CreateProductDto dto)
         {
             var product = new Product
             {
@@ -32,7 +33,7 @@ namespace ShoeStore.Application.Services
             _productRepository.Add(product);
             await _uow.SaveChangesAsync();
         }
-        public async Task<ErrorOr<Success>> UpdateProduct(int id, UpdateProductDTO dto, CancellationToken token)
+        public async Task<ErrorOr<Success>> UpdateProduct(int id, UpdateProductDto dto, CancellationToken token)
         {
             var product = await _productRepository.GetByIdAsync(id, token);
             if (product == null)
@@ -59,10 +60,10 @@ namespace ShoeStore.Application.Services
             }
         }
 
-        public async Task<ErrorOr<IEnumerable<ProductResponseDTO>>> GetProductAsync(ProductSearchRequest request, CancellationToken token)
+        public async Task<ErrorOr<IEnumerable<ProductResponseDto>>> GetProductAsync(ProductSearchRequest request, CancellationToken token)
         {
             var query =  _productRepository.SeachProduct(request);
-            var items =  query.Select(p => new ProductResponseDTO
+            var items =  query.Select(p => new ProductResponseDto
             {
                 Id = p.Id,
                 ProductName = p.ProductName,

@@ -5,9 +5,9 @@ using ShoeStore.Application.DTOs.ProducVariantDTOs;
 
 namespace ShoeStore.Application.DTOs.ProductDTOs
 {
-    public class UpdateProductDTO : ProductBaseDTO
+    public class UpdateProductDto : ProductBaseDto
     {
         public Guid PublicId { get; set; }
-        public List<CreateProductVariantDTO> Variants { get; set; } = new List<CreateProductVariantDTO>();
+        public List<CreateProductVariantDto> Variants { get; set; } = new List<CreateProductVariantDto>();
     }
 }

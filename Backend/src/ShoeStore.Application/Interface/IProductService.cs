@@ -3,20 +3,21 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ShoeStore.Domain.Entities;
+using ErrorOr;
 using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.ProductDTOs;
+using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Interface
 {
 
     public interface IProductService
     {
-        Task AddProduct(CreateProductDTO dto);
-        Task UpdateProduct(int id, UpdateProductDTO dto, CancellationToken token);
+        Task AddProduct(CreateProductDto dto);
+        Task<ErrorOr<Success>> UpdateProduct(int id, UpdateProductDto dto, CancellationToken token);
 
 
         // Get the product
-        Task<IEnumerable<ProductResponseDTO>> GetProductAsync(ProductSearchRequest request);
+        Task<ErrorOr<IEnumerable<ProductResponseDto>>> GetProductAsync(ProductSearchRequest request, CancellationToken  token);
     }
 }
