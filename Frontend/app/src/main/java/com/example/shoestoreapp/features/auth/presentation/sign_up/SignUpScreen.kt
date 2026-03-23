@@ -12,17 +12,39 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.auth.presentation.components.*
+import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreenContent(
     onNavigateToSignIn: () -> Unit = {},
-    viewModel: SignUpViewModel = viewModel()
+    onNavigateToUserHome: () -> Unit = {},
 ) {
-    // 1. Collect State from ViewModel
+    val context = LocalContext.current
+    val tokenManager = remember { TokenManager(context) }
+
+    val viewModel: SignUpViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return SignUpViewModel(tokenManager = tokenManager) as T
+            }
+        }
+    )
+
+    val coroutineScope = rememberCoroutineScope()
+    val googleAuthClient = remember {
+        com.example.shoestoreapp.core.utils.GoogleAuthClient(context)
+    }
+
+    // 1. Collect state from ViewModel
     val state by viewModel.state.collectAsState()
 
     var isVisible by remember { mutableStateOf(false) }
@@ -31,12 +53,16 @@ fun RegisterScreenContent(
         isVisible = true
     }
 
-    // 2. Listen for one-time events (Navigation) from ViewModel
+    // 2. Listen for one-time events (navigation) from ViewModel
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collectLatest { event ->
             when (event) {
                 is SignUpViewModel.UiEvent.NavigateToSignIn -> {
                     onNavigateToSignIn()
+                }
+                is SignUpViewModel.UiEvent.NavigateToUserHome -> {
+                    // Handle successful Google login
+                    onNavigateToUserHome()
                 }
                 is SignUpViewModel.UiEvent.ShowError -> {
                     // Future implementation: Show Snackbar
@@ -111,7 +137,9 @@ fun RegisterScreenContent(
                     isError = state.passwordError != null,
                     errorText = state.passwordError,
                     passwordVisible = state.isPasswordVisible,
-                    onToggleVisibility = { viewModel.onEvent(SignUpEvent.TogglePasswordVisibility) }
+                    onToggleVisibility = {
+                        viewModel.onEvent(SignUpEvent.TogglePasswordVisibility)
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -123,7 +151,9 @@ fun RegisterScreenContent(
                     isError = state.confirmPasswordError != null,
                     errorText = state.confirmPasswordError,
                     passwordVisible = state.isConfirmPasswordVisible,
-                    onToggleVisibility = { viewModel.onEvent(SignUpEvent.ToggleConfirmPasswordVisibility) }
+                    onToggleVisibility = {
+                        viewModel.onEvent(SignUpEvent.ToggleConfirmPasswordVisibility)
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -133,7 +163,9 @@ fun RegisterScreenContent(
                     text = if (state.isLoading) "Loading..." else "Sign up",
                     icon = Icons.Default.Key,
                     onClick = {
-                        if (!state.isLoading) viewModel.onEvent(SignUpEvent.Submit)
+                        if (!state.isLoading) {
+                            viewModel.onEvent(SignUpEvent.Submit)
+                        }
                     },
                     containerColor = Color.White,
                     contentColor = Color.Black
@@ -145,7 +177,18 @@ fun RegisterScreenContent(
                     dividerColor = Color.Black,
                     textColor = Color.Black,
                     buttonContainerColor = Color(0xFFF5F5F5),
-                    iconTint = Color.Black
+                    iconTint = Color.Black,
+                    onGoogleClick = {
+                        // When clicking Google, launch coroutine to open account picker
+                        coroutineScope.launch {
+                            val idToken = googleAuthClient.signIn()
+                            if (idToken != null) {
+                                viewModel.loginWithGoogle(idToken)
+                            } else {
+                                // User canceled or error occurred
+                            }
+                        }
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(30.dp))

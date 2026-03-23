@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -14,6 +15,10 @@ import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenCo
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
 import com.example.shoestoreapp.features.auth.presentation.welcome.WelcomeScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.CreateNewPasswordScreen
+import com.example.shoestoreapp.features.auth.HomeUserScreen
+import com.example.shoestoreapp.features.auth.HomeAdminScreen
+import com.example.shoestoreapp.core.utils.TokenManager
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,38 +35,78 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavHost() {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    val tokenManager = remember { TokenManager(context) }
 
-    // Đặt startDestination là "welcome" để hiện màn hình chào đầu tiên
+
     NavHost(
         navController = navController,
-        startDestination = "welcome"
+        startDestination = "welcome" // Welcome Screen
     ) {
-        // Route 1: Welcome Screen
+        // Route 1: Welcome Screen (Acts as Splash Screen)
         composable("welcome") {
+            // 1. COLLECT DATA FROM FLOW AS STATE
+            val token by tokenManager.getToken.collectAsState(initial = "LOADING")
+            val role by tokenManager.getRole.collectAsState(initial = "")
+
+            // 2. AUTO-NAVIGATION LOGIC (Triggered once token is loaded)
+            LaunchedEffect(token, role) {
+                if (token != "LOADING") {
+                    // Wait for 1 second to let users see the Welcome UI properly
+                    // Avoids a sudden screen flash
+                    kotlinx.coroutines.delay(1000)
+
+                    // User is logged in -> Route to Home based on Role
+                    if (!token.isNullOrEmpty()) {
+                        val dest = if (role?.uppercase() == "ADMIN") "home_admin" else "home_user"
+                        navController.navigate(dest) {
+                            popUpTo("welcome") { inclusive = true }
+                        }
+                    } else {
+                        // User is NOT logged in -> Route to Sign-in
+                        navController.navigate("sign_in") {
+                            popUpTo("welcome") { inclusive = true }
+                        }
+                    }
+                }
+            }
+
+            // 3. RENDER THE WELCOME UI
             WelcomeScreen(
                 onNavigateToSignIn = {
+                    // Manual fallback just in case the user clicks the button
+                    // before the 1-second delay finishes
                     navController.navigate("sign_in") {
-                        // Delete Welcome Screen 
                         popUpTo("welcome") { inclusive = true }
                     }
                 }
             )
         }
 
-        // Route 2: Sign in Screen
+        // Route 2: Sign-in Screen
         composable("sign_in") {
-            LoginScreenContent (
+            LoginScreenContent(
                 onNavigateToSignUp = {
-                navController.navigate("sign_up")
+                    navController.navigate("sign_up")
                 },
                 onNavigateToForgotPassword = {
                     navController.navigate("forgot_password")
                 },
+                onNavigateToUserHome = {
+                    navController.navigate("home_user") {
+                        popUpTo("sign_in") { inclusive = true }
+                    }
+                },
+                onNavigateToAdminHome = {
+                    navController.navigate("home_admin") {
+                        popUpTo("sign_in") { inclusive = true }
+                    }
+                }
             )
         }
 
-        // Route 2.1: Forgot Password Screen
-        composable ("forgot_password") {
+        // Route 2.1: Forgot Password
+        composable("forgot_password") {
             ForgotPasswordScreen(
                 onNavigateCreateNewPassword = {
                     navController.navigate("create_new_password")
@@ -72,7 +117,7 @@ fun AppNavHost() {
             )
         }
 
-        // Route 2.2: Create New Password Screen
+        // Route 2.2: Create New Password
         composable("create_new_password") {
             CreateNewPasswordScreen(
                 onNavigateToSignIn = {
@@ -81,13 +126,53 @@ fun AppNavHost() {
             )
         }
 
-        // Route 3: Sign up Screen
+        // Route 3: Sign-up
         composable("sign_up") {
             RegisterScreenContent(
                 onNavigateToSignIn = {
                     navController.navigate("sign_in")
+                },
+                onNavigateToUserHome = {
+                    navController.navigate("home_user")
+                },
+            )
+        }
+
+        // Route 4: User Home
+        composable("home_user") {
+            // 1. CREATE A COROUTINE SCOPE TO RUN SUSPEND FUNCTIONS
+            val coroutineScope = rememberCoroutineScope()
+
+            HomeUserScreen(
+                onLogoutClick = {
+                    // 2. LAUNCH A BACKGROUND TASK TO CLEAR DATASTORE
+                    coroutineScope.launch {
+                        // Clear Token and Role from the local storage
+                        tokenManager.clearAuthInfo()
+
+                        // 3. NAVIGATE BACK TO SIGN IN AND CLEAR ENTIRE BACKSTACK
+                        navController.navigate("sign_in") {
+                            // popUpTo(0) means clearing all previous screens
+                            // so the user cannot press the physical Back button to return to Home
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
                 }
             )
+        }
+
+        // Route 5: Admin Home
+        composable("home_admin") {
+            val coroutineScope = rememberCoroutineScope()
+            HomeAdminScreen( onLogoutClick = {
+                coroutineScope.launch {
+                    tokenManager.clearAuthInfo()
+
+                    navController.navigate("sign_in") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            })
         }
     }
 }

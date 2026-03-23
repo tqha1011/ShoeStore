@@ -1,4 +1,5 @@
 package com.example.shoestoreapp.features.auth.data.remote
 
-class GoogleLoginRequest {
-}
+data class GoogleLoginRequest(
+    val idToken: String
+)

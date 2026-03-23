@@ -2,33 +2,33 @@ package com.example.shoestoreapp.core.utils
 
 import android.util.Base64
 import org.json.JSONObject
-
 object JwtUtils {
+
     fun getRoleFromToken(token: String): String {
         return try {
-            // 1. Cắt token làm 3 khúc, lấy khúc giữa (index 1)
+            // 1. Split JWT into 3 parts, get payload (index 1)
             val split = token.split(".")
-            if (split.size < 2) return "USER" // An toàn trên hết
+            if (split.size < 2) return "USER" // Fallback for invalid token
 
-            // 2. Giải mã Base64 thành chuỗi JSON đọc được
+            // 2. Decode Base64 payload to JSON string
             val payloadBytes = Base64.decode(split[1], Base64.URL_SAFE)
             val payloadString = String(payloadBytes, Charsets.UTF_8)
 
-            // 3. Chuyển thành Object JSON để dễ moi móc
+            // 3. Parse payload to JSON object
             val jsonObject = JSONObject(payloadString)
 
-            // 4. Tìm cái Role. Đề phòng Backend C# .NET hay tự đổi tên key rườm rà
+            // 4. Extract role (handle different backend naming conventions)
             when {
                 jsonObject.has("role") -> jsonObject.getString("role")
                 jsonObject.has("Role") -> jsonObject.getString("Role")
-                // Cái dòng URL dài ngoằng này là "đặc sản" của C# .NET nhé
+                // Common claim format in C# .NET
                 jsonObject.has("http://schemas.microsoft.com/ws/2008/06/identity/claims/role") ->
                     jsonObject.getString("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")
-                else -> "USER" // Không tìm thấy thì gán mặc định là dân thường
+                else -> "USER" // Default fallback
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            "USER"
+            "USER" // Return default role on error
         }
     }
 }

@@ -23,22 +23,23 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.auth.presentation.components.*
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreenContent(
     onNavigateToSignUp: () -> Unit = {},
     onNavigateToForgotPassword: () -> Unit = {},
-    // ĐÃ UPDATE: Thay onNavigateToHomeScreen bằng 2 ngã rẽ Admin và User
+    // UPDATED: Replace onNavigateToHomeScreen with 2 routes: Admin and User
     onNavigateToUserHome: () -> Unit = {},
-    onNavigateToAdminDashboard: () -> Unit = {}
+    onNavigateToAdminHome: () -> Unit = {}
 ) {
-    // 1. Lấy Context để xài DataStore
+    // 1. Get Context to use DataStore
     val context = LocalContext.current
 
-    // 2. Tạo Thủ kho TokenManager
+    // 2. Create TokenManager (token storage handler)
     val tokenManager = remember { TokenManager(context) }
 
-    // 3. Khởi tạo ViewModel bằng Factory thủ công để truyền tokenManager vào
+    // 3. Initialize ViewModel using a manual Factory to pass tokenManager
     val viewModel: SignInViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
@@ -48,7 +49,13 @@ fun LoginScreenContent(
         }
     )
 
-    // 4. Lấy State từ ViewModel ra để vẽ UI
+    val coroutineScope = rememberCoroutineScope()
+
+    val googleAuthClient = remember {
+        com.example.shoestoreapp.core.utils.GoogleAuthClient(context)
+    }
+
+    // 4. Get State from ViewModel to render UI
     val state by viewModel.state.collectAsState()
 
     var isVisible by remember { mutableStateOf(false) }
@@ -57,15 +64,15 @@ fun LoginScreenContent(
         isVisible = true
     }
 
-    // 5. Lắng nghe pháo hiệu chuyển trang rẽ nhánh từ ViewModel
+    // 5. Listen to navigation events (route switching) from ViewModel
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collectLatest { event ->
             when (event) {
                 is SignInViewModel.UiEvent.NavigateToUserHome -> {
                     onNavigateToUserHome()
                 }
-                is SignInViewModel.UiEvent.NavigateToAdminDashboard -> {
-                    onNavigateToAdminDashboard()
+                is SignInViewModel.UiEvent.NavigateToAdminHome -> {
+                    onNavigateToAdminHome()
                 }
                 is SignInViewModel.UiEvent.NavigateToSignUp -> {
                     onNavigateToSignUp()
@@ -116,7 +123,7 @@ fun LoginScreenContent(
                     textColor = Color.White
                 )
 
-                // Truyền state và onEvent vào các ô Input
+                // Pass state and onEvent into input fields
                 AuthTextField(
                     value = state.email,
                     onValueChange = { viewModel.onEvent(SignInEvent.EmailChanged(it)) },
@@ -134,7 +141,9 @@ fun LoginScreenContent(
                     isError = state.passwordError != null,
                     errorText = state.passwordError,
                     passwordVisible = state.isPasswordVisible,
-                    onToggleVisibility = { viewModel.onEvent(SignInEvent.TogglePasswordVisibility) }
+                    onToggleVisibility = {
+                        viewModel.onEvent(SignInEvent.TogglePasswordVisibility)
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -144,7 +153,9 @@ fun LoginScreenContent(
                     text = if (state.isLoading) "Loading..." else "Sign in",
                     icon = Icons.Default.Key,
                     onClick = {
-                        if (!state.isLoading) viewModel.onEvent(SignInEvent.Submit)
+                        if (!state.isLoading) {
+                            viewModel.onEvent(SignInEvent.Submit)
+                        }
                     },
                     containerColor = Color(0xFF1A1A1A),
                     contentColor = Color.White
@@ -166,7 +177,19 @@ fun LoginScreenContent(
                     dividerColor = Color.DarkGray,
                     textColor = Color.DarkGray,
                     buttonContainerColor = Color(0xFF222222),
-                    iconTint = Color.White
+                    iconTint = Color.White,
+                    onGoogleClick = {
+                        // When clicking Google, launch coroutine to open account picker
+                        coroutineScope.launch {
+                            val idToken = googleAuthClient.signIn()
+                            if (idToken != null) {
+                                // Got the token → send it to backend
+                                viewModel.loginWithGoogle(idToken)
+                            } else {
+                                // User canceled or error occurred → you can show a Toast here
+                            }
+                        }
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(30.dp))

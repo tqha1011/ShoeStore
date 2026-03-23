@@ -5,9 +5,11 @@ import com.example.shoestoreapp.features.auth.data.remote.LoginRequest
 import com.example.shoestoreapp.features.auth.data.remote.LoginResponse
 import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
 import com.example.shoestoreapp.features.auth.data.remote.RegisterRequest
-import com.example.shoestoreapp.features.auth.data.remote.RegisterResponse
+import com.example.shoestoreapp.features.auth.data.remote.GoogleLoginRequest
+import retrofit2.HttpException
+import java.io.IOException
 class AuthRepositoryImpl(
-    // Truyền cái AuthApi (chiếc vô lăng m vừa tạo) vào đây
+    // Inject AuthApi (the “steering wheel” you created earlier)
     private val api: AuthApi
 ) : AuthRepository {
 
@@ -18,38 +20,61 @@ class AuthRepositoryImpl(
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                // --- SỬA Ở ĐÂY NÀY ---
-                // Tùy theo mã lỗi Server trả về mà mình dịch ra tiếng Việt cho thân thiện
+                // Error code list
                 val errorMessage = when (response.code()) {
+                    400 -> "Invalid request format"
                     401, 404 -> "Invalid email or password!"
+                    429 -> "Too many requests. Please try again later!"
+                    500, 502, 503 -> "Server is under maintenance. Please try again later!"
+                    else -> "Login failed. Please try again!"
+                }
+                Result.failure(Exception(errorMessage))
+            }
+            // No internet connection
+        } catch (e: Exception) {
+            Result.failure(Exception("You're offline. Please check your internet connection"))
+        }
+    }
+
+    override suspend fun register(request: RegisterRequest): Result<String> {
+        return try {
+            val response = api.register(request)
+
+            if (response.isSuccessful && response.body() != null) {
+                // Registration successful -> Return message from server
+                Result.success(response.body()?.message ?: "Account registered successfully!")
+            } else {
+                // Error (e.g., 409 = email already exists)
+                val errorMessage = when (response.code()) {
+                    409 -> "This email has already been used!"
                     500, 502, 503 -> "Server is under maintenance. Please try again later!"
                     else -> "Login failed. Please try again!"
                 }
                 Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
-            // Lỗi này rớt vào khi đứt mạng, tắt wifi...
-            Result.failure(Exception("Không có kết nối mạng. Hãy kiểm tra lại Wifi/4G!"))
+            Result.failure(Exception("You're offline. Please check your internet connection"))
         }
     }
-    override suspend fun register(request: RegisterRequest): Result<String> {
-        return try {
-            val response = api.register(request)
 
-            if (response.isSuccessful && response.body() != null) {
-                // Đăng ký thành công -> Trả về câu thông báo của Server
-                Result.success(response.body()?.message ?: "Đăng ký tài khoản thành công!")
-            } else {
-                // Lỗi (Ví dụ: 400 là Email đã tồn tại)
-                val errorMessage = when (response.code()) {
-                    400 -> "Email này đã được sử dụng!"
-                    500 -> "Lỗi Server, vui lòng thử lại sau!"
-                    else -> "Đăng ký thất bại. Lỗi: ${response.code()}"
-                }
-                Result.failure(Exception(errorMessage))
-            }
+    override suspend fun loginWithGoogle(idToken: String): Result<LoginResponse> {
+        return try {
+            // Wrap idToken into a request
+            val request = GoogleLoginRequest(idToken = idToken)
+
+            // Send request to server
+            val response = api.loginWithGoogle(request)
+
+            Result.success(response)
+        } catch (e: HttpException) {
+            // Error returned from server (400, 401, ...)
+            Result.failure(Exception(e.message ?: "Server authentication error"))
+        } catch (e: IOException) {
+            // Network error
+            Result.failure(Exception("You're offline. Please check your internet connection"))
         } catch (e: Exception) {
-            Result.failure(Exception("Không có kết nối mạng. Hãy kiểm tra lại Wifi/4G!"))
+            // Other unexpected errors
+            Result.failure(Exception(e.message ?: "An unexpected error occurred"))
         }
     }
 }
