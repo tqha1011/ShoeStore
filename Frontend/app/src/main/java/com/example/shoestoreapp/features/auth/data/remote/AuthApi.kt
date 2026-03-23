@@ -7,15 +7,18 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 interface AuthApi {
-    // Định nghĩa API Đăng nhập
-    // Chữ "login" ở dưới phụ thuộc vào Backend của m. (ví dụ BASE_URL/login)
     @POST("api/Auth/signin")
     suspend fun login(
-        @Body request: LoginRequest // Gửi đi cục LoginRequest (email, pass)
-    ): Response<LoginResponse>      // Hứng về cục LoginResponse (token, user_id)
+        @Body request: LoginRequest
+    ): Response<LoginResponse>
 
     @POST("api/Auth/signup")
     suspend fun register(
         @Body request: RegisterRequest
     ): Response<RegisterResponse>
+
+    @POST("api/auth/signin-google")
+    suspend fun loginWithGoogle(
+        @Body request: GoogleLoginRequest
+    ): LoginResponse
 }

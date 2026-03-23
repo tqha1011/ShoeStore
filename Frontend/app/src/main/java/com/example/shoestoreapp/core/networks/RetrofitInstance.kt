@@ -9,7 +9,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitInstance {
 
-    // 1. Vẫn giữ cái Camera giám sát để bắt bug cho dễ
+    // 1. Logging interceptor for debugging network requests
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
@@ -18,7 +18,7 @@ object RetrofitInstance {
         .addInterceptor(loggingInterceptor)
         .build()
 
-    // 2. Cục Retrofit cốt lõi
+    // 2. Core Retrofit instance
     private val retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(Constants.BASE_URL)
@@ -27,8 +27,7 @@ object RetrofitInstance {
             .build()
     }
 
-    // 3. ĐÂY CHÍNH LÀ ĐOẠN GIỐNG TRONG VIDEO MÀ M THẮC MẮC NÀY:
-    // Khởi tạo AuthApi để chọc vào các API liên quan đến Auth
+    // 3. Create AuthApi service for authentication endpoints
     val authApi: AuthApi by lazy {
         retrofit.create(AuthApi::class.java)
     }

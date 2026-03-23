@@ -250,7 +250,8 @@ fun SocialLoginSection(
     dividerColor: Color,
     textColor: Color,
     buttonContainerColor: Color,
-    iconTint: Color
+    iconTint: Color,
+    onGoogleClick: () -> Unit
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -265,27 +266,23 @@ fun SocialLoginSection(
         }
         Spacer(modifier = Modifier.height(30.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-            SocialButton(R.drawable.ic_google, buttonContainerColor, iconTint)
+            SocialButton(R.drawable.ic_google, buttonContainerColor, iconTint, onClick = onGoogleClick)
 
             Spacer(modifier = Modifier.width(20.dp))
 
-            SocialButton(R.drawable.ic_facebook, buttonContainerColor, iconTint)
-
-            Spacer(modifier = Modifier.width(20.dp))
-
-            SocialButton(R.drawable.ic_tiktok, buttonContainerColor, iconTint)
+            SocialButton(R.drawable.ic_facebook, buttonContainerColor, iconTint, onClick = {})
         }
     }
 }
 
 // Function Social Button for Template
 @Composable
-private fun SocialButton(iconRes: Int, containerColor: Color, iconTint: Color) {
+private fun SocialButton(iconRes: Int, containerColor: Color, iconTint: Color, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .size(60.dp)
             .background(containerColor, shape = RoundedCornerShape(10.dp))
-            .clickable { /* Social Click */ },
+            .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
         Icon(

@@ -1,9 +1,22 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.sonarqube)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
+
+// Load properties from local.properties file
+val properties = Properties()
+val localPropertiesFile = project.rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    properties.load(localPropertiesFile.inputStream())
+}
+
+// Fetch sensitive data from local.properties
+val googleClientId = properties.getProperty("GOOGLE_CLIENT_ID") ?: ""
+val baseUrl = properties.getProperty("BASE_URL") ?: ""
 
 android {
     namespace = "com.example.shoestoreapp"
@@ -17,6 +30,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Inject sensitive constants into BuildConfig for app-wide access
+        buildConfigField("String", "GOOGLE_CLIENT_ID", "\"$googleClientId\"")
+        buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
     }
 
     buildTypes {
@@ -37,11 +54,11 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true // Ensure BuildConfig is enabled
     }
 }
 
 dependencies {
-
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.activity)
@@ -67,6 +84,9 @@ dependencies {
     implementation(libs.ui.tooling.preview)
     implementation(libs.material3)
     implementation(libs.foundation) // Icons Library
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.googleid)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
@@ -74,4 +94,5 @@ dependencies {
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
+
 }
