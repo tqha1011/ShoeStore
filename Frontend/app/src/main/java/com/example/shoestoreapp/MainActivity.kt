@@ -49,28 +49,26 @@ fun AppNavHost() {
             val token by tokenManager.getToken.collectAsState(initial = "LOADING")
             val role by tokenManager.getRole.collectAsState(initial = "")
 
-            // 2. AUTO-NAVIGATION LOGIC (Triggered once token is loaded)
+            // 2. AUTO-NAVIGATION LOGIC
             LaunchedEffect(token, role) {
-                if (token != "LOADING") {
-                    // Wait for 1 second to let users see the Welcome UI properly
-                    // Avoids a sudden screen flash
-                    kotlinx.coroutines.delay(1000)
+                // Guard clause: Early return to prevent deep nesting (SonarCloud Fix)
+                if (token == "LOADING") return@LaunchedEffect
 
-                    // User is logged in -> Route to Home based on Role
-                    if (!token.isNullOrEmpty()) {
-                        val dest = if (role?.uppercase() == "ADMIN") "home_admin" else "home_user"
-                        navController.navigate(dest) {
-                            popUpTo("welcome") { inclusive = true }
-                        }
-                    } else {
-                        // User is NOT logged in -> Route to Sign-in
-                        navController.navigate("sign_in") {
-                            popUpTo("welcome") { inclusive = true }
-                        }
-                    }
+                // Wait for 1 second to let users see the Welcome UI properly
+                kotlinx.coroutines.delay(1000)
+
+                // Flattened conditional logic using 'when' statement
+                val destination = when {
+                    token.isNullOrEmpty() -> "sign_in"
+                    role?.uppercase() == "ADMIN" -> "home_admin"
+                    else -> "home_user"
+                }
+
+                // Execute single navigation call
+                navController.navigate(destination) {
+                    popUpTo("welcome") { inclusive = true }
                 }
             }
-
             // 3. RENDER THE WELCOME UI
             WelcomeScreen(
                 onNavigateToSignIn = {
