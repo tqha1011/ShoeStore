@@ -12,6 +12,10 @@ namespace ShoeStore.Application.Interface
 
     public interface IProductService
     {
+        Task AddProduct(CreateProductDTO dto);
+        Task UpdateProduct(int id, UpdateProductDTO dto, CancellationToken token);
+
+
         // Get the product
         Task<IEnumerable<ProductResponseDTO>> GetProductAsync(ProductSearchRequest request);
     }

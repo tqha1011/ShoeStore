@@ -9,12 +9,10 @@ namespace ShoeStore.Application.DTOs.ProducVariantDTOs
     {
         public int SizeId { get; set; }
         public int? ColorId { get; set; }
-        public required int ProductId { get; set; }
-        public required int Stock { get; set; }
-        public required bool IsSelling { get; set; }
+        public int Stock { get; set; }
+        public bool IsSelling { get; set; }
         public string? ImageUrl { get; set; }
-        public required decimal Price { get; set; }
-        public required bool IsDeleted { get; set; }
+        public decimal Price { get; set; }
 
     }
 }

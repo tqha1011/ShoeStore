@@ -6,6 +6,7 @@ using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.Interface;
 using ShoeStore.Domain.Entities;
+using ShoeStore.Application.DTOs.ProducVariantDTOs;
 
 namespace ShoeStore.Application.Services
 {
@@ -18,6 +19,30 @@ namespace ShoeStore.Application.Services
         {
             _uow = uow;
             _productRepository = productRepository;
+        }
+
+        public async Task AddProduct(CreateProductDTO dto)
+        {
+            var product = new Product
+            {
+                PublicId = new Guid(),
+                ProductName = dto.ProductName,
+                Brand = dto.Brand
+            };
+            _productRepository.Add(product);
+            await _uow.SaveChangesAsync();
+        }
+        public async Task UpdateProduct(int id, UpdateProductDTO dto, CancellationToken token)
+        {
+            var product = await _productRepository.GetByIdAsync(id, token);
+            if (product == null)
+                throw new Exception("Could not find the product");
+
+            product.ProductName = dto.ProductName;
+            product.Brand = dto.Brand;
+
+            _productRepository.Update(product);
+            await _uow.SaveChangesAsync();
         }
 
         public async Task<IEnumerable<ProductResponseDTO>> GetProductAsync(ProductSearchRequest request)

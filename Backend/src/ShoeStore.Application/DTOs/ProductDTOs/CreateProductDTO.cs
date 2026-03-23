@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text;
 using ShoeStore.Application.DTOs.ProducVariantDTOs;
-using ShoeStore.Application.DTOs.ProducVariantDTOs;
 
 namespace ShoeStore.Application.DTOs.ProductDTOs
 {
