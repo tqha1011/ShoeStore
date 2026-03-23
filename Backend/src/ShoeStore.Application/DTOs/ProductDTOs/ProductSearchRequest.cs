@@ -26,7 +26,7 @@ namespace ShoeStore.Application.DTOs.ProductDTOs
         public int PageSize
         {
             get => _pageSize;
-            set => _pageSize = value < 1 ? 10 : (value > 50 ? 50 : value); // limit 1..50
+            set => _pageSize = Math.Clamp(value, 0, 50);
         }
     }
 }
