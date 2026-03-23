@@ -10,4 +10,5 @@ interface AuthRepository {
 
     suspend fun register(request: RegisterRequest): Result<String>
     suspend fun loginWithGoogle(idToken: String) : Result<LoginResponse>
+    suspend fun loginWithFacebook(idToken: String): Result<LoginResponse>
 }

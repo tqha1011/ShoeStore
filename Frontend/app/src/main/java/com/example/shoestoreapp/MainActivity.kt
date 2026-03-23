@@ -1,6 +1,9 @@
 package com.example.shoestoreapp
 
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Base64
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,6 +22,8 @@ import com.example.shoestoreapp.features.auth.HomeUserScreen
 import com.example.shoestoreapp.features.auth.HomeAdminScreen
 import com.example.shoestoreapp.core.utils.TokenManager
 import kotlinx.coroutines.launch
+import java.security.MessageDigest
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -1,7 +1,6 @@
 package com.example.shoestoreapp.features.auth.presentation.sign_in
 
 import android.util.Patterns
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.core.networks.RetrofitInstance
 import com.example.shoestoreapp.core.utils.JwtUtils
@@ -9,6 +8,8 @@ import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.auth.data.remote.LoginRequest
 import com.example.shoestoreapp.features.auth.data.repository.AuthRepositoryImpl
 import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
+import com.example.shoestoreapp.features.auth.presentation.common.AuthUiEvent
+import com.example.shoestoreapp.features.auth.presentation.common.BaseAuthViewModel // Nhớ check lại đường dẫn package chỗ này nhé
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,27 +19,41 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class SignInViewModel(
-    private val repository: AuthRepository = AuthRepositoryImpl(RetrofitInstance.authApi),
-    private val tokenManager: TokenManager
-) : ViewModel() {
+    repository: AuthRepository = AuthRepositoryImpl(RetrofitInstance.authApi),
+    tokenManager: TokenManager
+) : BaseAuthViewModel<SignInState>(repository, tokenManager, SignInState()) {
 
-    private val _state = MutableStateFlow(SignInState())
-    val state: StateFlow<SignInState> = _state.asStateFlow()
-
-    private val _uiEvent = Channel<UiEvent>()
+    private val _uiEvent = Channel<AuthUiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
+
+    override fun updateLoading(isLoading: Boolean) {
+        _state.update { it.copy(isLoading = isLoading) }
+    }
+
+    override fun handleSocialSuccess(role: String) {
+        _uiEvent.trySend(AuthUiEvent.NavigateToUserHome)
+    }
+
+    override fun handleSocialError(message: String) {
+        _state.update { it.copy(passwordError = message) }
+    }
+
+    // --- Standard Login Logic ---
 
     fun onEvent(event: SignInEvent) {
         when (event) {
             is SignInEvent.EmailChanged -> {
                 _state.update { it.copy(email = event.email, emailError = null) }
             }
+
             is SignInEvent.PasswordChanged -> {
                 _state.update { it.copy(password = event.password, passwordError = null) }
             }
+
             SignInEvent.TogglePasswordVisibility -> {
                 _state.update { it.copy(isPasswordVisible = !it.isPasswordVisible) }
             }
+
             SignInEvent.Submit -> {
                 validateAndSubmit()
             }
@@ -51,7 +66,9 @@ class SignInViewModel(
         var emailErr: String? = null
         var passErr: String? = null
 
-        if (currentState.email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(currentState.email).matches()) {
+        if (currentState.email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(currentState.email)
+                .matches()
+        ) {
             emailErr = "Invalid email format"
             hasError = true
         }
@@ -60,12 +77,14 @@ class SignInViewModel(
             hasError = true
         }
         if (hasError) {
-            _state.update { it.copy(
-                emailError = emailErr,
-                passwordError = passErr,
-                email = if (emailErr != null) "" else it.email,
-                password = if (passErr != null) "" else it.password
-            )}
+            _state.update {
+                it.copy(
+                    emailError = emailErr,
+                    passwordError = passErr,
+                    email = if (emailErr != null) "" else it.email,
+                    password = if (passErr != null) "" else it.password
+                )
+            }
             return
         }
 
@@ -96,68 +115,30 @@ class SignInViewModel(
             result.fold(
                 onSuccess = { response ->
                     val token = response.token
-
-                    // 1. Extract Role from Token
                     val role = JwtUtils.getRoleFromToken(token)
 
-                    // 2. Save Token and Role to DataStore
+                    // Save Token and Role to DataStore
                     tokenManager.saveAuthInfo(token = token, role = role)
 
-                    // 3. Navigate based on Role
+                    // Navigate based on Role for standard login
                     if (role.uppercase() == "ADMIN") {
-                        _uiEvent.send(UiEvent.NavigateToAdminHome)
+                        _uiEvent.send(AuthUiEvent.NavigateToAdminHome)
                     } else {
-                        _uiEvent.send(UiEvent.NavigateToUserHome)
+                        _uiEvent.send(AuthUiEvent.NavigateToUserHome)
                     }
                 },
                 onFailure = { error ->
-                    _state.update { it.copy(
-                        isLoading = false,
-                        emailError = error.message,
-                        passwordError = error.message,
-                        email = "",
-                        password = "",
-                    )}
-                }
-            )
-        }
-    }
-
-    fun loginWithGoogle(idToken: String) {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
-
-            // Call Google Login API
-            val result = repository.loginWithGoogle(idToken)
-
-            _state.update { it.copy(isLoading = false) }
-
-            result.fold(
-                onSuccess = { response ->
-                    val token = response.token
-                    val role = JwtUtils.getRoleFromToken(token)
-                    tokenManager.saveAuthInfo(token = token, role = role)
-
-                    if (role.uppercase() == "ADMIN") {
-                        _uiEvent.send(UiEvent.NavigateToAdminHome)
-                    } else {
-                        _uiEvent.send(UiEvent.NavigateToUserHome)
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            emailError = error.message,
+                            passwordError = error.message,
+                            email = "",
+                            password = "",
+                        )
                     }
-                },
-                onFailure = { error ->
-                    _state.update { it.copy(
-                        isLoading = false,
-                        passwordError = error.message ?: "Google Login failed"
-                    )}
                 }
             )
         }
-    }
-
-    sealed interface UiEvent {
-        object NavigateToUserHome : UiEvent
-        object NavigateToAdminHome : UiEvent
-        object NavigateToSignUp : UiEvent
-        data class ShowError(val message: String) : UiEvent
     }
 }
