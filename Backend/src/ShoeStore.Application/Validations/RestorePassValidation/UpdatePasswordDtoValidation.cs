@@ -3,11 +3,12 @@ using ShoeStore.Application.DTOs.RestorePasswordDto;
 
 namespace ShoeStore.Application.Validations.RestorePassValidation;
 
-public class UpdatePassworDtoValidation : AbstractValidator<UpdatePasswordDto>
+public class UpdatePasswordDtoValidation : AbstractValidator<UpdatePasswordDto>
 {
-    public UpdatePassworDtoValidation()
+    public UpdatePasswordDtoValidation()
     {
-        RuleFor(x => x.Email).NotEmpty().WithMessage("Email is required");
+        RuleFor(x => x.Email).NotEmpty().WithMessage("Email is required")
+            .EmailAddress().WithMessage("Please enter a valid email address.");
 
         RuleFor(x => x.Otp).NotEmpty().WithMessage("Otp is required");
 

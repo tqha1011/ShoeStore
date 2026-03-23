@@ -8,6 +8,7 @@ public class OtpVerifyDtoValidtion : AbstractValidator<OtpVerifyDto>
     public OtpVerifyDtoValidtion()
     {
         RuleFor(o => o.Otp).NotEmpty().WithMessage("Otp is required");
-        RuleFor(o => o.Email).NotEmpty().WithMessage("Email is required");
+        RuleFor(o => o.Email).NotEmpty().WithMessage("Email is required")
+            .EmailAddress().WithMessage("Please enter a valid email address.");
     }
 }
