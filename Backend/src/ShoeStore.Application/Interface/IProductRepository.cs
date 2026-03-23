@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using ShoeStore.Application.DTOs.ProductDTOs;
-using ShoeStore.Domain.Common;
+﻿using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Domain.Entities;
-using ShoeStore.Application.DTOs;
 
 namespace ShoeStore.Application.Interface
 {
-    public interface IProductRepository
+    public interface IProductRepository : IGenericRepository<Product, int>
     {
         IQueryable<Product> SeachProduct(ProductSearchRequest request);
     }

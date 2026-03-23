@@ -13,7 +13,7 @@ namespace ShoeStore.Application.Interface
 
     public interface IProductService
     {
-        Task AddProduct(CreateProductDto dto);
+        void AddProduct(CreateProductDto dto);
         Task<ErrorOr<Success>> UpdateProduct(int id, UpdateProductDto dto, CancellationToken token);
 
 

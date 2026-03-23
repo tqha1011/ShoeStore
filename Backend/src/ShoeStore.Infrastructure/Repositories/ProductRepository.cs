@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.EntityFrameworkCore;
-using ShoeStore.Application.DTOs;
+﻿using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.Extensions;
 using ShoeStore.Application.Interface;

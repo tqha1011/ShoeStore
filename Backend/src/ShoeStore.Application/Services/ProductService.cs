@@ -22,7 +22,7 @@ namespace ShoeStore.Application.Services
             _productRepository = productRepository;
         }
 
-        public async Task AddProduct(CreateProductDto dto)
+        public void AddProduct(CreateProductDto dto)
         {
             var product = new Product
             {
@@ -31,7 +31,7 @@ namespace ShoeStore.Application.Services
                 Brand = dto.Brand
             };
             _productRepository.Add(product);
-            await _uow.SaveChangesAsync();
+            _uow.SaveChangesAsync();
         }
         public async Task<ErrorOr<Success>> UpdateProduct(int id, UpdateProductDto dto, CancellationToken token)
         {
