@@ -12,7 +12,10 @@ class AuthRepositoryImpl(
     // Inject AuthApi (the “steering wheel” you created earlier)
     private val api: AuthApi
 ) : AuthRepository {
-
+    // EXTRACT LITERALS TO CONSTANTS TO PREVENT DUPLICATION
+    companion object {
+        private const val ERROR_OFFLINE = "You're offline. Please check your internet connection"
+    }
     override suspend fun login(request: LoginRequest): Result<LoginResponse> {
         return try {
             val response = api.login(request)
@@ -32,7 +35,7 @@ class AuthRepositoryImpl(
             }
             // No internet connection
         } catch (e: Exception) {
-            Result.failure(Exception("You're offline. Please check your internet connection"))
+            Result.failure(Exception(ERROR_OFFLINE))
         }
     }
 
@@ -53,7 +56,7 @@ class AuthRepositoryImpl(
                 Result.failure(Exception(errorMessage))
             }
         } catch (e: Exception) {
-            Result.failure(Exception("You're offline. Please check your internet connection"))
+            Result.failure(Exception(ERROR_OFFLINE))
         }
     }
 
@@ -71,7 +74,7 @@ class AuthRepositoryImpl(
             Result.failure(Exception(e.message ?: "Server authentication error"))
         } catch (e: IOException) {
             // Network error
-            Result.failure(Exception("You're offline. Please check your internet connection"))
+            Result.failure(Exception(ERROR_OFFLINE))
         } catch (e: Exception) {
             // Other unexpected errors
             Result.failure(Exception(e.message ?: "An unexpected error occurred"))
