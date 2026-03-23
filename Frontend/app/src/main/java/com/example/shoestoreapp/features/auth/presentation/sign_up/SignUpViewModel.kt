@@ -1,15 +1,13 @@
 package com.example.shoestoreapp.features.auth.presentation.sign_up
 
 import android.util.Patterns
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.core.networks.RetrofitInstance
-import com.example.shoestoreapp.core.utils.JwtUtils
 import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.auth.data.remote.RegisterRequest
 import com.example.shoestoreapp.features.auth.data.repository.AuthRepositoryImpl
 import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
-import com.example.shoestoreapp.features.auth.presentation.sign_in.SignInViewModel
+import com.example.shoestoreapp.features.auth.presentation.common.BaseAuthViewModel // Nhớ check lại đường dẫn
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,10 +15,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
 class SignUpViewModel(
-    private val repository: AuthRepository = AuthRepositoryImpl(RetrofitInstance.authApi),
-    private val tokenManager: TokenManager
-) : ViewModel() {
+    repository: AuthRepository = AuthRepositoryImpl(RetrofitInstance.authApi),
+    tokenManager: TokenManager
+) : BaseAuthViewModel(repository, tokenManager) {
 
     // 1. UI State Management
     private val _state = MutableStateFlow(SignUpState())
@@ -30,7 +29,22 @@ class SignUpViewModel(
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
-    // 3. Single entry point for all UI events
+    // --- Implement BaseAuthViewModel abstract methods ---
+
+    override fun updateLoadingState(isLoading: Boolean) {
+        _state.update { it.copy(isLoading = isLoading) }
+    }
+
+    override suspend fun onSocialLoginSuccess(role: String) {
+        _uiEvent.send(UiEvent.NavigateToUserHome)
+    }
+
+    override suspend fun onSocialLoginFailure(errorMessage: String) {
+        _state.update { it.copy(passwordError = errorMessage) }
+    }
+
+    // --- Standard Register Logic ---
+
     fun onEvent(event: SignUpEvent) {
         when (event) {
             is SignUpEvent.EmailChanged -> {
@@ -132,70 +146,17 @@ class SignUpViewModel(
             // 3. Repository uses Retrofit to send request to server
             val result = repository.register(request)
 
-            // 4. Response received -> Turn off loading
-            _state.update { it.copy(isLoading = false) }
-
-            // 5. Unwrap Result to check success or failure
-            result.onSuccess {
-                _state.update { it.copy(isLoading = false) }
-                _uiEvent.send(UiEvent.NavigateToUserHome)
-            }
-                .onFailure { error ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            passwordError = error.message ?: "Registration failed. Please try again!"
-                        )
-                    }
-                }
-        }
-    }
-
-    fun loginWithGoogle(idToken: String) {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
-            val result = repository.loginWithGoogle(idToken)
-            _state.update { it.copy(isLoading = false) }
-
-            result.onSuccess { response ->
-                // 1. Extract token and role from backend
-                val token = response.token
-                val role = JwtUtils.getRoleFromToken(token)
-
-                // 2. Save into DataStore (secure storage)
-                tokenManager.saveAuthInfo(token = token, role = role)
-
-                // 3. Google users go straight to Home
-                _uiEvent.send(UiEvent.NavigateToUserHome)
-
-            }.onFailure { error ->
-                _uiEvent.send(UiEvent.ShowError(error.message ?: "Google Login failed"))
-            }
-        }
-    }
-    fun loginWithFacebook(accessToken: String) {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
-
-            // Gọi hàm login bên Repository
-            val result = repository.loginWithFacebook(accessToken)
-
-            _state.update { it.copy(isLoading = false) }
-
+            // 4. Unwrap Result to check success or failure
             result.fold(
-                onSuccess = { response ->
-                    val token = response.token
-                    val role = JwtUtils.getRoleFromToken(token)
-                    // Save token
-                    tokenManager.saveAuthInfo(token = token, role = role)
-                    _uiEvent.send(SignUpViewModel.UiEvent.NavigateToUserHome) // Navigate to HomeUser
-
+                onSuccess = {
+                    _state.update { it.copy(isLoading = false) }
+                    _uiEvent.send(UiEvent.NavigateToUserHome)
                 },
                 onFailure = { error ->
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            passwordError = error.message ?: "Facebook Login failed"
+                            passwordError = error.message ?: "Registration failed. Please try again!"
                         )
                     }
                 }

@@ -1,7 +1,6 @@
 package com.example.shoestoreapp.features.auth.presentation.sign_in
 
 import android.util.Patterns
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.core.networks.RetrofitInstance
 import com.example.shoestoreapp.core.utils.JwtUtils
@@ -9,6 +8,7 @@ import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.auth.data.remote.LoginRequest
 import com.example.shoestoreapp.features.auth.data.repository.AuthRepositoryImpl
 import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
+import com.example.shoestoreapp.features.auth.presentation.common.BaseAuthViewModel // Nhớ check lại đường dẫn package chỗ này nhé
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,15 +18,34 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class SignInViewModel(
-    private val repository: AuthRepository = AuthRepositoryImpl(RetrofitInstance.authApi),
-    private val tokenManager: TokenManager
-) : ViewModel() {
+    repository: AuthRepository = AuthRepositoryImpl(RetrofitInstance.authApi),
+    tokenManager: TokenManager
+) : BaseAuthViewModel(repository, tokenManager) {
 
+    // 1. UI State Management
     private val _state = MutableStateFlow(SignInState())
     val state: StateFlow<SignInState> = _state.asStateFlow()
 
+    // 2. One-time Event Management
     private val _uiEvent = Channel<UiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
+
+    // --- Implement BaseAuthViewModel abstract methods ---
+
+    override fun updateLoadingState(isLoading: Boolean) {
+        _state.update { it.copy(isLoading = isLoading) }
+    }
+
+    override suspend fun onSocialLoginSuccess(role: String) {
+        // Navigate to UserHome directly for social logins
+        _uiEvent.send(UiEvent.NavigateToUserHome)
+    }
+
+    override suspend fun onSocialLoginFailure(errorMessage: String) {
+        _state.update { it.copy(passwordError = errorMessage) }
+    }
+
+    // --- Standard Login Logic ---
 
     fun onEvent(event: SignInEvent) {
         when (event) {
@@ -96,14 +115,12 @@ class SignInViewModel(
             result.fold(
                 onSuccess = { response ->
                     val token = response.token
-
-                    // 1. Extract Role from Token
                     val role = JwtUtils.getRoleFromToken(token)
 
-                    // 2. Save Token and Role to DataStore
+                    // Save Token and Role to DataStore
                     tokenManager.saveAuthInfo(token = token, role = role)
 
-                    // 3. Navigate based on Role
+                    // Navigate based on Role for standard login
                     if (role.uppercase() == "ADMIN") {
                         _uiEvent.send(UiEvent.NavigateToAdminHome)
                     } else {
@@ -122,63 +139,6 @@ class SignInViewModel(
             )
         }
     }
-
-    fun loginWithGoogle(idToken: String) {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
-
-            // Call Google Login API
-            val result = repository.loginWithGoogle(idToken)
-
-            _state.update { it.copy(isLoading = false) }
-
-            result.fold(
-                onSuccess = { response ->
-                    val token = response.token
-                    val role = JwtUtils.getRoleFromToken(token)
-                    tokenManager.saveAuthInfo(token = token, role = role)
-
-                    _uiEvent.send(UiEvent.NavigateToUserHome) // Navigate to HomeUser
-                },
-                onFailure = { error ->
-                    _state.update { it.copy(
-                        isLoading = false,
-                        passwordError = error.message ?: "Google Login failed"
-                    )}
-                }
-            )
-        }
-    }
-    fun loginWithFacebook(accessToken: String) {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
-
-            // Gọi hàm login bên Repository
-            val result = repository.loginWithFacebook(accessToken)
-
-            _state.update { it.copy(isLoading = false) }
-
-            result.fold(
-                onSuccess = { response ->
-                    val token = response.token
-                    val role = JwtUtils.getRoleFromToken(token)
-                    // Save token
-                    tokenManager.saveAuthInfo(token = token, role = role)
-                    _uiEvent.send(UiEvent.NavigateToUserHome) // Navigate to HomeUser
-
-                },
-                onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            passwordError = error.message ?: "Facebook Login failed"
-                        )
-                    }
-                }
-            )
-        }
-    }
-
 
     sealed interface UiEvent {
         object NavigateToUserHome : UiEvent
