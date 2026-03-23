@@ -1,6 +1,5 @@
 package com.example.shoestoreapp.core.utils
-
+import com.example.shoestoreapp.BuildConfig
 object Constants {
-    // 10.0.0.2.2
-    const val BASE_URL = "http://10.0.2.2:8080/"
+    const val BASE_URL = BuildConfig.BASE_URL
 }

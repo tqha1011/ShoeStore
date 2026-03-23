@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.core.networks.RetrofitInstance
 import com.example.shoestoreapp.core.utils.JwtUtils
 import com.example.shoestoreapp.core.utils.TokenManager
-import com.example.shoestoreapp.features.auth.data.remote.LoginRequest // Chú ý import từ DTO nhé
+import com.example.shoestoreapp.features.auth.data.remote.LoginRequest
 import com.example.shoestoreapp.features.auth.data.repository.AuthRepositoryImpl
 import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
 import kotlinx.coroutines.channels.Channel
@@ -69,7 +69,7 @@ class SignInViewModel(
             return
         }
 
-        // Validate OK -> Gọi API thật
+        // Validate OK -> Call API
         callSignInApi()
     }
 
@@ -77,54 +77,86 @@ class SignInViewModel(
         viewModelScope.launch {
             val currentState = _state.value
 
-            // 1. Bật loading spinner lên
+            // 1. Show loading
             _state.update { it.copy(isLoading = true) }
 
-            // 2. Đóng gói dữ liệu thành DTO để gửi đi
+            // 2. Prepare DTO
             val request = LoginRequest(
                 email = currentState.email,
                 password = currentState.password
             )
 
-            // 3. Quản lý kho (Repository) đem xe tải (Retrofit) chở hàng lên Server
+            // 3. Call API via Repository
             val result = repository.login(request)
 
-            // 4. Có kết quả trả về -> Tắt loading
+            // 4. Hide loading
             _state.update { it.copy(isLoading = false) }
 
-            // 5. Mở hộp quà Result xem Thành công hay Thất bại
+            // 5. Handle Result
             result.fold(
                 onSuccess = { response ->
                     val token = response.token
 
-                    // 1. Mổ Token lấy Role
+                    // 1. Extract Role from Token
                     val role = JwtUtils.getRoleFromToken(token)
 
-                    // 2. Cất cả Token và Role vào Két sắt DataStore
+                    // 2. Save Token and Role to DataStore
                     tokenManager.saveAuthInfo(token = token, role = role)
 
-                    // 3. Bẻ lái (Chuyển trang) tùy theo quyền
+                    // 3. Navigate based on Role
                     if (role.uppercase() == "ADMIN") {
-                        _uiEvent.send(UiEvent.NavigateToAdminDashboard)
+                        _uiEvent.send(UiEvent.NavigateToAdminHome)
                     } else {
-                        _uiEvent.send(UiEvent.NavigateToSignUp)
+                        _uiEvent.send(UiEvent.NavigateToUserHome)
                     }
                 },
                 onFailure = { error ->
                     _state.update { it.copy(
                         isLoading = false,
-                        emailError = null, // Xóa lỗi email đi
-                        passwordError = error.message // Nhét lỗi xuống khung Password
+                        emailError = error.message,
+                        passwordError = error.message,
+                        email = "",
+                        password = "",
                     )}
                 }
             )
         }
     }
 
-    // ĐÃ FIX: Thêm NavigateToUserHome và NavigateToAdminDashboard vào đây
+    fun loginWithGoogle(idToken: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+
+            // Call Google Login API
+            val result = repository.loginWithGoogle(idToken)
+
+            _state.update { it.copy(isLoading = false) }
+
+            result.fold(
+                onSuccess = { response ->
+                    val token = response.token
+                    val role = JwtUtils.getRoleFromToken(token)
+                    tokenManager.saveAuthInfo(token = token, role = role)
+
+                    if (role.uppercase() == "ADMIN") {
+                        _uiEvent.send(UiEvent.NavigateToAdminHome)
+                    } else {
+                        _uiEvent.send(UiEvent.NavigateToUserHome)
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(
+                        isLoading = false,
+                        passwordError = error.message ?: "Google Login failed"
+                    )}
+                }
+            )
+        }
+    }
+
     sealed interface UiEvent {
         object NavigateToUserHome : UiEvent
-        object NavigateToAdminDashboard : UiEvent
+        object NavigateToAdminHome : UiEvent
         object NavigateToSignUp : UiEvent
         data class ShowError(val message: String) : UiEvent
     }
