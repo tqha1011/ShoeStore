@@ -2,8 +2,11 @@ package com.example.shoestoreapp.features.auth.presentation.reset_password.creat
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.shoestoreapp.core.networks.RetrofitInstance
+import com.example.shoestoreapp.features.auth.data.repository.AuthRepositoryImpl
+import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
+import com.example.shoestoreapp.features.auth.presentation.common.AuthUiEvent // IMPORTANT: Using the shared AuthUiEvent
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,17 +14,29 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class CreateNewPasswordViewModel : ViewModel() {
+class CreateNewPasswordViewModel(
+    private val repository: AuthRepository = AuthRepositoryImpl(RetrofitInstance.authApi)
+) : ViewModel() {
 
     // 1. UI State Management
     private val _state = MutableStateFlow(CreateNewPasswordState())
     val state: StateFlow<CreateNewPasswordState> = _state.asStateFlow()
 
-    // 2. One-time Event Management
-    private val _uiEvent = Channel<UiEvent>()
+    // 2. Shared Event Management
+    private val _uiEvent = Channel<AuthUiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
-    // 3. Handle Events
+    // Variables to hold data passed from the Forgot Password screen
+    private var targetEmail: String = ""
+    private var targetOtp: String = ""
+
+    // Initialize credentials when the screen is opened
+    fun initCredentials(email: String, otp: String) {
+        this.targetEmail = email
+        this.targetOtp = otp
+    }
+
+    // 3. Handle User Events
     fun onEvent(event: CreateNewPasswordEvent) {
         when (event) {
             is CreateNewPasswordEvent.PasswordChanged -> {
@@ -46,6 +61,8 @@ class CreateNewPasswordViewModel : ViewModel() {
         val currentState = _state.value
         var hasError = false
         var passErr: String? = null
+
+        // Password validation logic
         when {
             currentState.password.length < 8 -> {
                 passErr = "Password must be at least 8 characters long"
@@ -55,46 +72,51 @@ class CreateNewPasswordViewModel : ViewModel() {
                     !currentState.password.any { it.isLowerCase() } ||
                     !currentState.password.any { it.isDigit() } ||
                     !currentState.password.any { !it.isLetterOrDigit() } -> {
-                passErr = "Password must contain at least 1 uppercase, 1 lowercase, 1 digit, and 1 special character"
+                passErr = "Password must contain uppercase, lowercase, digit, and special char"
                 hasError = true
             }
         }
 
-        // Validate Confirm Password (only if the main password is valid)
+        // Confirm password matching
         if (!hasError && currentState.password != currentState.confirmPassword) {
             passErr = "Passwords do not match"
             hasError = true
         }
 
-        // Update UI if any errors exist
+        // Update state if validation fails
         if (hasError) {
             _state.update { it.copy(passwordError = passErr) }
             return
         }
 
-        // Proceed with mock API call
         callResetPasswordApi()
     }
 
     private fun callResetPasswordApi() {
         viewModelScope.launch {
-            // Show loading
+            // Turn on loading spinner
             _state.update { it.copy(isLoading = true) }
 
-            // Mock API delay
-            delay(1500)
+            // Call the API to update the password using the passed email and otp
+            val result = repository.updatePassword(
+                email = targetEmail,
+                otp = targetOtp,
+                newPassword = _state.value.password
+            )
 
-            // Hide loading
-            _state.update { it.copy(isLoading = false) }
-
-            // Navigate back to Sign In
-            _uiEvent.send(UiEvent.NavigateToSignIn)
+            result.fold(
+                onSuccess = {
+                    _state.update { it.copy(isLoading = false) }
+                    // Navigate back to Sign In screen upon success
+                    _uiEvent.trySend(AuthUiEvent.NavigateToSignIn)
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(
+                        isLoading = false,
+                        passwordError = error.message ?: "Failed to update password. Please try again."
+                    )}
+                }
+            )
         }
-    }
-
-    // UI Events
-    sealed interface UiEvent {
-        object NavigateToSignIn : UiEvent
-        data class ShowError(val message: String) : UiEvent
     }
 }

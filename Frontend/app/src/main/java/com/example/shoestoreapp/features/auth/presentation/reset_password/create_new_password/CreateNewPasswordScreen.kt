@@ -18,6 +18,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.shoestoreapp.features.auth.presentation.common.AuthUiEvent // IMPORTANT: Using the shared AuthUiEvent
 import com.example.shoestoreapp.features.auth.presentation.components.ResetPasswordContent
 import com.example.shoestoreapp.features.auth.presentation.components.ResetPasswordTopBar
 import com.example.shoestoreapp.features.auth.presentation.components.TitleBottom
@@ -26,31 +27,37 @@ import kotlinx.coroutines.flow.collectLatest
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateNewPasswordScreen(
+    email: String, // REQUIRED: Received from ForgotPasswordScreen via NavHost
+    otp: String,   // REQUIRED: Received from ForgotPasswordScreen via NavHost
     onNavigateToSignIn: () -> Unit = {},
     viewModel: CreateNewPasswordViewModel = viewModel()
 ) {
-    // 1. Collect State
+    // 1. Collect UI State
     val state by viewModel.state.collectAsState()
 
-    // 2. Listen for Navigation Events
+    // 2. Initialize credentials in ViewModel when screen opens
+    LaunchedEffect(email, otp) {
+        viewModel.initCredentials(email, otp)
+    }
+
+    // 3. Listen for shared Navigation Events
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collectLatest { event ->
             when (event) {
-                is CreateNewPasswordViewModel.UiEvent.NavigateToSignIn -> {
+                is AuthUiEvent.NavigateToSignIn -> {
                     onNavigateToSignIn()
                 }
-                is CreateNewPasswordViewModel.UiEvent.ShowError -> {
-                    // Show Snackbar
+                is AuthUiEvent.ShowError -> {
+                    // Future implementation: Show Snackbar with event.message
                 }
+                else -> Unit // Exhaustive when to satisfy SonarCloud
             }
         }
     }
 
     Scaffold(
         topBar = {
-            ResetPasswordTopBar(
-                onBackClick = onNavigateToSignIn
-            )
+            ResetPasswordTopBar(onBackClick = onNavigateToSignIn)
         },
         containerColor = Color.White
     ) { paddingValues ->
@@ -59,24 +66,24 @@ fun CreateNewPasswordScreen(
             title = "Create New Password",
             description = "Your new password must be different from previously used passwords."
         ) {
-            // New Password Input
+            // New Password Input Field
             NewPasswordInput(
                 state = state,
                 onEvent = viewModel::onEvent
             )
 
-            // Confirm Password Input
+            // Confirm Password Input Field
             ConfirmPasswordInput(
                 state = state,
                 onEvent = viewModel::onEvent
             )
 
-            // Error Display
+            // Display Error Message if any
             ErrorDisplay(errorText = state.passwordError)
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Reset Password Button
+            // Submit Button
             ResetPasswordButton(
                 isLoading = state.isLoading,
                 onEvent = viewModel::onEvent
@@ -97,8 +104,7 @@ fun ErrorDisplay(errorText: String?) {
                 text = errorText,
                 color = Color.Red,
                 fontSize = 12.sp,
-                modifier = Modifier
-                    .padding(start = 8.dp, top = 8.dp)
+                modifier = Modifier.padding(start = 8.dp, top = 8.dp)
             )
         }
     }
