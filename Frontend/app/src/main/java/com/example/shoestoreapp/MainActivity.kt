@@ -111,8 +111,9 @@ fun AppNavHost() {
         // Route 2.1: Forgot Password
         composable("forgot_password") {
             ForgotPasswordScreen(
-                onNavigateCreateNewPassword = {
-                    navController.navigate("create_new_password")
+                // Pass email and OTP to next screen via URL or bundle
+                onNavigateCreateNewPassword = { email, otp ->
+                    navController.navigate("create_new_password/$email/$otp")
                 },
                 onNavigateToSignIn = {
                     navController.navigate("sign_in")
@@ -121,8 +122,13 @@ fun AppNavHost() {
         }
 
         // Route 2.2: Create New Password
-        composable("create_new_password") {
+        composable("create_new_password/{email}/{otp}") {
+                backStackEntry ->
+            val email = backStackEntry.arguments?.getString("email") ?: ""
+            val otp = backStackEntry.arguments?.getString("otp") ?: ""
             CreateNewPasswordScreen(
+                email = email,
+                otp = otp,
                 onNavigateToSignIn = {
                     navController.navigate("sign_in")
                 }

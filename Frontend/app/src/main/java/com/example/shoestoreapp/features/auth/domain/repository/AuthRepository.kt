@@ -11,4 +11,10 @@ interface AuthRepository {
     suspend fun register(request: RegisterRequest): Result<String>
     suspend fun loginWithGoogle(idToken: String) : Result<LoginResponse>
     suspend fun loginWithFacebook(idToken: String): Result<LoginResponse>
+
+    suspend fun verifyEmail(email: String): Result<Unit>
+
+    suspend fun verifyOtp(email: String, otp: String): Result<Unit>
+
+    suspend fun updatePassword(email: String, otp: String, newPassword: String): Result<Unit>
 }

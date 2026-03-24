@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.shoestoreapp.features.auth.presentation.common.AuthUiEvent
 import com.example.shoestoreapp.features.auth.presentation.components.ResetPasswordContent
 import com.example.shoestoreapp.features.auth.presentation.components.ResetPasswordTopBar
 import com.example.shoestoreapp.features.auth.presentation.components.TitleBottom
@@ -26,7 +27,7 @@ import kotlinx.coroutines.flow.collectLatest
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ForgotPasswordScreen(
-    onNavigateCreateNewPassword: () -> Unit = {},
+    onNavigateCreateNewPassword: (String, String) -> Unit = { _, _ -> }, // Accepts 2 parameters: email and otp
     onNavigateToSignIn: () -> Unit = {},
     viewModel: ForgotPasswordViewModel = viewModel()
 ) {
@@ -35,12 +36,14 @@ fun ForgotPasswordScreen(
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collectLatest { event ->
             when (event) {
-                is ForgotPasswordViewModel.UiEvent.NavigateToCreateNewPassword -> {
-                    onNavigateCreateNewPassword()
+                is AuthUiEvent.NavigateToCreateNewPassword -> {
+                    // Pass email and otp to navigation graph
+                    onNavigateCreateNewPassword(event.email, event.otp)
                 }
-                is ForgotPasswordViewModel.UiEvent.ShowError -> {
-                    // Show Snackbar
+                is AuthUiEvent.ShowError -> {
+                    // Show Snackbar logic here
                 }
+                else -> Unit
             }
         }
     }
@@ -49,7 +52,6 @@ fun ForgotPasswordScreen(
         topBar = { ResetPasswordTopBar(onBackClick = onNavigateToSignIn) },
         containerColor = Color.White
     ) { paddingValues ->
-        // Call the encapsulated form component
         ForgotPasswordForm(
             state = state,
             onEvent = viewModel::onEvent,
@@ -111,7 +113,6 @@ fun ForgotPasswordSubmitButton(
             contentColor = Color.White
         )
     ) {
-        // Use 'when' expression instead of nested if-else for better readability
         val buttonText = when {
             state.isLoading -> "Loading..."
             !state.isCodeSent -> "Send Request"
@@ -139,7 +140,11 @@ fun VerificationCodeInput(
             Spacer(modifier = Modifier.height(20.dp))
             OutlinedTextField(
                 value = state.verificationCode,
-                onValueChange = { onEvent(ForgotPasswordEvent.VerificationCodeChanged(it)) },
+                onValueChange = {input ->
+                    // Limit number
+                    if (input.length <= 6 && input.all { it.isDigit() }) {
+                        onEvent(ForgotPasswordEvent.VerificationCodeChanged(input))
+                    }},
                 label = { Text("Verification Code", color = Color.Black) },
                 placeholder = { Text("Enter your verification code", color = Color.LightGray) },
                 modifier = Modifier.fillMaxWidth(),

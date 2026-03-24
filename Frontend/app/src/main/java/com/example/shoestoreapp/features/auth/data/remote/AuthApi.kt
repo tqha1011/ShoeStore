@@ -24,4 +24,13 @@ interface AuthApi {
     suspend fun loginWithFacebook(
         @Body request: FacebookAuthDto
     ): Response<LoginResponse>
+
+    @POST("api/RestorePass/verify-email")
+    suspend fun verifyEmail(@Body request: VerifyEmailRequest): Response<Unit>
+
+    @POST("api/RestorePass/verify-otp")
+    suspend fun verifyOtp(@Body request: VerifyOtpRequest): Response<Unit>
+
+    @POST("api/RestorePass/update-password")
+    suspend fun updatePassword(@Body request: UpdatePasswordRequest): Response<Unit>
 }
