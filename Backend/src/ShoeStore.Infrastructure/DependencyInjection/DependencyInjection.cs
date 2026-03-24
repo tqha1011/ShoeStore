@@ -5,6 +5,7 @@ using ShoeStore.Infrastructure.Data;
 using ShoeStore.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Infrastructure.Authentication;
+using ShoeStore.Application.Services;
 
 namespace ShoeStore.Infrastructure.DependencyInjection;
 
@@ -28,6 +29,8 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IUserRepository,UserRepository>();
         services.AddScoped<IAuthService,AuthService>();
+        services.AddScoped<IProductRepository,ProductRepository>();
+        services.AddScoped<IProductService, ProductService>();
         return services;
     }
 }
