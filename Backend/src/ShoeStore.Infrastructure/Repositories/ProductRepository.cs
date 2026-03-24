@@ -33,9 +33,9 @@ namespace ShoeStore.Infrastructure.Repositories
             return await _context.Products.AsNoTracking().FirstOrDefaultAsync(x => x.Id!.Equals(id), token);
         }
 
-        public IQueryable<Product> SeachProduct(ProductSearchRequest request)
+        public IQueryable<Product> SearchProduct(ProductSearchRequest request)
         {
-            return _context.Products.ApplySearch(request.Keyword).ApplyBrand(request.Brand).ApplyColorId(request.ColorId).ApplySizeId(request.SizeId).
+            return _context.Products.ApplySearch(request.Keyword).ApplyBrand(request.Brand).ApplyColorId(request.ListColorId).ApplySizeId(request.ListSizeId).
                 ApplyProductId(request.ProductId).ApplyPriceRange(request.MinPrice, request.MaxPrice).ApplySort(request.Sort).ApplyPaging(request.PageIndex, request.PageSize);
         }
     }

@@ -5,6 +5,6 @@ namespace ShoeStore.Application.Interface
 {
     public interface IProductRepository : IGenericRepository<Product, int>
     {
-        IQueryable<Product> SeachProduct(ProductSearchRequest request);
+        IQueryable<Product> SearchProduct(ProductSearchRequest request);
     }
 }

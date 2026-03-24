@@ -9,8 +9,8 @@ namespace ShoeStore.Application.DTOs.ProductDTOs
         public string? Keyword { get; set; }
         public string? Brand { get; set; }
         public int? ProductId { get; set; }
-        public int? ColorId { get; set; }
-        public int? SizeId { get; set; }
+        public List<int?>? ListColorId { get; set; }
+        public List<int?>? ListSizeId { get; set; }
         public decimal? MinPrice { get; set; }
         public decimal? MaxPrice { get; set; }
         public string? Sort { get; set; }
