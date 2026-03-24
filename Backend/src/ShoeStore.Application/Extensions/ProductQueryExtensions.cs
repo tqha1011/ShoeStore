@@ -22,10 +22,10 @@ namespace ShoeStore.Application.Extensions
             return query.Where(p => p.Brand != null && p.Brand.Contains(brand));
         }
 
-        public static IQueryable<Product> ApplySizeId(this IQueryable<Product> query, int? sizeId)
+        public static IQueryable<Product> ApplySizeId(this IQueryable<Product> query, List<int>? sizeIds)
         {
-            if (!sizeId.HasValue) return query;
-            return query.Where(p => p.ProductVariants.Any(v => v.SizeId == sizeId.Value));
+            if (sizeIds == null || !sizeIds.Any()) return query;
+            return query.Where(p => p.ProductVariants.Any(v => sizeIds.Contains(v.SizeId)));
         }
 
         public static IQueryable<Product> ApplyColorId(this IQueryable<Product> query, int? colorId)
