@@ -1,20 +1,17 @@
 using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
-using ShoeStore.Application.DependencyInjection;
-using ShoeStore.Infrastructure.DependencyInjection;
 using Scalar.AspNetCore;
 using ShoeStore.Api.JsonSerialize;
 using ShoeStore.Api.Middlewares;
-using DotNetEnv;
-using FluentValidation.AspNetCore;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Microsoft.AspNetCore.RateLimiting;
+using ShoeStore.Application.DependencyInjection;
+using ShoeStore.Infrastructure.DependencyInjection;
 
-Env.TraversePath().Load(); // load environment variables from .env file
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -30,7 +27,7 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddHttpClient();
-var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY");
+var jwtKey = builder.Configuration["JWT_KEY"];
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -47,7 +44,7 @@ builder.Services.AddAuthentication(options =>
         ValidAudience = builder.Configuration["JWT_AUDIENCE"],
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtKey ?? throw new InvalidOperationException("JWT_KEY is null"))
-            ),
+        ),
         ClockSkew = TimeSpan.Zero // set clock skew to zero to prevent token expiration issues
     };
 });
@@ -65,14 +62,14 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     options.OnRejected = async (context, cancellationToken) =>
     {
-        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan retryAfter))
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
         {
             context.HttpContext.Response.Headers.RetryAfter = $"{retryAfter.TotalSeconds}";
-            ProblemDetailsFactory problemDetailsFactory = context.HttpContext.RequestServices
-                                                              .GetService<ProblemDetailsFactory>() ??
-                                                          throw new InvalidOperationException(
-                                                              "ProblemDetailsFactory is null");
-            ProblemDetails problemDetails = problemDetailsFactory
+            var problemDetailsFactory = context.HttpContext.RequestServices
+                                            .GetService<ProblemDetailsFactory>() ??
+                                        throw new InvalidOperationException(
+                                            "ProblemDetailsFactory is null");
+            var problemDetails = problemDetailsFactory
                 .CreateProblemDetails(
                     context.HttpContext,
                     StatusCodes.Status429TooManyRequests,
@@ -80,7 +77,6 @@ builder.Services.AddRateLimiter(options =>
                     detail: $"Please retry after {retryAfter.TotalSeconds} seconds");
 
             await context.HttpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
-
         }
     };
     // this is for heavy-load api
@@ -95,7 +91,6 @@ builder.Services.AddRateLimiter(options =>
     {
         var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!string.IsNullOrEmpty(userId))
-        {
             return RateLimitPartition.GetTokenBucketLimiter(
                 userId,
                 _ => new TokenBucketRateLimiterOptions
@@ -104,7 +99,6 @@ builder.Services.AddRateLimiter(options =>
                     TokensPerPeriod = 3,
                     ReplenishmentPeriod = TimeSpan.FromMinutes(1)
                 });
-        }
 
         return RateLimitPartition.GetFixedWindowLimiter(
             httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
@@ -127,4 +121,3 @@ app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();
 app.Run();
-

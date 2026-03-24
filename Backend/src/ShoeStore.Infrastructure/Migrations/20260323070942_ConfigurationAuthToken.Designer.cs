@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ShoeStore.Infrastructure.Data;
@@ -11,9 +12,11 @@ using ShoeStore.Infrastructure.Data;
 namespace ShoeStore.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260323070942_ConfigurationAuthToken")]
+    partial class ConfigurationAuthToken
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -354,8 +357,8 @@ namespace ShoeStore.Infrastructure.Migrations
                     b.HasIndex("SizeId")
                         .HasDatabaseName("ix_product_variants_size_id");
 
-                    b.HasIndex("IsDeleted", "IsSelling", "Price")
-                        .HasDatabaseName("ix_product_variants_is_deleted_is_selling_price");
+                    b.HasIndex("IsDeleted", "IsSelling")
+                        .HasDatabaseName("ix_product_variants_is_deleted_is_selling");
 
                     b.HasIndex("ProductId", "ColorId", "SizeId")
                         .IsUnique()
