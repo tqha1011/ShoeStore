@@ -45,6 +45,15 @@ namespace ShoeStore.Application.Services
             product.ProductName = dto.ProductName;
             product.Brand = dto.Brand;
 
+            foreach(var variant in product.ProductVariants)
+            {
+                variant.Product = new Product
+                {
+                    ProductName = dto.ProductName,
+                    Brand = dto.Brand
+                };
+            }
+
             try
             {
                 _productRepository.Update(product);
