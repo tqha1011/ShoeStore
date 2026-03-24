@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using ShoeStore.Domain.Entities;
 
@@ -22,16 +23,16 @@ namespace ShoeStore.Application.Extensions
             return query.Where(p => p.Brand != null && p.Brand.Contains(brand));
         }
 
-        public static IQueryable<Product> ApplySizeId(this IQueryable<Product> query, List<int>? sizeIds)
+        public static IQueryable<Product> ApplySizeId(this IQueryable<Product> query, List<int?>? sizeIds)
         {
             if (sizeIds == null || !sizeIds.Any()) return query;
             return query.Where(p => p.ProductVariants.Any(v => sizeIds.Contains(v.SizeId)));
         }
 
-        public static IQueryable<Product> ApplyColorId(this IQueryable<Product> query, int? colorId)
+        public static IQueryable<Product> ApplyColorId(this IQueryable<Product> query, List<int?>? colorIds)
         {
-            if (!colorId.HasValue) return query;
-            return query.Where(p => p.ProductVariants.Any(v => v.ColorId == colorId.Value));
+            if (colorIds == null || !colorIds.Any()) return query;
+            return query.Where(p => p.ProductVariants.Any(v => colorIds.Contains(v.ColorId)));
         }
 
         public static IQueryable<Product> ApplyProductId(this IQueryable<Product> query, int? productId)
