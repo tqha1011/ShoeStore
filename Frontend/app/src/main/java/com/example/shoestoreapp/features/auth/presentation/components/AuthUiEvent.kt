@@ -6,4 +6,7 @@ sealed interface AuthUiEvent {
     object NavigateToSignUp : AuthUiEvent
     object NavigateToSignIn : AuthUiEvent
     data class ShowError(val message: String) : AuthUiEvent
+    data class NavigateToResetPassword(val email: String) : AuthUiEvent
+    data class NavigateToCreateNewPassword(val email: String, val otp: String) : AuthUiEvent
+
 }
