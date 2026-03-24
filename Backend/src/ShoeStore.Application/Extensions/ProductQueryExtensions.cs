@@ -46,7 +46,7 @@ namespace ShoeStore.Application.Extensions
             if (min.HasValue && max.HasValue && min > max)
                 throw new ArgumentException("MinPrice không được lớn hơn MaxPrice");
 
-            if(min.HasValue && max.HasValue)
+            if(min.HasValue || max.HasValue)
             {
                 query = query.Where(p => p.ProductVariants.Any( v => 
                     v.IsSelling && v.IsDeleted && (!min.HasValue || v.Price >= min.Value) &&
@@ -60,8 +60,6 @@ namespace ShoeStore.Application.Extensions
         {
             return sort switch
             {
-                "name_asc" => query.OrderBy(p => p.ProductName),
-                "name_desc" => query.OrderByDescending(p => p.ProductName),
                 "price_asc" => query.OrderBy(p => p.ProductVariants
                                     .Where(v => v.IsSelling && !v.IsDeleted)
                                     .Min(v => v.Price)),
