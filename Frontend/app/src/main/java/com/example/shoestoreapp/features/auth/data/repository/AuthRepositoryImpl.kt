@@ -7,6 +7,9 @@
     import com.example.shoestoreapp.features.auth.data.remote.LoginResponse
     import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
     import com.example.shoestoreapp.features.auth.data.remote.RegisterRequest
+    import com.example.shoestoreapp.features.auth.data.remote.UpdatePasswordRequest
+    import com.example.shoestoreapp.features.auth.data.remote.VerifyEmailRequest
+    import com.example.shoestoreapp.features.auth.data.remote.VerifyOtpRequest
     import retrofit2.HttpException
     import java.io.IOException
     class AuthRepositoryImpl(
@@ -104,6 +107,44 @@
                 Result.failure(Exception(ERROR_OFFLINE))
             } catch (e: Exception) {
                 Result.failure(Exception(e.message ?: ERROR_UNEXPECTED))
+            }
+        }
+        override suspend fun verifyEmail(email: String): Result<Unit> {
+            return try {
+                val response = api.verifyEmail(VerifyEmailRequest(email))
+                if (response.isSuccessful) {
+                    Result.success(Unit)
+                } else {
+                    Result.failure(Exception("Email not found or error occurred"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+        override suspend fun verifyOtp(email: String, otp: String): Result<Unit> {
+            return try {
+                val response = api.verifyOtp(VerifyOtpRequest(email, otp))
+                if (response.isSuccessful) {
+                    Result.success(Unit)
+                } else {
+                    Result.failure(Exception("Invalid OTP. Please try again."))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+        override suspend fun updatePassword(email: String, otp: String, newPassword: String): Result<Unit> {
+            return try {
+                val response = api.updatePassword(UpdatePasswordRequest(email, otp, newPassword))
+                if (response.isSuccessful) {
+                    Result.success(Unit)
+                } else {
+                    Result.failure(Exception("Failed to update password."))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
             }
         }
     }
