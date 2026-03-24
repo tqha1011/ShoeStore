@@ -3,8 +3,11 @@ package com.example.shoestoreapp.features.auth.presentation.reset_password.forgo
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.shoestoreapp.core.networks.RetrofitInstance
+import com.example.shoestoreapp.features.auth.data.repository.AuthRepositoryImpl
+import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
+import com.example.shoestoreapp.features.auth.presentation.common.AuthUiEvent // Dùng hàng chung
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,14 +15,16 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ForgotPasswordViewModel : ViewModel() {
+class ForgotPasswordViewModel(
+    private val repository: AuthRepository = AuthRepositoryImpl(RetrofitInstance.authApi)
+) : ViewModel() {
 
     // 1. UI State Management
     private val _state = MutableStateFlow(ForgotPasswordState())
     val state: StateFlow<ForgotPasswordState> = _state.asStateFlow()
 
-    // 2. One-time Event Management
-    private val _uiEvent = Channel<UiEvent>()
+    // 2. One-time Event Management (DÙNG CHUẨN AuthUiEvent)
+    private val _uiEvent = Channel<AuthUiEvent>()
     val uiEvent = _uiEvent.receiveAsFlow()
 
     // 3. Handle Events
@@ -40,6 +45,7 @@ class ForgotPasswordViewModel : ViewModel() {
         }
     }
 
+    // Send verificationcode
     private fun sendVerificationCode() {
         val currentState = _state.value
         var hasError = false
@@ -52,27 +58,29 @@ class ForgotPasswordViewModel : ViewModel() {
             emailErr = "Invalid email format"
             hasError = true
         }
-
         if (hasError) {
             _state.update { it.copy(emailError = emailErr) }
             return
         }
 
         viewModelScope.launch {
-            // Show loading
             _state.update { it.copy(isLoading = true) }
 
-            // Mock API call to send email
-            delay(1500)
+            // Gọi API kiểm tra Email & Gửi OTP
+            val result = repository.verifyEmail(currentState.email)
 
-            // Hide loading and show the verification code input field
-            _state.update { it.copy(
-                isLoading = false,
-                isCodeSent = true
-            )}
+            result.fold(
+                onSuccess = {
+                    _state.update { it.copy(isLoading = false, isCodeSent = true) }
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(isLoading = false, emailError = error.message) }
+                }
+            )
         }
     }
 
+    // Submit verificationcode
     private fun verifyCode() {
         val currentState = _state.value
 
@@ -82,23 +90,21 @@ class ForgotPasswordViewModel : ViewModel() {
         }
 
         viewModelScope.launch {
-            // Show loading
             _state.update { it.copy(isLoading = true) }
 
-            // Mock API call to verify code
-            delay(1500)
+            // Call Api to check
+            val result = repository.verifyOtp(currentState.email, currentState.verificationCode)
 
-            // Hide loading
-            _state.update { it.copy(isLoading = false) }
-
-            // Trigger navigation
-            _uiEvent.send(UiEvent.NavigateToCreateNewPassword)
+            result.fold(
+                onSuccess = {
+                    _state.update { it.copy(isLoading = false) }
+                    // Thành công OTP: Bắn event chở data sang màn CreateNewPassword
+                    _uiEvent.trySend(AuthUiEvent.NavigateToCreateNewPassword(currentState.email, currentState.verificationCode))
+                },
+                onFailure = { error ->
+                    _state.update { it.copy(isLoading = false, verificationError = error.message) }
+                }
+            )
         }
-    }
-
-    // UI Events
-    sealed interface UiEvent {
-        object NavigateToCreateNewPassword : UiEvent
-        data class ShowError(val message: String) : UiEvent
     }
 }
