@@ -26,7 +26,6 @@ namespace ShoeStore.Application.Services
         {
             var product = new Product
             {
-                PublicId = Guid.NewGuid(),
                 ProductName = dto.ProductName,
                 Brand = dto.Brand
             };
