@@ -6,7 +6,7 @@ using ShoeStore.Application.Interface;
 namespace ShoeStore.API.Controllers;
 [Route("api/admin/products")]
 [ApiController]
-[Authorize(Roles = "Admin")]
+// [Authorize(Roles = "Admin")]
 public class AdminProductController(IProductService productService) : ControllerBase
 {
     /// <summary>
