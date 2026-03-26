@@ -22,7 +22,7 @@ namespace ShoeStore.Application.Services
             _productRepository = productRepository;
         }
 
-        public void AddProduct(CreateProductDto dto)
+        public async Task AddProduct(CreateProductDto dto)
         {
             var product = new Product
             {
@@ -30,7 +30,7 @@ namespace ShoeStore.Application.Services
                 Brand = dto.Brand
             };
             _productRepository.Add(product);
-            _uow.SaveChangesAsync();
+            await _uow.SaveChangesAsync();
         }
         public async Task<ErrorOr<Success>> UpdateProduct(int id, UpdateProductDto dto, CancellationToken token)
         {
@@ -67,10 +67,20 @@ namespace ShoeStore.Application.Services
                     description: "Có lỗi xảy ra trong quá trình lưu cập nhật.");
             }
         }
+        public async Task DeleteProduct(int id, CancellationToken token)
+        {
+            var product = await _productRepository.GetByIdAsync(id, token);
 
+            foreach(var variant in product.ProductVariants)
+            {
+                variant.IsDeleted = true;
+            }
+
+            await _uow.SaveChangesAsync(token);
+        }
         public async Task<ErrorOr<IEnumerable<ProductResponseDto>>> GetProductAsync(ProductSearchRequest request, CancellationToken token)
         {
-            var query =  _productRepository.SeachProduct(request);
+            var query =  _productRepository.SearchProduct(request);
             var items =  query.Select(p => new ProductResponseDto
             {
                 Id = p.Id,
