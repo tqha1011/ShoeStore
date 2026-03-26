@@ -19,7 +19,12 @@ namespace ShoeStore.Application.Interface
         // Update the product
         Task<ErrorOr<Success>> UpdateProduct(int id, UpdateProductDto dto, CancellationToken token);
 
+        // Soft delete product
         Task DeleteProduct(int id, CancellationToken token);
+
+        // Get all product
+        Task<IEnumerable<Product>> GetAllProducts();
+
         // Get the product request
         Task<ErrorOr<IEnumerable<ProductResponseDto>>> GetProductAsync(ProductSearchRequest request, CancellationToken  token);
     }

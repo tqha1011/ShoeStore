@@ -7,6 +7,6 @@ namespace ShoeStore.Application.Interface
     {
         IQueryable<Product> SearchProduct(ProductSearchRequest request);
 
-        IEnumerable<Product> GetAll();
+        Task<IEnumerable<Product>> GetAll();
     }
 }
