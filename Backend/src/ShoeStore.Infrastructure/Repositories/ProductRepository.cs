@@ -34,8 +34,15 @@ namespace ShoeStore.Infrastructure.Repositories
         }
         public IQueryable<Product> SearchProduct(ProductSearchRequest request)
         {
-            return _context.Products.ApplySearch(request.Keyword).ApplyBrand(request.Brand).ApplyColorId(request.ListColorId).ApplySizeId(request.ListSizeId).
-                ApplyProductId(request.ProductId).ApplyPriceRange(request.MinPrice, request.MaxPrice).ApplySort(request.Sort).ApplyPaging(request.PageIndex, request.PageSize);
+            return _context.Products.ApplySearch(request.Keyword)
+                                    .ApplyBrand(request.Brand)
+                                    .ApplyColorId(request.ListColorId)
+                                    .ApplySizeId(request.ListSizeId)
+                                    .ApplyProductId(request.ProductId)
+                                    .ApplyPriceRange(request.MinPrice, request.MaxPrice)
+                                    .ApplySort(request.Sort)
+                                    .ApplyPaging(request.PageIndex, request.PageSize)
+                                    .AsQueryable();
         }
     }
 }

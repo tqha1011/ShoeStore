@@ -44,12 +44,12 @@ namespace ShoeStore.Application.Extensions
         public static IQueryable<Product> ApplyPriceRange(this IQueryable<Product> query, decimal? min, decimal? max)
         {
             if (min.HasValue && max.HasValue && min > max)
-                throw new ArgumentException("MinPrice không được lớn hơn MaxPrice");
+                return query;
 
             if(min.HasValue || max.HasValue)
             {
                 query = query.Where(p => p.ProductVariants.Any( v => 
-                    v.IsSelling && v.IsDeleted && (!min.HasValue || v.Price >= min.Value) &&
+                    v.IsSelling && !v.IsDeleted && (!min.HasValue || v.Price >= min.Value) &&
                     (!max.HasValue || v.Price <= max.Value)));
             }
 
@@ -61,12 +61,12 @@ namespace ShoeStore.Application.Extensions
             return sort switch
             {
                 "price_asc" => query.OrderBy(p => p.ProductVariants
-                                    .Where(v => v.IsSelling && !v.IsDeleted)
-                                    .Min(v => v.Price)),
+                            .Where(v => v.IsSelling && !v.IsDeleted)
+                            .Min(v => (decimal?)v.Price)),
                 "price_desc" => query.OrderByDescending(p => p.ProductVariants
                                     .Where(v => v.IsSelling && !v.IsDeleted)
-                                    .Max(v => v.Price)),
-                _ => query.OrderBy(p => p.ProductName) // default
+                                    .Max(v => (decimal?)v.Price)),
+                _ => query.OrderBy(p => p.ProductName)
             };
         }
 

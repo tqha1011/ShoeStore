@@ -13,7 +13,7 @@ namespace ShoeStore.Application.DTOs.ProductDTOs
         public List<int?>? ListSizeId { get; set; }
         public decimal? MinPrice { get; set; }
         public decimal? MaxPrice { get; set; }
-        public string? Sort { get; set; }
+        public string? Sort { get; set; } = "default";
 
         private int _pageIndex = 1;
         public int PageIndex

@@ -7,14 +7,17 @@ namespace ShoeStore.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ProductsController(IProductService productService) : ControllerBase
+    public class ProductsController(IProductService _productService) : ControllerBase
     {
         [HttpGet("search")]
         public async Task<IActionResult> Search([FromQuery] ProductSearchRequest request, CancellationToken token)
         {
-            var results = await productService.GetProductsAsync(request, token);
+            var results = await _productService.GetProductsAsync(request, token);
 
-            return Ok(results);
+            return results.Match<IActionResult>(
+                    pageResult => Ok(pageResult),
+                    errors => BadRequest(errors)
+                );
         }
     }
 }

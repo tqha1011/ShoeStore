@@ -23,16 +23,22 @@ namespace ShoeStore.Application.Services
         }
         public async Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsAsync(ProductSearchRequest request, CancellationToken token)
         {
+            // Validate pagination parameters
             if (request.PageIndex <= 0)
-                return Error.Validation("Pagination.PageNumber", "Số trang phải lớn hơn 0.");
+                return Error.Validation("Pagination.PageIndex", "Page index must be greater than 0.");
 
-            if (request.PageSize <= 0 || request.PageSize > 100)
-                return Error.Validation("Pagination.PageSize", "Kích thước trang phải từ 1 đến 100.");
+            if (request.PageSize <= 0 || request.PageSize > 50)
+                return Error.Validation("Pagination.PageSize", "Page size must be between 1 and 50.");
+
             try
             {
+                // Get the queryable result from repository
                 var query = _productRepository.SearchProduct(request);
+
+                // Get total count before applying paging
                 var totalCount = await query.CountAsync(token);
 
+                // Apply pagination and fetch products
                 var products = await query
                     .Select(p => new ProductResponseDto
                     {
@@ -40,26 +46,27 @@ namespace ShoeStore.Application.Services
                         ProductName = p.ProductName,
                         Brand = p.Brand ?? string.Empty,
                         AvailableColors = p.ProductVariants
-                            .Where(v => v.IsSelling && !v.IsDeleted)
+                            .Where(v => v.IsSelling && !v.IsDeleted && v.Color != null)
                             .Select(v => v.Color!.ColorName)
                             .Distinct()
                             .ToList(),
                         AvailableSizes = p.ProductVariants
-                            .Where(v => v.IsSelling && !v.IsDeleted)
+                            .Where(v => v.IsSelling && !v.IsDeleted && v.Size != null)
                             .Select(v => v.Size!.Size)
                             .Distinct()
                             .ToList(),
                         MinPrice = p.ProductVariants
                             .Where(v => v.IsSelling && !v.IsDeleted)
-                            .Min(v => v.Price),
+                            .Where(v => v.IsSelling && !v.IsDeleted)
+                            .Min(v => (decimal?)v.Price) ?? 0,
                         ThumbnailUrl = p.ProductVariants
                             .Where(v => v.IsSelling && !v.IsDeleted)
                             .Select(v => v.ImageUrl!)
-                            .Distinct()
-                            .ToList()
+                            .ToList(),
                     })
                     .ToListAsync(token);
 
+                // Build and return paged result
                 var pageResult = new PageResult<ProductResponseDto>
                 {
                     Items = products,
@@ -72,11 +79,12 @@ namespace ShoeStore.Application.Services
             }
             catch (Exception ex)
             {
-                return Error.Unexpected(code: "Product.SearchFailed",
-                    description: "An error occurred while searching for products.");
+                return Error.Unexpected(
+                   code: "Product.SearchFailed",
+                   description: ex.Message + " | " + ex.InnerException?.Message
+                );
             }
         }
-
         public async Task<ErrorOr<ProductResponseDto>> GetProductByIdAsync(int id, CancellationToken token)
         {
             // Validate input
@@ -147,7 +155,6 @@ namespace ShoeStore.Application.Services
                     description: "An error occurred while creating the product.");
             }
         }
-
         public async Task<ErrorOr<Updated>> UpdateProductAsync(int id, UpdateProductDto dto, CancellationToken token)
         {
             // Validate product ID
@@ -204,7 +211,6 @@ namespace ShoeStore.Application.Services
                     description: "An error occurred while updating the product.");
             }
         }
-
         public async Task<ErrorOr<Deleted>> DeleteProductAsync(int id, CancellationToken token)
         {
             // Validate product ID
