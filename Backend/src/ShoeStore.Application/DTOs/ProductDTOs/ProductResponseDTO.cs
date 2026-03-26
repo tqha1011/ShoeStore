@@ -15,6 +15,6 @@ namespace ShoeStore.Application.DTOs.ProductDTOs
 
         public decimal MinPrice { get; set; }
 
-        public string? ThumbnailUrl { get; set; }
+        public List<string> ThumbnailUrl { get; set; } = new();
     }
 }

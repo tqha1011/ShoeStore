@@ -22,102 +22,29 @@ namespace ShoeStore.Application.Services
             _productRepository = productRepository;
         }
 
-        public async Task AddProduct(CreateProductDto dto)
+        // 1. Lấy danh sách (Search/Filter/Paging)
+        // Trả về danh sách đã phân trang
+        public async Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsAsync(ProductSearchRequest request, CancellationToken token)
         {
-            var product = new Product
-            {
-                ProductName = dto.ProductName,
-                Brand = dto.Brand
-            };
-            _productRepository.Add(product);
-            await _uow.SaveChangesAsync();
-        }
-        public async Task<ErrorOr<Success>> UpdateProduct(int id, UpdateProductDto dto, CancellationToken token)
-        {
-            var product = await _productRepository.GetByIdAsync(id, token);
-            if (product == null)
-            {
-                return Error.NotFound(
-                    code: "Product.NotFound",
-                    description: $"Không tìm thấy sản phẩm với Id: {id}");
-            }
+            var query = _productRepository.SearchProduct(request);
 
-            product.ProductName = dto.ProductName;
-            product.Brand = dto.Brand;
 
-            foreach(var variant in product.ProductVariants)
-            {
-                variant.Product = new Product
-                {
-                    ProductName = dto.ProductName,
-                    Brand = dto.Brand
-                };
-            }
-
-            try
-            {
-                _productRepository.Update(product);
-                await _uow.SaveChangesAsync(token);
-                return Result.Success;
-            }
-            catch (Exception)
-            {
-                return Error.Failure(
-                    code: "Product.UpdateError",
-                    description: "Có lỗi xảy ra trong quá trình lưu cập nhật.");
-            }
-        }
-        public async Task DeleteProduct(int id, CancellationToken token)
-        {
-            var product = await _productRepository.GetByIdAsync(id, token);
-
-            foreach(var variant in product.ProductVariants)
-            {
-                variant.IsDeleted = true;
-            }
-
-            await _uow.SaveChangesAsync(token);
         }
 
-        public async Task<IEnumerable<Product>> GetAllProducts()
-        {
-            return await _productRepository.GetAll();
-        }
+        // 2. Lấy chi tiết (Dùng ProductResponseDto)
+        Task<ErrorOr<ProductResponseDto>> GetProductByIdAsync(int id, CancellationToken token);
 
-        public async Task<ErrorOr<IEnumerable<ProductResponseDto>>> GetProductAsync(ProductSearchRequest request, CancellationToken token)
-        {
-            var query =  _productRepository.SearchProduct(request);
-            var items =  query.Select(p => new ProductResponseDto
-            {
-                Id = p.Id,
-                ProductName = p.ProductName,
-                Brand = p.Brand ?? string.Empty,
+        // 3. Thêm mới: Dùng Status "Created" 
+        // Hoặc trả về chính ProductResponseDto để lấy ID mới tạo
+        Task<ErrorOr<Created>> AddProductAsync(CreateProductDto dto, CancellationToken token);
 
-                // Lấy giá thấp nhất trong các biến thể của sản phẩm
-                MinPrice = p.ProductVariants.Where(v => v.IsSelling && !v.IsDeleted)
-                                            .Any()? p.ProductVariants
-                                            .Where(v => v.IsSelling && !v.IsDeleted)
-                                            .Min(v => v.Price) : 0,
+        // 4. Cập nhật: Dùng Status "Updated"
+        Task<ErrorOr<Updated>> UpdateProductAsync(int id, UpdateProductDto dto, CancellationToken token);
 
-                // Lấy danh sách tên màu (distinct để không bị lặp)
-                AvailableColors = p.ProductVariants
-                        .Select(v => v.Color.ColorName)
-                        .Distinct()
-                        .ToList(),
+        // 5. Xóa: Dùng Status "Deleted"
+        Task<ErrorOr<Deleted>> DeleteProductAsync(int id, CancellationToken token);
 
-                // Lấy danh sách size số
-                AvailableSizes = p.ProductVariants
-                        .Select(v => v.Size.Size)
-                        .Distinct()
-                        .ToList(),
-
-                // Lấy cái ảnh đầu tiên làm Thumbnail
-                ThumbnailUrl = p.ProductVariants
-                        .Select(v => v.ImageUrl)
-                        .FirstOrDefault()
-            });
-
-            return await items.ToListAsync(token);
-        }
+        // 6. Các thao tác phụ khác: Dùng Status "Success"
+        Task<ErrorOr<Success>> ToggleStatusAsync(int id, CancellationToken token);
     }
 }

@@ -13,19 +13,24 @@ namespace ShoeStore.Application.Interface
 
     public interface IProductService
     {
-        // Add the product
-        Task AddProduct(CreateProductDto dto);
+        // 1. Lấy danh sách (Search/Filter/Paging)
+        // Trả về danh sách đã phân trang
+        Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsAsync(ProductSearchRequest request, CancellationToken token);
 
-        // Update the product
-        Task<ErrorOr<Success>> UpdateProduct(int id, UpdateProductDto dto, CancellationToken token);
+        // 2. Lấy chi tiết (Dùng ProductResponseDto)
+        Task<ErrorOr<ProductResponseDto>> GetProductByIdAsync(int id, CancellationToken token);
 
-        // Soft delete product
-        Task DeleteProduct(int id, CancellationToken token);
+        // 3. Thêm mới: Dùng Status "Created" 
+        // Hoặc trả về chính ProductResponseDto để lấy ID mới tạo
+        Task<ErrorOr<Created>> AddProductAsync(CreateProductDto dto, CancellationToken token);
 
-        // Get all product
-        Task<IEnumerable<Product>> GetAllProducts();
+        // 4. Cập nhật: Dùng Status "Updated"
+        Task<ErrorOr<Updated>> UpdateProductAsync(int id, UpdateProductDto dto, CancellationToken token);
 
-        // Get the product request
-        Task<ErrorOr<IEnumerable<ProductResponseDto>>> GetProductAsync(ProductSearchRequest request, CancellationToken  token);
+        // 5. Xóa: Dùng Status "Deleted"
+        Task<ErrorOr<Deleted>> DeleteProductAsync(int id, CancellationToken token);
+
+        // 6. Các thao tác phụ khác: Dùng Status "Success"
+        Task<ErrorOr<Success>> ToggleStatusAsync(int id, CancellationToken token);
     }
 }
