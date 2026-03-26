@@ -125,23 +125,6 @@ namespace ShoeStore.Application.Services
             if (string.IsNullOrWhiteSpace(dto.ProductName))
                 return Error.Validation("Product.ProductName", "Product name is required.");
 
-            // Validate variants exist
-            if (dto.Variants == null || !dto.Variants.Any())
-                return Error.Validation("Product.Variants", "At least one product variant is required.");
-
-            // Validate each variant
-            foreach (var variant in dto.Variants)
-            {
-                if (variant.SizeId <= 0)
-                    return Error.Validation("ProductVariant.SizeId", "Size ID must be greater than 0.");
-
-                if (variant.Stock < 0)
-                    return Error.Validation("ProductVariant.Stock", "Stock cannot be negative.");
-
-                if (variant.Price <= 0)
-                    return Error.Validation("ProductVariant.Price", "Price must be greater than 0.");
-            }
-
             try
             {
                 // Create new Product entity
