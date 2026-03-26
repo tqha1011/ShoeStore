@@ -78,6 +78,12 @@ namespace ShoeStore.Application.Services
 
             await _uow.SaveChangesAsync(token);
         }
+
+        public async Task<IEnumerable<Product>> GetAllProducts()
+        {
+            return await _productRepository.GetAll();
+        }
+
         public async Task<ErrorOr<IEnumerable<ProductResponseDto>>> GetProductAsync(ProductSearchRequest request, CancellationToken token)
         {
             var query =  _productRepository.SearchProduct(request);
