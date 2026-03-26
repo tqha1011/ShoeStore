@@ -10,7 +10,7 @@ namespace ShoeStore.Infrastructure.Authentication;
 
 public class TokenService(IConfiguration configuration) : ITokenService
 {
-    public string GenerateToken(int userId, string email, UserRole role)
+    public string GenerateToken(Guid userPublicId, string email, UserRole role)
     {
         // Gets variables from .env
         var secretKey = configuration["JWT_KEY"] ?? throw new InvalidOperationException("JWT_KEY is missing");
@@ -20,7 +20,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, userId.ToString()),
+            new(ClaimTypes.NameIdentifier, userPublicId.ToString()),
             new(ClaimTypes.Email, email),
             new(ClaimTypes.Role, role.ToString())
         };

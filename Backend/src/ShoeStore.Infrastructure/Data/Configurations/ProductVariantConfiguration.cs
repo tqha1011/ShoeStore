@@ -46,7 +46,7 @@ public class ProductVariantConfiguration : IEntityTypeConfiguration<ProductVaria
         
         builder.HasIndex(c => new { c.ProductId, c.ColorId, c.SizeId }).IsUnique();
         
-        builder.HasIndex(c => new { c.IsDeleted, c.IsSelling });
+        builder.HasIndex(c => new { c.IsDeleted, c.IsSelling, c.Price });
         
         builder.Property(c => c.PublicId)
             .HasDefaultValueSql("gen_random_uuid()");
