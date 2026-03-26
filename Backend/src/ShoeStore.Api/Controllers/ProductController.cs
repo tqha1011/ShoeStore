@@ -12,7 +12,7 @@ namespace ShoeStore.Api.Controllers
         [HttpGet("search")]
         public async Task<IActionResult> Search([FromQuery] ProductSearchRequest request, CancellationToken token)
         {
-            var results = await productService.GetProductAsync(request, token);
+            var results = await productService.GetProductsAsync(request, token);
 
             return Ok(results);
         }

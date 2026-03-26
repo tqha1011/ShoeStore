@@ -30,7 +30,5 @@ namespace ShoeStore.Application.Interface
         // 5. Xóa: Dùng Status "Deleted"
         Task<ErrorOr<Deleted>> DeleteProductAsync(int id, CancellationToken token);
 
-        // 6. Các thao tác phụ khác: Dùng Status "Success"
-        Task<ErrorOr<Success>> ToggleStatusAsync(int id, CancellationToken token);
     }
 }
