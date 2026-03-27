@@ -1,7 +1,7 @@
 using ErrorOr;
 using ShoeStore.Application.DTOs.AuthDTOs;
 
-namespace ShoeStore.Application.Interface;
+namespace ShoeStore.Application.Interface.Authentication;
 
 public interface IAuthService
 {

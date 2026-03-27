@@ -6,6 +6,8 @@ using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
 using Google.Apis.Auth;
 using Microsoft.Extensions.Configuration;
+using ShoeStore.Application.Interface.Authentication;
+using ShoeStore.Application.Interface.Common;
 
 namespace ShoeStore.Infrastructure.Authentication;
 
