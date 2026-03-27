@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using ErrorOr;
 using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.ProductDTOs;
-using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Interface
 {

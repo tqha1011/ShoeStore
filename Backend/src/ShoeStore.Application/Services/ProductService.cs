@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.Interface;
 using ShoeStore.Domain.Entities;
-using ShoeStore.Application.DTOs.ProductVariantDTOs;
 using ErrorOr;
 
 namespace ShoeStore.Application.Services
@@ -184,20 +180,31 @@ namespace ShoeStore.Application.Services
                 // Process variants: update existing, add new, delete removed
                 foreach (var variantDto in dto.Variants)
                 {
-                    var existingVariant = existingVariants.FirstOrDefault(v => v.PublicId == variantDto.PublicId);
+                    var existingVariant = existingVariants.FirstOrDefault(v => v.Product.Id == id);
 
                     if (existingVariant != null)
                     {
                         // Update existing variant
+                        existingVariant.ProductId = id;
                         existingVariant.SizeId = variantDto.SizeId;
                         existingVariant.ColorId = variantDto.ColorId;
                         existingVariant.Stock = variantDto.Stock;
                         existingVariant.IsSelling = variantDto.IsSelling;
                         existingVariant.ImageUrl = variantDto.ImageUrl;
                         existingVariant.Price = variantDto.Price;
-                        existingVariant.IsDeleted = true;
+                        existingVariant.Product = product;
                     }
                 }
+                //var dtoPublicIds = dto.Variants
+                //    .Select(v => v.PublicId)
+                //    .ToHashSet();
+
+                //var variantsToRemove = existingVariants
+                //    .Where(v => !dtoPublicIds.Contains(v.PublicId))
+                //    .ToList();
+
+                //foreach (var variant in variantsToRemove)
+                //    product.ProductVariants.Remove(variant);
 
                 // Update product in repository and save
                 _productRepository.Update(product);
@@ -208,7 +215,7 @@ namespace ShoeStore.Application.Services
             catch (Exception ex)
             {
                 return Error.Unexpected(code: "Product.UpdateFailed",
-                    description: "An error occurred while updating the product.");
+                    description: ex.Message); // ← tạm thời để debug
             }
         }
         public async Task<ErrorOr<Deleted>> DeleteProductAsync(int id, CancellationToken token)
