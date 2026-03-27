@@ -4,7 +4,7 @@ using System.Text;
 
 namespace ShoeStore.Application.DTOs.ProductVariantDTOs
 {
-    public class CreateProductVariantDto
+    public class ProductVariantResponeDto
     {
         public int SizeId { get; set; }
         public int Size { get; set; }
@@ -14,5 +14,6 @@ namespace ShoeStore.Application.DTOs.ProductVariantDTOs
         public decimal Price { get; set; }
         public string? ImageUrl { get; set; }
         public bool IsSelling { get; set; }
+        public bool IsDelete { get; set; }
     }
 }

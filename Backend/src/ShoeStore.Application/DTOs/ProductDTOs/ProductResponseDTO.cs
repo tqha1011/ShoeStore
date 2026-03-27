@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿
+using ShoeStore.Application.DTOs.ProductVariantDTOs;
 
 namespace ShoeStore.Application.DTOs.ProductDTOs
 {
@@ -9,12 +8,6 @@ namespace ShoeStore.Application.DTOs.ProductDTOs
         public int Id { get; set; }
         public string ProductName { get; set; } = string.Empty;
         public string Brand { get; set; } = string.Empty;
-
-        public List<string> AvailableColors { get; set; } = new();
-        public List<int> AvailableSizes { get; set; } = new();
-
-        public decimal MinPrice { get; set; }
-
-        public List<string> ThumbnailUrl { get; set; } = new();
+        public List<ProductVariantResponeDto> Variants { get; set; } = new List<ProductVariantResponeDto>();
     }
 }

@@ -25,7 +25,7 @@ public class AdminProductController(IProductService productService) : Controller
     /// <summary>
     /// Get product details by ID
     /// </summary>
-    [HttpGet("{id}")]
+    [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(int id, CancellationToken token)
     {
         var result = await productService.GetProductByIdAsync(id, token);
@@ -56,7 +56,7 @@ public class AdminProductController(IProductService productService) : Controller
     /// <summary>
     /// Update an existing product
     /// </summary>
-    [HttpPut("{id}")]
+    [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateProductDto productDto, CancellationToken token)
     {
         if (!ModelState.IsValid)
@@ -78,7 +78,7 @@ public class AdminProductController(IProductService productService) : Controller
     /// <summary>
     /// Delete a product by ID
     /// </summary>
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(int id, CancellationToken token)
     {
         var result = await productService.DeleteProductAsync(id, token);
