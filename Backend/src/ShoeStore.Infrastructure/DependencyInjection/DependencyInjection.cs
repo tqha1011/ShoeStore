@@ -1,7 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ShoeStore.Application.Interface;
+using ShoeStore.Infrastructure.Authentication;
 using ShoeStore.Infrastructure.Data;
+using ShoeStore.Infrastructure.Notification;
 using ShoeStore.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Infrastructure.Authentication;
@@ -16,14 +19,14 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         // register dependency injection in infrastructure layer
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddDbContext<AppDbContext>(options => 
-            options.UseNpgsql(connectionString, 
-                npgsqlOptionsAction: opt 
+        services.AddDbContext<AppDbContext>(options =>
+            options.UseNpgsql(connectionString,
+                opt
                     => opt.EnableRetryOnFailure(
-                        maxRetryCount: 5,
-                        maxRetryDelay: TimeSpan.FromSeconds(30),
-                        errorCodesToAdd: null)).UseSnakeCaseNamingConvention());
-        
+                        5,
+                        TimeSpan.FromSeconds(30),
+                        null)).UseSnakeCaseNamingConvention());
+
         services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
         services.AddScoped<IPasswordHash, PasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();

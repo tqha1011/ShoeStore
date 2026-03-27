@@ -4,5 +4,5 @@ namespace ShoeStore.Application.Interface;
 
 public interface ITokenService
 {
-    string GenerateToken(int userId, string email, UserRole role);
+    string GenerateToken(Guid userPublicId, string email, UserRole role);
 }
