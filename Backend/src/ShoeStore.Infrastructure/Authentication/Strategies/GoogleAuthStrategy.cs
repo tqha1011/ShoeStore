@@ -7,18 +7,16 @@ using ShoeStore.Application.Interface.Strategies;
 namespace ShoeStore.Infrastructure.Authentication.Strategies;
 
 /// <summary>
-/// Apply strategy pattern to handle different social authentication providers.
-/// This class implements the ISocialAuthStrategy interface for Google authentication.
+///     Apply strategy pattern to handle different social authentication providers.
+///     This class implements the ISocialAuthStrategy interface for Google authentication.
 /// </summary>
 public class GoogleAuthStrategy(IConfiguration configuration) : ISocialAuthStrategy
 {
     public async Task<ErrorOr<SocialUserDto>> VerifySocialToken(string accessToken, CancellationToken token = default)
     {
-        var clientId =  configuration["GOOGLEAUTHENTICATION_CLIENTID"];
+        var clientId = configuration["GOOGLEAUTHENTICATION_CLIENTID"];
         if (string.IsNullOrWhiteSpace(clientId))
-        {
-            return Error.Unexpected("GoogleAuth.MissingClientId", "Google Client ID is not configured.");
-        }
+            return Error.Unexpected("Google.MissingClientId", "Google Client ID is not configured.");
         try
         {
             var settings = new GoogleJsonWebSignature.ValidationSettings
@@ -28,11 +26,9 @@ public class GoogleAuthStrategy(IConfiguration configuration) : ISocialAuthStrat
 
             var payload = await GoogleJsonWebSignature.ValidateAsync(accessToken, settings);
             if (payload == null)
-            {
                 return Error.Unauthorized(
-                    "GoogleAuth.EmptyPayload",
+                    "Google.EmptyPayload",
                     "Token is valid but does not contain any user information.");
-            }
             return new SocialUserDto
             {
                 Email = payload.Email,
@@ -42,14 +38,14 @@ public class GoogleAuthStrategy(IConfiguration configuration) : ISocialAuthStrat
         catch (InvalidJwtException ex)
         {
             return Error.Unauthorized(
-                code: "GoogleAuth.InvalidToken", 
-                description: $"Token Google is invalid or expired: {ex.Message}");
+                "Google.InvalidToken",
+                $"Token Google is invalid or expired: {ex.Message}");
         }
         catch (Exception ex)
         {
             return Error.Unexpected(
-                code: "GoogleAuth.VerificationFailed", 
-                description: $"Failed to verify token by Google: {ex.Message}");
+                "Google.VerificationFailed",
+                $"Failed to verify token by Google: {ex.Message}");
         }
     }
 }
