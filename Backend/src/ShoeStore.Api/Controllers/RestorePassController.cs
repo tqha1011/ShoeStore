@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using ShoeStore.Application.DTOs.RestorePasswordDto;
 using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.Authentication;
 
 namespace ShoeStore.Api.Controllers;
 

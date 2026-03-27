@@ -1,4 +1,4 @@
-namespace ShoeStore.Application.Interface;
+namespace ShoeStore.Application.Interface.Authentication;
 
 public interface IPasswordHash
 {

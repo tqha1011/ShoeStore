@@ -1,6 +1,6 @@
 using ShoeStore.Domain.Enum;
 
-namespace ShoeStore.Application.Interface;
+namespace ShoeStore.Application.Interface.Authentication;
 
 public interface ITokenService
 {

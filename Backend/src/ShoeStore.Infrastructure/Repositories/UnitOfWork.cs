@@ -1,4 +1,5 @@
 using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.Common;
 using ShoeStore.Infrastructure.Data;
 
 namespace ShoeStore.Infrastructure.Repositories;

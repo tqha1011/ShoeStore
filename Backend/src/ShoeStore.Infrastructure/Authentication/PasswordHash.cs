@@ -1,4 +1,5 @@
 using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.Authentication;
 
 namespace ShoeStore.Infrastructure.Authentication;
 
