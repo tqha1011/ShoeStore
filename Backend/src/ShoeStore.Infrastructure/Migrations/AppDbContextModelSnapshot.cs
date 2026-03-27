@@ -354,8 +354,8 @@ namespace ShoeStore.Infrastructure.Migrations
                     b.HasIndex("SizeId")
                         .HasDatabaseName("ix_product_variants_size_id");
 
-                    b.HasIndex("IsDeleted", "IsSelling")
-                        .HasDatabaseName("ix_product_variants_is_deleted_is_selling");
+                    b.HasIndex("IsDeleted", "IsSelling", "Price")
+                        .HasDatabaseName("ix_product_variants_is_deleted_is_selling_price");
 
                     b.HasIndex("ProductId", "ColorId", "SizeId")
                         .IsUnique()
@@ -442,6 +442,102 @@ namespace ShoeStore.Infrastructure.Migrations
                             Role = 1,
                             UserName = "admin1"
                         });
+                });
+
+            modelBuilder.Entity("ShoeStore.Domain.Entities.UserRefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("Expired")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expired");
+
+                    b.Property<bool>("IsRevoked")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_revoked");
+
+                    b.Property<Guid>("PublicId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("public_id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("token");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_refresh_tokens");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_refresh_tokens_public_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_user_refresh_tokens_user_id");
+
+                    b.ToTable("user_refresh_tokens", (string)null);
+                });
+
+            modelBuilder.Entity("ShoeStore.Domain.Entities.UserRestorePassword", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Expiration")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expiration");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_used");
+
+                    b.Property<Guid>("PublicId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("public_id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("token");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_restore_passwords");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_restore_passwords_public_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_user_restore_passwords_user_id");
+
+                    b.ToTable("user_restore_passwords", (string)null);
                 });
 
             modelBuilder.Entity("ShoeStore.Domain.Entities.UserVoucher", b =>
@@ -719,6 +815,30 @@ namespace ShoeStore.Infrastructure.Migrations
                     b.Navigation("Product");
 
                     b.Navigation("Size");
+                });
+
+            modelBuilder.Entity("ShoeStore.Domain.Entities.UserRefreshToken", b =>
+                {
+                    b.HasOne("ShoeStore.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_refresh_tokens_users_user_id");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ShoeStore.Domain.Entities.UserRestorePassword", b =>
+                {
+                    b.HasOne("ShoeStore.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_restore_passwords_users_user_id");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ShoeStore.Domain.Entities.UserVoucher", b =>

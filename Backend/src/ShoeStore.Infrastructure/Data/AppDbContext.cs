@@ -17,6 +17,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Payment> Payments { get; set; }
     public DbSet<CartItem> CartItems { get; set; }
     public DbSet<UserVoucher> UserVouchers { get; set; }
+    public DbSet<UserRefreshToken> UserRefreshTokens { get; set; }
+    public DbSet<UserRestorePassword> UserRestorePasswords { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
