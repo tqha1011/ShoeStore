@@ -35,13 +35,13 @@ The database schema is heavily normalized to reduce redundancy and maintain data
 To handle a diverse inventory of shoes (different colors and sizes), the product catalog implements a hierarchical structure:
 * **`products`**: Contains the base information of a shoe model (e.g., Name, Description, Brand, Base Price).
 * **`colors`**: A lookup table defining available colors.
-* **`product_variants`**: Represents a specific color version of a `Product`. It links a `Product` to a `Color` and holds specific image URLs for that variant.
-* **`product_sizes`**: Represents the physical stock. It links a `ProductVariant` to a specific shoe size and tracks the `QuantityInStock`.
+* **`product_variants`**: Represents a specific purchasable combination of a `Product`, `Color`, and `Size`. It links a `Product` to a `Color` and a `product_size` entry, and stores inventory-related fields such as `stock` and current `price`, along with any variant-specific image URLs.
+* **`product_sizes`**: A lookup table of available shoe sizes (e.g., 38, 39, 40). Each row defines a single size value that can be reused across products and variants; it does not track stock itself.
 
 ### 3.3. Sales & Order Management Domain
-* **`cart_items`**: Acts as a temporary holding area for users' desired items. It maps a `User` to a specific `ProductSize` along with the desired `Quantity`.
+* **`cart_items`**: Acts as a temporary holding area for users' desired items. It maps a `User` to a specific `ProductVariant` (product + color + size) along with the desired `Quantity`.
 * **`invoices`**: Represents a finalized customer order. Tracks the `TotalAmount`, shipping details, and the overall `InvoiceStatus` (e.g., Pending, Processing, Shipped, Cancelled).
-* **`invoice_details`**: The line items of an invoice. It freezes the `UnitPrice` at the time of purchase to ensure historical accuracy even if the base product price changes later.
+* **`invoice_details`**: The line items of an invoice. Each line references the chosen `ProductVariant` and freezes the `UnitPrice` at the time of purchase to ensure historical accuracy even if the base product price changes later.
 * **`payments`**: Records the transaction details (Payment Method, Payment Status, Transaction ID) linked to a specific `Invoice`.
 
 ### 3.4. Promotion Domain
