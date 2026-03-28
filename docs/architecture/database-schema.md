@@ -22,7 +22,7 @@ For the `ShoeStore` project, **PostgreSQL** was selected as the primary relation
 
 ## 3. Core Tables Description
 
-The database schema is heavily normalized to reduce redundancy and maintain data integrity. The tables are logically grouped into three main domains:
+The database schema is heavily normalized to reduce redundancy and maintain data integrity. The tables are logically grouped into four main domains:
 
 ### 3.1. Authentication & Identity Domain
 * **`users`**: The central table for authentication and authorization. 
