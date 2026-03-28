@@ -1,11 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.Interface;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ShoeStore.API.Controllers;
 [Route("api/admin/products")]
 [ApiController]
-//[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin")]
 public class AdminProductController(IProductService productService) : ControllerBase
 {
     /// <summary>
@@ -41,15 +42,12 @@ public class AdminProductController(IProductService productService) : Controller
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateProductDto productDto, CancellationToken token)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
         var result = await productService.AddProductAsync(productDto, token);
 
         if (result.IsError)
             return BadRequest(result.Errors);
 
-        return CreatedAtAction(nameof(GetByGuid), new { productGuid = result }, null);
+        return CreatedAtAction(nameof(GetByGuid), new { productGuid = result.Value }, null);
     }
 
     /// <summary>
@@ -58,20 +56,16 @@ public class AdminProductController(IProductService productService) : Controller
     [HttpPut("{productGuid}")]
     public async Task<IActionResult> Update(Guid productGuid, [FromBody] UpdateProductDto productDto, CancellationToken token)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
         var result = await productService.UpdateProductAsync(productGuid, productDto, token);
 
-        if (result.IsError)
-        {
-            if (result.FirstError.Code == "Product.NotFound")
-                return NotFound(result.Errors);
-
-            return BadRequest(result.Errors);
-        }
-
-        return Ok(new { message = "Product updated successfully" });
+        var respone = result.Match<IActionResult>(
+            updated => Ok(updated),
+            errors => Problem(
+            detail: string.Join(", ", errors.Select(e => e.Description)),
+            statusCode: StatusCodes.Status400BadRequest
+            )
+        );
+        return respone;
     }
 
     /// <summary>

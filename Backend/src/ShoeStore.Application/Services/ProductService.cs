@@ -110,13 +110,11 @@ namespace ShoeStore.Application.Services
                 Brand = dto.Brand ?? string.Empty,
                 ProductVariants = new List<ProductVariant>()
             };
-            await _uow.SaveChangesAsync(token);
 
             foreach (var v in dto.Variants)
             {
                 var newVariant = new ProductVariant
                 {
-                    PublicId = Guid.NewGuid(),
                     SizeId = v.SizeId,
                     ColorId = v.ColorId,
                     Stock = v.Stock,
