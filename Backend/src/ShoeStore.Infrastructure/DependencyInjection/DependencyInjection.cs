@@ -12,6 +12,7 @@ using ShoeStore.Infrastructure.Authentication.Strategies;
 using ShoeStore.Infrastructure.Data;
 using ShoeStore.Infrastructure.Notification;
 using ShoeStore.Infrastructure.Repositories;
+using ShoeStore.Infrastructure.RestorePassService;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Infrastructure.Authentication;
 using ShoeStore.Application.Services;
