@@ -2,7 +2,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.Authentication;
+using ShoeStore.Application.Interface.Common;
+using ShoeStore.Application.Interface.Notification;
+using ShoeStore.Application.Interface.Strategies;
+using ShoeStore.Application.Services;
 using ShoeStore.Infrastructure.Authentication;
+using ShoeStore.Infrastructure.Authentication.Strategies;
 using ShoeStore.Infrastructure.Data;
 using ShoeStore.Infrastructure.Notification;
 using ShoeStore.Infrastructure.Repositories;
@@ -34,6 +40,13 @@ public static class DependencyInjection
         services.AddScoped<IAuthService,AuthService>();
         services.AddScoped<IProductRepository,ProductRepository>();
         services.AddScoped<IProductService, ProductService>();
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IRestorePasswordService, RestorePasswordService>();
+        services.AddScoped<IUserRestorePasswordRepository, UserRestorePasswordRepository>();
+        services.AddKeyedScoped<ISocialAuthStrategy, GoogleAuthStrategy>("Google");
+        services.AddKeyedScoped<ISocialAuthStrategy, FacebookAuthStrategy>("Facebook");
         return services;
     }
 }

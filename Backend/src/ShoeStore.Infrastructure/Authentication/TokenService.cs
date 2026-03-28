@@ -4,6 +4,7 @@ using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Infrastructure.Authentication;

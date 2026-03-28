@@ -1,6 +1,6 @@
 using ShoeStore.Domain.Common;
 
-namespace ShoeStore.Application.Interface;
+namespace ShoeStore.Application.Interface.Common;
 
 public interface IGenericRepository<TEntity,TEntityId> 
     where TEntity : Entity<TEntityId> 

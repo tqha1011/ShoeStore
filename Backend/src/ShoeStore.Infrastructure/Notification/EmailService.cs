@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using ShoeStore.Application.Interface;
 using MimeKit;
 using MimeKit.Text;
+using ShoeStore.Application.Interface.Notification;
 
 namespace ShoeStore.Infrastructure.Notification;
 

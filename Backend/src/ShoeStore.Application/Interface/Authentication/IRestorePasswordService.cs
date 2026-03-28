@@ -1,6 +1,6 @@
 using ErrorOr;
 
-namespace ShoeStore.Application.Interface;
+namespace ShoeStore.Application.Interface.Authentication;
 
 public interface IRestorePasswordService
 {
