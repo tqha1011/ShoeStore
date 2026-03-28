@@ -98,7 +98,7 @@ Navigate to `http://localhost:<port>/scalar/v1` to see the **API Docs**
 
 [Database Design](docs/architecture/database-schema.md)
 
-[CI/CD Pipeline Guildlines](docs/infrastructure/ci-cd.md)
+[CI/CD Pipeline Guidelines](docs/infrastructure/ci-cd.md)
 
-[Coventional Commit Guildlines](docs/guildlines/conventional-commit.md)
+[Conventional Commit Guidelines](docs/guildlines/conventional-commit.md)
 
