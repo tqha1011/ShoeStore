@@ -32,6 +32,12 @@ namespace ShoeStore.Infrastructure.Repositories
         {
             return await _context.Products.AsNoTracking().FirstOrDefaultAsync(x => x.Id!.Equals(id), token);
         }
+
+        public async Task<Product?> GetByGuidAsync(Guid productGuid, CancellationToken token)
+        {
+            return await _context.Products.AsNoTracking().FirstOrDefaultAsync(x => x.PublicId == productGuid, token);
+        }
+
         public IQueryable<Product> SearchProduct(ProductSearchRequest request)
         {
             return _context.Products.ApplySearch(request.Keyword)

@@ -17,17 +17,17 @@ namespace ShoeStore.Application.Interface
         Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsAsync(ProductSearchRequest request, CancellationToken token);
 
         // 2. Lấy chi tiết (Dùng ProductResponseDto)
-        Task<ErrorOr<ProductResponseDto>> GetProductByIdAsync(int id, CancellationToken token);
+        Task<ErrorOr<ProductResponseDto>> GetProductByGuidAsync(Guid productGuid, CancellationToken token);
 
         // 3. Thêm mới: Dùng Status "Created" 
         // Hoặc trả về chính ProductResponseDto để lấy ID mới tạo
         Task<ErrorOr<Created>> AddProductAsync(CreateProductDto dto, CancellationToken token);
 
         // 4. Cập nhật: Dùng Status "Updated"
-        Task<ErrorOr<Updated>> UpdateProductAsync(int id, UpdateProductDto dto, CancellationToken token);
+        Task<ErrorOr<Updated>> UpdateProductAsync(Guid productGuid, UpdateProductDto dto, CancellationToken token);
 
         // 5. Xóa: Dùng Status "Deleted"
-        Task<ErrorOr<Deleted>> DeleteProductAsync(int id, CancellationToken token);
+        Task<ErrorOr<Deleted>> DeleteProductAsync(Guid productGuid, CancellationToken token);
 
     }
 }

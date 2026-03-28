@@ -38,7 +38,7 @@ namespace ShoeStore.Application.Services
             var products = await query
                 .Select(p => new ProductResponseDto
                 {
-                    Id = p.Id,
+                    PublicId = p.PublicId,
                     Brand = p.Brand ?? string.Empty,
                     ProductName = p.ProductName,
                     Variants = p.ProductVariants
@@ -69,23 +69,17 @@ namespace ShoeStore.Application.Services
 
             return pageResult;
         }
-        public async Task<ErrorOr<ProductResponseDto>> GetProductByIdAsync(int id, CancellationToken token)
+        public async Task<ErrorOr<ProductResponseDto>> GetProductByGuidAsync(Guid productGuid, CancellationToken token)
         {
-            // Validate input
-            if (id <= 0)
-                return Error.Validation("Product.Id", "Product ID must be greater than 0.");
+            var product = await _productRepository.GetByGuidAsync(productGuid, token);
 
-            // Fetch product from repository
-            var product = await _productRepository.GetByIdAsync(id, token);
-
-            // Check if product exists
-            if (product == null)
-                return Error.NotFound(code: "Product.NotFound", description: $"Product with ID {id} not found.");
+            if(product == null)
+                return Error.NotFound("Product.NotFound", $"Product with ID '{productGuid}' was not found.");
 
             // Map Product entity to ProductResponseDto
             var productDto = new ProductResponseDto
             {
-                Id = product.Id,
+                PublicId = product.PublicId,
                 ProductName = product.ProductName,
                 Brand = product.Brand ?? string.Empty,
                 Variants = product.ProductVariants
@@ -108,11 +102,6 @@ namespace ShoeStore.Application.Services
         }
         public async Task<ErrorOr<Created>> AddProductAsync(CreateProductDto dto, CancellationToken token)
         {
-            // Validate product name
-            if (string.IsNullOrWhiteSpace(dto.ProductName))
-                return Error.Validation("Product.ProductName", "Product name is required.");
-
-           
             // Create new Product entity
             var product = new Product
             {
@@ -127,24 +116,13 @@ namespace ShoeStore.Application.Services
 
             return Result.Created;
         }
-        public async Task<ErrorOr<Updated>> UpdateProductAsync(int id, UpdateProductDto dto, CancellationToken token)
+        public async Task<ErrorOr<Updated>> UpdateProductAsync(Guid productGuid, UpdateProductDto dto, CancellationToken token)
         {
-            // Validate product ID
-            if (id <= 0)
-                return Error.Validation("Product.Id", "Product ID must be greater than 0.");
+            var product = await _productRepository.GetByGuidAsync(productGuid,token);
 
-            // Validate product name
-            if (string.IsNullOrWhiteSpace(dto.ProductName))
-                return Error.Validation("Product.ProductName", "Product name is required.");
-
-            // Fetch product from repository
-            var product = await _productRepository.GetByIdAsync(id, token);
-
-            // Check if product exists
             if (product == null)
-                return Error.NotFound(code: "Product.NotFound", description: $"Product with ID {id} not found.");
+                return Error.NotFound("Product.NotFound", $"Product with ID '{productGuid}' was not found.");
 
-            
             // Update basic product information
             product.ProductName = dto.ProductName;
             product.Brand = dto.Brand ?? string.Empty;
@@ -155,13 +133,13 @@ namespace ShoeStore.Application.Services
             // Process variants: update existing, add new, delete removed
             foreach (var variantDto in dto.Variants)
             {
-                var existingVariant = existingVariants.FirstOrDefault(v => v.Product.Id == id);
+                var existingVariant = existingVariants.FirstOrDefault(v => v.ProductId == product.Id);
 
                 if (existingVariant != null)
                 {
                     // Update existing variant
+                    existingVariant.PublicId = variantDto.PublicId;
                     existingVariant.SizeId = variantDto.SizeId;
-                    existingVariant.Size = variantDto.Size;
                     existingVariant.ColorId = variantDto.ColorId;
                     existingVariant.Stock = variantDto.Stock;
                     existingVariant.IsSelling = variantDto.IsSelling;
@@ -170,16 +148,16 @@ namespace ShoeStore.Application.Services
                     existingVariant.Product = product;
                 }
             }
-            //var dtoPublicIds = dto.Variants
-            //    .Select(v => v.PublicId)
-            //    .ToHashSet();
+            var dtoPublicIds = dto.Variants
+                .Select(v => v.PublicId)
+                .ToHashSet();
 
-            //var variantsToRemove = existingVariants
-            //    .Where(v => !dtoPublicIds.Contains(v.PublicId))
-            //    .ToList();
+            var variantsToRemove = existingVariants
+                .Where(v => !dtoPublicIds.Contains(v.PublicId))
+                .ToList();
 
-            //foreach (var variant in variantsToRemove)
-            //    product.ProductVariants.Remove(variant);
+            foreach (var variant in variantsToRemove)
+                product.ProductVariants.Remove(variant);
 
             // Update product in repository and save
             _productRepository.Update(product);
@@ -188,27 +166,22 @@ namespace ShoeStore.Application.Services
             return Result.Updated;
             
         }
-        public async Task<ErrorOr<Deleted>> DeleteProductAsync(int id, CancellationToken token)
+        public async Task<ErrorOr<Deleted>> DeleteProductAsync(Guid productGuid, CancellationToken token)
         {
-            // Validate product ID
-            if (id <= 0)
-                return Error.Validation("Product.Id", "Product ID must be greater than 0.");
+           
 
             // Fetch product from repository
-            var product = await _productRepository.GetByIdAsync(id, token);
+            var product = await _productRepository.GetByGuidAsync(productGuid, token);
 
             // Check if product exists
             if (product == null)
-                return Error.NotFound(code: "Product.NotFound", description: $"Product with ID {id} not found.");
+                return Error.NotFound(code: "Product.NotFound", description: $"Product with ID {productGuid} not found.");
 
             // Soft delete: mark all variants as deleted
             foreach (var variant in product.ProductVariants)
             {
                 variant.IsDeleted = true;
             }
-
-            // Delete product from repository and save
-            _productRepository.Delete(product);
             await _uow.SaveChangesAsync(token);
 
             return Result.Deleted;

@@ -26,9 +26,9 @@ public class AdminProductController(IProductService productService) : Controller
     /// Get product details by ID
     /// </summary>
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(int id, CancellationToken token)
+    public async Task<IActionResult> GetById(Guid productGuid, CancellationToken token)
     {
-        var result = await productService.GetProductByIdAsync(id, token);
+        var result = await productService.GetProductByGuidAsync(productGuid, token);
 
         if (result.IsError)
             return NotFound(result.Errors);
@@ -57,12 +57,12 @@ public class AdminProductController(IProductService productService) : Controller
     /// Update an existing product
     /// </summary>
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateProductDto productDto, CancellationToken token)
+    public async Task<IActionResult> Update(Guid productGuid, [FromBody] UpdateProductDto productDto, CancellationToken token)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var result = await productService.UpdateProductAsync(id, productDto, token);
+        var result = await productService.UpdateProductAsync(productGuid, productDto, token);
 
         if (result.IsError)
         {
@@ -79,9 +79,9 @@ public class AdminProductController(IProductService productService) : Controller
     /// Delete a product by ID
     /// </summary>
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(int id, CancellationToken token)
+    public async Task<IActionResult> Delete(Guid productGuid, CancellationToken token)
     {
-        var result = await productService.DeleteProductAsync(id, token);
+        var result = await productService.DeleteProductAsync(productGuid, token);
 
         if (result.IsError)
         {
