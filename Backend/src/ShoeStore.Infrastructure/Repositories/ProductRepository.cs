@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.Extensions;
-using ShoeStore.Application.Interface.Product;
+using ShoeStore.Application.Interface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Infrastructure.Data;
 

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.DTOs.ProductDTOs;
+using ShoeStore.Application.Interface;
 
 namespace ShoeStore.Api.Controllers
 {

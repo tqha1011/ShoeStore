@@ -1,11 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.ProductDTOs;
-using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.Common;
 using ShoeStore.Domain.Entities;
 using ErrorOr;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
-
+using ShoeStore.Application.Interface;
 namespace ShoeStore.Application.Services
 {
     public class ProductService : IProductService

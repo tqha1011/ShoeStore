@@ -1,7 +1,8 @@
 ﻿using ShoeStore.Application.DTOs.ProductDTOs;
+using ShoeStore.Application.Interface.Common;
 using ShoeStore.Domain.Entities;
 
-namespace ShoeStore.Application.Interface.Product
+namespace ShoeStore.Application.Interface
 {
     public interface IProductRepository : IGenericRepository<Product, int>
     {

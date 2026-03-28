@@ -15,7 +15,6 @@ using ShoeStore.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Infrastructure.Authentication;
 using ShoeStore.Application.Services;
-using ShoeStore.Application.Interface.Product;
 
 namespace ShoeStore.Infrastructure.DependencyInjection;
 
