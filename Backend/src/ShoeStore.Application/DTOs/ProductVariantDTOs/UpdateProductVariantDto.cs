@@ -2,7 +2,7 @@
 {
     public class UpdateProductVariantDto
     {
-        public Guid PublicId { get; set; }
+        public Guid? PublicId { get; set; }
         public int SizeId { get; set; }
         public int Size { get; set; }
         public int? ColorId { get; set; }

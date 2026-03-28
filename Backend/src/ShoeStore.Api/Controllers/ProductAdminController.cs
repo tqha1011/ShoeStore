@@ -1,12 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.Interface;
 
 namespace ShoeStore.API.Controllers;
 [Route("api/admin/products")]
 [ApiController]
-[Authorize(Roles = "Admin")]
+//[Authorize(Roles = "Admin")]
 public class AdminProductController(IProductService productService) : ControllerBase
 {
     /// <summary>
@@ -25,8 +24,8 @@ public class AdminProductController(IProductService productService) : Controller
     /// <summary>
     /// Get product details by ID
     /// </summary>
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid productGuid, CancellationToken token)
+    [HttpGet("{productGuid}")]
+    public async Task<IActionResult> GetByGuid(Guid productGuid, CancellationToken token)
     {
         var result = await productService.GetProductByGuidAsync(productGuid, token);
 
@@ -50,13 +49,13 @@ public class AdminProductController(IProductService productService) : Controller
         if (result.IsError)
             return BadRequest(result.Errors);
 
-        return CreatedAtAction(nameof(GetById), new { id = result.Value }, result);
+        return CreatedAtAction(nameof(GetByGuid), new { productGuid = result }, null);
     }
 
     /// <summary>
     /// Update an existing product
     /// </summary>
-    [HttpPut("{id:guid}")]
+    [HttpPut("{productGuid}")]
     public async Task<IActionResult> Update(Guid productGuid, [FromBody] UpdateProductDto productDto, CancellationToken token)
     {
         if (!ModelState.IsValid)
@@ -78,7 +77,7 @@ public class AdminProductController(IProductService productService) : Controller
     /// <summary>
     /// Delete a product by ID
     /// </summary>
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("{productGuid}")]
     public async Task<IActionResult> Delete(Guid productGuid, CancellationToken token)
     {
         var result = await productService.DeleteProductAsync(productGuid, token);

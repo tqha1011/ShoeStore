@@ -21,7 +21,7 @@ namespace ShoeStore.Application.Interface
 
         // 3. Thêm mới: Dùng Status "Created" 
         // Hoặc trả về chính ProductResponseDto để lấy ID mới tạo
-        Task<ErrorOr<Created>> AddProductAsync(CreateProductDto dto, CancellationToken token);
+        Task<ErrorOr<Guid>> AddProductAsync(CreateProductDto dto, CancellationToken token);
 
         // 4. Cập nhật: Dùng Status "Updated"
         Task<ErrorOr<Updated>> UpdateProductAsync(Guid productGuid, UpdateProductDto dto, CancellationToken token);

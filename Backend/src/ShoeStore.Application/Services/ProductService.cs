@@ -100,21 +100,42 @@ namespace ShoeStore.Application.Services
 
             return productDto;
         }
-        public async Task<ErrorOr<Created>> AddProductAsync(CreateProductDto dto, CancellationToken token)
+        public async Task<ErrorOr<Guid>> AddProductAsync(CreateProductDto dto, CancellationToken token)
         {
             // Create new Product entity
             var product = new Product
             {
+                PublicId = Guid.NewGuid(),
                 ProductName = dto.ProductName,
                 Brand = dto.Brand ?? string.Empty,
                 ProductVariants = new List<ProductVariant>()
             };
+            await _uow.SaveChangesAsync(token);
+
+            foreach (var v in dto.Variants)
+            {
+                var newVariant = new ProductVariant
+                {
+                    PublicId = Guid.NewGuid(),
+                    SizeId = v.SizeId,
+                    ColorId = v.ColorId,
+                    Stock = v.Stock,
+                    Price = v.Price,
+                    ImageUrl = v.ImageUrl,
+                    IsSelling = v.IsSelling,
+                    Product = product,
+                    ProductId = product.Id,
+                    IsDeleted = false
+                };
+
+                product.ProductVariants.Add(newVariant);
+            }
 
             // Add product to repository and save
             _productRepository.Add(product);
             await _uow.SaveChangesAsync(token);
 
-            return Result.Created;
+            return product.PublicId;
         }
         public async Task<ErrorOr<Updated>> UpdateProductAsync(Guid productGuid, UpdateProductDto dto, CancellationToken token)
         {
@@ -133,12 +154,12 @@ namespace ShoeStore.Application.Services
             // Process variants: update existing, add new, delete removed
             foreach (var variantDto in dto.Variants)
             {
-                var existingVariant = existingVariants.FirstOrDefault(v => v.ProductId == product.Id);
+                var existingVariant = existingVariants.FirstOrDefault(v => v.PublicId == variantDto.PublicId);
 
                 if (existingVariant != null)
                 {
                     // Update existing variant
-                    existingVariant.PublicId = variantDto.PublicId;
+
                     existingVariant.SizeId = variantDto.SizeId;
                     existingVariant.ColorId = variantDto.ColorId;
                     existingVariant.Stock = variantDto.Stock;
@@ -148,16 +169,16 @@ namespace ShoeStore.Application.Services
                     existingVariant.Product = product;
                 }
             }
-            var dtoPublicIds = dto.Variants
-                .Select(v => v.PublicId)
-                .ToHashSet();
+            //var dtoPublicIds = dto.Variants
+            //    .Select(v => v.PublicId)
+            //    .ToHashSet();
 
-            var variantsToRemove = existingVariants
-                .Where(v => !dtoPublicIds.Contains(v.PublicId))
-                .ToList();
+            //var variantsToRemove = existingVariants
+            //    .Where(v => !dtoPublicIds.Contains(v.PublicId))
+            //    .ToList();
 
-            foreach (var variant in variantsToRemove)
-                product.ProductVariants.Remove(variant);
+            //foreach (var variant in variantsToRemove)
+            //    product.ProductVariants.Remove(variant);
 
             // Update product in repository and save
             _productRepository.Update(product);
