@@ -48,6 +48,7 @@ namespace ShoeStore.Application.Validations.ProductValidation
             // 6. Pagination: (Optional) Even though you have logic in the DTO, 
             // you can still add rules here for strict API contracts.
             RuleFor(x => x.PageSize)
-                .InclusiveBetween(1, 50).WithMessage("PageSize must be b
+                .InclusiveBetween(1, 50).WithMessage("PageSize must be between 1 and 50.");
+        }
     }
 }
