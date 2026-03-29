@@ -1,5 +1,4 @@
 ﻿using FluentValidation;
-using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
 namespace ShoeStore.Application.Validations.ProductValidation
 {

@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ShoeStore.Application.Interface;
@@ -9,8 +8,6 @@ using ShoeStore.Application.Interface.Notification;
 using ShoeStore.Application.Interface.Strategies;
 using ShoeStore.Application.Interface.Upload_Image;
 using ShoeStore.Application.Services;
-using ShoeStore.Application.Services;
-using ShoeStore.Infrastructure.Authentication;
 using ShoeStore.Infrastructure.Authentication;
 using ShoeStore.Infrastructure.Authentication.Strategies;
 using ShoeStore.Infrastructure.Cloundinary;
