@@ -14,10 +14,10 @@ import com.example.shoestoreapp.features.auth.ui.sign_in.LoginScreenContent
 import com.example.shoestoreapp.features.auth.ui.sign_up.RegisterScreenContent
 import com.example.shoestoreapp.features.auth.ui.welcome.WelcomeScreen
 import com.example.shoestoreapp.features.auth.ui.reset_password.CreateNewPassword
-import com.example.shoestoreapp.features.product.ui.product_detail.ProductDetailScreen
-import com.example.shoestoreapp.features.product.ui.product_list.ProductListScreen
-import com.example.shoestoreapp.features.product.viewmodel.ProductDetailViewModel
-import com.example.shoestoreapp.features.product.viewmodel.ProductListViewModel
+import com.example.shoestoreapp.features.user.product.ui.product_detail.ProductDetailScreen
+import com.example.shoestoreapp.features.user.product.ui.product_list.ProductListScreen
+import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
+import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
