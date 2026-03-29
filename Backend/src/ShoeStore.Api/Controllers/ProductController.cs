@@ -9,7 +9,7 @@ namespace ShoeStore.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    //[Authorize(Roles = "User")]
+    [Authorize(Roles = "User")]
     public class ProductsController(IProductService productService) : ControllerBase
     {
         [HttpGet("search")]

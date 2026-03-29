@@ -105,7 +105,6 @@ namespace ShoeStore.Application.Services
             // Create new Product entity
             var product = new Product
             {
-                PublicId = Guid.NewGuid(),
                 ProductName = dto.ProductName,
                 Brand = dto.Brand ?? string.Empty,
                 ProductVariants = new List<ProductVariant>()
@@ -167,16 +166,16 @@ namespace ShoeStore.Application.Services
                     existingVariant.Product = product;
                 }
             }
-            //var dtoPublicIds = dto.Variants
-            //    .Select(v => v.PublicId)
-            //    .ToHashSet();
+            var dtoPublicIds = dto.Variants
+                .Select(v => v.PublicId)
+                .ToHashSet();
 
-            //var variantsToRemove = existingVariants
-            //    .Where(v => !dtoPublicIds.Contains(v.PublicId))
-            //    .ToList();
+            var variantsToRemove = existingVariants
+                .Where(v => !dtoPublicIds.Contains(v.PublicId))
+                .ToList();
 
-            //foreach (var variant in variantsToRemove)
-            //    product.ProductVariants.Remove(variant);
+            foreach (var variant in variantsToRemove)
+                product.ProductVariants.Remove(variant);
 
             // Update product in repository and save
             _productRepository.Update(product);

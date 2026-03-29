@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using ShoeStore.Application.DTOs.ProductDTOs;
-using ShoeStore.Application.Interface;
 using Microsoft.AspNetCore.Authorization;
+using ShoeStore.Application.Interface;
+using ShoeStore.Application.DTOs.ProductDTOs;
 
 namespace ShoeStore.API.Controllers;
 [Route("api/admin/products")]

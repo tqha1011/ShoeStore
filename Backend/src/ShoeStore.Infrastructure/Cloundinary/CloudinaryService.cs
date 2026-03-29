@@ -3,12 +3,11 @@ using CloudinaryDotNet.Actions;
 using ErrorOr;
 using Microsoft.Extensions.Options;
 using ShoeStore.Application.Interface.Upload_Image;
-using ShoeStore.Infrastructure.Cloundinary;
 using CloudinaryClient = CloudinaryDotNet.Cloudinary;
 using Error = ErrorOr.Error;
 
 
-namespace ShoeStore.Application.Services
+namespace ShoeStore.Infrastructure.Cloundinary
 {
     public class CloudinaryService : IImageService
     {
