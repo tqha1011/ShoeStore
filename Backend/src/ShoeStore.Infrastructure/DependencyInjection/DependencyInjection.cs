@@ -52,6 +52,8 @@ public static class DependencyInjection
         services.AddKeyedScoped<ISocialAuthStrategy, GoogleAuthStrategy>("Google");
         services.AddKeyedScoped<ISocialAuthStrategy, FacebookAuthStrategy>("Facebook");
         services.AddScoped<IImageService, CloudinaryService>();
+        services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
+        services.AddScoped<IProductVariantService, ProductVariantService>();
         return services;
     }
 }

@@ -20,21 +20,20 @@ namespace ShoeStore.Application.Services
             _settings = config.Value;
 
             var account = new Account(
-                _settings.CloudName
+                _settings.CloudName,
+                _settings.ApiKey,
+                _settings.ApiSecret
             );
 
             _cloudinary = new CloudinaryClient(account);
         }
         public async Task<ErrorOr<string>> UploadImageAsync(Stream stream, string fileName)
         {
-            // 1. Đảm bảo lúc này _cloudinary được khởi tạo CHỈ với CloudName
-            // Nếu trước đó bạn có truyền ApiKey vào Constructor thì hãy xóa nó đi.
 
             var uploadParams = new ImageUploadParams
             {
                 File = new FileDescription(fileName, stream),
-                // ĐIỀN THẲNG CHUỖI NÀY VÀO ĐỂ LOẠI TRỪ LỖI CONFIG
-                UploadPreset = "shoe_store_unsigned"
+                UploadPreset = _settings.UploadPreset
             };
 
             // Gọi hàm Upload

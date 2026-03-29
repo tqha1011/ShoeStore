@@ -7,9 +7,9 @@ using ShoeStore.Application.Interface;
 
 namespace ShoeStore.Api.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "User")]
+    [Route("api/[controller]")]
+    //[Authorize(Roles = "User")]
     public class ProductsController(IProductService productService) : ControllerBase
     {
         [HttpGet("search")]
