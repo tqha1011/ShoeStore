@@ -10,7 +10,7 @@ namespace ShoeStore.Infrastructure.Repositories
     {
         public async Task<ProductVariant?> GetByGuidAsync(Guid productGuid, CancellationToken token)
         {
-            return await context.ProductVariants.AsNoTracking().FirstOrDefaultAsync(x => x.PublicId == productGuid, token);
+            return await context.ProductVariants.FirstOrDefaultAsync(x => x.PublicId == productGuid, token);
         }
     }
 }

@@ -11,7 +11,7 @@ namespace ShoeStore.Infrastructure.Repositories
     {
         public async Task<Product?> GetByGuidAsync(Guid productGuid, CancellationToken token)
         {
-            return await context.Products.AsNoTracking().FirstOrDefaultAsync(x => x.PublicId == productGuid, token);
+            return await context.Products.FirstOrDefaultAsync(x => x.PublicId == productGuid, token);
         }
 
         public IQueryable<Product> SearchProduct(ProductSearchRequest request)
