@@ -6,8 +6,8 @@ public class CartItem : Entity<int>
 {
     public Guid PublicId { get; set; }
     public required int UserId { get; set; }
-    public required User User { get; set; }
+    public User? User { get; set; }
     public required int Quantity { get; set; }
     public required int ProductVariantId { get; set; }
-    public required ProductVariant ProductVariant { get; set; }
+    public ProductVariant? ProductVariant { get; set; }
 }

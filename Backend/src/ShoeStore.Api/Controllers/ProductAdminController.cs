@@ -1,16 +1,21 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using ShoeStore.Application.Interface;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.ProductDTOs;
+using ShoeStore.Application.Interface;
 
 namespace ShoeStore.API.Controllers;
+
+/// <summary>
+///     Admin controller for managing products, including CRUD operations and search functionality.
+/// </summary>
+/// <param name="productService"></param>
 [Route("api/admin/products")]
 [ApiController]
 [Authorize(Roles = "Admin")]
 public class AdminProductController(IProductService productService) : ControllerBase
 {
     /// <summary>
-    /// Search and filter products with pagination
+    ///     Search and filter products with pagination
     /// </summary>
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] ProductSearchRequest request, CancellationToken token)
@@ -22,12 +27,14 @@ public class AdminProductController(IProductService productService) : Controller
 
         return Ok(results.Value);
     }
+
     /// <summary>
-    /// Get product details by ID
+    ///     Get product details by ID
     /// </summary>
-    [HttpGet("{productGuid}")]
+    [HttpGet("{productGuid:guid}")]
     public async Task<IActionResult> GetByGuid(Guid productGuid, CancellationToken token)
     {
+        // Get product details by ID
         var result = await productService.GetProductByGuidAsync(productGuid, token);
 
         if (result.IsError)
@@ -37,7 +44,7 @@ public class AdminProductController(IProductService productService) : Controller
     }
 
     /// <summary>
-    /// Create a new product
+    ///     Create a new product
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateProductDto productDto, CancellationToken token)
@@ -51,27 +58,28 @@ public class AdminProductController(IProductService productService) : Controller
     }
 
     /// <summary>
-    /// Update an existing product
+    ///     Update an existing product
     /// </summary>
-    [HttpPut("{productGuid}")]
-    public async Task<IActionResult> Update(Guid productGuid, [FromBody] UpdateProductDto productDto, CancellationToken token)
+    [HttpPut("{productGuid:guid}")]
+    public async Task<IActionResult> Update(Guid productGuid, [FromBody] UpdateProductDto productDto,
+        CancellationToken token)
     {
         var result = await productService.UpdateProductAsync(productGuid, productDto, token);
 
-        var respone = result.Match<IActionResult>(
+        var response = result.Match<IActionResult>(
             updated => Ok(updated),
             errors => Problem(
-            detail: string.Join(", ", errors.Select(e => e.Description)),
-            statusCode: StatusCodes.Status400BadRequest
+                string.Join(", ", errors.Select(e => e.Description)),
+                statusCode: StatusCodes.Status400BadRequest
             )
         );
-        return respone;
+        return response;
     }
 
     /// <summary>
-    /// Delete a product by ID
+    ///     Delete a product by ID
     /// </summary>
-    [HttpDelete("{productGuid}")]
+    [HttpDelete("{productGuid:guid}")]
     public async Task<IActionResult> Delete(Guid productGuid, CancellationToken token)
     {
         var result = await productService.DeleteProductAsync(productGuid, token);
