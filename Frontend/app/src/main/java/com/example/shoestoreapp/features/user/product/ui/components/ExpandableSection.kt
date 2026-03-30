@@ -13,10 +13,6 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,23 +22,29 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * ExpandableSection: Component phần mở rộng/thu gọn thông tin
+ * ExpandableSection: Component presentational hiển thị phần mở rộng/thu gọn
+ * 
+ * Component này là STATELESS - chỉ nhận state từ parent (ViewModel) qua props
+ * Khi user click → gọi callback, ViewModel sẽ xử lý thay đổi state
+ * 
  * @param title - Tiêu đề của phần
  * @param content - Nội dung được hiển thị khi mở rộng
+ * @param isExpanded - State mở rộng hay thu gọn (từ ViewModel)
+ * @param onExpandedChange - Callback khi user click để toggle state
  * @param modifier - Modifier để tùy chỉnh layout
  */
 @Composable
 fun ExpandableSection(
     title: String,
     content: String,
+    isExpanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
-
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { isExpanded = !isExpanded }
+            .clickable { onExpandedChange(!isExpanded) }
             .padding(vertical = 12.dp)
     ) {
         Row(

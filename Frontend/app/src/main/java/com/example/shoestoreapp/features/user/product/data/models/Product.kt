@@ -22,8 +22,8 @@ data class Product(
     val price: Double,
     val rating: Double,
     val reviewCount: Int,
-    val category: String = "BESTSELLER",
-    val productType: String = "Men's Shoes",
+    val category: String,
+    val productType: String,
     val isFavorite: Boolean = false
 )
 

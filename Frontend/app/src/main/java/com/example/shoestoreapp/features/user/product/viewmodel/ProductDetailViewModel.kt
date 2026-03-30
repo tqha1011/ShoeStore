@@ -62,6 +62,31 @@ class ProductDetailViewModel(
      */
     val isLoading = _isLoading.asStateFlow()
 
+    // ============ STATE QUẢN LÝ TRẠNG THÁI MỞ/RỘNG CÁC SECTION ============
+    /**
+     * _isShippingExpanded: MutableStateFlow chứa trạng thái mở/rộng của section Shipping & Returns
+     * - true: Đang mở
+     * - false: Đang đóng
+     */
+    private val _isShippingExpanded = MutableStateFlow(false)
+
+    /**
+     * isShippingExpanded: Public flow - UI observe để biết section Shipping & Returns đang mở hay đóng
+     */
+    val isShippingExpanded = _isShippingExpanded.asStateFlow()
+
+    /**
+     * _isDescriptionExpanded: MutableStateFlow chứa trạng thái mở/rộng của section Product Description
+     * - true: Đang mở
+     * - false: Đang đóng
+     */
+    private val _isDescriptionExpanded = MutableStateFlow(false)
+
+    /**
+     * isDescriptionExpanded: Public flow - UI observe để biết section Product Description đang mở hay đóng
+     */
+    val isDescriptionExpanded = _isDescriptionExpanded.asStateFlow()
+
     // ============ HÀM LOAD CHI TIẾT SẢN PHẨM ============
     /**
      * Tải thông tin chi tiết sản phẩm theo ID
@@ -146,5 +171,19 @@ class ProductDetailViewModel(
         _selectedSize.value = null
         _isLoading.value = false
     }
-}
 
+    // ============ HÀM TOGGLE EXPANDED SECTIONS ============
+    /**
+     * Toggle trạng thái mở/đóng của Shipping & Returns section
+     */
+    fun toggleShippingExpanded() {
+        _isShippingExpanded.value = !_isShippingExpanded.value
+    }
+
+    /**
+     * Toggle trạng thái mở/đóng của Product Description section
+     */
+    fun toggleDescriptionExpanded() {
+        _isDescriptionExpanded.value = !_isDescriptionExpanded.value
+    }
+}

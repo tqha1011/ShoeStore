@@ -1,25 +1,32 @@
 package com.example.shoestoreapp.features.user.product.data.repositories
 
 import com.example.shoestoreapp.features.user.product.data.models.Product
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * ProductRepository: Lớp này quản lý dữ liệu sản phẩm.
+ * ProductRepository: Lớp này chỉ cung cấp dữ liệu sản phẩm.
  *
  * Chức năng:
- * - Lấy danh sách sản phẩm từ API hoặc database
- * - Quản lý trạng thái yêu thích (favorite)
- * - Quản lý giỏ hàng
+ * - Cung cấp danh sách sản phẩm từ API hoặc database (CRUD)
+ * - Không xử lý business logic (filter, search, toggle favorite)
+ * - Không quản lý state UI
  *
  * Hiện tại dùng mock data để test giao diện
+ * Sau này sẽ kết nối API
+ *
+ * Note:
+ * - Business logic nên ở ViewModel
+ * - State UI nên ở ViewModel
+ * - Repository chỉ cung cấp raw data
  */
 class ProductRepository {
 
     // ============ MOCK DATA ============
     // Sau này sẽ lấy từ API
-    private val mockProducts = listOf(
+    companion object {
+        val mockProducts = listOf(
         Product(
             id = 1,
             name = "Nike Air Max 270",
@@ -92,50 +99,65 @@ class ProductRepository {
             productType = "Vintage Style",
             isFavorite = false
         )
-    )
-
-    // State quản lý danh sách sản phẩm (dùng MutableStateFlow để update)
-    private val _productList = MutableStateFlow(mockProducts)
-
-    // Public flow - các thành phần khác chỉ có thể đọc được, không sửa được
-    val productList: Flow<List<Product>> = _productList.asStateFlow()
-
-    // ============ HÀM LẤY DANH SÁCH SẢN PHẨM ============
-    /**
-     * Lấy tất cả sản phẩm
-     * @return Flow<List<Product>> - Danh sách sản phẩm
-     */
-    fun getAllProducts(): Flow<List<Product>> {
-        return productList
+        )
     }
 
-    // ============ HÀM TOGGLE FAVORITE ============
+    // ============ CUNG CẤP DỮ LIỆU ============
     /**
-     * Đánh dấu/bỏ đánh dấu sản phẩm yêu thích
-     * @param productId - ID của sản phẩm
+     * Lấy tất cả sản phẩm (raw data từ mock/API)
+     * 
+     * @return StateFlow<List<Product>> - Danh sách sản phẩm
      */
-    fun toggleFavorite(productId: Int) {
-        val currentList = _productList.value
-        val updatedList = currentList.map { product ->
-            if (product.id == productId) {
-                // Sản phẩm này: đảo ngược trạng thái isFavorite
-                product.copy(isFavorite = !product.isFavorite)
-            } else {
-                product
-            }
-        }
-        _productList.value = updatedList
+    fun getAllProducts(): StateFlow<List<Product>> {
+        return MutableStateFlow(mockProducts).asStateFlow()
     }
 
-    // ============ HÀM THÊM VÀO GIỎ HÀNG ============
+    // ============ API METHODS (Khi cần save) ============
     /**
-     * Thêm sản phẩm vào giỏ hàng
+     * Lưu trạng thái yêu thích lên server (tuần tự này)
+     * 
+     * @param productId - ID sản phẩm
+     * @param isFavorite - Trạng thái yêu thích mới
+     */
+    fun updateFavoriteToAPI(productId: Int, isFavorite: Boolean) {
+        // TODO: Gọi API để lưu favorite status
+        println("Saving favorite status: product=$productId, isFavorite=$isFavorite")
+    }
+
+    /**
+     * Thêm sản phẩm vào giỏ hàng (gọi API)
+     * 
      * @param productId - ID của sản phẩm
      */
     fun addToCart(productId: Int) {
-        // TODO: Implement thêm vào giỏ hàng
-        // Có thể gọi CartRepository hoặc API endpoint
+        // TODO: Gọi API để thêm vào giỏ hàng
         println("Added product $productId to cart")
     }
-}
 
+    // ============ DATA LOGIC METHODS ============
+    /**
+     * Đảo trạng thái yêu thích của sản phẩm (Data Logic Layer)
+     * 
+     * Chức năng:
+     * - Tìm sản phẩm theo ID
+     * - Đảo trạng thái isFavorite
+     * - Gọi API để lưu thay đổi
+     * - Trả về sản phẩm đã update (để ViewModel cập nhật state)
+     * 
+     * Note: Hàm này chỉ xử lý logic data, không quản lý state UI
+     * 
+     * @param productId - ID sản phẩm
+     * @return Product? - Sản phẩm đã update, hoặc null nếu không tìm thấy
+     */
+    fun toggleFavorite(productId: Int): Product? {
+        val currentList = getAllProducts().value
+        val product = currentList.find { it.id == productId }
+        
+        return product?.copy(isFavorite = !product.isFavorite).also { updatedProduct ->
+            if (updatedProduct != null) {
+                // Gọi API để lưu thay đổi lên server
+                updateFavoriteToAPI(productId, updatedProduct.isFavorite)
+            }
+        }
+    }
+}

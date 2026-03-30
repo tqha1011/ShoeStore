@@ -12,18 +12,11 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
-import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
 import com.example.shoestoreapp.features.user.product.ui.components.FilterChips
 import com.example.shoestoreapp.features.user.product.ui.components.ProductCard
 import com.example.shoestoreapp.features.user.product.ui.components.SearchBar
@@ -45,20 +38,9 @@ fun ProductListScreen(
     onNavigateToShoppingBag: () -> Unit = {}
 ) {
     val productList = viewModel.productList.collectAsState(initial = emptyList())
-
-    var selectedBottomTab by remember { mutableStateOf(BottomNavTab.HOME) }
-    var selectedFilter by remember { mutableStateOf("All Shoes") }
-    var searchText by remember { mutableStateOf("") }
-
-    LaunchedEffect(searchText) {
-        if (searchText.isNotEmpty()) {
-            viewModel.onSearchChanged(searchText)
-        }
-    }
-
-    LaunchedEffect(selectedFilter) {
-        viewModel.onFilterSelected(selectedFilter)
-    }
+    val selectedFilter = viewModel.selectedFilter.collectAsState()
+    val searchText = viewModel.searchText.collectAsState()
+    val selectedBottomTab = viewModel.selectedBottomTab.collectAsState()
 
     Scaffold(
         topBar = {
@@ -69,8 +51,10 @@ fun ProductListScreen(
         },
         bottomBar = {
             BottomNavBar(
-                selectedTab = selectedBottomTab,
-                onTabSelected = { selectedBottomTab = it }
+                selectedTab = selectedBottomTab.value,
+                onTabSelected = { tab ->
+                    viewModel.onTabSelected(tab)
+                }
             )
         }
     ) { paddingValues ->
@@ -83,9 +67,9 @@ fun ProductListScreen(
             verticalArrangement = Arrangement.Top
         ) {
             SearchBar(
-                searchText = searchText,
+                searchText = searchText.value,
                 onSearchChanged = { query ->
-                    searchText = query
+                    viewModel.onSearchChanged(query)
                 }
             )
 
@@ -94,9 +78,9 @@ fun ProductListScreen(
             ) {
                 FilterChips(
                     filters = listOf("All Shoes", "Air Max", "Dunk", "Pegasus", "Jordan"),
-                    selectedFilter = selectedFilter,
+                    selectedFilter = selectedFilter.value,
                     onFilterSelected = { filter ->
-                        selectedFilter = filter
+                        viewModel.onFilterSelected(filter)
                     }
                 )
             }
@@ -112,7 +96,7 @@ fun ProductListScreen(
                     ProductCard(
                         product = product,
                         onProductClick = { productId ->
-                            println("🟢 onNavigateToDetail called - productId: $productId")
+                            println("onNavigateToDetail called - productId: $productId")
                             onNavigateToDetail(productId)
                         },
                         onFavoriteClick = { productId ->
@@ -125,20 +109,4 @@ fun ProductListScreen(
     }
 }
 
-@Preview(showBackground = true, heightDp = 800, widthDp = 360)
-@Composable
-fun ProductListScreenPreviewDefault() {
-    ProductListScreen(
-        viewModel = remember { ProductListViewModel() },
-        onNavigateToDetail = { productId ->
-            println("Navigating to product detail: $productId")
-        },
-        onTopMenuClick = {
-            println("Menu clicked")
-        },
-        onNavigateToShoppingBag = {
-            println("Shopping bag clicked")
-        }
-    )
-}
 

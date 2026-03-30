@@ -47,7 +47,7 @@ fun ProductCard(
                 .background(Color(0xFFF5F5F5))
                 .clip(RoundedCornerShape(12.dp))
                 .clickable {
-                    println("🔵 ProductCard clicked - Product ID: ${product.id}, Name: ${product.name}")
+                    println("ProductCard clicked - Product ID: ${product.id}, Name: ${product.name}")
                     onProductClick(product.id)
                 }
         ) {

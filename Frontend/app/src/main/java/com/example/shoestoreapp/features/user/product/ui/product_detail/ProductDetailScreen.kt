@@ -54,9 +54,10 @@ fun ProductDetailScreen(
     val productDetail by viewModel.productDetail.collectAsState(initial = null)
     val selectedSize by viewModel.selectedSize.collectAsState(initial = null)
     val isLoading by viewModel.isLoading.collectAsState(initial = false)
+    val isShippingExpanded by viewModel.isShippingExpanded.collectAsState(initial = false)
+    val isDescriptionExpanded by viewModel.isDescriptionExpanded.collectAsState(initial = false)
 
     LaunchedEffect(productId) {
-        println("🟡 ProductDetailScreen - LaunchedEffect triggered with productId: $productId")
         viewModel.loadProductDetail(productId)
     }
 
@@ -187,12 +188,16 @@ fun ProductDetailScreen(
 
                 ExpandableSection(
                     title = "Shipping & Returns",
-                    content = "Free standard shipping on orders over " + "$" + "50. Returns are accepted within 30 days of delivery for a full refund."
+                    content = "Free standard shipping on orders over " + "$" + "50. Returns are accepted within 30 days of delivery for a full refund.",
+                    isExpanded = isShippingExpanded,
+                    onExpandedChange = { viewModel.toggleShippingExpanded() }
                 )
 
                 ExpandableSection(
                     title = "Product Description",
-                    content = productDetail?.description ?: "The Nike Air Max 270 was the first lifestyle Air Max from Nike, delivering style, comfort and a giant attitude. The design draws inspiration from Air Max icons, showcasing Nike's greatest innovation with its large window and fresh array of colors."
+                    content = productDetail?.description ?: "The Nike Air Max 270 was the first lifestyle Air Max from Nike, delivering style, comfort and a giant attitude. The design draws inspiration from Air Max icons, showcasing Nike's greatest innovation with its large window and fresh array of colors.",
+                    isExpanded = isDescriptionExpanded,
+                    onExpandedChange = { viewModel.toggleDescriptionExpanded() }
                 )
 
                 Spacer(modifier = Modifier.height(100.dp))

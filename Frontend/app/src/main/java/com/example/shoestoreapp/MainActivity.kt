@@ -18,6 +18,8 @@ import com.example.shoestoreapp.features.user.product.ui.product_detail.ProductD
 import com.example.shoestoreapp.features.user.product.ui.product_list.ProductListScreen
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewModel
+import com.example.shoestoreapp.features.admin.product.ui.AdminProductListScreen
+import com.example.shoestoreapp.features.admin.product.viewmodel.AdminProductListViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,7 +41,8 @@ fun AppNavHost() {
     NavHost(
         navController = navController,
         //startDestination = "welcome"
-        startDestination = "product_list"  // ← Test ProductListScreen
+        //startDestination = "product_list"  // ← Test ProductListScreen
+        startDestination = "admin_product_list"  // Test AdminProductListScreen
     ) {
 
         // Route 1: Welcome Screen
@@ -132,5 +135,21 @@ fun AppNavHost() {
                 }
             )
         }
+        // Route: Admi Product Screen
+        composable("admin_product_list") {
+            AdminProductListScreen(
+                viewModel = remember { AdminProductListViewModel() },
+                onMenuClick = {
+                    println("🔹 Admin Menu clicked")
+                },
+                onAddProductClick = {
+                    println("🔹 Add Product clicked")
+                },
+                onTabSelected = { tab ->
+                    println("🔹 Admin Tab selected: $tab")
+                }
+            )
+        }
+
     }
 }
