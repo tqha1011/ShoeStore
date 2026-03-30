@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
+using DotNetEnv;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
