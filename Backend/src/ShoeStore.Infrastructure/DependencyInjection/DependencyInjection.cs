@@ -7,7 +7,6 @@ using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.Notification;
 using ShoeStore.Application.Interface.Strategies;
 using ShoeStore.Application.Interface.UploadImage;
-using ShoeStore.Application.Services;
 using ShoeStore.Infrastructure.Authentication;
 using ShoeStore.Infrastructure.Authentication.Strategies;
 using ShoeStore.Infrastructure.Cloudinary;
@@ -39,7 +38,6 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
-        services.AddScoped<IProductService, ProductService>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IRestorePasswordService, RestorePasswordService>();
@@ -48,7 +46,6 @@ public static class DependencyInjection
         services.AddKeyedScoped<ISocialAuthStrategy, FacebookAuthStrategy>("Facebook");
         services.AddScoped<IImageService, CloudinaryService>();
         services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
-        services.AddScoped<IProductVariantService, ProductVariantService>();
         return services;
     }
 }

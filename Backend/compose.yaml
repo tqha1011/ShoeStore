@@ -14,6 +14,10 @@
       - GoogleAuthentication_ClientId=${GOOGLEAUTHENTICATION_CLIENTID}
       - FacebookAuthentication_Url=${FACEBOOKAUTHENTICATION_URL}
       - GoogleAuthentication_AppPassword=${GOOGLEAUTHENTICATION_APPPASSWORD}
+      - Cloudinary__CloudName=${CLOUDINARY_CLOUDNAME}
+      - Cloudinary__ApiKey=${CLOUDINARY_APIKEY}
+      - Cloudinary__ApiSecret=${CLOUDINARY_APISECRET}
+      - Cloudinary__UploadPreset=${CLOUDINARY_UPLOADPRESET}
     
     ports:
       - "8080:8080"
