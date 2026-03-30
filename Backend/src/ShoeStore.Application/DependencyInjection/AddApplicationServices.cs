@@ -2,6 +2,7 @@ using System.Reflection;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Services;
 
@@ -15,6 +16,8 @@ public static class DependencyInjection
         // register dependency injection in application layer
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IProductService, ProductService>();
+        services.AddScoped<IProductVariantService, ProductVariantService>();
         return services;
     }
 }

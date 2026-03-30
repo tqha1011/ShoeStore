@@ -11,16 +11,10 @@ using Scalar.AspNetCore;
 using ShoeStore.Api.JsonSerialize;
 using ShoeStore.Api.Middlewares;
 using ShoeStore.Application.DependencyInjection;
+using ShoeStore.Infrastructure.Cloudinary;
 using ShoeStore.Infrastructure.DependencyInjection;
 
-Env.Load(); // load environment variables from .env file
-
 var builder = WebApplication.CreateBuilder(args);
-
-builder.Configuration["Cloudinary:CloudName"] = Environment.GetEnvironmentVariable("CLOUNDINARY_CLOUD_NAME");
-builder.Configuration["Cloudinary:ApiKey"] = Environment.GetEnvironmentVariable("CLOUNDINARY_API_KEY");
-builder.Configuration["Cloudinary:ApiSecret"] = Environment.GetEnvironmentVariable("CLOUNDINARY_API_SECRET");
-builder.Configuration["Cloudinary:UploadPreset"] = Environment.GetEnvironmentVariable("CLOUNDINARY_UPLOAD_PRESET");
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -35,6 +29,7 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddHttpClient();
+builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("Cloudinary"));
 var jwtKey = builder.Configuration["JWT_KEY"];
 builder.Services.AddAuthentication(options =>
 {
