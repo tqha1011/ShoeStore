@@ -8,7 +8,7 @@ public class UserRefreshToken : Entity<int>
     public required string Token { get; set; }
     public DateTime Expired { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public bool IsRevoked { get; set; } =  false;
+    public bool IsRevoked { get; set; } = false;
     public int UserId { get; set; }
-    public User User { get; set; } = null!;
+    public User? User { get; set; }
 }

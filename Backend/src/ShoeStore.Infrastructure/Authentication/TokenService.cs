@@ -3,7 +3,6 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Domain.Enum;
 
@@ -17,7 +16,7 @@ public class TokenService(IConfiguration configuration) : ITokenService
         var secretKey = configuration["JWT_KEY"] ?? throw new InvalidOperationException("JWT_KEY is missing");
         var audience = configuration["JWT_AUDIENCE"];
         var issuer = configuration["JWT_ISSUER"];
-        
+
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var claims = new List<Claim>
         {
@@ -25,12 +24,12 @@ public class TokenService(IConfiguration configuration) : ITokenService
             new(ClaimTypes.Email, email),
             new(ClaimTypes.Role, role.ToString())
         };
-        
+
         // Create secret signing credentials
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
-        
+
         // Describe what is in the token
-        var tokenDescriptor = new SecurityTokenDescriptor()
+        var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
             Expires = DateTime.UtcNow.AddHours(1),
