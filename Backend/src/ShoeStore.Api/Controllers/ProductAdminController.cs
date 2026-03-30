@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.ProductDTOs;
-using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.ProductInterface;
 
 namespace ShoeStore.API.Controllers;
 

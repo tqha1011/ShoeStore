@@ -1,7 +1,7 @@
 ﻿using ErrorOr;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
 
-namespace ShoeStore.Application.Interface;
+namespace ShoeStore.Application.Interface.ProductInterface;
 
 public interface IProductVariantService
 {

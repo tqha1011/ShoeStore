@@ -1,7 +1,7 @@
 ﻿using ErrorOr;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Common;
+using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Services;

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
-using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Application.Interface.UploadImage;
 
 namespace ShoeStore.Api.Controllers;

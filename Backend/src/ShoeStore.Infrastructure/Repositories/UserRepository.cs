@@ -5,7 +5,7 @@ using ShoeStore.Infrastructure.Data;
 
 namespace ShoeStore.Infrastructure.Repositories;
 
-public class UserRepository(AppDbContext context) : GenericRepository<User,int>(context),IUserRepository
+public class UserRepository(AppDbContext context) : GenericRepository<User, int>(context), IUserRepository
 {
     public async Task<bool> IsEmailExistAsync(string email, CancellationToken token)
     {

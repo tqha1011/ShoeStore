@@ -2,7 +2,7 @@
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Domain.Entities;
 
-namespace ShoeStore.Application.Interface;
+namespace ShoeStore.Application.Interface.ProductInterface;
 
 public interface IProductRepository : IGenericRepository<Product, int>
 {
