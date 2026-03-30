@@ -11,8 +11,20 @@ using ShoeStore.Api.JsonSerialize;
 using ShoeStore.Api.Middlewares;
 using ShoeStore.Application.DependencyInjection;
 using ShoeStore.Infrastructure.DependencyInjection;
+using DotNetEnv;
+
+Env.Load(); // load environment variables from .env file
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration["JWT_KEY"] = Environment.GetEnvironmentVariable("JWT_KEY");
+builder.Configuration["JWT_ISSUER"] = Environment.GetEnvironmentVariable("JWT_ISSUER");
+builder.Configuration["JWT_AUDIENCE"] = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
+builder.Configuration["ConnectionStrings:DefaultConnection"] = Environment.GetEnvironmentVariable("DEFAULT_CONNECTION");
+builder.Configuration["Cloudinary:CloudName"] = Environment.GetEnvironmentVariable("CLOUNDINARY_CLOUD_NAME");
+builder.Configuration["Cloudinary:ApiKey"] = Environment.GetEnvironmentVariable("CLOUNDINARY_API_KEY");
+builder.Configuration["Cloudinary:ApiSecret"] = Environment.GetEnvironmentVariable("CLOUNDINARY_API_SECRET");
+builder.Configuration["Cloudinary:UploadPreset"] = Environment.GetEnvironmentVariable("CLOUNDINARY_UPLOAD_PRESET");
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

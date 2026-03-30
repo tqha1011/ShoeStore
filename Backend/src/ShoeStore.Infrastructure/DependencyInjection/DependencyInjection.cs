@@ -6,9 +6,11 @@ using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.Notification;
 using ShoeStore.Application.Interface.Strategies;
+using ShoeStore.Application.Interface.Upload_Image;
 using ShoeStore.Application.Services;
 using ShoeStore.Infrastructure.Authentication;
 using ShoeStore.Infrastructure.Authentication.Strategies;
+using ShoeStore.Infrastructure.Cloundinary;
 using ShoeStore.Infrastructure.Data;
 using ShoeStore.Infrastructure.Notification;
 using ShoeStore.Infrastructure.Repositories;
@@ -20,6 +22,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<CloudinarySettings>(configuration.GetSection("Cloudinary"));
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         // register dependency injection in infrastructure layer
         services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -34,6 +37,10 @@ public static class DependencyInjection
         services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
         services.AddScoped<IPasswordHash, PasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IUserRepository,UserRepository>();
+        services.AddScoped<IAuthService,AuthService>();
+        services.AddScoped<IProductRepository,ProductRepository>();
+        services.AddScoped<IProductService, ProductService>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IEmailService, EmailService>();
@@ -41,6 +48,9 @@ public static class DependencyInjection
         services.AddScoped<IUserRestorePasswordRepository, UserRestorePasswordRepository>();
         services.AddKeyedScoped<ISocialAuthStrategy, GoogleAuthStrategy>("Google");
         services.AddKeyedScoped<ISocialAuthStrategy, FacebookAuthStrategy>("Facebook");
+        services.AddScoped<IImageService, CloudinaryService>();
+        services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
+        services.AddScoped<IProductVariantService, ProductVariantService>();
         return services;
     }
 }
