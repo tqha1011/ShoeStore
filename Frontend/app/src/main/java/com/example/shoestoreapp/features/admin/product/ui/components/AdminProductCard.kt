@@ -76,7 +76,7 @@ fun AdminProductCard(
             // Trạng thái stock
             val statusText = when (product.stockStatus) {
                 StockStatus.IN_STOCK -> "IN STOCK"
-                StockStatus.LOW_STOCK -> "LOW STOCK: ${String.format("%02d", product.quantity)}"
+                StockStatus.LOW_STOCK -> "LOW STOCK: ${String.format(Locale.US,"%02d", product.quantity)}"
                 StockStatus.OUT_OF_STOCK -> "OUT OF STOCK"
             }
             val statusColor = when (product.stockStatus) {
