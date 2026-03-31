@@ -34,10 +34,16 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             {
                 Id = 1,
                 UserName = "admin1",
+                PublicId = Guid.Parse("1da60221-9f45-4ec3-a69a-3144b3520ebb"),
                 Email = "admin1@gmail.com",
                 Password = "$2a$10$.X1JpcAQwVUxRr/pESfQsuf6DeBoh7kk6Li8h2Mc8jwOcdBVEyz1.",
                 Role = UserRole.Admin,
                 CreatedAt = DateTime.SpecifyKind(new DateTime(2026,3,19), DateTimeKind.Utc)
             });
+        
+        builder.Property(c => c.PublicId)
+            .HasDefaultValueSql("gen_random_uuid()");
+        
+        builder.HasIndex(c => c.PublicId).IsUnique();
     }
 }

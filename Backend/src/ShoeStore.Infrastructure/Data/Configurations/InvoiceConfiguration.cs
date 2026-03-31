@@ -38,5 +38,10 @@ public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
         builder.HasMany(c => c.VoucherDetails)
             .WithOne(c => c.Invoice)
             .HasForeignKey(c => c.InvoiceId);
+        
+        builder.Property(c => c.PublicId)
+            .HasDefaultValueSql("gen_random_uuid()");
+        
+        builder.HasIndex(c => c.PublicId).IsUnique();
     }
 }
