@@ -46,6 +46,7 @@ jobs:
           fetch-depth: 0 # Quan trọng để SonarCloud so sánh code
           sparse-checkout: |
             Frontend
+            gradle
       - name: debug
         working-directory: .
         run: ls -la
@@ -64,7 +65,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          java-version: 17 # Gradle và SonarCloud cho Android chạy trên Java 17
+          java-version: 21 # Gradle và SonarCloud cho Android chạy trên Java 17
           distribution: 'zulu' 
 
       # BƯỚC QUAN TRỌNG: Cấp quyền thực thi cho Gradle Wrapper
