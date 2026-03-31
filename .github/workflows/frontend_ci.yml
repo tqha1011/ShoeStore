@@ -43,32 +43,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Bắt buộc phải có để SonarCloud tính toán được New Code
+          fetch-depth: 0
           sparse-checkout: |
             Frontend
+            gradle
             
       - name: Debug files
         working-directory: .
         run: ls -la
 
-      # Gom gọn toàn bộ sức mạnh Cache vào đúng 1 dòng này (Xóa cục manual cache cũ)
       - name: Setup Java & Auto-Cache Gradle
         uses: actions/setup-java@v4
         with:
-          java-version: 17 # Đổi thành 21 nếu sau này ép version Android cao hơn
+          java-version: 17
           distribution: 'zulu' 
           cache: 'gradle' 
 
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      # Thêm assembleDebug để compile mã nguồn trước khi SonarQube soi mói
       - name: Build and Analyze with Gradle
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
-        run: |
-          ./gradlew assembleDebug sonarqube -Dsonar.coverage.exclusions="**/*" \
-            -Dsonar.projectKey=tqha1011_ShoeStore_Frontend \
-            -Dsonar.organization=tqha1011 \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.token=$SONAR_TOKEN
+        run: ./gradlew assembleDebug sonar -Dsonar.coverage.exclusions="**/*" -Dsonar.projectKey=tqha1011_ShoeStore_Frontend -Dsonar.organization=tqha1011 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=$SONAR_TOKEN
