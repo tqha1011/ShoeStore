@@ -34,6 +34,7 @@ public class ProductVariantService(
 
         return new ProductVariantResponseDto
         {
+            PublicId = productVariant.PublicId,
             SizeId = productVariant.SizeId,
             Size = productVariant.Size?.Size ?? 0,
             ColorId = productVariant.ColorId,

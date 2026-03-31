@@ -10,6 +10,8 @@ public class ProductVariantRepository(AppDbContext context)
 {
     public async Task<ProductVariant?> GetByGuidAsync(Guid productGuid, CancellationToken token)
     {
-        return await DbSet.FirstOrDefaultAsync(x => x.PublicId == productGuid, token);
+        return await DbSet.Include(x => x.Size)
+            .Include(x => x.Color)
+            .FirstOrDefaultAsync(x => x.PublicId == productGuid, token);
     }
 }

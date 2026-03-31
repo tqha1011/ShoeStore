@@ -39,6 +39,7 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
                     .Where(v => v.IsSelling && !v.IsDeleted)
                     .Select(v => new ProductVariantResponseDto
                     {
+                        PublicId = v.PublicId,
                         SizeId = v.SizeId,
                         Size = v.Size!.Size,
                         ColorId = v.ColorId,
@@ -80,6 +81,7 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
             Variants = product.ProductVariants
                 .Select(v => new ProductVariantResponseDto
                 {
+                    PublicId = v.PublicId,
                     SizeId = v.SizeId,
                     Size = v.Size!.Size,
                     ColorId = v.ColorId,

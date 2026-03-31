@@ -35,7 +35,7 @@ public static class DependencyInjection
                         TimeSpan.FromSeconds(30),
                         null)).UseSnakeCaseNamingConvention());
 
-        services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
+        services.AddHealthChecks().AddDbContextCheck<AppDbContext>("/api/health");
         services.AddScoped<IPasswordHash, PasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IUserRepository, UserRepository>();

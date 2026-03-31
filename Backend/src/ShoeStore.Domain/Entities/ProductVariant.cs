@@ -4,7 +4,7 @@ namespace ShoeStore.Domain.Entities;
 
 public class ProductVariant : Entity<int>
 {
-    public Guid PublicId { get; set; }
+    public Guid PublicId { get; set; } = Guid.NewGuid();
     public required int SizeId { get; set; }
     public ProductSize? Size { get; set; } // foreign key relationship to ProductSize entity
     public required int ProductId { get; set; }
