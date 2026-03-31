@@ -89,6 +89,9 @@ dependencies {
     implementation(libs.ui.graphics)
     implementation(libs.ui.tooling.preview)
     implementation(libs.material3)
+    implementation(libs.coil.compose)
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.navigation:navigation-compose:2.8.5")
     implementation(libs.foundation) // Icons Library
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services)

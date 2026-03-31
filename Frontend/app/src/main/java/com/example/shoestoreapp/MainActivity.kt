@@ -1,9 +1,6 @@
 package com.example.shoestoreapp
 
-import android.content.pm.PackageManager
 import android.os.Bundle
-import android.util.Base64
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -13,6 +10,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.shoestoreapp.features.user.product.ui.product_detail.ProductDetailScreen
+import com.example.shoestoreapp.features.user.product.ui.product_list.ProductListScreen
+import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
+import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewModel
+import com.example.shoestoreapp.features.admin.product.ui.AdminProductListScreen
+import com.example.shoestoreapp.features.admin.product.viewmodel.AdminProductListViewModel
 import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenContent
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
@@ -22,8 +25,6 @@ import com.example.shoestoreapp.features.auth.HomeUserScreen
 import com.example.shoestoreapp.features.auth.HomeAdminScreen
 import com.example.shoestoreapp.core.utils.TokenManager
 import kotlinx.coroutines.launch
-import java.security.MessageDigest
-
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,9 +47,12 @@ fun AppNavHost() {
 
     NavHost(
         navController = navController,
-        startDestination = "welcome" // Welcome Screen
+        //startDestination = "welcome"
+        //startDestination = "product_list"  // ← Test ProductListScreen
+        startDestination = "admin_product_list"  // Test AdminProductListScreen
     ) {
-        // Route 1: Welcome Screen (Acts as Splash Screen)
+
+        // Route 1: Welcome Screen
         composable("welcome") {
             // 1. COLLECT DATA FROM FLOW AS STATE
             val token by tokenManager.getToken.collectAsState(initial = "LOADING")
@@ -166,6 +170,58 @@ fun AppNavHost() {
                             popUpTo(0) { inclusive = true }
                         }
                     }
+                }
+            )
+        }
+
+        // Route: Product List Screen
+        composable("product_list") {
+            ProductListScreen(
+                viewModel = remember { ProductListViewModel() },
+                onNavigateToDetail = { productId ->
+                    println("🟢 onNavigateToDetail called - productId: $productId")
+                    navController.navigate("product_detail/$productId")
+                },
+                onTopMenuClick = {
+                    println("🔹 Menu clicked")
+                },
+                onNavigateToShoppingBag = {
+                    println("🔹 Shopping bag clicked")
+                }
+            )
+        }
+
+        // Route: Product Detail Screen
+        composable("product_detail/{productId}") { backStackEntry ->
+            // Lấy productId từ URL
+            val productId = backStackEntry.arguments?.getString("productId")?.toInt() ?: 1
+
+            ProductDetailScreen(
+                productId = productId,
+                viewModel = remember { ProductDetailViewModel() },
+                onBackClick = {
+                    // Click back -> quay lại ProductListScreen
+                    navController.popBackStack()
+                },
+                onNavigateToCart = {
+                    // Click "Add to Cart" -> điều hướng sang Cart screen
+                    println("🔹 Navigating to cart")
+                    // navController.navigate("cart")
+                }
+            )
+        }
+        // Route: Admi Product Screen
+        composable("admin_product_list") {
+            AdminProductListScreen(
+                viewModel = remember { AdminProductListViewModel() },
+                onMenuClick = {
+                    println("🔹 Admin Menu clicked")
+                },
+                onAddProductClick = {
+                    println("🔹 Add Product clicked")
+                },
+                onTabSelected = { tab ->
+                    println("🔹 Admin Tab selected: $tab")
                 }
             )
         }
