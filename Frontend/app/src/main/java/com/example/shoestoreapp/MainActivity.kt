@@ -1,9 +1,6 @@
 package com.example.shoestoreapp
 
-import android.content.pm.PackageManager
 import android.os.Bundle
-import android.util.Base64
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -13,11 +10,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.shoestoreapp.features.auth.ui.reset_password.ForgotPassword
-import com.example.shoestoreapp.features.auth.ui.sign_in.LoginScreenContent
-import com.example.shoestoreapp.features.auth.ui.sign_up.RegisterScreenContent
-import com.example.shoestoreapp.features.auth.ui.welcome.WelcomeScreen
-import com.example.shoestoreapp.features.auth.ui.reset_password.CreateNewPassword
 import com.example.shoestoreapp.features.user.product.ui.product_detail.ProductDetailScreen
 import com.example.shoestoreapp.features.user.product.ui.product_list.ProductListScreen
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
@@ -33,8 +25,6 @@ import com.example.shoestoreapp.features.auth.HomeUserScreen
 import com.example.shoestoreapp.features.auth.HomeAdminScreen
 import com.example.shoestoreapp.core.utils.TokenManager
 import kotlinx.coroutines.launch
-import java.security.MessageDigest
-
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
