@@ -58,7 +58,7 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
           # Chìa khóa này sẽ thay đổi nếu bất kỳ file build.gradle hoặc wrapper nào thay đổi
-          key: ${{ runner.os }}-gradle-${{ hashFiles('Frontend/**/*.gradle*', 'Frontend/gradle/wrapper/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-gradle-v2-${{ hashFiles('Frontend/**/*.gradle*', 'Frontend/gradle/wrapper/gradle-wrapper.properties', 'gradle/libs.versions.toml') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
