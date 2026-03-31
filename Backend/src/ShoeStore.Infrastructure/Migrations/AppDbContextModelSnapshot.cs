@@ -35,6 +35,12 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("product_variant_id");
 
+                    b.Property<Guid>("PublicId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("public_id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
                     b.Property<int>("Quantity")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -51,8 +57,9 @@ namespace ShoeStore.Infrastructure.Migrations
                     b.HasIndex("ProductVariantId")
                         .HasDatabaseName("ix_cart_items_product_variant_id");
 
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_cart_items_user_id");
+                    b.HasIndex("PublicId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_cart_items_public_id");
 
                     b.HasIndex("UserId", "ProductVariantId")
                         .IsUnique()
@@ -114,6 +121,12 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("phone");
 
+                    b.Property<Guid>("PublicId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("public_id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
                     b.Property<string>("ShippingAddress")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -138,6 +151,10 @@ namespace ShoeStore.Infrastructure.Migrations
                     b.HasIndex("PaymentId")
                         .HasDatabaseName("ix_invoices_payment_id");
 
+                    b.HasIndex("PublicId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_invoices_public_id");
+
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_invoices_user_id");
 
@@ -161,6 +178,12 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("product_variant_id");
 
+                    b.Property<Guid>("PublicId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("public_id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
                     b.Property<int>("Quantity")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -176,6 +199,10 @@ namespace ShoeStore.Infrastructure.Migrations
 
                     b.HasIndex("InvoiceId")
                         .HasDatabaseName("ix_invoice_details_invoice_id");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_invoice_details_public_id");
 
                     b.HasIndex("ProductVariantId", "InvoiceId")
                         .IsUnique()
@@ -225,8 +252,18 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("product_name");
 
+                    b.Property<Guid>("PublicId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("public_id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
                     b.HasKey("Id")
                         .HasName("pk_products");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_products_public_id");
 
                     b.ToTable("products", (string)null);
                 });
@@ -259,7 +296,7 @@ namespace ShoeStore.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ColorId")
+                    b.Property<int?>("ColorId")
                         .HasColumnType("integer")
                         .HasColumnName("color_id");
 
@@ -288,6 +325,12 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("product_id");
 
+                    b.Property<Guid>("PublicId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("public_id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
                     b.Property<int>("SizeId")
                         .HasColumnType("integer")
                         .HasColumnName("size_id");
@@ -304,11 +347,15 @@ namespace ShoeStore.Infrastructure.Migrations
                     b.HasIndex("ColorId")
                         .HasDatabaseName("ix_product_variants_color_id");
 
+                    b.HasIndex("PublicId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_product_variants_public_id");
+
                     b.HasIndex("SizeId")
                         .HasDatabaseName("ix_product_variants_size_id");
 
-                    b.HasIndex("IsDeleted", "IsSelling")
-                        .HasDatabaseName("ix_product_variants_is_deleted_is_selling");
+                    b.HasIndex("IsDeleted", "IsSelling", "Price")
+                        .HasDatabaseName("ix_product_variants_is_deleted_is_selling_price");
 
                     b.HasIndex("ProductId", "ColorId", "SizeId")
                         .IsUnique()
@@ -351,6 +398,12 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("password");
 
+                    b.Property<Guid>("PublicId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("public_id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
                     b.Property<int>("Role")
                         .HasColumnType("integer")
                         .HasColumnName("role");
@@ -372,6 +425,10 @@ namespace ShoeStore.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_users_email");
 
+                    b.HasIndex("PublicId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_public_id");
+
                     b.ToTable("users", (string)null);
 
                     b.HasData(
@@ -381,9 +438,106 @@ namespace ShoeStore.Infrastructure.Migrations
                             CreatedAt = new DateTime(2026, 3, 19, 0, 0, 0, 0, DateTimeKind.Utc),
                             Email = "admin1@gmail.com",
                             Password = "$2a$10$.X1JpcAQwVUxRr/pESfQsuf6DeBoh7kk6Li8h2Mc8jwOcdBVEyz1.",
+                            PublicId = new Guid("1da60221-9f45-4ec3-a69a-3144b3520ebb"),
                             Role = 1,
                             UserName = "admin1"
                         });
+                });
+
+            modelBuilder.Entity("ShoeStore.Domain.Entities.UserRefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("Expired")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expired");
+
+                    b.Property<bool>("IsRevoked")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_revoked");
+
+                    b.Property<Guid>("PublicId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("public_id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("token");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_refresh_tokens");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_refresh_tokens_public_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_user_refresh_tokens_user_id");
+
+                    b.ToTable("user_refresh_tokens", (string)null);
+                });
+
+            modelBuilder.Entity("ShoeStore.Domain.Entities.UserRestorePassword", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Expiration")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expiration");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_used");
+
+                    b.Property<Guid>("PublicId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("public_id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("token");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_restore_passwords");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_restore_passwords_public_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_user_restore_passwords_user_id");
+
+                    b.ToTable("user_restore_passwords", (string)null);
                 });
 
             modelBuilder.Entity("ShoeStore.Domain.Entities.UserVoucher", b =>
@@ -400,6 +554,12 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("is_used");
+
+                    b.Property<Guid>("PublicId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("public_id")
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<DateTime>("SavedAt")
                         .HasColumnType("timestamp with time zone")
@@ -419,6 +579,10 @@ namespace ShoeStore.Infrastructure.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_user_vouchers");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_vouchers_public_id");
 
                     b.HasIndex("VoucherId")
                         .HasDatabaseName("ix_user_vouchers_voucher_id");
@@ -467,6 +631,12 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasDefaultValue(0m)
                         .HasColumnName("min_order_price");
 
+                    b.Property<Guid>("PublicId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("public_id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
                     b.Property<int>("TotalQuantity")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -504,6 +674,10 @@ namespace ShoeStore.Infrastructure.Migrations
                     b.HasIndex("IsDeleted")
                         .HasDatabaseName("ix_vouchers_is_deleted");
 
+                    b.HasIndex("PublicId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_vouchers_public_id");
+
                     b.ToTable("vouchers", (string)null);
                 });
 
@@ -524,6 +698,12 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("numeric")
                         .HasColumnName("money_discount");
 
+                    b.Property<Guid>("PublicId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("public_id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
                     b.Property<int?>("VoucherId")
                         .HasColumnType("integer")
                         .HasColumnName("voucher_id");
@@ -533,6 +713,10 @@ namespace ShoeStore.Infrastructure.Migrations
 
                     b.HasIndex("InvoiceId")
                         .HasDatabaseName("ix_voucher_details_invoice_id");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_voucher_details_public_id");
 
                     b.HasIndex("VoucherId", "InvoiceId")
                         .IsUnique()
@@ -610,7 +794,6 @@ namespace ShoeStore.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("ColorId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired()
                         .HasConstraintName("fk_product_variants_colors_color_id");
 
                     b.HasOne("ShoeStore.Domain.Entities.Product", "Product")
@@ -632,6 +815,30 @@ namespace ShoeStore.Infrastructure.Migrations
                     b.Navigation("Product");
 
                     b.Navigation("Size");
+                });
+
+            modelBuilder.Entity("ShoeStore.Domain.Entities.UserRefreshToken", b =>
+                {
+                    b.HasOne("ShoeStore.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_refresh_tokens_users_user_id");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ShoeStore.Domain.Entities.UserRestorePassword", b =>
+                {
+                    b.HasOne("ShoeStore.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_restore_passwords_users_user_id");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ShoeStore.Domain.Entities.UserVoucher", b =>

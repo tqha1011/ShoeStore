@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36414.22
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
-	ProjectSection(SolutionItems) = preProject
-		
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShoeStore.Domain", "src\ShoeStore.Domain\ShoeStore.Domain.csproj", "{001E5BBC-17E9-457B-A688-04FC6ACD91AF}"
 EndProject
@@ -15,8 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShoeStore.Api", "src\ShoeSt
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{BE5C5921-A694-432D-BFF5-0F6524E49214}"
 	ProjectSection(SolutionItems) = preProject
-		compose.yaml = compose.yaml
 		.env = .env
+		compose.yaml = compose.yaml
 	EndProjectSection
 EndProject
 Global
@@ -86,5 +86,8 @@ Global
 		{E84F8492-5561-4E68-87E8-334AD384B435} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{679F3A87-1E94-4B19-B2B4-BACBD8443F06} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{69D27B18-6854-4A30-B780-D38F38A50261} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C2BF0D0F-3F42-492A-96EE-077E6AA4C0D3}
 	EndGlobalSection
 EndGlobal
