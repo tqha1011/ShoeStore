@@ -76,12 +76,5 @@ jobs:
       - name: Build and Analyze with Gradle
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
-        run: |
-          ./gradlew sonarqube -Dsonar.coverage.exclusions="**/*" \
-            -Dsonar.projectKey=tqha1011_ShoeStore_Frontend \
-            -Dsonar.organization=tqha1011 \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.token=$SONAR_TOKEN
-            -Dsonar.c.file.suffixes=- \
-            -Dsonar.cpp.file.suffixes=- \
-            -Dsonar.objc.file.suffixes=-
+        run: ./gradlew sonar -Dsonar.coverage.exclusions="**/*" -Dsonar.projectKey=tqha1011_ShoeStore_Frontend -Dsonar.organization=tqha1011 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=$SONAR_TOKEN
+
