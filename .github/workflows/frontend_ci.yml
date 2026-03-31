@@ -46,7 +46,6 @@ jobs:
           fetch-depth: 0 # Quan trọng để SonarCloud so sánh code
           sparse-checkout: |
             Frontend
-            gradle
       - name: debug
         working-directory: .
         run: ls -la
@@ -58,7 +57,7 @@ jobs:
             ~/.gradle/caches
             ~/.gradle/wrapper
           # Chìa khóa này sẽ thay đổi nếu bất kỳ file build.gradle hoặc wrapper nào thay đổi
-          key: ${{ runner.os }}-gradle-v2-${{ hashFiles('Frontend/**/*.gradle*', 'Frontend/gradle/wrapper/gradle-wrapper.properties', 'gradle/libs.versions.toml') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('Frontend/**/*.gradle*', 'Frontend/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
 
@@ -76,5 +75,9 @@ jobs:
       - name: Build and Analyze with Gradle
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} 
-        run: ./gradlew sonar -Dsonar.coverage.exclusions="**/*" -Dsonar.projectKey=tqha1011_ShoeStore_Frontend -Dsonar.organization=tqha1011 -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=$SONAR_TOKEN
-
+        run: |
+          ./gradlew sonarqube -Dsonar.coverage.exclusions="**/*" \
+            -Dsonar.projectKey=tqha1011_ShoeStore_Frontend \
+            -Dsonar.organization=tqha1011 \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.token=$SONAR_TOKEN
