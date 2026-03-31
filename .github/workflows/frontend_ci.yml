@@ -65,7 +65,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          java-version: 21 # Gradle và SonarCloud cho Android chạy trên Java 17
+          java-version: 17 # Gradle và SonarCloud cho Android chạy trên Java 17
           distribution: 'zulu' 
 
       # BƯỚC QUAN TRỌNG: Cấp quyền thực thi cho Gradle Wrapper
