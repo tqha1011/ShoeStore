@@ -48,4 +48,14 @@ public class CartItemRepository(AppDbContext context) : GenericRepository<CartIt
         return await DbSet.FirstOrDefaultAsync(
             x => x.User!.PublicId == publicUserId && x.ProductVariant!.PublicId == publicVariantId, token);
     }
+
+    public async Task<bool> DeleteListOfCartItems(List<Guid> cartItemsList, CancellationToken token)
+    {
+        var cartItems = await DbSet.Where(x => cartItemsList.Contains(x.PublicId))
+            .Distinct()
+            .ToListAsync(token);
+        if (cartItems.Count != cartItemsList.Count) return false;
+        DbSet.RemoveRange(cartItems);
+        return true;
+    }
 }

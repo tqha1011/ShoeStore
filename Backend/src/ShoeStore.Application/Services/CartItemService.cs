@@ -135,4 +135,12 @@ public class CartItemService(
             ProductVariantId = productVariant.PublicId
         };
     }
+
+    public async Task<ErrorOr<Success>> DeleteCartItem(List<Guid> cartItemList, CancellationToken token)
+    {
+        var result = await cartItemRepository.DeleteListOfCartItems(cartItemList, token);
+        if (!result) return Error.NotFound("CartItem.NotFound", "One or more cart items were not found.");
+        await unitOfWork.SaveChangesAsync(token);
+        return Result.Success;
+    }
 }

@@ -13,4 +13,6 @@ public interface ICartItemRepository : IGenericRepository<CartItem, int>
     Task<CartItem?> GetExistCartItem(int userId, int productVariantId, CancellationToken token);
 
     Task<CartItem?> GetExistCartItemByGuid(Guid publicUserId, Guid publicVariantId, CancellationToken token);
+
+    Task<bool> DeleteListOfCartItems(List<Guid> cartItemsList, CancellationToken token);
 }
