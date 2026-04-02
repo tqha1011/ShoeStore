@@ -3,8 +3,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Authentication;
+using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.Notification;
+using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Application.Interface.Strategies;
 using ShoeStore.Application.Interface.UploadImage;
 using ShoeStore.Infrastructure.Authentication;
@@ -33,7 +35,7 @@ public static class DependencyInjection
                         TimeSpan.FromSeconds(30),
                         null)).UseSnakeCaseNamingConvention());
 
-        services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
+        services.AddHealthChecks().AddDbContextCheck<AppDbContext>("/api/health");
         services.AddScoped<IPasswordHash, PasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IUserRepository, UserRepository>();
@@ -46,6 +48,7 @@ public static class DependencyInjection
         services.AddKeyedScoped<ISocialAuthStrategy, FacebookAuthStrategy>("Facebook");
         services.AddScoped<IImageService, CloudinaryService>();
         services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
+        services.AddScoped<ICartItemRepository, CartItemRepository>();
         return services;
     }
 }

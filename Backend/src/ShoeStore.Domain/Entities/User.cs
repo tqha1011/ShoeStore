@@ -5,7 +5,7 @@ namespace ShoeStore.Domain.Entities;
 
 public class User : Entity<int>
 {
-    public Guid PublicId { get; set; }
+    public Guid PublicId { get; set; } = Guid.NewGuid();
     public required string UserName { get; set; }
     public required string Password { get; set; }
     public required string Email { get; set; }
@@ -13,21 +13,21 @@ public class User : Entity<int>
     public string? Address { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
-    
-    public UserRole Role { get; set; } = UserRole.Customer;
-    
+
+    public UserRole Role { get; set; } = UserRole.User;
+
     /// <summary>
-    /// Gets the collection of cart items in user's shopping cart
+    ///     Gets the collection of cart items in user's shopping cart
     /// </summary>
-    public ICollection<CartItem> CartItems { get; set; } =  new List<CartItem>();
-    
+    public ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
+
     /// <summary>
-    /// Gets the collection of invoices associated with the user, representing their purchase history and transactions.
+    ///     Gets the collection of invoices associated with the user, representing their purchase history and transactions.
     /// </summary>
     public ICollection<Invoice> Invoices { get; set; } = new List<Invoice>();
-    
+
     /// <summary>
-    /// Gets the collection of voucher associated with user
+    ///     Gets the collection of voucher associated with user
     /// </summary>
     public ICollection<UserVoucher> UserVouchers { get; set; } = new List<UserVoucher>();
 }

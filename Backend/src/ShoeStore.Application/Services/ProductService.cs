@@ -3,8 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Common;
+using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Services;
@@ -39,6 +39,7 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
                     .Where(v => v.IsSelling && !v.IsDeleted)
                     .Select(v => new ProductVariantResponseDto
                     {
+                        PublicId = v.PublicId,
                         SizeId = v.SizeId,
                         Size = v.Size!.Size,
                         ColorId = v.ColorId,
@@ -80,6 +81,7 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
             Variants = product.ProductVariants
                 .Select(v => new ProductVariantResponseDto
                 {
+                    PublicId = v.PublicId,
                     SizeId = v.SizeId,
                     Size = v.Size!.Size,
                     ColorId = v.ColorId,

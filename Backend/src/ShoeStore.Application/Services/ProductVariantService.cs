@@ -1,7 +1,7 @@
 ﻿using ErrorOr;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Common;
+using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Services;
@@ -34,6 +34,7 @@ public class ProductVariantService(
 
         return new ProductVariantResponseDto
         {
+            PublicId = productVariant.PublicId,
             SizeId = productVariant.SizeId,
             Size = productVariant.Size?.Size ?? 0,
             ColorId = productVariant.ColorId,

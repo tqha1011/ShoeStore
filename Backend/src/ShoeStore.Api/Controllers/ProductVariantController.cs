@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
-using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Application.Interface.UploadImage;
 
 namespace ShoeStore.Api.Controllers;
@@ -26,6 +27,7 @@ public class ProductVariantController(IProductVariantService variantService, IIm
     /// <returns></returns>
     [HttpPost]
     [Consumes("multipart/form-data")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create(Guid productGuid, [FromForm] CreateProductVariantDto dto,
         IFormFile? image, CancellationToken token)
     {

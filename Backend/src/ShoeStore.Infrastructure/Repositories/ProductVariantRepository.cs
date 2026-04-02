@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Infrastructure.Data;
 
@@ -10,6 +10,9 @@ public class ProductVariantRepository(AppDbContext context)
 {
     public async Task<ProductVariant?> GetByGuidAsync(Guid productGuid, CancellationToken token)
     {
-        return await DbSet.FirstOrDefaultAsync(x => x.PublicId == productGuid, token);
+        return await DbSet.Include(x => x.Size)
+            .Include(x => x.Color)
+            .Include(x => x.Product)
+            .FirstOrDefaultAsync(x => x.PublicId == productGuid, token);
     }
 }

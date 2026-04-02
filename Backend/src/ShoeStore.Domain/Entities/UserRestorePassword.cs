@@ -4,7 +4,7 @@ namespace ShoeStore.Domain.Entities;
 
 public class UserRestorePassword : Entity<int>
 {
-    public Guid PublicId { get; set; }
+    public Guid PublicId { get; set; } = Guid.NewGuid();
     public required string Token { get; set; }
     public DateTime Expiration { get; set; }
     public int UserId { get; set; }

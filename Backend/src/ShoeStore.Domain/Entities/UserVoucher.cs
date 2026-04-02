@@ -4,7 +4,7 @@ namespace ShoeStore.Domain.Entities;
 
 public class UserVoucher : Entity<int>
 {
-    public Guid PublicId { get; set; }
+    public Guid PublicId { get; set; } = Guid.NewGuid();
     public required int UserId { get; set; }
     public User? User { get; set; }
     public required int VoucherId { get; set; }
