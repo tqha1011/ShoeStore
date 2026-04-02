@@ -3,6 +3,7 @@ using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ShoeStore.Application.Interface.Authentication;
+using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Application.Services;
 
@@ -18,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IProductService, ProductService>();
         services.AddScoped<IProductVariantService, ProductVariantService>();
+        services.AddScoped<ICartItemService, CartItemService>();
         return services;
     }
 }
