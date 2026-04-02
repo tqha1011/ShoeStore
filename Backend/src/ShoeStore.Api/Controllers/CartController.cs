@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.CartItemDTOs;
 using ShoeStore.Application.Interface.CartItemInterface;
 
@@ -44,7 +43,7 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
                 }),
                 "CartItem.QuantityExceedsStock" => BadRequest(new
                 {
-                    message = "The quantity exceeds the available stock",
+                    message = "Invalid quantity",
                     detail = errors[0].Description
                 }),
                 "User.NotFound" => NotFound(new

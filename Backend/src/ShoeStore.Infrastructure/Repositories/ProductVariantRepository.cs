@@ -12,6 +12,7 @@ public class ProductVariantRepository(AppDbContext context)
     {
         return await DbSet.Include(x => x.Size)
             .Include(x => x.Color)
+            .Include(x => x.Product)
             .FirstOrDefaultAsync(x => x.PublicId == productGuid, token);
     }
 }

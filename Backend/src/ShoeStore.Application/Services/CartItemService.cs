@@ -1,5 +1,4 @@
 using ErrorOr;
-using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.CartItemDTOs;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.CartItemInterface;
@@ -52,7 +51,9 @@ public class CartItemService(
                     Price = productVariant.Price,
                     Stock = productVariant.Stock,
                     ImageUrl = productVariant.ImageUrl,
-                    ProductVariantId = productVariant.PublicId
+                    ProductVariantId = productVariant.PublicId,
+                    ProductName = productVariant.Product?.ProductName ?? string.Empty,
+                    Brand = productVariant.Product?.Brand ?? string.Empty
                 };
             }
 
@@ -74,7 +75,9 @@ public class CartItemService(
             Price = productVariant.Price,
             Stock = productVariant.Stock,
             ImageUrl = productVariant.ImageUrl,
-            ProductVariantId = productVariant.PublicId
+            ProductVariantId = productVariant.PublicId,
+            ProductName = productVariant.Product?.ProductName ?? string.Empty,
+            Brand = productVariant.Product?.Brand ?? string.Empty
         };
     }
 
@@ -104,7 +107,9 @@ public class CartItemService(
                 Price = productVariant.Price,
                 Stock = productVariant.Stock,
                 ImageUrl = productVariant.ImageUrl,
-                ProductVariantId = productVariant.PublicId
+                ProductVariantId = productVariant.PublicId,
+                ProductName = productVariant.Product?.ProductName ?? string.Empty,
+                Brand = productVariant.Product?.Brand ?? string.Empty
             };
         }
 
@@ -133,7 +138,9 @@ public class CartItemService(
             Price = productVariant.Price,
             Stock = productVariant.Stock,
             ImageUrl = productVariant.ImageUrl,
-            ProductVariantId = productVariant.PublicId
+            ProductVariantId = productVariant.PublicId,
+            ProductName = productVariant.Product?.ProductName ?? string.Empty,
+            Brand = productVariant.Product?.Brand ?? string.Empty
         };
     }
 

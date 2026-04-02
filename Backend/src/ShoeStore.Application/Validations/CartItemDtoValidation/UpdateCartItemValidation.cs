@@ -1,5 +1,4 @@
 using FluentValidation;
-using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.CartItemDTOs;
 
 namespace ShoeStore.Application.Validations.CartItemDtoValidation;
@@ -13,7 +12,11 @@ public class UpdateCartItemValidation : AbstractValidator<UpdateCartItemDto>
             .WithMessage("CartItemId is required.");
 
         RuleFor(x => x.Quantity)
-            .GreaterThanOrEqualTo(0)
-            .WithMessage("Quantity must be greater than or equal to 0.");
+            .NotEmpty().WithMessage("Quantity is required.")
+            .GreaterThanOrEqualTo(0).WithMessage("Quantity must be greater than or equal to 0.");
+
+        RuleFor(x => x.NewProductVariantId)
+            .NotEmpty()
+            .WithMessage("NewProductVariantId is required.");
     }
 }
