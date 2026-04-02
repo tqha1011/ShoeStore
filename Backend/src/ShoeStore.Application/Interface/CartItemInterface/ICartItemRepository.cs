@@ -8,11 +8,11 @@ public interface ICartItemRepository : IGenericRepository<CartItem, int>
 {
     Task<List<UserCartItemResponseDto>> GetCartItemsByUserIdAsync(Guid userId, CancellationToken token);
 
-    Task<CartItem?> GetCartItemByGuid(Guid publicId, CancellationToken token, bool trackChanges = false);
+    Task<CartItem?> GetCartItemByGuidAsync(Guid publicId, CancellationToken token, bool trackChanges = false);
 
-    Task<CartItem?> GetExistCartItem(int userId, int productVariantId, CancellationToken token);
+    Task<CartItem?> GetExistCartItemAsync(int userId, int productVariantId, CancellationToken token);
 
-    Task<CartItem?> GetExistCartItemByGuid(Guid publicUserId, Guid publicVariantId, CancellationToken token);
+    Task<CartItem?> GetExistCartItemByGuidAsync(Guid publicUserId, Guid publicVariantId, CancellationToken token);
 
-    Task<bool> DeleteListOfCartItems(List<Guid> cartItemsList, CancellationToken token);
+    Task<bool> DeleteListOfCartItemsAsync(List<Guid> cartItemsList, CancellationToken token);
 }

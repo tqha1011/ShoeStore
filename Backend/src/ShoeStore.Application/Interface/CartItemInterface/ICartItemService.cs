@@ -6,9 +6,9 @@ namespace ShoeStore.Application.Interface.CartItemInterface;
 
 public interface ICartItemService
 {
-    public Task<ErrorOr<UserCartItemResponseDto>> UpdateCartItem(UpdateCartItemDto dto, CancellationToken token);
+    Task<ErrorOr<UserCartItemResponseDto>> UpdateCartItem(UpdateCartItemDto dto, CancellationToken token);
 
-    public Task<ErrorOr<UserCartItemResponseDto>> AddCartItem(AddCartItemDto dto, CancellationToken token);
+    Task<ErrorOr<UserCartItemResponseDto>> AddCartItem(AddCartItemDto dto, CancellationToken token);
 
-    public Task<ErrorOr<Success>> DeleteCartItem(List<Guid> cartItemList, CancellationToken token);
+    Task<ErrorOr<Success>> DeleteCartItem(List<Guid> cartItemList, CancellationToken token);
 }

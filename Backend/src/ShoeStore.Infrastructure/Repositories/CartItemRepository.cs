@@ -31,26 +31,26 @@ public class CartItemRepository(AppDbContext context) : GenericRepository<CartIt
             .ToListAsync(token);
     }
 
-    public async Task<CartItem?> GetCartItemByGuid(Guid publicId, CancellationToken token, bool trackChanges = false)
+    public async Task<CartItem?> GetCartItemByGuidAsync(Guid publicId, CancellationToken token, bool trackChanges = false)
     {
         if (trackChanges) return await DbSet.FirstOrDefaultAsync(x => x.PublicId == publicId, token);
         return await DbSet.AsNoTracking().FirstOrDefaultAsync(x => x.PublicId == publicId, token);
     }
 
-    public async Task<CartItem?> GetExistCartItem(int userId, int productVariantId, CancellationToken token)
+    public async Task<CartItem?> GetExistCartItemAsync(int userId, int productVariantId, CancellationToken token)
     {
         return await DbSet.FirstOrDefaultAsync(x => x.UserId == userId && x.ProductVariantId == productVariantId,
             token);
     }
 
-    public async Task<CartItem?> GetExistCartItemByGuid(Guid publicUserId, Guid publicVariantId,
+    public async Task<CartItem?> GetExistCartItemByGuidAsync(Guid publicUserId, Guid publicVariantId,
         CancellationToken token)
     {
         return await DbSet.FirstOrDefaultAsync(
             x => x.User!.PublicId == publicUserId && x.ProductVariant!.PublicId == publicVariantId, token);
     }
 
-    public async Task<bool> DeleteListOfCartItems(List<Guid> cartItemsList, CancellationToken token)
+    public async Task<bool> DeleteListOfCartItemsAsync(List<Guid> cartItemsList, CancellationToken token)
     {
         var cartItems = await DbSet.Where(x => cartItemsList.Contains(x.PublicId))
             .Distinct()

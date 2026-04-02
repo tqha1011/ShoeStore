@@ -18,7 +18,7 @@ public class CartItemService(
     {
         var finalQuantity = dto.Quantity;
 
-        var cartItem = await cartItemRepository.GetCartItemByGuid(dto.CartItemId, token, true);
+        var cartItem = await cartItemRepository.GetCartItemByGuidAsync(dto.CartItemId, token, true);
 
         if (cartItem == null) return Error.NotFound("CartItem.NotFound", "Cart item not found.");
 
@@ -29,7 +29,7 @@ public class CartItemService(
 
         if (cartItem.ProductVariantId != productVariant.Id)
         {
-            var existingItem = await cartItemRepository.GetExistCartItem(cartItem.UserId, productVariant.Id, token);
+            var existingItem = await cartItemRepository.GetExistCartItemAsync(cartItem.UserId, productVariant.Id, token);
             if (existingItem != null)
             {
                 existingItem.Quantity += dto.Quantity;
@@ -84,7 +84,7 @@ public class CartItemService(
     public async Task<ErrorOr<UserCartItemResponseDto>> AddCartItem(AddCartItemDto dto, CancellationToken token)
     {
         var existCartItem =
-            await cartItemRepository.GetExistCartItemByGuid(dto.UserPublicId, dto.VariantPublicId, token);
+            await cartItemRepository.GetExistCartItemByGuidAsync(dto.UserPublicId, dto.VariantPublicId, token);
 
         var productVariant = await productVariantRepository.GetByGuidAsync(dto.VariantPublicId, token);
 
@@ -146,7 +146,7 @@ public class CartItemService(
 
     public async Task<ErrorOr<Success>> DeleteCartItem(List<Guid> cartItemList, CancellationToken token)
     {
-        var result = await cartItemRepository.DeleteListOfCartItems(cartItemList, token);
+        var result = await cartItemRepository.DeleteListOfCartItemsAsync(cartItemList, token);
         if (!result) return Error.NotFound("CartItem.NotFound", "One or more cart items were not found.");
         await unitOfWork.SaveChangesAsync(token);
         return Result.Success;
