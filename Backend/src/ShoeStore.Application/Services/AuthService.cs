@@ -32,7 +32,7 @@ public class AuthService(
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             UserName = email.Split('@')[0],
-            Role = UserRole.Customer
+            Role = UserRole.User
         };
         userRepository.Add(user);
         await unitOfWork.SaveChangesAsync(token);
@@ -77,7 +77,7 @@ public class AuthService(
                 CreatedAt = DateTime.UtcNow,
                 Password = passwordHash.HashPassword(Guid.NewGuid()
                     .ToString()), // Generate a random password for social login user, since they won't use it to login
-                Role = UserRole.Customer
+                Role = UserRole.User
             };
             userRepository.Add(newUser);
             await unitOfWork.SaveChangesAsync(token);

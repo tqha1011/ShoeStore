@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.CartItemDTOs;
 using ShoeStore.Application.Interface.CartItemInterface;
@@ -29,6 +30,7 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
     /// <response code="500">An unexpected server error occurred.</response>
     /// <returns>An action result containing success data or an error response.</returns>
     [HttpPost]
+    [Authorize(Roles = "User")]
     public async Task<IActionResult> AddUserCartItem([FromBody] AddCartItemDto dto, CancellationToken token)
     {
         var result = await cartItemService.AddCartItem(dto, token);
@@ -78,6 +80,7 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
     /// <response code="500">An unexpected server error occurred.</response>
     /// <returns>An action result containing success data or an error response.</returns>
     [HttpPut]
+    [Authorize(Roles = "User")]
     public async Task<IActionResult> UpdateUserCartItem([FromBody] UpdateCartItemDto dto,
         CancellationToken token)
     {
@@ -125,6 +128,7 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
     /// <response code="500">An unexpected server error occurred.</response>
     /// <returns>An action result containing a success message or an error response.</returns>
     [HttpPost("remove-items")]
+    [Authorize(Roles = "User")]
     public async Task<IActionResult> DeleteUserCartItem([FromBody] List<Guid> cartItemList, CancellationToken token)
     {
         var result = await cartItemService.DeleteCartItem(cartItemList, token);

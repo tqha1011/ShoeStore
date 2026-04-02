@@ -14,7 +14,7 @@ public class User : Entity<int>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
-    public UserRole Role { get; set; } = UserRole.Customer;
+    public UserRole Role { get; set; } = UserRole.User;
 
     /// <summary>
     ///     Gets the collection of cart items in user's shopping cart
