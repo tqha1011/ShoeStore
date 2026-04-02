@@ -1,5 +1,6 @@
 using ErrorOr;
 using ShoeStore.Application.DTOs;
+using ShoeStore.Application.DTOs.CartItemDTOs;
 
 namespace ShoeStore.Application.Interface.CartItemInterface;
 

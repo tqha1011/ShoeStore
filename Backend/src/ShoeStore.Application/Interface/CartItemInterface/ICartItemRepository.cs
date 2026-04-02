@@ -1,4 +1,4 @@
-using ShoeStore.Application.DTOs;
+using ShoeStore.Application.DTOs.CartItemDTOs;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Domain.Entities;
 

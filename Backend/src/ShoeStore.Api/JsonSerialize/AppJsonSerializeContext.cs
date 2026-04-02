@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.AuthDTOs;
+using ShoeStore.Application.DTOs.CartItemDTOs;
 using ShoeStore.Application.DTOs.RestorePasswordDto;
 
 namespace ShoeStore.Api.JsonSerialize;

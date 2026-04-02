@@ -15,17 +15,21 @@ namespace ShoeStore.Api.Controllers;
 public class AuthController(IAuthService authService) : ControllerBase
 {
     /// <summary>
-    ///     Sign in user
-    ///     Authenticate user credentials and return JWT token if login is successful, otherwise return error message with
-    ///     description of the failure reason
+    /// Authenticates a user with email and password credentials.
     /// </summary>
-    /// <param name="loginDto"></param>
-    /// <param name="token"></param>
-    /// <returns>
-    ///     JWT token if login is successful, otherwise return error message with description of the failure reason
-    ///     <response code="200"> Login successfully and return JWT Token </response>
-    ///     <response code="401"> Unauthorized if pass/email is incorrect </response>
-    /// </returns>
+    /// <remarks>
+    /// Requires a request body with:
+    /// - <c>email</c>: the user's email address
+    /// - <c>password</c>: the user's password
+    /// 
+    /// Validates credentials and returns a JWT token if authentication succeeds.
+    /// Rate-limited per user to prevent brute-force attacks.
+    /// </remarks>
+    /// <param name="loginDto">The login credentials (email and password).</param>
+    /// <param name="token">Cancellation token for the request.</param>
+    /// <response code="200">Login successful; returns JWT token.</response>
+    /// <response code="401">Unauthorized; email or password is incorrect.</response>
+    /// <returns>An action result containing the JWT token on success, or an error message on failure.</returns>
     [HttpPost("signin")]
     [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> Signin([FromBody] LoginDto loginDto, CancellationToken token)
@@ -47,17 +51,22 @@ public class AuthController(IAuthService authService) : ControllerBase
     }
 
     /// <summary>
-    ///     Register new user
+    /// Registers a new user with email and password.
     /// </summary>
-    /// <param name="registerDto"></param>
-    /// <param name="token"></param>
-    /// <returns>
-    ///     Success message if registration is successful, otherwise return error message with description of the failure
-    ///     reason
-    ///     <response code="200"> Sign up successfully </response>
-    ///     <response code="409"> Email already exist </response>
-    ///     <respone code="400"> Failed to sign up due to invalid information provided by user </respone>
-    /// </returns>
+    /// <remarks>
+    /// Requires a request body with:
+    /// - <c>email</c>: the user's email address (must be unique)
+    /// - <c>password</c>: the user's password
+    /// 
+    /// Creates a new user account if the email is not already registered.
+    /// Rate-limited per user to prevent abuse.
+    /// </remarks>
+    /// <param name="registerDto">The registration details (email and password).</param>
+    /// <param name="token">Cancellation token for the request.</param>
+    /// <response code="200">User registered successfully.</response>
+    /// <response code="400">Bad request; invalid registration information provided.</response>
+    /// <response code="409">Conflict; email address already exists.</response>
+    /// <returns>An action result containing a success message on success, or an error message on failure.</returns>
     [HttpPost("signup")]
     [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> Signup([FromBody] RegisterDto registerDto, CancellationToken token)
@@ -86,17 +95,22 @@ public class AuthController(IAuthService authService) : ControllerBase
     }
 
     /// <summary>
-    ///     Sign in user with Google account.
-    ///     API requires Frontend to send an idToken taken from Google.
+    /// Authenticates a user with a Google account.
     /// </summary>
-    /// <param name="googleLoginDto"></param>
-    /// <param name="token"></param>
-    /// <returns>
-    ///     <response code="200"> Login successfully and return JWT Token </response>
-    ///     <response code="400"> Failed to log in with Google due to bad request </response>
-    ///     <response code="401"> Unauthorized if Google token is invalid or expired </response>
-    ///     <response code="500"> An error occurred while processing Google login on the server </response>
-    /// </returns>
+    /// <remarks>
+    /// Requires a request body with:
+    /// - <c>idToken</c>: the ID token obtained from Google OAuth 2.0
+    /// 
+    /// Validates the token and returns a JWT token if authentication succeeds.
+    /// Rate-limited per user to prevent abuse.
+    /// </remarks>
+    /// <param name="googleLoginDto">The Google login details containing the ID token.</param>
+    /// <param name="token">Cancellation token for the request.</param>
+    /// <response code="200">Login successful; returns JWT token.</response>
+    /// <response code="400">Bad request; invalid Google token or missing required data.</response>
+    /// <response code="401">Unauthorized; Google token is invalid or expired.</response>
+    /// <response code="500">Internal server error; failed to process Google login.</response>
+    /// <returns>An action result containing the JWT token on success, or an error message on failure.</returns>
     [HttpPost("signin-google")]
     [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> SigninWithGoogle([FromBody] GoogleLoginDto googleLoginDto, CancellationToken token)
@@ -144,17 +158,23 @@ public class AuthController(IAuthService authService) : ControllerBase
     }
 
     /// <summary>
-    ///     Sign in user with Facebook account.
-    ///     API requires Frontend to send an accessToken.
+    /// Authenticates a user with a Facebook account.
     /// </summary>
-    /// <param name="facebookAuthDto"></param>
-    /// <param name="token"></param>
-    /// <returns>
-    ///     <response code="200"> Login successfully and return JWT Token </response>
-    ///     <response code="400"> Failed to log in with Facebook due to missing email permissions </response>
-    ///     <response code="401"> Unauthorized if Facebook access token is invalid </response>
-    ///     <response code="500"> An error occurred while processing Facebook login on the server </response>
-    /// </returns>
+    /// <remarks>
+    /// Requires a request body with:
+    /// - <c>accessToken</c>: the access token obtained from Facebook OAuth 2.0
+    /// 
+    /// The user must grant email permission for successful authentication.
+    /// Validates the token and returns a JWT token if authentication succeeds.
+    /// Rate-limited per user to prevent abuse.
+    /// </remarks>
+    /// <param name="facebookAuthDto">The Facebook login details containing the access token.</param>
+    /// <param name="token">Cancellation token for the request.</param>
+    /// <response code="200">Login successful; returns JWT token.</response>
+    /// <response code="400">Bad request; missing email permission or invalid access token.</response>
+    /// <response code="401">Unauthorized; Facebook access token is invalid or expired.</response>
+    /// <response code="500">Internal server error; failed to process Facebook login.</response>
+    /// <returns>An action result containing the JWT token on success, or an error message on failure.</returns>
     [HttpPost("signin-facebook")]
     [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> SigninWithFacebook([FromBody] FacebookAuthDto facebookAuthDto,

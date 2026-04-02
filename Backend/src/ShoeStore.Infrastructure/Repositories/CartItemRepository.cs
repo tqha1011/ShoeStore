@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs;
+using ShoeStore.Application.DTOs.CartItemDTOs;
 using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Infrastructure.Data;
