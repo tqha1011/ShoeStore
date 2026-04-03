@@ -1,10 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
+﻿using ShoeStore.Application.Interface.InvoiceInterface;
+using ShoeStore.Domain.Entities;
+using ShoeStore.Infrastructure.Data;
 namespace ShoeStore.Infrastructure.Repositories
 {
-    public class InvoiceRepository
+    public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice, int>(context), IInvoiceRepository
     {
+        public IQueryable<Invoice> GetAll()
+        {
+            return context.Invoices.AsQueryable();
+        }
     }
 }
