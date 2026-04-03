@@ -1,5 +1,4 @@
-﻿using ShoeStore.Domain.Enum;
-using ShoeStore.Application.DTOs.InvoiceDTOs;
+﻿using ShoeStore.Application.DTOs.InvoiceDTOs;
 using ShoeStore.Domain.Entities;
 namespace ShoeStore.Application.Extensions
 {
