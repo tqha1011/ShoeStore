@@ -14,7 +14,10 @@ namespace ShoeStore.Application.Services
         public async Task<ErrorOr<PageResult<InvoiceResponseDto>>> GetInvoiceAsync(InvoiceRequestDto request, ClaimsPrincipal user, CancellationToken token)
         {
             var query = invoiceRepository.GetAll();
-
+            if(query == null)
+            {
+                return Error.NotFound("Invoice not found");
+            }
             // check admin or user
             var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var isAdmin = user.IsInRole("Admin");
@@ -22,6 +25,10 @@ namespace ShoeStore.Application.Services
             if (!isAdmin) // if the user filter one userid
             {
                 query = query.Where(i => i.UserId == userId);
+                if(query == null)
+                {
+                    return Error.NotFound("Invoice not found");
+                }
             }
 
             query = query.ApplyInvoiceFilters(request);
