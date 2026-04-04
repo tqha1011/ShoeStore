@@ -9,13 +9,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ShoeStore.Application.Services
 {
-    public class InvoiceService(IInvoiceRepository invoiceRepository, IUnitOfWork uow) : IInvoiceService
+    public class InvoiceService(IInvoiceRepository invoiceRepository,
+        IUnitOfWork uow,
+        ICurrentUser currentUser) : IInvoiceService
     {
-        private readonly ICurrentUser _currentUser;
 
         public async Task<ErrorOr<PageResult<InvoiceResponseDto>>> GetInvoiceAsync(InvoiceRequestDto request, ClaimsPrincipal user, CancellationToken token)
         {
-            if (!_currentUser.IsAuthenticated)
+            if (!currentUser.IsAuthenticated)
                 return Error.Unauthorized("Unauthorized");
 
             var query = invoiceRepository.GetAll();
@@ -26,8 +27,8 @@ namespace ShoeStore.Application.Services
             }
 
             // check admin or user
-            if (!_currentUser.IsAdmin)
-                query = query.Where(i => i.UserId == _currentUser.Id);
+            if (!currentUser.IsAdmin)
+                query = query.Where(i => i.UserId == currentUser.Id);
 
             query = query.ApplyInvoiceFilters(request);
 
