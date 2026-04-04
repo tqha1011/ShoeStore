@@ -1,8 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.InvoiceDTOs;
 using ShoeStore.Application.Interface.InvoiceInterface;
 namespace ShoeStore.Api.Controllers
 {
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
     public class InvoiceController(IInvoiceService invoiceService) : ControllerBase
     {
         [HttpGet]

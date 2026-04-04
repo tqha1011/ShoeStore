@@ -11,25 +11,23 @@ namespace ShoeStore.Application.Services
 {
     public class InvoiceService(IInvoiceRepository invoiceRepository, IUnitOfWork uow) : IInvoiceService
     {
+        private readonly ICurrentUser _currentUser;
+
         public async Task<ErrorOr<PageResult<InvoiceResponseDto>>> GetInvoiceAsync(InvoiceRequestDto request, ClaimsPrincipal user, CancellationToken token)
         {
+            if (!_currentUser.IsAuthenticated)
+                return Error.Unauthorized("Unauthorized");
+
             var query = invoiceRepository.GetAll();
+
             if(query == null)
             {
                 return Error.NotFound("Invoice not found");
             }
-            // check admin or user
-            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-            var isAdmin = user.IsInRole("Admin");
 
-            if (!isAdmin) // if the user filter one userid
-            {
-                query = query.Where(i => i.UserId == userId);
-                if(query == null)
-                {
-                    return Error.NotFound("Invoice not found");
-                }
-            }
+            // check admin or user
+            if (!_currentUser.IsAdmin)
+                query = query.Where(i => i.UserId == _currentUser.Id);
 
             query = query.ApplyInvoiceFilters(request);
 
