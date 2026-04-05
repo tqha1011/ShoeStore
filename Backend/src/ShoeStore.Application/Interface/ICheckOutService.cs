@@ -5,5 +5,5 @@ namespace ShoeStore.Application.Interface;
 
 public interface ICheckOutService
 {
-    Task<ErrorOr<Success>> CheckOut(List<CheckOutDto> checkOutList, CancellationToken token);
+    Task<ErrorOr<CheckOutResponseDto>> CheckOut(List<CheckOutRequestDto> checkOutList, CancellationToken token);
 }

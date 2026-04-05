@@ -8,6 +8,8 @@ public class Invoice : Entity<int>
     public Guid PublicId { get; set; } = Guid.NewGuid();
     public required int UserId { get; set; }
     public User? User { get; set; }
+
+    public required string FullName { get; set; }
     public required InvoiceStatus Status { get; set; }
     public required int PaymentId { get; set; }
     public Payment? Payment { get; set; }

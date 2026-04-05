@@ -3,7 +3,7 @@ using ShoeStore.Application.DTOs;
 
 namespace ShoeStore.Application.Validations.CheckOutValidation;
 
-public class CheckOutDtoValidation : AbstractValidator<CheckOutDto>
+public class CheckOutDtoValidation : AbstractValidator<CheckOutRequestDto>
 {
     public CheckOutDtoValidation()
     {
