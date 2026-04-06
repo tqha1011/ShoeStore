@@ -11,7 +11,7 @@ updates:
 
   - package-ecosystem: "docker"
     # Look for a `Dockerfile` in the `root` directory
-    directory: "/Backend/src/ShoeStore.API"
+    directory: "/Backend/src/ShoeStore.Api"
     # Check for updates once a week
     schedule:
       interval: "daily"
