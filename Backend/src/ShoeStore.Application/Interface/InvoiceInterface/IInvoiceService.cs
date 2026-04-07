@@ -10,6 +10,7 @@ namespace ShoeStore.Application.Interface.InvoiceInterface
     {
         Task<ErrorOr<PageResult<InvoiceResponseDto>>> GetInvoiceAsync(InvoiceRequestDto request, ClaimsPrincipal user, CancellationToken token);
         Task<ErrorOr<IEnumerable<InvoiceDetailResponseDto>>> GetInvoiceDetailAsync(Guid invoiceGuid, CancellationToken token);
+        Task<ErrorOr<bool>> UpdateInvoiceStateAsync(Guid invoiceGuid, UpdateStateRequestDto request, ClaimsPrincipal user, CancellationToken token);
     }
 }
 

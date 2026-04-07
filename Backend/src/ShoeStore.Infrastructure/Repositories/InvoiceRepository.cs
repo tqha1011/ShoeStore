@@ -1,4 +1,5 @@
-﻿using ShoeStore.Application.Interface.InvoiceInterface;
+﻿using Microsoft.EntityFrameworkCore;
+using ShoeStore.Application.Interface.InvoiceInterface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Infrastructure.Data;
 namespace ShoeStore.Infrastructure.Repositories
@@ -13,6 +14,11 @@ namespace ShoeStore.Infrastructure.Repositories
         public IQueryable<Invoice> GetAll()
         {
             return context.Invoices.AsQueryable();
+        }
+
+        public async Task<Invoice?> GetByPublicIdAsync(Guid publicId, CancellationToken token)
+        {
+            return await context.Invoices.FirstOrDefaultAsync(i => i.PublicId == publicId, token);
         }
     }
 }
