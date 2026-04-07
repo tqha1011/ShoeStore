@@ -6,10 +6,12 @@ using ErrorOr;
 using ShoeStore.Application.DTOs;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using ShoeStore.Application.Interface;
 
 namespace ShoeStore.Application.Services
 {
-    public class InvoiceService(IInvoiceRepository invoiceRepository,
+    public class InvoiceService(
+        IInvoiceRepository invoiceRepository,
         IUnitOfWork uow,
         ICurrentUser currentUser) : IInvoiceService
     {
@@ -28,7 +30,7 @@ namespace ShoeStore.Application.Services
 
             // check admin or user
             if (!currentUser.IsAdmin)
-                query = query.Where(i => i.UserId == currentUser.Id);
+                query = query.Where(i => i.PublicId == currentUser.Id);
 
             query = query.ApplyInvoiceFilters(request);
 

@@ -1,5 +1,5 @@
 ﻿using System.Security.Claims;
-using ShoeStore.Application.DTOs.InvoiceDTOs;
+using ShoeStore.Application.Interface;
 using Microsoft.AspNetCore.Http;
 
 namespace ShoeStore.Application.Services
@@ -12,7 +12,7 @@ namespace ShoeStore.Application.Services
 
         private ClaimsPrincipal? User => _accessor.HttpContext?.User;
 
-        public int? Id
+        public Guid? Id
         {
             get
             {
@@ -20,7 +20,7 @@ namespace ShoeStore.Application.Services
                 if (User?.Identity?.IsAuthenticated != true) return null;
 
                 var claim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                return int.TryParse(claim, out var id) ? id : null;
+                return Guid.TryParse(claim, out var id) ? id : null;
             }
         }
 
