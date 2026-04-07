@@ -17,8 +17,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-Env.Load(); // load environment variables from .env file
-builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddOpenApi();
 

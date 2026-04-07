@@ -49,10 +49,10 @@ namespace ShoeStore.Api.Controllers
                 }
             );
         }
-        [HttpGet("{id}/details")]
-        public async Task<IActionResult> GetDetails(Guid id, CancellationToken token)
+        [HttpGet("{invoiceGuid}/details")]
+        public async Task<IActionResult> GetDetails(Guid invoiceGuid, CancellationToken token)
         {
-            var result = await invoiceService.GetInvoiceDetailAsync(id, token);
+            var result = await invoiceService.GetInvoiceDetailAsync(invoiceGuid, token);
 
             return result.Match<IActionResult>(
                 details => Ok(new
