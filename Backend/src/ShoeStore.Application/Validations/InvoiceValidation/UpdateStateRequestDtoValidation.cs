@@ -11,7 +11,7 @@ namespace ShoeStore.Application.Validations.InvoiceValidation
                 .IsInEnum()
                 .WithMessage("Invalid status value");
 
-            // ❗ Client chỉ được phép Cancel
+            // Client Only Cancel
             RuleFor(x => x.Status)
                 .Must(status => status == InvoiceStatus.Canceled)
                 .WithMessage("You can only cancel the order");

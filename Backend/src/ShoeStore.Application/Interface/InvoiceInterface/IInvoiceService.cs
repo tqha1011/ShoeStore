@@ -8,9 +8,9 @@ namespace ShoeStore.Application.Interface.InvoiceInterface
 {
     public interface IInvoiceService
     {
-        Task<ErrorOr<PageResult<InvoiceResponseDto>>> GetInvoiceAsync(InvoiceRequestDto request, ClaimsPrincipal user, CancellationToken token);
+        Task<ErrorOr<PageResult<InvoiceResponseDto>>> GetInvoiceAsync(InvoiceRequestDto request, CancellationToken token);
         Task<ErrorOr<IEnumerable<InvoiceDetailResponseDto>>> GetInvoiceDetailAsync(Guid invoiceGuid, CancellationToken token);
-        Task<ErrorOr<bool>> UpdateInvoiceStateAsync(Guid invoiceGuid, UpdateStateRequestDto request, ClaimsPrincipal user, CancellationToken token);
+        Task<ErrorOr<Updated>> UpdateInvoiceStateAsync(Guid invoiceGuid, UpdateStateRequestDto request, CancellationToken token);
     }
 }
 

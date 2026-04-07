@@ -1,14 +1,15 @@
-﻿using ShoeStore.Application.DTOs.InvoiceDTOs;
-using ShoeStore.Application.Interface.InvoiceInterface;
-using ShoeStore.Application.Extensions;
-using ShoeStore.Application.Interface.Common;
+﻿using System.Security.Claims;
 using ErrorOr;
-using ShoeStore.Application.DTOs;
-using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
-using ShoeStore.Application.Interface;
+using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.InvoiceDetailDTOs;
-
+using ShoeStore.Application.DTOs.InvoiceDTOs;
+using ShoeStore.Application.Extensions;
+using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.Common;
+using ShoeStore.Application.Interface.InvoiceInterface;
+using ShoeStore.Application.Rules;
+using ShoeStore.Domain.Enum;
 namespace ShoeStore.Application.Services
 {
     public class InvoiceService(
@@ -17,7 +18,7 @@ namespace ShoeStore.Application.Services
         ICurrentUser currentUser) : IInvoiceService
     {
 
-        public async Task<ErrorOr<PageResult<InvoiceResponseDto>>> GetInvoiceAsync(InvoiceRequestDto request, ClaimsPrincipal user, CancellationToken token)
+        public async Task<ErrorOr<PageResult<InvoiceResponseDto>>> GetInvoiceAsync(InvoiceRequestDto request, CancellationToken token)
         {
             if (!currentUser.IsAuthenticated)
                 return Error.Unauthorized("Unauthorized");
@@ -79,6 +80,39 @@ namespace ShoeStore.Application.Services
                 return Error.NotFound("Invoice detail not found");
             }
             return result;
+        }
+
+        public async Task<ErrorOr<Updated>> UpdateInvoiceStateAsync(Guid invoiceGuid, UpdateStateRequestDto request, CancellationToken token)
+        {
+            var invoice = await invoiceRepository.GetByPublicIdAsync(invoiceGuid, token);
+            if(invoice == null)
+            {
+                return Error.NotFound("Invoice not found");
+            }
+            if(!currentUser.IsAdmin && invoice.PublicId != currentUser.Id)
+            {
+                return Error.Unauthorized("Unauthorized");
+            }
+
+            if (!currentUser.IsAdmin)
+            {
+                if(!UpdateInvoiceStateRule.CanClientUpdateState(invoice.Status, request.Status))
+                    return Error.Forbidden("Client cannot change to this status");
+                if (request.Status == InvoiceStatus.Paid && invoice.Payment == null)
+                    return Error.Validation("Cannot mark as paid without payment");
+            }
+            else
+            {
+                if (invoice.Status == InvoiceStatus.Paid && request.Status != InvoiceStatus.Delivering)
+                    return Error.Forbidden("Admin can only mark Paid -> Delivering");
+            }
+
+            invoice.Status = request.Status;
+            invoice.UpdatedAt = DateTime.UtcNow;
+            invoiceRepository.Update(invoice);
+            await uow.SaveChangesAsync(token);
+
+            return Result.Updated;
         }
     }
 }

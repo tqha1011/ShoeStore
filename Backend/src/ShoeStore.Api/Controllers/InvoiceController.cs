@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ErrorOr;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.InvoiceDTOs;
 using ShoeStore.Application.Interface.InvoiceInterface;
@@ -13,7 +14,7 @@ namespace ShoeStore.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetInvoice([FromQuery] InvoiceRequestDto request, CancellationToken token)
         {
-            var result = await invoiceService.GetInvoiceAsync(request, User, token);
+            var result = await invoiceService.GetInvoiceAsync(request, token);
 
             return result.Match<IActionResult>(
                 pageResult => Ok(new
@@ -49,6 +50,7 @@ namespace ShoeStore.Api.Controllers
                 }
             );
         }
+
         [HttpGet("{invoiceGuid}/details")]
         public async Task<IActionResult> GetDetails(Guid invoiceGuid, CancellationToken token)
         {
@@ -76,6 +78,44 @@ namespace ShoeStore.Api.Controllers
                     })
                 }
             );
+        }
+
+        [HttpPut("{invoiceGuid}/status")]
+        public async Task<IActionResult> UpdateInvoiceStatus(Guid invoiceGuid, [FromBody] UpdateStateRequestDto request, CancellationToken token)
+        {
+            var result = await invoiceService.UpdateInvoiceStateAsync(invoiceGuid, request, token);
+            return result.Match<IActionResult>(
+               success => Ok(new
+               {
+                   message = "Invoice status updated successfully",
+                   newStatus = request.Status
+               }),
+                errors => errors[0].Code switch
+                {
+                    "Invoice.NotFound" => NotFound(new
+                    {
+                        message = "Invoice not found",
+                        description = errors[0].Description
+                    }),
+                    "Invoice.Unauthorized" => Unauthorized(new
+                    {
+                        message = "You are not authorized to update this invoice",
+                        description = errors[0].Description
+                    }),
+                    "Invoice.Forbidden" => Forbid(),
+                    "Invoice.Validation" => BadRequest(new
+                    {
+                        message = "Validation failed",
+                        description = errors[0].Description
+                    }),
+                    // Lỗi mặc định
+                    _ => StatusCode(StatusCodes.Status500InternalServerError, new
+                    {
+                        message = "An unexpected error occurred. Please try again later",
+                        description = errors[0].Description
+                    })
+                }
+           );
         }
     }
 }
