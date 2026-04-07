@@ -9,5 +9,6 @@ public interface ICheckOutService
         CancellationToken token);
 
     Task<ErrorOr<Created>> PlaceOrderAsync(PlaceOrderRequestDto placeOrderRequestDto, Guid publicUserId,
+        bool fromCart,
         CancellationToken token);
 }

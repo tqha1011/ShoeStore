@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.CartItemDTOs;
 using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Domain.Entities;
@@ -31,7 +30,8 @@ public class CartItemRepository(AppDbContext context) : GenericRepository<CartIt
             .ToListAsync(token);
     }
 
-    public async Task<CartItem?> GetCartItemByGuidAsync(Guid publicId, CancellationToken token, bool trackChanges = false)
+    public async Task<CartItem?> GetCartItemByGuidAsync(Guid publicId, CancellationToken token,
+        bool trackChanges = false)
     {
         if (trackChanges) return await DbSet.FirstOrDefaultAsync(x => x.PublicId == publicId, token);
         return await DbSet.AsNoTracking().FirstOrDefaultAsync(x => x.PublicId == publicId, token);
@@ -58,5 +58,10 @@ public class CartItemRepository(AppDbContext context) : GenericRepository<CartIt
         if (cartItems.Count != cartItemsList.Count) return false;
         DbSet.RemoveRange(cartItems);
         return true;
+    }
+
+    public void DeleteCartItem(IEnumerable<CartItem> cartItems)
+    {
+        DbSet.RemoveRange(cartItems);
     }
 }

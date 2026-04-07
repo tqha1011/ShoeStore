@@ -1,4 +1,5 @@
 using ErrorOr;
+using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.CartItemInterface;
@@ -63,67 +64,85 @@ public class CheckOutService(
     }
 
     public async Task<ErrorOr<Created>> PlaceOrderAsync(PlaceOrderRequestDto placeOrderRequestDto, Guid publicUserId,
-        CancellationToken token)
+        bool fromCart, CancellationToken token)
     {
-        using var transaction = await unitOfWork.BeginTransactionAsync(token);
-        // transaction has 4 stages
-        // stage 1: check the variant, the vouchers user chose
-        // stage 2: delete user's cartItem if the order is from cart
-        // stage 3: decrease the variant's stocks
-        // stage 4: create invoice and invoice details
-        // if 4 stages execute successfully, commit the transaction, otherwise rollback the transaction
-        try
+        return await unitOfWork.ExecuteInTransactionAsync<ErrorOr<Created>>(async () =>
         {
-            // In stage 1, check if the variant is valid, if the vouchers user chose are valid and not used
-            // if the user is valid
-            var user = await userRepository.GetUserByPublicIdAsync(publicUserId, token);
-            if (user == null) return Error.NotFound("UserNotFound", "Cannot find user.");
-            var variantIdList = placeOrderRequestDto.Items.Select(x => x.VariantId).Distinct().ToList();
-            var voucherIdList = placeOrderRequestDto.VoucherIds?.Distinct().ToList() ?? [];
-            var variantsList = await productVariantRepository.GetListVariantsAsync(variantIdList, token);
-
-            if (variantsList.Count < variantIdList.Count)
-                return Error.NotFound("VariantNotFound", "One or more variants are deleted.");
-
-            var variantQuantityById = ConvertToDictionary(placeOrderRequestDto.Items);
-
-            var vouchersApplied = MarkUsedVoucher(voucherIdList, user);
-
-            if (vouchersApplied.Count < voucherIdList.Count)
-                return Error.NotFound("VoucherNotFound", "One or more vouchers are not found or already used.");
-            
-            // Stage 2: delete user's cartItem if the order is from cart
-            
-            var invoice = new Invoice
+            using var transaction = await unitOfWork.BeginTransactionAsync(token);
+            // transaction has 4 stages
+            // stage 1: check the variant, the vouchers user chose
+            // stage 2: delete user's cartItem if the order is from cart
+            // stage 3: decrease the variant's stocks
+            // stage 4: create invoice and invoice details
+            // if 4 stages execute successfully, commit the transaction, otherwise rollback the transaction
+            try
             {
-                UserId = user.Id,
-                FullName = placeOrderRequestDto.FullName,
-                Phone = placeOrderRequestDto.PhoneNumber,
-                ShippingAddress = placeOrderRequestDto.Address,
-                Status = InvoiceStatus.Pending,
-                PaymentId = placeOrderRequestDto.PaymentId,
-                CreatedAt = DateTime.UtcNow,
-                FinalPrice = CalculateFinalPrice(variantsList, variantQuantityById, vouchersApplied),
-                InvoiceDetails = new List<InvoiceDetail>()
-            };
+                // In stage 1, check if the variant is valid, if the vouchers user chose are valid and not used
+                // if the user is valid
+                var user = await userRepository.GetUserByPublicIdAsync(publicUserId, token);
+                if (user == null) return Error.NotFound("User.NotFound", "Cannot find user.");
+                var variantIdList = placeOrderRequestDto.Items.Select(x => x.VariantId).Distinct().ToList();
+                var voucherIdList = placeOrderRequestDto.VoucherIds?.Distinct().ToList() ?? [];
+                var variantsList = await productVariantRepository.GetListVariantsAsync(variantIdList, token);
 
-            return Result.Created;
-        }
-        catch (Exception)
-        {
-            await unitOfWork.RollbackTransactionAsync(token);
-            return Error.Unexpected("InvoiceCreation.Failed", "An unexpected error occurred while creating the order.");
-        }
+                if (variantsList.Count < variantIdList.Count)
+                    return Error.NotFound("Variant.NotFound", "One or more variants are deleted.");
+
+                var variantQuantityById = ConvertToDictionary(placeOrderRequestDto.Items);
+
+                var vouchersApplied = MarkUsedVoucher(voucherIdList, user);
+
+                if (vouchersApplied.Count < voucherIdList.Count)
+                    return Error.NotFound("Voucher.NotFound", "One or more vouchers are not found or already used.");
+
+                // Stage 2: delete user's cartItem if the order is from cart
+                if (fromCart)
+                {
+                    var userCartItem = user.CartItems.Where(cartItem =>
+                            variantIdList.Contains(cartItem.ProductVariant?.PublicId ?? Guid.Empty))
+                        .Distinct()
+                        .ToList();
+                    cartItemRepository.DeleteCartItem(userCartItem);
+                }
+
+                // Stage 3: decrease the variant's stocks
+                // check if the stock is enough, if not, return error and rollback the transaction
+                var deductResult = DeductStocks(variantsList, variantQuantityById);
+                if (deductResult.IsError) return deductResult.Errors;
+
+                // Stage 4: create invoice and invoice details
+                var invoice = CreateInvoice(placeOrderRequestDto, user.Id, variantsList, variantQuantityById,
+                    vouchersApplied);
+                invoiceRepository.Add(invoice);
+
+                // If all stages execute successfully, commit the transaction, otherwise rollback the transaction
+                await unitOfWork.SaveChangesAsync(token);
+                await unitOfWork.CommitTransactionAsync(token);
+                return Result.Created;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                await unitOfWork.RollbackTransactionAsync(token);
+                return Error.Conflict("Checkout.Concurrency", "Your product had been sold. Please try again");
+            }
+            catch (Exception)
+            {
+                await unitOfWork.RollbackTransactionAsync(token);
+                return Error.Unexpected("InvoiceCreation.Failed",
+                    "An unexpected error occurred while creating the order.");
+            }
+        }, token);
     }
 
-    private Dictionary<Guid, int> ConvertToDictionary(List<CheckOutRequestDto> checkOutList)
+    private static Dictionary<Guid, int> ConvertToDictionary(List<CheckOutRequestDto> checkOutList)
     {
         var variantQuantityById = checkOutList.GroupBy(x => x.VariantId)
             .ToDictionary(x => x.Key, x => x.Sum(y => y.Quantity));
         return variantQuantityById;
     }
 
-    private decimal CalculateFinalPrice(List<ProductVariant> variantsList, Dictionary<Guid, int> variantQuantityById,
+    private static decimal CalculateFinalPrice(List<ProductVariant> variantsList,
+        Dictionary<Guid, int> variantQuantityById,
         List<Voucher?> vouchers)
     {
         var subTotal = variantsList.Select(variant =>
@@ -135,7 +154,7 @@ public class CheckOutService(
         return vouchers.Aggregate(subTotal, (current, voucher) => (1 - (voucher?.Discount ?? 0)) * current);
     }
 
-    private List<Voucher?> MarkUsedVoucher(List<int> voucherIds, User user)
+    private static List<Voucher?> MarkUsedVoucher(List<int> voucherIds, User user)
     {
         if (voucherIds.Count == 0) return []; // return empty if user didn't choose any voucher
 
@@ -152,9 +171,50 @@ public class CheckOutService(
         return vouchers;
     }
 
-    private async Task<bool> DeleteUserCartItem(List<CartItem> cartItemIds, CancellationToken token)
+    private static Invoice CreateInvoice(PlaceOrderRequestDto placeOrderRequestDto, int userId,
+        List<ProductVariant> variantsList,
+        Dictionary<Guid, int> variantQuantityById, List<Voucher?> vouchersApplied)
     {
-        var cartItemList = cartItemIds.Select(cartItem => cartItem.PublicId).ToList();
-        return await cartItemRepository.DeleteListOfCartItemsAsync(cartItemList, token);
+        var invoice = new Invoice
+        {
+            UserId = userId,
+            FullName = placeOrderRequestDto.FullName,
+            Phone = placeOrderRequestDto.PhoneNumber,
+            ShippingAddress = placeOrderRequestDto.Address,
+            Status = InvoiceStatus.Pending,
+            PaymentId = placeOrderRequestDto.PaymentId,
+            CreatedAt = DateTime.UtcNow,
+            FinalPrice = CalculateFinalPrice(variantsList, variantQuantityById, vouchersApplied),
+            InvoiceDetails = new List<InvoiceDetail>()
+        };
+
+        foreach (var items in variantsList)
+        {
+            var quantity = variantQuantityById.GetValueOrDefault(items.PublicId, 0);
+            var invoiceDetails = new InvoiceDetail
+            {
+                ProductVariantId = items.Id,
+                Quantity = quantity,
+                UnitPrice = items.Price * quantity
+            };
+            invoice.InvoiceDetails.Add(invoiceDetails);
+        }
+
+        return invoice;
+    }
+
+    private static ErrorOr<Success> DeductStocks(List<ProductVariant> variantsList,
+        Dictionary<Guid, int> variantQuantityById)
+    {
+        foreach (var items in variantsList)
+        {
+            var stockAvailable = items.Stock - variantQuantityById.GetValueOrDefault(items.PublicId, 0);
+            if (stockAvailable < 0)
+                return Error.Validation("Stock.NotEnough",
+                    $"The stock of {items.Product?.ProductName} is not enough.");
+            items.Stock = stockAvailable;
+        }
+
+        return Result.Success;
     }
 }

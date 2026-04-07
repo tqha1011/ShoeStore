@@ -4,20 +4,33 @@ using ShoeStore.Application.Interface.UploadImage;
 namespace ShoeStore.Api.Controllers;
 
 /// <summary>
-///     This controller is responsible for handling image upload requests.
-///     It provides an endpoint for clients to upload images, which are then processed and stored by the IImageService.
-///     The controller returns appropriate responses based on the success or failure of the upload operation.
+///     Controller for handling image upload operations.
+///     Provides endpoints for uploading images to cloud storage (Cloudinary).
+///     Images are processed and stored with appropriate compression and optimization.
 /// </summary>
-/// <param name="imageService"></param>
+/// <param name="imageService">Service for handling image uploads and processing.</param>
 [ApiController]
 [Route("api/[controller]")]
 public class ImageController(IImageService imageService) : ControllerBase
 {
     /// <summary>
-    ///     API upload image to Cloudinary
+    ///     Uploads a single image file to cloud storage (Cloudinary).
     /// </summary>
-    /// <param name="file"></param>
-    /// <returns></returns>
+    /// <remarks>
+    ///     Accepts multipart/form-data with:
+    ///     - <c>file</c>: image file to upload (JPG, PNG, WebP, etc.)
+    ///     The image is uploaded to Cloudinary cloud storage and a URL is returned.
+    ///     Frontend can use this URL to store image references in database or display images.
+    ///     Supports various image formats and applies automatic compression and optimization.
+    /// </remarks>
+    /// <param name="file">The image file to upload (must be a valid image format).</param>
+    /// <response code="200">Image uploaded successfully. Returns the image URL from cloud storage.</response>
+    /// <response code="400">Bad request; invalid file format or upload failed.</response>
+    /// <response code="500">Internal server error; cloud storage service unavailable.</response>
+    /// <returns>
+    ///     An action result containing the uploaded image URL on success, or an error response describing what went
+    ///     wrong.
+    /// </returns>
     [HttpPost("image")]
     //[Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadImage([FromForm] IFormFile file)

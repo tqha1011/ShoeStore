@@ -1,4 +1,5 @@
 using System.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Infrastructure.Data;
@@ -26,5 +27,11 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
     public Task RollbackTransactionAsync(CancellationToken token = default)
     {
         return context.Database.RollbackTransactionAsync(token);
+    }
+
+    public async Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> action, CancellationToken token = default)
+    {
+        var strategy = context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(action);
     }
 }

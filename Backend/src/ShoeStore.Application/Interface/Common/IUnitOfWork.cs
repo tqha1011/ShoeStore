@@ -10,4 +10,6 @@ public interface IUnitOfWork
     public Task CommitTransactionAsync(CancellationToken token = default);
 
     public Task RollbackTransactionAsync(CancellationToken token = default);
+
+    Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> action, CancellationToken token = default);
 }
