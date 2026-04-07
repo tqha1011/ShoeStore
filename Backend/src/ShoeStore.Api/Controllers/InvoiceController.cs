@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.InvoiceDTOs;
 using ShoeStore.Application.Interface.InvoiceInterface;
+using ShoeStore.Application.Services;
 namespace ShoeStore.Api.Controllers
 {
     [ApiController]
@@ -39,6 +40,34 @@ namespace ShoeStore.Api.Controllers
                         description = errors[0].Description
                     }),
 
+                    // Lỗi mặc định (Internal Server Error)
+                    _ => StatusCode(StatusCodes.Status500InternalServerError, new
+                    {
+                        message = "An unexpected error occurred. Please try again later",
+                        description = errors[0].Description
+                    })
+                }
+            );
+        }
+        [HttpGet("{id}/details")]
+        public async Task<IActionResult> GetDetails(Guid id, CancellationToken token)
+        {
+            var result = await invoiceService.GetInvoiceDetailAsync(id, token);
+
+            return result.Match<IActionResult>(
+                details => Ok(new
+                {
+                    message = "Get invoice details successfully",
+                    data = details
+                }),
+                errors => errors[0].Code switch
+                {
+                    // Trường hợp không tìm thấy chi tiết hóa đơn
+                    "InvoiceDetail.NotFound" => NotFound(new
+                    {
+                        message = "Invoice details not found",
+                        description = errors[0].Description
+                    }),
                     // Lỗi mặc định (Internal Server Error)
                     _ => StatusCode(StatusCodes.Status500InternalServerError, new
                     {
