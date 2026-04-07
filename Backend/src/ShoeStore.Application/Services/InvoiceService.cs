@@ -7,6 +7,7 @@ using ShoeStore.Application.DTOs;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.Interface;
+using ShoeStore.Application.DTOs.InvoiceDetailDTOs;
 
 namespace ShoeStore.Application.Services
 {
@@ -58,6 +59,26 @@ namespace ShoeStore.Application.Services
                 PageSize = request.PageSize
             };
             return pageResult;
+        }
+
+        public async Task<ErrorOr<IEnumerable<InvoiceDetailResponseDto>>> GetInvoiceDetailAsync(Guid invoiceGuid, CancellationToken token)
+        {
+            var details= invoiceRepository.GetaInvoiceDetail(invoiceGuid);
+            
+            var result = await details.Select(d => new InvoiceDetailResponseDto
+            {
+                ProductName = d.ProductVariant.Product.ProductName,
+                Size = d.ProductVariant.Size.Size,
+                Color = d.ProductVariant.Color.ColorName,
+                Quantity = d.Quantity,
+                UnitPrice = d.UnitPrice
+            }).ToListAsync(token);
+
+            if(result == null || result.Count == 0)
+            {
+                return Error.NotFound("Invoice detail not found");
+            }
+            return result;
         }
     }
 }

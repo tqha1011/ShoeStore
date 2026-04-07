@@ -5,7 +5,7 @@ namespace ShoeStore.Infrastructure.Repositories
 {
     public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice, int>(context), IInvoiceRepository
     {
-        public IQueryable<InvoiceDetail> GetaInvoiceDetailByGuid(Guid invoiceGuid)
+        public IQueryable<InvoiceDetail> GetaInvoiceDetail(Guid invoiceGuid)
         {
             return context.InvoiceDetails.Where(id => id.Invoice.PublicId == invoiceGuid).AsQueryable();
         }

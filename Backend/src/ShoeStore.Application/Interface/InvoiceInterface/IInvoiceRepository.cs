@@ -6,6 +6,6 @@ namespace ShoeStore.Application.Interface.InvoiceInterface
     public interface IInvoiceRepository : IGenericRepository<Invoice, int>
     {
         IQueryable<Invoice> GetAll();
-        IQueryable<InvoiceDetail> GetaInvoiceDetailByGuid(Guid invoiceGuid);
+        IQueryable<InvoiceDetail> GetaInvoiceDetail(Guid invoiceGuid);
     }
 }
