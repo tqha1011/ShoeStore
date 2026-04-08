@@ -146,4 +146,5 @@ namespace ShoeStore.Api.Controllers
                 }
             );
         }
+    }
 }
