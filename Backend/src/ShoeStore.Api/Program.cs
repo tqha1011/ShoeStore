@@ -30,11 +30,7 @@ builder.Services.AddControllers()
 
 builder.Services.AddHttpClient();
 builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("Cloudinary"));
-<<<<<<< HEAD
-var jwtKey = builder.Configuration["Jwt__Key"];
-=======
 var jwtKey = builder.Configuration["Jwt:Key"];
->>>>>>> cc345eac4faf260721f5ee63097ee8e18b1cd2b2
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
