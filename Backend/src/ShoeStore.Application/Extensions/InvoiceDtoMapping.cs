@@ -1,4 +1,4 @@
-using ShoeStore.Application.DTOs;
+using ShoeStore.Application.DTOs.CheckOutDTOs;
 using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Extensions;

@@ -2,7 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using ShoeStore.Application.DTOs;
+using ShoeStore.Application.DTOs.CheckOutDTOs;
 using ShoeStore.Application.Interface;
 
 namespace ShoeStore.Api.Controllers;

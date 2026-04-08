@@ -1,4 +1,4 @@
-using ShoeStore.Application.DTOs;
+using ShoeStore.Application.DTOs.CheckOutDTOs;
 
 namespace ShoeStore.Application.Interface;
 

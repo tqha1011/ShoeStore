@@ -1,6 +1,6 @@
 using ErrorOr;
 using Microsoft.EntityFrameworkCore;
-using ShoeStore.Application.DTOs;
+using ShoeStore.Application.DTOs.CheckOutDTOs;
 using ShoeStore.Application.Extensions;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.CartItemInterface;
@@ -64,7 +64,7 @@ public class CheckOutService(
         var response = new CheckOutResponseDto(items, summary, warnings);
         return response;
     }
-    
+
     public async Task<ErrorOr<InvoiceDto>> PlaceOrderAsync(PlaceOrderRequestDto placeOrderRequestDto, Guid publicUserId,
         bool fromCart, CancellationToken token)
     {
@@ -199,7 +199,7 @@ public class CheckOutService(
             };
             invoice.InvoiceDetails.Add(invoiceDetails);
         }
-        
+
         // validate vouchers
         var validVouchers = ValidateVoucher(vouchersApplied, subTotal);
 
@@ -328,6 +328,7 @@ public class CheckOutService(
                     break;
                 }
             }
+
         return shippingFee;
     }
 }

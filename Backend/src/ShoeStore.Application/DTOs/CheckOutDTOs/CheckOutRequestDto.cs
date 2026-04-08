@@ -1,3 +1,3 @@
-namespace ShoeStore.Application.DTOs;
+namespace ShoeStore.Application.DTOs.CheckOutDTOs;
 
 public sealed record CheckOutRequestDto(Guid VariantId, int Quantity = 1);
