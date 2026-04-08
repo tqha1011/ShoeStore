@@ -15,4 +15,15 @@ public class ProductVariantRepository(AppDbContext context)
             .Include(x => x.Product)
             .FirstOrDefaultAsync(x => x.PublicId == productGuid, token);
     }
+
+    public async Task<List<ProductVariant>> GetListVariantsAsync(List<Guid> productVariantIds, CancellationToken token)
+    {
+        var variantLists = await DbSet.Where(x => productVariantIds.Contains(x.PublicId))
+            .Distinct()
+            .Include(x => x.Size)
+            .Include(x => x.Color)
+            .Include(x => x.Product)
+            .ToListAsync(token);
+        return variantLists;
+    }
 }

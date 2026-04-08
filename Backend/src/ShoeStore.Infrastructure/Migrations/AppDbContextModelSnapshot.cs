@@ -111,6 +111,16 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("final_price");
 
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("full_name");
+
+                    b.Property<string>("OrderCode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("order_code");
+
                     b.Property<int>("PaymentId")
                         .HasColumnType("integer")
                         .HasColumnName("payment_id");
@@ -133,6 +143,10 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("shipping_address");
 
+                    b.Property<decimal>("ShippingFee")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("shipping_fee");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer")
                         .HasColumnName("status");
@@ -147,6 +161,10 @@ namespace ShoeStore.Infrastructure.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_invoices");
+
+                    b.HasIndex("OrderCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_invoices_order_code");
 
                     b.HasIndex("PaymentId")
                         .HasDatabaseName("ix_invoices_payment_id");
@@ -220,6 +238,10 @@ namespace ShoeStore.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Code")
+                        .HasColumnType("text")
+                        .HasColumnName("code");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -230,6 +252,65 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasName("pk_payments");
 
                     b.ToTable("payments", (string)null);
+                });
+
+            modelBuilder.Entity("ShoeStore.Domain.Entities.PaymentTransaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("InvoiceId")
+                        .HasColumnType("integer")
+                        .HasColumnName("invoice_id");
+
+                    b.Property<string>("OrderCode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("order_code");
+
+                    b.Property<int>("PaymentId")
+                        .HasColumnType("integer")
+                        .HasColumnName("payment_id");
+
+                    b.Property<string>("RemoteTransactionId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("remote_transaction_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_payment_transactions");
+
+                    b.HasIndex("InvoiceId")
+                        .HasDatabaseName("ix_payment_transactions_invoice_id");
+
+                    b.HasIndex("OrderCode")
+                        .HasDatabaseName("ix_payment_transactions_order_code");
+
+                    b.HasIndex("PaymentId")
+                        .HasDatabaseName("ix_payment_transactions_payment_id");
+
+                    b.HasIndex("RemoteTransactionId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_payment_transactions_remote_transaction_id");
+
+                    b.ToTable("payment_transactions", (string)null);
                 });
 
             modelBuilder.Entity("ShoeStore.Domain.Entities.Product", b =>
@@ -340,6 +421,12 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(0)
                         .HasColumnName("stock");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id")
                         .HasName("pk_product_variants");
@@ -613,11 +700,19 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasDefaultValue(0m)
                         .HasColumnName("discount");
 
+                    b.Property<int>("DiscountType")
+                        .HasColumnType("integer")
+                        .HasColumnName("discount_type");
+
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(false)
                         .HasColumnName("is_deleted");
+
+                    b.Property<decimal>("MaxPriceDiscount")
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("max_price_discount");
 
                     b.Property<int?>("MaxUsagePerUser")
                         .ValueGeneratedOnAdd()
@@ -667,6 +762,10 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("voucher_name");
+
+                    b.Property<int>("VoucherScope")
+                        .HasColumnType("integer")
+                        .HasColumnName("voucher_scope");
 
                     b.HasKey("Id")
                         .HasName("pk_vouchers");
@@ -788,6 +887,27 @@ namespace ShoeStore.Infrastructure.Migrations
                     b.Navigation("ProductVariant");
                 });
 
+            modelBuilder.Entity("ShoeStore.Domain.Entities.PaymentTransaction", b =>
+                {
+                    b.HasOne("ShoeStore.Domain.Entities.Invoice", "Invoice")
+                        .WithMany("PaymentTransactions")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_payment_transactions_invoices_invoice_id");
+
+                    b.HasOne("ShoeStore.Domain.Entities.Payment", "Payment")
+                        .WithMany()
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_payment_transactions_payments_payment_id");
+
+                    b.Navigation("Invoice");
+
+                    b.Navigation("Payment");
+                });
+
             modelBuilder.Entity("ShoeStore.Domain.Entities.ProductVariant", b =>
                 {
                     b.HasOne("ShoeStore.Domain.Entities.Color", "Color")
@@ -886,6 +1006,8 @@ namespace ShoeStore.Infrastructure.Migrations
             modelBuilder.Entity("ShoeStore.Domain.Entities.Invoice", b =>
                 {
                     b.Navigation("InvoiceDetails");
+
+                    b.Navigation("PaymentTransactions");
 
                     b.Navigation("VoucherDetails");
                 });

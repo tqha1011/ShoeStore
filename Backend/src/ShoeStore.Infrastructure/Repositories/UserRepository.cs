@@ -19,6 +19,8 @@ public class UserRepository(AppDbContext context) : GenericRepository<User, int>
 
     public async Task<User?> GetUserByPublicIdAsync(Guid publicId, CancellationToken token)
     {
-        return await DbSet.FirstOrDefaultAsync(x => x.PublicId == publicId, token);
+        return await DbSet.Include(u => u.CartItems)
+            .Include(u => u.UserVouchers)
+            .FirstOrDefaultAsync(x => x.PublicId == publicId, token);
     }
 }
