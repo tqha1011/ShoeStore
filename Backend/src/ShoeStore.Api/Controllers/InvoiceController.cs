@@ -81,41 +81,69 @@ namespace ShoeStore.Api.Controllers
         }
 
         [HttpPut("{invoiceGuid}/status")]
-        public async Task<IActionResult> UpdateInvoiceStatus(Guid invoiceGuid, [FromBody] UpdateStateRequestDto request, CancellationToken token)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateStatus(Guid invoiceGuid, [FromBody] UpdateStateRequestDto request, CancellationToken token)
         {
-            var result = await invoiceService.UpdateInvoiceStateAsync(invoiceGuid, request, token);
+            var result = await invoiceService.UpdateInvoiceStateByAdminAsync(invoiceGuid, request, token);
             return result.Match<IActionResult>(
-               success => Ok(new
-               {
-                   message = "Invoice status updated successfully",
-                   newStatus = request.Status
-               }),
+                _ => Ok(new
+                {
+                    message = "Update invoice status successfully"
+                }),
                 errors => errors[0].Code switch
                 {
+                    // Trường hợp không tìm thấy hóa đơn
                     "Invoice.NotFound" => NotFound(new
                     {
                         message = "Invoice not found",
                         description = errors[0].Description
                     }),
-                    "Invoice.Unauthorized" => Unauthorized(new
+                    // Trường hợp trạng thái mới không hợp lệ
+                    "Invoice.InvalidStatus" => BadRequest(new
                     {
-                        message = "You are not authorized to update this invoice",
+                        message = "Invalid invoice status",
                         description = errors[0].Description
                     }),
-                    "Invoice.Forbidden" => Forbid(),
-                    "Invoice.Validation" => BadRequest(new
-                    {
-                        message = "Validation failed",
-                        description = errors[0].Description
-                    }),
-                    // Lỗi mặc định
+                    // Lỗi mặc định (Internal Server Error)
                     _ => StatusCode(StatusCodes.Status500InternalServerError, new
                     {
                         message = "An unexpected error occurred. Please try again later",
                         description = errors[0].Description
                     })
                 }
-           );
+            );
         }
-    }
+        [HttpPut("{invoiceGuid}/status")]
+        [Authorize(Roles = "Costumer")]
+        public async Task<IActionResult> UpdateStatusByCostumer(Guid invoiceGuid, [FromBody] UpdateStateRequestDto request, CancellationToken token)
+        {
+            var result = await invoiceService.UpdateInvoiceStateByUserAsync(invoiceGuid, request, token);
+            return result.Match<IActionResult>(
+                _ => Ok(new
+                {
+                    message = "Update invoice status successfully"
+                }),
+                errors => errors[0].Code switch
+                {
+                    // Trường hợp không tìm thấy hóa đơn
+                    "Invoice.NotFound" => NotFound(new
+                    {
+                        message = "Invoice not found",
+                        description = errors[0].Description
+                    }),
+                    // Trường hợp trạng thái mới không hợp lệ
+                    "Invoice.InvalidStatus" => BadRequest(new
+                    {
+                        message = "Invalid invoice status",
+                        description = errors[0].Description
+                    }),
+                    // Lỗi mặc định (Internal Server Error)
+                    _ => StatusCode(StatusCodes.Status500InternalServerError, new
+                    {
+                        message = "An unexpected error occurred. Please try again later",
+                        description = errors[0].Description
+                    })
+                }
+            );
+        }
 }
