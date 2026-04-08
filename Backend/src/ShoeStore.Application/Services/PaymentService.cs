@@ -1,5 +1,5 @@
 using System.Text.RegularExpressions;
-using ShoeStore.Application.DTOs;
+using ShoeStore.Application.DTOs.CheckOutDTOs;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Domain.Entities;

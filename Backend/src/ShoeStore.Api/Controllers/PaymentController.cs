@@ -1,7 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using ShoeStore.Application.DTOs;
+using Microsoft.AspNetCore.SignalR;
+using ShoeStore.Api.Hubs;
+using ShoeStore.Application.DTOs.CheckOutDTOs;
+using ShoeStore.Application.DTOs.HubDTOs;
 using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.Hub;
 
 namespace ShoeStore.Api.Controllers;
 
@@ -23,7 +27,10 @@ namespace ShoeStore.Api.Controllers;
 [Route("api/payment")]
 [ApiController]
 [EnableRateLimiting("limit-per-user")]
-public class PaymentController(IConfiguration configuration, IPaymentService paymentService) : ControllerBase
+public class PaymentController(
+    IConfiguration configuration,
+    IPaymentService paymentService,
+    IHubContext<NotifyHub,INotifyHubClient> hubContext) : ControllerBase
 {
     /// <summary>
     ///     Webhook endpoint for receiving payment notifications from SePay payment gateway.
@@ -109,6 +116,17 @@ public class PaymentController(IConfiguration configuration, IPaymentService pay
                 success = true,
                 message = "Payment process failed due to some reasons"
             });
+
+        if (request.Code != null)
+        {
+            var orderCode = request.Code;
+            var amount = request.TransferAmount;
+            var message =
+                $"Payment of {amount:#,##0} VND for order #{orderCode} has been successfully received.";
+            var paymentNotification = new PaymentNotificationDto(message, amount, orderCode, true, DateTime.UtcNow);
+            
+            await hubContext.Clients.Group(orderCode).ReceiveNotification(paymentNotification);
+        }
 
         return Ok(new
         {
