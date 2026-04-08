@@ -9,5 +9,9 @@ namespace ShoeStore.Application.Interface.InvoiceInterface
         IQueryable<InvoiceDetail> GetaInvoiceDetail(Guid invoiceGuid);
 
         Task<Invoice?> GetByPublicIdAsync(Guid publicId, CancellationToken token);
+
+        Task<Invoice?> GetInvoiceDetailIdAsync(Guid publicId, CancellationToken token);
+
+        Task<Invoice?> GetInvoiceByOrderCodeAsync(string orderCode, CancellationToken token);
     }
 }

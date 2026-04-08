@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.InvoiceInterface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Infrastructure.Data;
 
@@ -24,6 +24,19 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
     {
         return DbSet.Where(inv => inv.OrderCode == orderCode)
             .Include(inv => inv.PaymentTransactions)
+            .FirstOrDefaultAsync(token);
+    }
+
+    public IQueryable<InvoiceDetail> GetaInvoiceDetail(Guid invoiceGuid)
+    {
+        return DbSet.Where(inv => inv.PublicId == invoiceGuid)
+            .SelectMany(inv => inv.InvoiceDetails)
+            .AsQueryable();
+    }
+
+    public async Task<Invoice?> GetByPublicIdAsync(Guid publicId, CancellationToken token)
+    {
+        return await DbSet.Where(inv => inv.PublicId == publicId)
             .FirstOrDefaultAsync(token);
     }
 }
