@@ -11,4 +11,9 @@ public class PaymentRepository(AppDbContext context) : GenericRepository<Payment
     {
         return await DbSet.AsNoTracking().ToListAsync(token);
     }
+
+    public Task<int> GetPaymentIdByCode(string code, CancellationToken token)
+    {
+        return DbSet.Where(p => p.Code == code).Select(p => p.Id).FirstOrDefaultAsync(token);
+    }
 }

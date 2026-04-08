@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<IProductVariantService, ProductVariantService>();
         services.AddScoped<ICartItemService, CartItemService>();
         services.AddScoped<ICheckOutService, CheckOutService>();
+        services.AddScoped<IPaymentService, PaymentService>();
         return services;
     }
 }

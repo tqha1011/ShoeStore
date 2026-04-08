@@ -19,4 +19,11 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
             .ThenInclude(invDet => invDet.ProductVariant)
             .FirstOrDefaultAsync(token);
     }
+
+    public Task<Invoice?> GetInvoiceByOrderCodeAsync(string orderCode, CancellationToken token)
+    {
+        return DbSet.Where(inv => inv.OrderCode == orderCode)
+            .Include(inv => inv.PaymentTransactions)
+            .FirstOrDefaultAsync(token);
+    }
 }

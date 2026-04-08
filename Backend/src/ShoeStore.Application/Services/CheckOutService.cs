@@ -1,10 +1,12 @@
 using ErrorOr;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs;
+using ShoeStore.Application.Extensions;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.ProductInterface;
+using ShoeStore.Application.Utilities;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
 
@@ -62,11 +64,11 @@ public class CheckOutService(
         var response = new CheckOutResponseDto(items, summary, warnings);
         return response;
     }
-
-    public async Task<ErrorOr<Created>> PlaceOrderAsync(PlaceOrderRequestDto placeOrderRequestDto, Guid publicUserId,
+    
+    public async Task<ErrorOr<InvoiceDto>> PlaceOrderAsync(PlaceOrderRequestDto placeOrderRequestDto, Guid publicUserId,
         bool fromCart, CancellationToken token)
     {
-        return await unitOfWork.ExecuteInTransactionAsync<ErrorOr<Created>>(async () =>
+        return await unitOfWork.ExecuteInTransactionAsync<ErrorOr<InvoiceDto>>(async () =>
         {
             using var transaction = await unitOfWork.BeginTransactionAsync(token);
             // transaction has 4 stages
@@ -118,7 +120,7 @@ public class CheckOutService(
                 // If all stages execute successfully, commit the transaction, otherwise rollback the transaction
                 await unitOfWork.SaveChangesAsync(token);
                 await unitOfWork.CommitTransactionAsync(token);
-                return Result.Created;
+                return invoice.MapToInvoiceDto(vouchersApplied, invoice.InvoiceDetails.ToList());
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -139,19 +141,6 @@ public class CheckOutService(
         var variantQuantityById = checkOutList.GroupBy(x => x.VariantId)
             .ToDictionary(x => x.Key, x => x.Sum(y => y.Quantity));
         return variantQuantityById;
-    }
-
-    private static decimal CalculateFinalPrice(List<ProductVariant> variantsList,
-        Dictionary<Guid, int> variantQuantityById,
-        List<Voucher?> vouchers)
-    {
-        var subTotal = variantsList.Select(variant =>
-        {
-            var quantity = variantQuantityById.GetValueOrDefault(variant.PublicId, 0);
-            return variant.Price * quantity;
-        }).Sum();
-
-        return vouchers.Aggregate(subTotal, (current, voucher) => (1 - (voucher?.Discount ?? 0)) * current);
     }
 
     private static List<Voucher?> MarkUsedVoucher(List<int> voucherIds, User user)
@@ -175,17 +164,28 @@ public class CheckOutService(
         List<ProductVariant> variantsList,
         Dictionary<Guid, int> variantQuantityById, List<Voucher?> vouchersApplied)
     {
+        var subTotal = variantsList.Select(variant =>
+        {
+            var quantity = variantQuantityById.GetValueOrDefault(variant.PublicId, 0);
+            return variant.Price * quantity;
+        }).Sum();
+
+        var shippingFee = CalculateShippingFee(placeOrderRequestDto.Address);
+
         var invoice = new Invoice
         {
             UserId = userId,
+            OrderCode = GenerateOrderCode.Generate("DH"),
             FullName = placeOrderRequestDto.FullName,
             Phone = placeOrderRequestDto.PhoneNumber,
             ShippingAddress = placeOrderRequestDto.Address,
             Status = InvoiceStatus.Pending,
             PaymentId = placeOrderRequestDto.PaymentId,
             CreatedAt = DateTime.UtcNow,
-            FinalPrice = CalculateFinalPrice(variantsList, variantQuantityById, vouchersApplied),
-            InvoiceDetails = new List<InvoiceDetail>()
+            FinalPrice = subTotal,
+            ShippingFee = shippingFee,
+            InvoiceDetails = new List<InvoiceDetail>(),
+            VoucherDetails = new List<VoucherDetail>()
         };
 
         foreach (var items in variantsList)
@@ -195,11 +195,19 @@ public class CheckOutService(
             {
                 ProductVariantId = items.Id,
                 Quantity = quantity,
-                UnitPrice = items.Price * quantity
+                UnitPrice = items.Price
             };
             invoice.InvoiceDetails.Add(invoiceDetails);
         }
+        
+        // validate vouchers
+        var validVouchers = ValidateVoucher(vouchersApplied, subTotal);
 
+        // calculate the final price after applying voucher and shipping fee
+        var priceAfterApplyVoucherProduct = CalculateFinalProductPrice(validVouchers, invoice, subTotal);
+        var finalShippingFee = CalculateFinalShippingFee(validVouchers, invoice, shippingFee);
+        invoice.FinalPrice = priceAfterApplyVoucherProduct + finalShippingFee;
+        invoice.ShippingFee = finalShippingFee;
         return invoice;
     }
 
@@ -216,5 +224,110 @@ public class CheckOutService(
         }
 
         return Result.Success;
+    }
+
+    private static decimal CalculateShippingFee(string shippingAddress)
+    {
+        if (string.IsNullOrWhiteSpace(shippingAddress)) return 25000; // 25k VND for empty address
+
+        var addressLower = shippingAddress.ToLower();
+        if (addressLower.Contains("Hồ Chí Minh", StringComparison.OrdinalIgnoreCase) ||
+            addressLower.Contains("HCM", StringComparison.OrdinalIgnoreCase) ||
+            addressLower.Contains("TPHCM", StringComparison.OrdinalIgnoreCase))
+            return 20000; // 20k VND for Ho Chi Minh City
+
+        return 35000; // 35k VND for other provinces
+    }
+
+    private static List<Voucher?> ValidateVoucher(List<Voucher?> vouchers, decimal subTotal)
+    {
+        return vouchers.Where(v => v != null && subTotal >= v.MinOrderPrice && v.ValidTo >= DateTime.UtcNow)
+            .ToList();
+    }
+
+    private static decimal CalculateFinalProductPrice(List<Voucher?> validVouchers, Invoice invoice, decimal subTotal)
+    {
+        var currentTotal = subTotal;
+        if (validVouchers.Count == 0) return currentTotal;
+        foreach (var voucher in validVouchers)
+            switch (voucher)
+            {
+                case null:
+                    continue;
+                case { DiscountType: DiscountType.FixedAmount, VoucherScope: VoucherScope.Product }:
+                {
+                    var discountAmountForThisVoucher = Math.Min(voucher.Discount, currentTotal);
+
+                    var voucherDetails = new VoucherDetail
+                    {
+                        InvoiceId = invoice.Id,
+                        VoucherId = voucher.Id,
+                        MoneyDiscount = discountAmountForThisVoucher
+                    };
+                    currentTotal -= discountAmountForThisVoucher;
+                    invoice.VoucherDetails.Add(voucherDetails);
+                    break;
+                }
+                case { DiscountType: DiscountType.Percentage, VoucherScope: VoucherScope.Product }:
+                {
+                    var discountAmountForThisVoucher = currentTotal * voucher.Discount;
+
+                    if (discountAmountForThisVoucher > voucher.MaxPriceDiscount)
+                        discountAmountForThisVoucher = voucher.MaxPriceDiscount;
+                    var voucherDetails = new VoucherDetail
+                    {
+                        InvoiceId = invoice.Id,
+                        VoucherId = voucher.Id,
+                        MoneyDiscount = discountAmountForThisVoucher
+                    };
+                    currentTotal -= discountAmountForThisVoucher;
+                    invoice.VoucherDetails.Add(voucherDetails);
+                    break;
+                }
+            }
+
+        return currentTotal;
+    }
+
+    private static decimal CalculateFinalShippingFee(List<Voucher?> validVouchers, Invoice invoice, decimal shippingFee)
+    {
+        if (validVouchers.Count == 0) return shippingFee;
+        foreach (var voucher in validVouchers)
+            switch (voucher)
+            {
+                case null:
+                    continue;
+                case { DiscountType: DiscountType.FixedAmount, VoucherScope: VoucherScope.Shipping }:
+                {
+                    var discountAmountForThisVoucher = Math.Min(voucher.Discount, shippingFee);
+
+                    var voucherDetails = new VoucherDetail
+                    {
+                        InvoiceId = invoice.Id,
+                        VoucherId = voucher.Id,
+                        MoneyDiscount = discountAmountForThisVoucher
+                    };
+                    shippingFee -= discountAmountForThisVoucher;
+                    invoice.VoucherDetails.Add(voucherDetails);
+                    break;
+                }
+                case { DiscountType: DiscountType.Percentage, VoucherScope: VoucherScope.Shipping }:
+                {
+                    var discountAmountForThisVoucher = shippingFee * voucher.Discount;
+
+                    if (discountAmountForThisVoucher > voucher.MaxPriceDiscount)
+                        discountAmountForThisVoucher = voucher.MaxPriceDiscount;
+                    var voucherDetails = new VoucherDetail
+                    {
+                        InvoiceId = invoice.Id,
+                        VoucherId = voucher.Id,
+                        MoneyDiscount = discountAmountForThisVoucher
+                    };
+                    shippingFee -= discountAmountForThisVoucher;
+                    invoice.VoucherDetails.Add(voucherDetails);
+                    break;
+                }
+            }
+        return shippingFee;
     }
 }

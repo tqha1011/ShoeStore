@@ -46,5 +46,9 @@ public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
             .IsRequired();
 
         builder.HasIndex(c => c.PublicId).IsUnique();
+
+        builder.HasIndex(c => c.OrderCode).IsUnique();
+
+        builder.Property(c => c.ShippingFee).HasColumnType("numeric(18,2)");
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ShoeStore.Infrastructure.Data;
@@ -11,9 +12,11 @@ using ShoeStore.Infrastructure.Data;
 namespace ShoeStore.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260407115710_AddTablePaymentTransaction")]
+    partial class AddTablePaymentTransaction
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -143,10 +146,6 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("shipping_address");
 
-                    b.Property<decimal>("ShippingFee")
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("shipping_fee");
-
                     b.Property<int>("Status")
                         .HasColumnType("integer")
                         .HasColumnName("status");
@@ -237,10 +236,6 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnName("id");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Code")
-                        .HasColumnType("text")
-                        .HasColumnName("code");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -700,10 +695,6 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasDefaultValue(0m)
                         .HasColumnName("discount");
 
-                    b.Property<int>("DiscountType")
-                        .HasColumnType("integer")
-                        .HasColumnName("discount_type");
-
                     b.Property<bool>("IsDeleted")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -758,10 +749,6 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("voucher_name");
-
-                    b.Property<int>("VoucherScope")
-                        .HasColumnType("integer")
-                        .HasColumnName("voucher_scope");
 
                     b.HasKey("Id")
                         .HasName("pk_vouchers");

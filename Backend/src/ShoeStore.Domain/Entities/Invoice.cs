@@ -13,6 +13,11 @@ public class Invoice : Entity<int>
     public required InvoiceStatus Status { get; set; }
     public required int PaymentId { get; set; }
     public Payment? Payment { get; set; }
+
+    // OrderCode is a unique identifier from payment gateway
+    public string OrderCode { get; set; } = string.Empty;
+
+    public decimal ShippingFee { get; set; } = 0;
     public required decimal FinalPrice { get; set; }
     public required string ShippingAddress { get; set; }
     public required string Phone { get; set; }
@@ -33,4 +38,10 @@ public class Invoice : Entity<int>
     ///     Gets the collection of all vouchers that was applied to this invoice, along with the details of their usage.
     /// </summary>
     public ICollection<VoucherDetail> VoucherDetails { get; set; } = new List<VoucherDetail>();
+
+    /// <summary>
+    ///     Get the collection of online payment transaction associated with this invoice, which may include multiple
+    ///     transactions in cases of partial payments, refunds, or payment retries.
+    /// </summary>
+    public ICollection<PaymentTransaction> PaymentTransactions { get; set; } = new List<PaymentTransaction>();
 }
