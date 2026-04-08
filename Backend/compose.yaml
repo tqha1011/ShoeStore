@@ -25,7 +25,7 @@
     networks:
       - frontend
       - backend
-        
+
 
 networks:
   frontend:

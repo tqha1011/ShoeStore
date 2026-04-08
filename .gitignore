@@ -556,3 +556,8 @@ google-services.json
 
 # .env
 .env
+
+
+
+*.DotSettings
+*.DotSettings.user

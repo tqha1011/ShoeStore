@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using ShoeStore.Api.Hubs;
 using ShoeStore.Api.JsonSerialize;
 using ShoeStore.Api.Middlewares;
 using ShoeStore.Application.DependencyInjection;
@@ -29,7 +30,11 @@ builder.Services.AddControllers()
 
 builder.Services.AddHttpClient();
 builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("Cloudinary"));
+<<<<<<< HEAD
 var jwtKey = builder.Configuration["Jwt__Key"];
+=======
+var jwtKey = builder.Configuration["Jwt:Key"];
+>>>>>>> cc345eac4faf260721f5ee63097ee8e18b1cd2b2
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -56,6 +61,17 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>(); // register global exception handler middleware
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddSignalR();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true)
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+});
 
 // Add rate-limit to protect API
 builder.Services.AddRateLimiter(options =>
@@ -116,10 +132,12 @@ builder.Services.AddRateLimiter(options =>
 var app = builder.Build();
 
 app.UseExceptionHandler(); // use GlobalExceptionHandler middleware to handle exceptions globally
+app.UseCors("AllowAll");
 app.MapOpenApi();
 app.MapScalarApiReference();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();
+app.MapHub<NotifyHub>("/hubs/notify");
 app.Run();
