@@ -15,5 +15,17 @@ namespace ShoeStore.Application.Rules
                 _ => false
             };
         }
+        public static bool CanAdminUpdateState(InvoiceStatus currentStatus, InvoiceStatus newStatus)
+        {
+            // Admin can change to any status except from Canceled to Paid
+            return (currentStatus, newStatus) switch
+            {
+                (InvoiceStatus.Pending, InvoiceStatus.Canceled) => true,
+                (InvoiceStatus.Pending, InvoiceStatus.Paid) => true,
+                (InvoiceStatus.Paid, InvoiceStatus.Canceled) => true,
+                (InvoiceStatus.Paid, InvoiceStatus.Delivering) => true,
+                _ => true
+            };
+        }
     }
 }

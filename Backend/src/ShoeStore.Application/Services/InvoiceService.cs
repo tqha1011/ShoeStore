@@ -25,7 +25,7 @@ namespace ShoeStore.Application.Services
 
             var query = invoiceRepository.GetAll();
 
-            if(query == null)
+            if (query == null)
             {
                 return Error.NotFound("Invoice not found");
             }
@@ -64,8 +64,8 @@ namespace ShoeStore.Application.Services
 
         public async Task<ErrorOr<IEnumerable<InvoiceDetailResponseDto>>> GetInvoiceDetailAsync(Guid invoiceGuid, CancellationToken token)
         {
-            var details= invoiceRepository.GetaInvoiceDetail(invoiceGuid);
-            
+            var details = invoiceRepository.GetaInvoiceDetail(invoiceGuid);
+
             var result = await details.Select(d => new InvoiceDetailResponseDto
             {
                 ProductName = d.ProductVariant.Product.ProductName,
@@ -75,43 +75,54 @@ namespace ShoeStore.Application.Services
                 UnitPrice = d.UnitPrice
             }).ToListAsync(token);
 
-            if(result == null || result.Count == 0)
+            if (result == null || result.Count == 0)
             {
                 return Error.NotFound("Invoice detail not found");
             }
             return result;
         }
 
-        public async Task<ErrorOr<Updated>> UpdateInvoiceStateAsync(Guid invoiceGuid, UpdateStateRequestDto request, CancellationToken token)
+        public async Task<ErrorOr<Updated>> UpdateInvoiceStateByUserAsync(Guid invoiceGuid, UpdateStateRequestDto request, CancellationToken token)
         {
             var invoice = await invoiceRepository.GetByPublicIdAsync(invoiceGuid, token);
-            if(invoice == null)
+            if (invoice == null)
             {
                 return Error.NotFound("Invoice not found");
             }
-            if(!currentUser.IsAdmin && invoice.PublicId != currentUser.Id)
+            if (invoice.PublicId != currentUser.Id)
             {
                 return Error.Unauthorized("Unauthorized");
             }
 
-            if (!currentUser.IsAdmin)
-            {
-                if(!UpdateInvoiceStateRule.CanClientUpdateState(invoice.Status, request.Status))
-                    return Error.Forbidden("Client cannot change to this status");
-                if (request.Status == InvoiceStatus.Paid && invoice.Payment == null)
-                    return Error.Validation("Cannot mark as paid without payment");
-            }
-            else
-            {
-                if (invoice.Status == InvoiceStatus.Paid && request.Status != InvoiceStatus.Delivering)
-                    return Error.Forbidden("Admin can only mark Paid -> Delivering");
-            }
+            if (!UpdateInvoiceStateRule.CanClientUpdateState(invoice.Status, request.Status))
+                return Error.Forbidden("Client cannot change to this status");
+            if (request.Status == InvoiceStatus.Paid && invoice.Payment == null)
+                return Error.Validation("Cannot mark as paid without payment");
 
             invoice.Status = request.Status;
             invoice.UpdatedAt = DateTime.UtcNow;
             invoiceRepository.Update(invoice);
             await uow.SaveChangesAsync(token);
+            return Result.Updated;
+        }
 
+        public async Task<ErrorOr<Updated>> UpdateInvoiceStateByAdminAsync(Guid invoiceGuid, UpdateStateRequestDto request, CancellationToken token)
+        {
+            var invoice = await invoiceRepository.GetByPublicIdAsync(invoiceGuid, token);
+            if (invoice == null)
+            {
+                return Error.NotFound("Invoice not found");
+            }
+            if (!UpdateInvoiceStateRule.CanAdminUpdateState(invoice.Status, request.Status))
+                return Error.Forbidden("Admin cannot change to this status");
+
+            if (request.Status == InvoiceStatus.Paid && invoice.Payment == null)
+                return Error.Validation("Cannot mark as paid without payment");
+
+            invoice.Status = request.Status;
+            invoice.UpdatedAt = DateTime.UtcNow;
+            invoiceRepository.Update(invoice);
+            await uow.SaveChangesAsync(token);
             return Result.Updated;
         }
     }
