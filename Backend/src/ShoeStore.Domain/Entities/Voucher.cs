@@ -1,4 +1,5 @@
 using ShoeStore.Domain.Common;
+using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Domain.Entities;
 
@@ -8,6 +9,12 @@ public class Voucher : Entity<int>
     public required string VoucherName { get; set; }
     public string? VoucherDescription { get; set; }
     public required decimal Discount { get; set; }
+
+    public VoucherScope VoucherScope { get; set; } = VoucherScope.Product;
+
+    public DiscountType DiscountType { get; set; }
+
+    public decimal MaxPriceDiscount { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; }
     public DateTime? ValidFrom { get; set; }

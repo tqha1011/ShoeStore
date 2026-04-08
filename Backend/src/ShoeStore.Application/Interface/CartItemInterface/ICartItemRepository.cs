@@ -15,4 +15,6 @@ public interface ICartItemRepository : IGenericRepository<CartItem, int>
     Task<CartItem?> GetExistCartItemByGuidAsync(Guid publicUserId, Guid publicVariantId, CancellationToken token);
 
     Task<bool> DeleteListOfCartItemsAsync(List<Guid> cartItemsList, CancellationToken token);
+
+    void DeleteCartItem(IEnumerable<CartItem> cartItems);
 }

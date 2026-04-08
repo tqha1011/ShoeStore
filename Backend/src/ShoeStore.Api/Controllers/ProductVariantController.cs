@@ -7,24 +7,44 @@ using ShoeStore.Application.Interface.UploadImage;
 namespace ShoeStore.Api.Controllers;
 
 /// <summary>
-///     Controller for CRUD Product Variants
+///     Controller for managing product variants (Admin only).
+///     Provides endpoints for creating product variants with optional image uploads.
+///     All operations require Admin role authorization.
 /// </summary>
-/// <param name="variantService"></param>
-/// <param name="imageService"></param>
+/// <param name="variantService">Service for handling product variant operations.</param>
+/// <param name="imageService">Service for handling image uploads to cloud storage.</param>
 [ApiController]
 [Route("api/products/{productGuid}/variants")]
 public class ProductVariantController(IProductVariantService variantService, IImageService imageService)
     : ControllerBase
 {
     /// <summary>
-    ///     Create product variant for a product.
-    ///     If image is provided, it will be uploaded and the URL will be saved in the database.
+    ///     Creates a new product variant for an existing product.
     /// </summary>
-    /// <param name="productGuid"></param>
-    /// <param name="dto"></param>
-    /// <param name="image"></param>
-    /// <param name="token"></param>
-    /// <returns></returns>
+    /// <remarks>
+    ///     Requires Admin role authorization and multipart/form-data with:
+    ///     - <c>productGuid</c>: the parent product identifier (from URL path)
+    ///     - <c>dto</c>: product variant details including size, color, price, and stock information
+    ///     - <c>image</c>: (optional) product variant image file to be uploaded to Cloudinary
+    ///     If an image is provided, it will be uploaded to cloud storage and the URL will be saved.
+    ///     The product variant will inherit category and basic product information from the parent product.
+    /// </remarks>
+    /// <param name="productGuid">The unique identifier of the parent product.</param>
+    /// <param name="dto">Product variant details including size, color, price, and stock information.</param>
+    /// <param name="image">Optional image file for the product variant (JPG, PNG, etc.).</param>
+    /// <param name="token">Cancellation token for the request.</param>
+    /// <response code="200">
+    ///     Product variant created successfully. Returns the created variant details with image URL if
+    ///     provided.
+    /// </response>
+    /// <response code="400">Bad request; invalid variant data or image upload failed.</response>
+    /// <response code="404">Not found; the parent product does not exist.</response>
+    /// <response code="401">Unauthorized; user must have Admin role authorization.</response>
+    /// <response code="500">Internal server error; an unexpected server error occurred.</response>
+    /// <returns>
+    ///     An action result containing the created product variant details on success, or an error response describing
+    ///     what went wrong.
+    /// </returns>
     [HttpPost]
     [Consumes("multipart/form-data")]
     [Authorize(Roles = "Admin")]
