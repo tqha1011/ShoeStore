@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
-using DotNetEnv;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
@@ -30,7 +29,7 @@ builder.Services.AddControllers()
 
 builder.Services.AddHttpClient();
 builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("Cloudinary"));
-var jwtKey = builder.Configuration["JWT_KEY"];
+var jwtKey = builder.Configuration["Jwt__Key"];
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
