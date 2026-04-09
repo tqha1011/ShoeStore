@@ -615,16 +615,16 @@ dependencies {
 **A:** Để backend biết gửi notification cho ai. Nếu không join, khi SePay confirm thanh toán, backend sẽ broadcast cho tất cả client (sai!). Chỉ client nào join group "DH000001" mới nhận notification cho đơn hàng đó.
 
 ### Q: Nếu user không nhận được notification qua SignalR?
-**A:** Fallback sang polling. Sau 10 giây không nhận notification, gọi API `GET /api/orders/{orderCode}` để check trạng thái.
+**A:** Fallback sang polling. Sau 10 giây không nhận notification, gọi API `GET /api/invoice/{orderCode}` để check trạng thái.
 
 ### Q: Có thể gọi `/place-order` nhiều lần không?
 **A:** Không! Sẽ bị rate limit (429). Backend cho phép 1 request per 2 giây per user. Nếu user spam, sẽ bị chặn 1 phút.
 
 ### Q: SignalR endpoint URL là gì?
-**A:** `/notify-hub` (không cần `/api/` prefix)
+**A:** `/hubs/notify` (không cần `/api/` prefix)
 ```
-WebSocket: wss://your-api.com/notify-hub
-HTTP Fallback: https://your-api.com/notify-hub
+WebSocket: wss://your-api.com/hubs/notify
+HTTP Fallback: https://your-api.com/hubs/notify
 ```
 
 ### Q: JWT token hết hạn khi checkout thì sao?
@@ -635,10 +635,8 @@ HTTP Fallback: https://your-api.com/notify-hub
 
 ---
 
-## 9. Contact & Support
+## 9. Reference
 
-- **Backend Team:** contact@shoestore.com
-- **API Documentation:** https://your-api.com/swagger
 - **SignalR Tutorial:** https://learn.microsoft.com/en-us/aspnet/core/signalr/
 
 ---
