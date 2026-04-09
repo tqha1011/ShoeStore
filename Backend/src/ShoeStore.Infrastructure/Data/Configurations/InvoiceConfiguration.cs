@@ -50,5 +50,7 @@ public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
         builder.HasIndex(c => c.OrderCode).IsUnique();
 
         builder.Property(c => c.ShippingFee).HasColumnType("numeric(18,2)");
+
+        builder.HasIndex(c => new { c.Status, c.CreatedAt });
     }
 }

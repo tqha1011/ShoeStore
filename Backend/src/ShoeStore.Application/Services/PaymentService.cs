@@ -28,7 +28,7 @@ public class PaymentService(
 
         if (sepayWebhookDto.TransferAmount < invoice.FinalPrice) return false;
         var paymentMethodId = await paymentRepository.GetPaymentIdByCode("SEPAY", token);
-        var paymenTransaction = new PaymentTransaction
+        var paymentTransaction = new PaymentTransaction
         {
             RemoteTransactionId = sepayWebhookDto.Id.ToString(),
             OrderCode = orderCode,
@@ -38,7 +38,9 @@ public class PaymentService(
             CreatedAt = DateTime.UtcNow,
             PaymentId = paymentMethodId
         };
-        paymentTransactionRepository.Add(paymenTransaction);
+        paymentTransactionRepository.Add(paymentTransaction);
+        invoice.PaymentTransactions.Add(paymentTransaction);
+        invoice.Status = InvoiceStatus.Paid;
         await unitOfWork.SaveChangesAsync(token);
         return true;
     }

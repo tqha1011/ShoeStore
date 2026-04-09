@@ -14,7 +14,7 @@ public class GoogleAuthStrategy(IConfiguration configuration) : ISocialAuthStrat
 {
     public async Task<ErrorOr<SocialUserDto>> VerifySocialToken(string accessToken, CancellationToken token = default)
     {
-        var clientId = configuration["GOOGLEAUTHENTICATION_CLIENTID"];
+        var clientId = configuration["GoogleAuthentication:ClientId"];
         if (string.IsNullOrWhiteSpace(clientId))
             return Error.Unexpected("Google.MissingClientId", "Google Client ID is not configured.");
         try

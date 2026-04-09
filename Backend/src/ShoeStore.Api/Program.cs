@@ -13,6 +13,7 @@ using ShoeStore.Api.Middlewares;
 using ShoeStore.Application.DependencyInjection;
 using ShoeStore.Infrastructure.Cloudinary;
 using ShoeStore.Infrastructure.DependencyInjection;
+using ShoeStore.Infrastructure.Worker;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,6 +58,7 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>(); // register global exception handler middleware
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHostedService<OrderCancellationService>();
 builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {
