@@ -13,6 +13,8 @@ using ShoeStore.Api.Middlewares;
 using ShoeStore.Application.DependencyInjection;
 using ShoeStore.Infrastructure.Cloudinary;
 using ShoeStore.Infrastructure.DependencyInjection;
+using ShoeStore.Infrastructure.Worker;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -43,8 +45,8 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["JWT_ISSUER"],
-        ValidAudience = builder.Configuration["JWT_AUDIENCE"],
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtKey ?? throw new InvalidOperationException("JWT_KEY is null"))
         ),
@@ -57,6 +59,7 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>(); // register global exception handler middleware
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHostedService<OrderCancellationService>();
 builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {

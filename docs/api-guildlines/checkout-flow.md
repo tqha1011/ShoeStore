@@ -107,27 +107,27 @@ Tạo đơn hàng, sinh hóa đơn, và gửi yêu cầu thanh toán đến SePa
 ┌─────────────────────────────────────────────────────────────┐
 │ 1. Frontend gọi PlaceOrder API                              │
 ├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│ 2. Backend xác thực & tạo hóa đơn (Status: PENDING)        │
-│    ↓ Trừ tồn kho                                            │
-│    ↓ Áp dụng voucher                                        │
-│    ↓ Tính phí vận chuyển                                    │
-│                                                              │
-│ 3. Backend sinh mã thanh toán & gửi SePay                  │
-│    ↓ SePay trả về URL chuyển khoản                          │
-│                                                              │
-│ 4. Frontend điều hướng người dùng đến SePay                │
-│                                                              │
-│ 5. Người dùng chuyển khoản & SePay xác nhận                │
-│                                                              │
-│ 6. SePay gửi webhook về Backend (Không từ Frontend)        │
-│    ↓ Backend xác thực webhook signature                     │
+│                                                             │
+│ 2. Backend xác thực & tạo hóa đơn (Status: PENDING)         │
+│    ↓ KIỂM TRA tồn kho (KHÔNG TRỪ KHO LÚC NÀY)               │
+│    ↓ Áp dụng voucher & Tính phí vận chuyển                  │
+│                                                             │
+│ 3. Backend sinh `OrderCode` & `FinalPrice` gửi về FE        │
+│                                                             │
+│ 4. Frontend tự gen mã QR VietQR (hoặc dùng thư viện)        │
+│    ↓ Hiển thị mã QR trực tiếp trên màn hình chờ             │
+│                                                             │
+│ 5. Khách hàng dùng App Ngân hàng quét QR & chuyển tiền      │
+│                                                             │
+│ 6. SePay nhận được tiền -> Gửi webhook về Backend           │
+│    ↓ Backend xác thực webhook (so sánh số tiền, chữ ký)     │
+│    ↓ Backend CHÍNH THỨC TRỪ TỒN KHO DB                      │
 │    ↓ Backend cập nhật Status: PAID                          │
-│    ↓ Backend gửi SignalR notification cho Frontend          │
-│                                                              │
+│    ↓ Backend gọi SignalR notification cho Frontend          │
+│                                                             │
 │ 7. Frontend nhận thông báo via SignalR                      │
-│    ↓ Cập nhật UI: Đơn hàng đã thanh toán                   │
-│    ↓ Chuyển hướng đến trang chi tiết đơn hàng              │
+│    ↓ Cập nhật UI: Đơn hàng đã thanh toán                    │
+│    ↓ Ẩn mã QR, chuyển hướng đến trang Thành Công            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -234,6 +234,7 @@ private fun connectSignalRAndJoinGroup(orderCode: String) {
 - ✅ **Kết nối SignalR TRƯỚC** khi gửi yêu cầu thanh toán đến SePay
 - ✅ **Không gọi API này nhiều lần liên tiếp** - Sẽ bị rate limit
 - ✅ **Nếu gặp `Checkout.Concurrency`** - Có người khác vừa mua cùng sản phẩm, thử lại
+- ✅ Nội dung chuyển khoản: BẮT BUỘC phải truyền orderCode vào nội dung thanh toán để Webhook backend nhận diện được đơn.
 
 ---
 
@@ -246,22 +247,21 @@ Nhận thông báo thanh toán **real-time** từ server khi SePay xác nhận c
 
 ```
 ┌────────────────────────────────────────────────────┐
-│ 1. Frontend kết nối SignalR Hub                    │
+│ 1. Frontend kết nối SignalR Hub (/notify-hub)      │
 ├────────────────────────────────────────────────────┤
-│                                                     │
+│                                                    │
 │ 2. Frontend join group với orderCode               │
 │    (Ví dụ: group = "DH000001")                     │
-│                                                     │
-│ 3. Chờ thông báo "ReceiveNotification"             │
-│                                                     │
-│ 4. Khi SePay webhook gửi về:                       │
-│    ↓ Backend cập nhật Invoice Status: PAID         │
-│    ↓ Backend gọi SignalR SendPaymentNotification   │
-│    ↓ Frontend nhận thông báo                       │
-│                                                     │
-│ 5. Frontend cập nhật UI & hiển thị thành công      │
-│                                                     │
-│ 6. Frontend rời group khi không cần nữa             │
+│                                                    │
+│ 3. Chờ thông báo sự kiện "ReceiveNotification"     │
+│                                                    │
+│ 4. Khi SePay webhook báo tiền về:                  │
+│    ↓ Backend gọi `ReceiveNotification` xuống group │
+│    ↓ Frontend nhận được cục JSON thông báo         │
+│                                                    │
+│ 5. Frontend ẩn mã QR, hiển thị màn hình Thành công │
+│                                                    │
+│ 6. Frontend rời group khi không cần nữa            │
 └────────────────────────────────────────────────────┘
 ```
 
@@ -615,16 +615,16 @@ dependencies {
 **A:** Để backend biết gửi notification cho ai. Nếu không join, khi SePay confirm thanh toán, backend sẽ broadcast cho tất cả client (sai!). Chỉ client nào join group "DH000001" mới nhận notification cho đơn hàng đó.
 
 ### Q: Nếu user không nhận được notification qua SignalR?
-**A:** Fallback sang polling. Sau 10 giây không nhận notification, gọi API `GET /api/orders/{orderCode}` để check trạng thái.
+**A:** Fallback sang polling. Sau 10 giây không nhận notification, gọi API `GET /api/invoice/{orderCode}` để check trạng thái.
 
 ### Q: Có thể gọi `/place-order` nhiều lần không?
 **A:** Không! Sẽ bị rate limit (429). Backend cho phép 1 request per 2 giây per user. Nếu user spam, sẽ bị chặn 1 phút.
 
 ### Q: SignalR endpoint URL là gì?
-**A:** `/notify-hub` (không cần `/api/` prefix)
+**A:** `/hubs/notify` (không cần `/api/` prefix)
 ```
-WebSocket: wss://your-api.com/notify-hub
-HTTP Fallback: https://your-api.com/notify-hub
+WebSocket: wss://your-api.com/hubs/notify
+HTTP Fallback: https://your-api.com/hubs/notify
 ```
 
 ### Q: JWT token hết hạn khi checkout thì sao?
@@ -635,10 +635,8 @@ HTTP Fallback: https://your-api.com/notify-hub
 
 ---
 
-## 9. Contact & Support
+## 9. Reference
 
-- **Backend Team:** contact@shoestore.com
-- **API Documentation:** https://your-api.com/swagger
 - **SignalR Tutorial:** https://learn.microsoft.com/en-us/aspnet/core/signalr/
 
 ---

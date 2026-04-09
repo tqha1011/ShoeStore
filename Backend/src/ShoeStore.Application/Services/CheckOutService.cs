@@ -212,6 +212,7 @@ public class CheckOutService(
         return invoice;
     }
 
+
     private static ErrorOr<Success> DeductStocks(List<ProductVariant> variantsList,
         Dictionary<Guid, int> variantQuantityById)
     {

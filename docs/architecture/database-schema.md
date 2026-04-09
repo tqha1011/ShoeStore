@@ -15,7 +15,8 @@ For the `ShoeStore` project, **PostgreSQL** was selected as the primary relation
 
 *(Below is the ERD illustrating the relationships between the core entities in the ShoeStore system.)*
 
-<img width="1255" height="773" alt="image" src="https://github.com/user-attachments/assets/2cc3c94b-93bc-4b7a-bedc-92188a5d978f" />
+<img width="1115" height="773" alt="image" src="https://github.com/user-attachments/assets/9c2f253c-6984-42e5-896e-665aafc6b9cc" />
+
 
 
 ---
