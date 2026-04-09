@@ -16,7 +16,7 @@ public class FacebookAuthStrategy(
 {
     public async Task<ErrorOr<SocialUserDto>> VerifySocialToken(string accessToken,CancellationToken token)
     {
-        var url = configuration["FACEBOOKAUTHENTICATION_URL"];
+        var url = configuration["FacebookAuthentication:Url"];
         if (string.IsNullOrWhiteSpace(url))
         {
             return Error.Unexpected("Facebook.MissingUrl", "Facebook url is not configured");
