@@ -127,7 +127,7 @@ fun CartScreen(
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(top = 16.dp)
+                            .padding(top = 8.dp)
                     ) {
                         // Cart items
                         items(cartItems.value) { item ->

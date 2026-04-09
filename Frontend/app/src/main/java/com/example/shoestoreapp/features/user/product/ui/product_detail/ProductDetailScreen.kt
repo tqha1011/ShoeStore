@@ -1,11 +1,8 @@
 package com.example.shoestoreapp.features.user.product.ui.product_detail
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,12 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -27,11 +19,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.user.product.ui.components.ActionButtonsSection
 import com.example.shoestoreapp.features.user.product.ui.components.ExpandableSection
+import com.example.shoestoreapp.features.user.product.ui.components.ProductDetailTopAppBar
 import com.example.shoestoreapp.features.user.product.ui.components.ProductHeaderInfo
 import com.example.shoestoreapp.features.user.product.ui.components.ProductHeroImage
 import com.example.shoestoreapp.features.user.product.ui.components.SizeSelector
@@ -86,44 +77,15 @@ fun ProductDetailScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
-                    .padding(top = 36.dp, start = 24.dp, end = 24.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Back icon
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = Color.Black,
-                    modifier = Modifier.clickable { onBackClick() }
-                )
-
-                // Nike logo
-                Text(
-                    text = "NIKE",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.Black,
-                    letterSpacing = 2.sp
-                )
-
-                // Shopping bag icon
-                Icon(
-                    imageVector = Icons.Filled.ShoppingBag,
-                    contentDescription = "Shopping Bag",
-                    tint = Color.Black,
-                    modifier = Modifier.clickable { }
-                )
-            }
+            ProductDetailTopAppBar(
+                onBackClick = onBackClick,
+                onShoppingBagClick = { }
+            )
 
             ProductHeroImage(
                 imageUrl = productDetail?.imageUrl,
                 contentDescription = productDetail?.name,
-                modifier = Modifier.padding(top = 16.dp)
+                modifier = Modifier.padding(top = 12.dp)
             )
 
             Column(

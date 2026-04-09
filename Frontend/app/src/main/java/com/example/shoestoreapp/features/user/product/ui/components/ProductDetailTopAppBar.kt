@@ -2,7 +2,7 @@ package com.example.shoestoreapp.features.user.product.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -20,14 +20,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 
 /**
- * TopAppBar: Thanh ứng dụng phía trên cùng (sử dụng CenterAlignedTopAppBar)
- * @param onMenuClick - Callback khi click menu
- * @param onShoppingBagClick - Callback khi click shopping bag
+ * ProductDetailTopAppBar: Thanh ứng dụng phía trên cùng cho ProductDetailScreen
+ * (sử dụng CenterAlignedTopAppBar - icon back bên trái thay vì icon menu)
+ * @param onBackClick - Callback khi click back icon
+ * @param onShoppingBagClick - Callback khi click shopping bag icon
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopAppBar(
-    onMenuClick: () -> Unit = {},
+fun ProductDetailTopAppBar(
+    onBackClick: () -> Unit = {},
     onShoppingBagClick: () -> Unit = {}
 ) {
     CenterAlignedTopAppBar(
@@ -41,10 +42,10 @@ fun TopAppBar(
             )
         },
         navigationIcon = {
-            IconButton(onClick = onMenuClick) {
+            IconButton(onClick = onBackClick) {
                 Icon(
-                    imageVector = Icons.Filled.Menu,
-                    contentDescription = "Menu",
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
                     tint = Color.Black
                 )
             }
