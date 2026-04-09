@@ -16,6 +16,8 @@ import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailVie
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewModel
 import com.example.shoestoreapp.features.cart.ui.screens.CartScreen
 import com.example.shoestoreapp.features.cart.viewmodel.CartViewModel
+import com.example.shoestoreapp.features.checkout.ui.screens.CheckoutScreen
+import com.example.shoestoreapp.features.checkout.viewmodel.CheckoutViewModel
 import com.example.shoestoreapp.features.admin.product.ui.AdminProductListScreen
 import com.example.shoestoreapp.features.admin.product.viewmodel.AdminProductListViewModel
 import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
@@ -225,6 +227,31 @@ fun AppNavHost() {
                 }
             )
         }
+
+        // Route: Checkout Screen
+        composable("checkout") {
+            CheckoutScreen(
+                checkoutViewModel = remember { CheckoutViewModel() },
+                onBackClick = {
+                    println("🔹 Checkout Back clicked")
+                    navController.popBackStack()
+                },
+                onShoppingBagClick = {
+                    println("🔹 Checkout Shopping Bag clicked")
+                },
+                onEditAddressClick = {
+                    println("🔹 Edit Address clicked")
+                },
+                onCompletePurchaseClick = {
+                    println("✅ Purchase completed!")
+                    // TODO: Navigate to confirmation screen or home after successful purchase
+                    navController.navigate("home_user") {
+                        popUpTo("checkout") { inclusive = true }
+                    }
+                }
+            )
+        }
+        
         // Route: Admin Product Screen
         composable("admin_product_list") {
             AdminProductListScreen(

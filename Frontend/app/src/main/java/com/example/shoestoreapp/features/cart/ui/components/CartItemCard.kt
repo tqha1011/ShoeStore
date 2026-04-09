@@ -12,6 +12,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.shoestoreapp.features.cart.data.models.CartItem
+import androidx.compose.ui.draw.alpha
 
 /**
  * CartItemCard Component
@@ -47,6 +51,7 @@ fun CartItemCard(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .background(Color.White)
+            .alpha(if (item.stock <= 0) 0.5f else 1f)
     ) {
         Row(
             modifier = Modifier
@@ -89,7 +94,15 @@ fun CartItemCard(
                 )
 
                 // Check stock status
-                if (item.stock < 3) {
+                if (item.stock <= 0) {
+                    Text(
+                        text = "Out of Stock",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFBA1A1A),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                } else if (item.stock < 3) {
                     Text(
                         text = "Just a few left",
                         fontSize = 10.sp,
@@ -127,13 +140,14 @@ fun CartItemCard(
                     ) {
                         IconButton(
                             onClick = { onDecreaseQuantity(item.id) },
+                            enabled = item.stock > 0,
                             modifier = Modifier.size(24.dp)
                         ) {
                             Icon(
-                                painter = painterResource(id = android.R.drawable.ic_menu_search),
+                                imageVector = Icons.Filled.Remove,
                                 contentDescription = "Decrease",
                                 modifier = Modifier.size(16.dp),
-                                tint = Color.Gray
+                                tint = if (item.stock > 0) Color.Gray else Color.LightGray
                             )
                         }
 
@@ -145,13 +159,14 @@ fun CartItemCard(
 
                         IconButton(
                             onClick = { onIncreaseQuantity(item.id) },
+                            enabled = item.stock > 0,
                             modifier = Modifier.size(24.dp)
                         ) {
                             Icon(
-                                painter = painterResource(id = android.R.drawable.ic_menu_add),
+                                imageVector = Icons.Filled.Add,
                                 contentDescription = "Increase",
                                 modifier = Modifier.size(16.dp),
-                                tint = Color.Gray
+                                tint = if (item.stock > 0) Color.Gray else Color.LightGray
                             )
                         }
                     }
@@ -165,38 +180,28 @@ fun CartItemCard(
                     color = Color.Black,
                     modifier = Modifier.padding(top = 8.dp)
                 )
-            }
-        }
 
-        // Action buttons (Wishlist, Delete)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            IconButton(
-                onClick = { onAddToWishlist(item.id) },
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = android.R.drawable.ic_menu_edit),
-                    contentDescription = "Add to wishlist",
-                    tint = Color.Gray
-                )
-            }
-
-            IconButton(
-                onClick = { onRemove(item.id) },
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = android.R.drawable.ic_menu_delete),
-                    contentDescription = "Delete",
-                    tint = Color.Gray
-                )
+                // Action buttons (Wishlist, Delete)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    IconButton(
+                        onClick = { onRemove(item.id) },
+                        modifier = Modifier.size(16.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(id = android.R.drawable.ic_menu_delete),
+                            contentDescription = "Delete",
+                            tint = Color.Black
+                        )
+                    }
+                }
             }
         }
     }
 }
+
 

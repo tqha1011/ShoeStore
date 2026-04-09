@@ -67,6 +67,7 @@ fun ProductListScreen(
             verticalArrangement = Arrangement.Top
         ) {
             SearchBar(
+                modifier = Modifier.padding(top = 16.dp),
                 searchText = searchText.value,
                 onSearchChanged = { query ->
                     viewModel.onSearchChanged(query)

@@ -126,7 +126,8 @@ fun CartScreen(
                     // Cart items list with summary
                     LazyColumn(
                         modifier = Modifier
-                            .fillMaxSize() // Space for checkout button
+                            .fillMaxSize()
+                            .padding(top = 16.dp)
                     ) {
                         // Cart items
                         items(cartItems.value) { item ->

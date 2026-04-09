@@ -37,7 +37,7 @@ fun CartTopAppBar(
             .fillMaxWidth()
             .height(64.dp)
             .background(Color.White)
-            .padding(horizontal = 16.dp),
+            .padding(top = 36.dp, start = 16.dp, end = 16.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(

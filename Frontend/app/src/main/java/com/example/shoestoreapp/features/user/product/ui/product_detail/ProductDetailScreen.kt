@@ -90,47 +90,40 @@ fun ProductDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(64.dp)
-                    .padding(horizontal = 16.dp),
+                    .padding(top = 36.dp, start = 24.dp, end = 24.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .clickable { onBackClick() }
-                        .padding(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.Black,
-                        modifier = Modifier.width(24.dp)
-                    )
-                }
-
-                Text(
-                    text = "NIKE",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.Black
+                // Back icon
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.Black,
+                    modifier = Modifier.clickable { onBackClick() }
                 )
 
-                Box(
-                    modifier = Modifier
-                        .clickable { }
-                        .padding(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.ShoppingBag,
-                        contentDescription = "Shopping Bag",
-                        tint = Color.Black,
-                        modifier = Modifier.width(24.dp)
-                    )
-                }
+                // Nike logo
+                Text(
+                    text = "NIKE",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.Black,
+                    letterSpacing = 2.sp
+                )
+
+                // Shopping bag icon
+                Icon(
+                    imageVector = Icons.Filled.ShoppingBag,
+                    contentDescription = "Shopping Bag",
+                    tint = Color.Black,
+                    modifier = Modifier.clickable { }
+                )
             }
 
             ProductHeroImage(
                 imageUrl = productDetail?.imageUrl,
-                contentDescription = productDetail?.name
+                contentDescription = productDetail?.name,
+                modifier = Modifier.padding(top = 16.dp)
             )
 
             Column(

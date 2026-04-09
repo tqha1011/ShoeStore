@@ -39,7 +39,7 @@ class CartRepository {
                 price = 115.0,
                 quantity = 1,
                 size = "9",
-                stock = 2
+                stock = 0
             ),
             CartItem(
                 id = 3,
