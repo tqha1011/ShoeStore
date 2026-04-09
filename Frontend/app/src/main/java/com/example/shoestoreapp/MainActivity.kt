@@ -14,6 +14,8 @@ import com.example.shoestoreapp.features.user.product.ui.product_detail.ProductD
 import com.example.shoestoreapp.features.user.product.ui.product_list.ProductListScreen
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewModel
+import com.example.shoestoreapp.features.cart.ui.screens.CartScreen
+import com.example.shoestoreapp.features.cart.viewmodel.CartViewModel
 import com.example.shoestoreapp.features.admin.product.ui.AdminProductListScreen
 import com.example.shoestoreapp.features.admin.product.viewmodel.AdminProductListViewModel
 import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
@@ -48,8 +50,8 @@ fun AppNavHost() {
     NavHost(
         navController = navController,
         //startDestination = "welcome"
-        //startDestination = "product_list"  // ← Test ProductListScreen
-        startDestination = "admin_product_list"  // Test AdminProductListScreen
+        startDestination = "product_list"  // ← Test ProductListScreen
+        //startDestination = "admin_product_list"  // Test AdminProductListScreen
     ) {
 
         // Route 1: Welcome Screen
@@ -204,13 +206,26 @@ fun AppNavHost() {
                     navController.popBackStack()
                 },
                 onNavigateToCart = {
-                    // Click "Add to Cart" -> điều hướng sang Cart screen
                     println("🔹 Navigating to cart")
-                    // navController.navigate("cart")
+                    navController.navigate("cart")
                 }
             )
         }
-        // Route: Admi Product Screen
+
+        // Route: Cart Screen
+        composable("cart") {
+            CartScreen(
+                viewModel = remember { CartViewModel() },
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToCheckout = {
+                    println("🔹 Navigating to checkout")
+                    navController.navigate("checkout")
+                }
+            )
+        }
+        // Route: Admin Product Screen
         composable("admin_product_list") {
             AdminProductListScreen(
                 viewModel = remember { AdminProductListViewModel() },
