@@ -23,7 +23,14 @@ fun AdminInvoiceFilterChips(
     selectedStatus: InvoiceStatus?,
     onFilterSelected: (InvoiceStatus?) -> Unit
 ) {
-    val filters = listOf<InvoiceStatus?>(null, InvoiceStatus.PENDING, InvoiceStatus.PAID, InvoiceStatus.DELIVERING, InvoiceStatus.CANCELED)
+    val filters = listOf(
+        null,
+        InvoiceStatus.PENDING,
+        InvoiceStatus.PAID,
+        InvoiceStatus.DELIVERING,
+        InvoiceStatus.DELIVERED,
+        InvoiceStatus.CANCELED
+    )
 
     Row(
         modifier = Modifier
@@ -38,6 +45,7 @@ fun AdminInvoiceFilterChips(
                 InvoiceStatus.PENDING -> "PENDING"
                 InvoiceStatus.PAID -> "PAID"
                 InvoiceStatus.DELIVERING -> "DELIVERING"
+                InvoiceStatus.DELIVERED -> "DELIVERED"
                 InvoiceStatus.CANCELED -> "CANCELED"
             }
 

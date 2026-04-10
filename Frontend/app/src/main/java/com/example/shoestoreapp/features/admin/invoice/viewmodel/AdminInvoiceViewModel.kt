@@ -4,13 +4,15 @@ import androidx.lifecycle.ViewModel
 import com.example.shoestoreapp.features.admin.invoice.data.AdminInvoiceMockRepository
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
+import com.example.shoestoreapp.features.invoice.model.nextWorkflowStatus
+import com.example.shoestoreapp.features.invoice.model.shouldAutoCancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 class AdminInvoiceViewModel(
-    private val repository: AdminInvoiceMockRepository = AdminInvoiceMockRepository()
+    repository: AdminInvoiceMockRepository = AdminInvoiceMockRepository()
 ) : ViewModel() {
 
     private val _allInvoices = MutableStateFlow(repository.getInvoices())
@@ -20,26 +22,60 @@ class AdminInvoiceViewModel(
     val selectedStatus: StateFlow<InvoiceStatus?> = _selectedStatus.asStateFlow()
     val visibleInvoices: StateFlow<List<Invoice>> = _visibleInvoices.asStateFlow()
 
+    init {
+        applyTimeoutPolicy()
+        applyFilter()
+    }
+
     fun onFilterChange(status: InvoiceStatus?) {
+        applyTimeoutPolicy()
         _selectedStatus.value = status
         applyFilter()
     }
 
-    fun cycleStatus(invoiceId: Int) {
+    fun getNextStatus(invoice: Invoice): InvoiceStatus? {
+        return invoice.nextWorkflowStatus()
+    }
+
+    fun advanceStatus(invoiceId: Int) {
+        applyTimeoutPolicy()
+
         _allInvoices.update { invoices ->
             invoices.map { invoice ->
                 if (invoice.id != invoiceId) return@map invoice
 
-                val next = when (invoice.status) {
-                    InvoiceStatus.PENDING -> InvoiceStatus.PAID
-                    InvoiceStatus.PAID -> InvoiceStatus.DELIVERING
-                    InvoiceStatus.DELIVERING -> InvoiceStatus.CANCELED
-                    InvoiceStatus.CANCELED -> InvoiceStatus.PENDING
+                val next = invoice.nextWorkflowStatus()
+                if (next == null) {
+                    invoice
+                } else {
+                    invoice.copy(
+                        status = next,
+                        updatedAt = "Updated by admin"
+                    )
                 }
-                invoice.copy(status = next)
             }
         }
         applyFilter()
+    }
+
+    // Keep old method name to avoid breaking temporary callers.
+    fun cycleStatus(invoiceId: Int) {
+        advanceStatus(invoiceId)
+    }
+
+    private fun applyTimeoutPolicy() {
+        _allInvoices.update { invoices ->
+            invoices.map { invoice ->
+                if (invoice.shouldAutoCancel()) {
+                    invoice.copy(
+                        status = InvoiceStatus.CANCELED,
+                        updatedAt = "Auto-canceled after 30m timeout"
+                    )
+                } else {
+                    invoice
+                }
+            }
+        }
     }
 
     private fun applyFilter() {

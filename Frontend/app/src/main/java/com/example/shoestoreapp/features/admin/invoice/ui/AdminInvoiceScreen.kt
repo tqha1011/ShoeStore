@@ -36,6 +36,7 @@ import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottom
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
+import com.example.shoestoreapp.features.invoice.model.PaymentMethod
 
 @Composable
 fun AdminInvoiceScreen(
@@ -107,9 +108,11 @@ fun AdminInvoiceScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(invoices) { invoice ->
+                    val nextStatus = viewModel.getNextStatus(invoice)
                     InvoiceCard(
                         invoice = invoice,
-                        onUpdateStatus = { viewModel.cycleStatus(invoice.id) }
+                        nextStatus = nextStatus,
+                        onUpdateStatus = { viewModel.advanceStatus(invoice.id) }
                     )
                 }
             }
@@ -120,6 +123,7 @@ fun AdminInvoiceScreen(
 @Composable
 private fun InvoiceCard(
     invoice: Invoice,
+    nextStatus: InvoiceStatus?,
     onUpdateStatus: () -> Unit
 ) {
     Card(
@@ -151,6 +155,12 @@ private fun InvoiceCard(
                         fontSize = 11.sp,
                         color = Color(0xFF7B7B7B)
                     )
+                    Text(
+                        text = if (invoice.paymentMethod == PaymentMethod.ONLINE) "ONLINE" else "COD",
+                        fontSize = 11.sp,
+                        color = Color(0xFF5E5E5E),
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
 
                 Column(horizontalAlignment = Alignment.End) {
@@ -173,13 +183,19 @@ private fun InvoiceCard(
 
             Button(
                 onClick = onUpdateStatus,
+                enabled = nextStatus != null,
                 shape = RoundedCornerShape(8.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Black,
                     contentColor = Color.White
                 )
             ) {
-                Text(text = "Update Status", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                val buttonText = if (nextStatus == null) {
+                    "No Action"
+                } else {
+                    "Mark ${nextStatus.name}"
+                }
+                Text(text = buttonText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -191,12 +207,14 @@ private fun StatusChip(status: InvoiceStatus) {
         InvoiceStatus.PENDING -> Color(0xFFF2F2F2)
         InvoiceStatus.PAID -> Color(0xFFE8F2FF)
         InvoiceStatus.DELIVERING -> Color.Black
+        InvoiceStatus.DELIVERED -> Color(0xFFE9F9ED)
         InvoiceStatus.CANCELED -> Color(0xFFFFECEB)
     }
     val fg = when (status) {
         InvoiceStatus.PENDING -> Color(0xFF666666)
         InvoiceStatus.PAID -> Color(0xFF1F5FAE)
         InvoiceStatus.DELIVERING -> Color.White
+        InvoiceStatus.DELIVERED -> Color(0xFF1E7D32)
         InvoiceStatus.CANCELED -> Color(0xFFB3261E)
     }
 

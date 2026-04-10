@@ -2,6 +2,8 @@ package com.example.shoestoreapp.features.user.invoice.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -26,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
+import com.example.shoestoreapp.features.invoice.model.PaymentMethod
 import com.example.shoestoreapp.features.user.invoice.viewmodel.UserInvoiceViewModel
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
@@ -85,10 +89,19 @@ private fun UserInvoiceFilterRow(
     selectedStatus: InvoiceStatus?,
     onFilterSelected: (InvoiceStatus?) -> Unit
 ) {
-    val options = listOf<InvoiceStatus?>(null, InvoiceStatus.PENDING, InvoiceStatus.PAID, InvoiceStatus.DELIVERING)
+    val options = listOf(
+        null,
+        InvoiceStatus.PENDING,
+        InvoiceStatus.PAID,
+        InvoiceStatus.DELIVERING,
+        InvoiceStatus.DELIVERED,
+        InvoiceStatus.CANCELED
+    )
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         options.forEach { option ->
@@ -99,27 +112,12 @@ private fun UserInvoiceFilterRow(
                 modifier = Modifier
                     .background(if (selected) Color.Black else Color.White, RoundedCornerShape(18.dp))
                     .border(1.dp, if (selected) Color.Black else Color(0xFFE0E0E0), RoundedCornerShape(18.dp))
+                    .clickable { onFilterSelected(option) }
                     .padding(horizontal = 12.dp, vertical = 7.dp)
                     .then(Modifier),
                 color = if (selected) Color.White else Color(0xFF888888),
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold
-            )
-        }
-    }
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        options.forEach { option ->
-            val label = option?.name ?: "ALL"
-            Text(
-                text = "",
-                modifier = Modifier
-                    .padding(horizontal = 12.dp, vertical = 7.dp)
-                    .background(Color.Transparent)
-                    .border(0.dp, Color.Transparent)
             )
         }
     }
@@ -150,6 +148,12 @@ private fun UserInvoiceCard(invoice: Invoice) {
                         fontSize = 12.sp,
                         color = Color(0xFF6A6A6A)
                     )
+                    Text(
+                        text = if (invoice.paymentMethod == PaymentMethod.ONLINE) "ONLINE" else "COD",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 11.sp,
+                        color = Color(0xFF777777)
+                    )
                 }
                 Text(
                     text = "$${"%.2f".format(invoice.finalPrice)}",
@@ -173,6 +177,7 @@ private fun UserInvoiceCard(invoice: Invoice) {
                     InvoiceStatus.PENDING -> Color(0xFF666666)
                     InvoiceStatus.PAID -> Color(0xFF1F5FAE)
                     InvoiceStatus.DELIVERING -> Color.Black
+                    InvoiceStatus.DELIVERED -> Color(0xFF1E7D32)
                     InvoiceStatus.CANCELED -> Color(0xFFB3261E)
                 },
                 fontWeight = FontWeight.Bold,
@@ -181,4 +186,5 @@ private fun UserInvoiceCard(invoice: Invoice) {
         }
     }
 }
+
 
