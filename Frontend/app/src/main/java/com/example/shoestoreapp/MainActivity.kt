@@ -21,8 +21,6 @@ import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenCo
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
 import com.example.shoestoreapp.features.auth.presentation.welcome.WelcomeScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.CreateNewPasswordScreen
-import com.example.shoestoreapp.features.auth.HomeUserScreen
-import com.example.shoestoreapp.features.auth.HomeAdminScreen
 import com.example.shoestoreapp.core.utils.TokenManager
 import kotlinx.coroutines.launch
 
@@ -49,7 +47,7 @@ fun AppNavHost() {
         navController = navController,
         //startDestination = "welcome"
         //startDestination = "product_list"  // ← Test ProductListScreen
-        startDestination = "admin_product_list"  // Test AdminProductListScreen
+        startDestination = "welcome"  // Test AdminProductListScreen
     ) {
 
         // Route 1: Welcome Screen
@@ -69,8 +67,8 @@ fun AppNavHost() {
                 // Flattened conditional logic using 'when' statement
                 val destination = when {
                     token.isNullOrEmpty() -> "sign_in"
-                    role?.uppercase() == "ADMIN" -> "home_admin"
-                    else -> "home_user"
+                    role?.uppercase() == "ADMIN" -> "admin_product_list"
+                    else -> "product_list"
                 }
 
                 // Execute single navigation call
@@ -100,12 +98,12 @@ fun AppNavHost() {
                     navController.navigate("forgot_password")
                 },
                 onNavigateToUserHome = {
-                    navController.navigate("home_user") {
+                    navController.navigate("product_list") {
                         popUpTo("sign_in") { inclusive = true }
                     }
                 },
                 onNavigateToAdminHome = {
-                    navController.navigate("home_admin") {
+                    navController.navigate("admin_product_list") {
                         popUpTo("sign_in") { inclusive = true }
                     }
                 }
@@ -151,29 +149,6 @@ fun AppNavHost() {
             )
         }
 
-        // Route 4: User Home
-        composable("home_user") {
-            // 1. CREATE A COROUTINE SCOPE TO RUN SUSPEND FUNCTIONS
-            val coroutineScope = rememberCoroutineScope()
-
-            HomeUserScreen(
-                onLogoutClick = {
-                    // 2. LAUNCH A BACKGROUND TASK TO CLEAR DATASTORE
-                    coroutineScope.launch {
-                        // Clear Token and Role from the local storage
-                        tokenManager.clearAuthInfo()
-
-                        // 3. NAVIGATE BACK TO SIGN IN AND CLEAR ENTIRE BACKSTACK
-                        navController.navigate("sign_in") {
-                            // popUpTo(0) means clearing all previous screens
-                            // so the user cannot press the physical Back button to return to Home
-                            popUpTo(0) { inclusive = true }
-                        }
-                    }
-                }
-            )
-        }
-
         // Route: Product List Screen
         composable("product_list") {
             ProductListScreen(
@@ -210,7 +185,7 @@ fun AppNavHost() {
                 }
             )
         }
-        // Route: Admi Product Screen
+        // Route: Admin Product Screen
         composable("admin_product_list") {
             AdminProductListScreen(
                 viewModel = remember { AdminProductListViewModel() },
@@ -224,20 +199,6 @@ fun AppNavHost() {
                     println("🔹 Admin Tab selected: $tab")
                 }
             )
-        }
-
-        // Route 5: Admin Home
-        composable("home_admin") {
-            val coroutineScope = rememberCoroutineScope()
-            HomeAdminScreen( onLogoutClick = {
-                coroutineScope.launch {
-                    tokenManager.clearAuthInfo()
-
-                    navController.navigate("sign_in") {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
-            })
         }
     }
 }
