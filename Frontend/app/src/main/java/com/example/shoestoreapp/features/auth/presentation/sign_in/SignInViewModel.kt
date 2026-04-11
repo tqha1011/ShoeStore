@@ -8,12 +8,9 @@ import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.auth.data.remote.LoginRequest
 import com.example.shoestoreapp.features.auth.data.repository.AuthRepositoryImpl
 import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
-import com.example.shoestoreapp.features.auth.presentation.common.AuthUiEvent
-import com.example.shoestoreapp.features.auth.presentation.common.BaseAuthViewModel // Nhớ check lại đường dẫn package chỗ này nhé
+import com.example.shoestoreapp.features.auth.presentation.components.AuthUiEvent
+import com.example.shoestoreapp.features.auth.presentation.components.BaseAuthViewModel // Nhớ check lại đường dẫn package chỗ này nhé
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch

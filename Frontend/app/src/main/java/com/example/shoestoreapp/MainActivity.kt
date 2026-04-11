@@ -12,17 +12,21 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.shoestoreapp.features.user.product.ui.product_detail.ProductDetailScreen
 import com.example.shoestoreapp.features.user.product.ui.product_list.ProductListScreen
+import com.example.shoestoreapp.features.admin.invoice.ui.AdminInvoiceScreen
+import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
+import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewModel
+import com.example.shoestoreapp.features.user.invoice.ui.UserInvoiceScreen
+import com.example.shoestoreapp.features.user.profile.ui.UserProfileScreen
 import com.example.shoestoreapp.features.admin.product.ui.AdminProductListScreen
+import com.example.shoestoreapp.features.admin.settings.ui.AdminSettingsScreen
 import com.example.shoestoreapp.features.admin.product.viewmodel.AdminProductListViewModel
 import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenContent
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
 import com.example.shoestoreapp.features.auth.presentation.welcome.WelcomeScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.CreateNewPasswordScreen
-import com.example.shoestoreapp.features.auth.HomeUserScreen
-import com.example.shoestoreapp.features.auth.HomeAdminScreen
 import com.example.shoestoreapp.core.utils.TokenManager
 import kotlinx.coroutines.launch
 
@@ -49,7 +53,7 @@ fun AppNavHost() {
         navController = navController,
         //startDestination = "welcome"
         //startDestination = "product_list"  // ← Test ProductListScreen
-        startDestination = "admin_product_list"  // Test AdminProductListScreen
+        startDestination = "welcome"  // Test AdminProductListScreen
     ) {
 
         // Route 1: Welcome Screen
@@ -63,14 +67,12 @@ fun AppNavHost() {
                 // Guard clause: Early return to prevent deep nesting (SonarCloud Fix)
                 if (token == "LOADING") return@LaunchedEffect
 
-                // Wait for 1 second to let users see the Welcome UI properly
-                kotlinx.coroutines.delay(1000)
 
                 // Flattened conditional logic using 'when' statement
                 val destination = when {
                     token.isNullOrEmpty() -> "sign_in"
-                    role?.uppercase() == "ADMIN" -> "home_admin"
-                    else -> "home_user"
+                    role?.uppercase() == "ADMIN" -> "admin_product_list"
+                    else -> "product_list"
                 }
 
                 // Execute single navigation call
@@ -100,12 +102,12 @@ fun AppNavHost() {
                     navController.navigate("forgot_password")
                 },
                 onNavigateToUserHome = {
-                    navController.navigate("home_user") {
+                    navController.navigate("product_list") {
                         popUpTo("sign_in") { inclusive = true }
                     }
                 },
                 onNavigateToAdminHome = {
-                    navController.navigate("home_admin") {
+                    navController.navigate("admin_product_list") {
                         popUpTo("sign_in") { inclusive = true }
                     }
                 }
@@ -146,31 +148,10 @@ fun AppNavHost() {
                     navController.navigate("sign_in")
                 },
                 onNavigateToUserHome = {
-                    navController.navigate("home_user")
-                },
-            )
-        }
-
-        // Route 4: User Home
-        composable("home_user") {
-            // 1. CREATE A COROUTINE SCOPE TO RUN SUSPEND FUNCTIONS
-            val coroutineScope = rememberCoroutineScope()
-
-            HomeUserScreen(
-                onLogoutClick = {
-                    // 2. LAUNCH A BACKGROUND TASK TO CLEAR DATASTORE
-                    coroutineScope.launch {
-                        // Clear Token and Role from the local storage
-                        tokenManager.clearAuthInfo()
-
-                        // 3. NAVIGATE BACK TO SIGN IN AND CLEAR ENTIRE BACKSTACK
-                        navController.navigate("sign_in") {
-                            // popUpTo(0) means clearing all previous screens
-                            // so the user cannot press the physical Back button to return to Home
-                            popUpTo(0) { inclusive = true }
-                        }
+                    navController.navigate("product_list") {
+                        popUpTo("sign_up") { inclusive = true }
                     }
-                }
+                },
             )
         }
 
@@ -187,6 +168,64 @@ fun AppNavHost() {
                 },
                 onNavigateToShoppingBag = {
                     println("🔹 Shopping bag clicked")
+                },
+                onBottomTabSelected = { tab ->
+                    when (tab) {
+                        BottomNavTab.PROFILE -> navController.navigate("user_profile")
+                        BottomNavTab.BAG -> navController.navigate("user_invoice_list")
+                        else -> Unit
+                    }
+                }
+            )
+        }
+
+        // Route: User Invoice Screen
+        composable("user_invoice_list") {
+            UserInvoiceScreen(
+                onTabSelected = { tab ->
+                    when (tab) {
+                        BottomNavTab.HOME, BottomNavTab.SHOP -> navController.navigate("product_list") {
+                            popUpTo("user_invoice_list") { inclusive = true }
+                        }
+                        BottomNavTab.PROFILE -> navController.navigate("user_profile") {
+                            popUpTo("user_invoice_list") { inclusive = true }
+                        }
+                        BottomNavTab.BAG -> Unit
+                        else -> println("🔹 User Tab selected: $tab")
+                    }
+                }
+            )
+        }
+
+        // Route: User Profile Screen
+        composable("user_profile") {
+            val scope = rememberCoroutineScope()
+
+            UserProfileScreen(
+                onTabSelected = { tab ->
+                    when (tab) {
+                        BottomNavTab.HOME, BottomNavTab.SHOP -> {
+                            navController.navigate("product_list") {
+                                popUpTo("user_profile") { inclusive = true }
+                            }
+                        }
+                        BottomNavTab.BAG -> {
+                            navController.navigate("user_invoice_list") {
+                                popUpTo("user_profile") { inclusive = true }
+                            }
+                        }
+                        BottomNavTab.PROFILE -> Unit
+                        else -> println("🔹 User Tab selected: $tab")
+                    }
+                },
+                onLogoutClick = {
+                    scope.launch {
+                        tokenManager.clearAuthInfo()
+                        navController.navigate("sign_in") {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
                 }
             )
         }
@@ -210,7 +249,7 @@ fun AppNavHost() {
                 }
             )
         }
-        // Route: Admi Product Screen
+        // Route: Admin Product Screen
         composable("admin_product_list") {
             AdminProductListScreen(
                 viewModel = remember { AdminProductListViewModel() },
@@ -221,23 +260,67 @@ fun AppNavHost() {
                     println("🔹 Add Product clicked")
                 },
                 onTabSelected = { tab ->
-                    println("🔹 Admin Tab selected: $tab")
+                    when (tab) {
+                        AdminBottomNavTab.ADMIN -> Unit
+                        AdminBottomNavTab.ORDERS -> {
+                            navController.navigate("admin_invoice_list")
+                        }
+                        AdminBottomNavTab.SETTINGS -> {
+                            navController.navigate("admin_settings")
+                        }
+                        else -> {
+                            println("🔹 Admin Tab selected: $tab")
+                        }
+                    }
                 }
             )
         }
 
-        // Route 5: Admin Home
-        composable("home_admin") {
-            val coroutineScope = rememberCoroutineScope()
-            HomeAdminScreen( onLogoutClick = {
-                coroutineScope.launch {
-                    tokenManager.clearAuthInfo()
-
-                    navController.navigate("sign_in") {
-                        popUpTo(0) { inclusive = true }
+        // Route: Admin Invoice Screen
+        composable("admin_invoice_list") {
+            AdminInvoiceScreen(
+                onTabSelected = { tab ->
+                    when (tab) {
+                        AdminBottomNavTab.ADMIN -> navController.navigate("admin_product_list") {
+                            popUpTo("admin_invoice_list") { inclusive = true }
+                        }
+                        AdminBottomNavTab.ORDERS -> Unit
+                        AdminBottomNavTab.SETTINGS -> navController.navigate("admin_settings") {
+                            popUpTo("admin_invoice_list") { inclusive = true }
+                        }
+                        else -> println("🔹 Admin Tab selected: $tab")
                     }
                 }
-            })
+            )
+        }
+
+        // Route: Admin Settings Screen
+        composable("admin_settings") {
+            val scope = rememberCoroutineScope()
+
+            AdminSettingsScreen(
+                onTabSelected = { tab ->
+                    when (tab) {
+                        AdminBottomNavTab.ADMIN -> navController.navigate("admin_product_list") {
+                            popUpTo("admin_settings") { inclusive = true }
+                        }
+                        AdminBottomNavTab.ORDERS -> navController.navigate("admin_invoice_list") {
+                            popUpTo("admin_settings") { inclusive = true }
+                        }
+                        AdminBottomNavTab.SETTINGS -> Unit
+                        else -> println("🔹 Admin Tab selected: $tab")
+                    }
+                },
+                onLogoutClick = {
+                    scope.launch {
+                        tokenManager.clearAuthInfo()
+                        navController.navigate("sign_in") {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                }
+            )
         }
     }
 }
