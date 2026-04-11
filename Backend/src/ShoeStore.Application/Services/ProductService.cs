@@ -1,5 +1,7 @@
 ﻿using ErrorOr;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
+using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
@@ -9,7 +11,7 @@ using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Services;
 
-public class ProductService(IUnitOfWork uow, IProductRepository productRepository) : IProductService
+public class ProductService(IUnitOfWork uow, IProductRepository productRepository, HybridCache cache) : IProductService
 {
     public async Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsAsync(ProductSearchRequest request,
         CancellationToken token)
@@ -67,34 +69,43 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
 
     public async Task<ErrorOr<ProductResponseDto>> GetProductByGuidAsync(Guid productGuid, CancellationToken token)
     {
-        var product = await productRepository.GetDetailsByGuidAsync(productGuid, token);
+        // Try to get product details from cache. If not found, fetch from database and cache it for future requests.
+        var cachedProductDto = await cache.GetOrCreateAsync(
+            CacheKey.GenerateProductDetailsCacheKey(productGuid),
+            async cancel =>
+            {
+                var productEntity = await productRepository.GetDetailsByGuidAsync(productGuid, cancel);
+                if (productEntity == null) return null;
 
-        if (product == null)
-            return Error.NotFound("Product.NotFound", $"Product with ID '{productGuid}' was not found.");
-
-        // Map Product entity to ProductResponseDto
-        var productDto = new ProductResponseDto
-        {
-            PublicId = product.PublicId,
-            ProductName = product.ProductName,
-            Brand = product.Brand ?? string.Empty,
-            Variants = product.ProductVariants
-                .Select(v => new ProductVariantResponseDto
+                var productDto = new ProductResponseDto
                 {
-                    PublicId = v.PublicId,
-                    SizeId = v.SizeId,
-                    Size = v.Size!.Size,
-                    ColorId = v.ColorId,
-                    ColorName = v.Color?.ColorName,
-                    Stock = v.Stock,
-                    Price = v.Price,
-                    ImageUrl = v.ImageUrl,
-                    IsSelling = v.IsSelling
-                })
-                .ToList()
-        };
+                    PublicId = productEntity.PublicId,
+                    ProductName = productEntity.ProductName,
+                    Brand = productEntity.Brand ?? string.Empty,
+                    Variants = productEntity.ProductVariants
+                        .Select(v => new ProductVariantResponseDto
+                        {
+                            PublicId = v.PublicId,
+                            SizeId = v.SizeId,
+                            Size = v.Size?.Size ?? 0,
+                            ColorId = v.ColorId,
+                            ColorName = v.Color?.ColorName,
+                            Stock = v.Stock,
+                            Price = v.Price,
+                            ImageUrl = v.ImageUrl,
+                            IsSelling = v.IsSelling
+                        })
+                        .ToList()
+                };
+                return productDto;
+            },
+            tags: [CacheTag.Product],
+            cancellationToken: token);
 
-        return productDto;
+        // if in cache, return it directly without accessing the database
+        return cachedProductDto != null
+            ? cachedProductDto
+            : Error.NotFound("Product.NotFound", $"Product with ID {productGuid} was not found.");
     }
 
     public async Task<ErrorOr<Guid>> AddProductAsync(CreateProductDto dto, CancellationToken token)
