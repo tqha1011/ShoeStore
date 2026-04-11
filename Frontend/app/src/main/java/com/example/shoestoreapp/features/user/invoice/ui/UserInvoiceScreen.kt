@@ -2,8 +2,6 @@ package com.example.shoestoreapp.features.user.invoice.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -30,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import com.example.shoestoreapp.features.invoice.model.PaymentMethod
+import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChips
 import com.example.shoestoreapp.features.user.invoice.viewmodel.UserInvoiceViewModel
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
@@ -89,38 +87,19 @@ private fun UserInvoiceFilterRow(
     selectedStatus: InvoiceStatus?,
     onFilterSelected: (InvoiceStatus?) -> Unit
 ) {
-    val options = listOf(
-        null,
-        InvoiceStatus.PENDING,
-        InvoiceStatus.PAID,
-        InvoiceStatus.DELIVERING,
-        InvoiceStatus.DELIVERED,
-        InvoiceStatus.CANCELED
-    )
-
-    Row(
+    InvoiceStatusFilterChips(
+        selectedStatus = selectedStatus,
+        onFilterSelected = onFilterSelected,
         modifier = Modifier
             .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        options.forEach { option ->
-            val selected = selectedStatus == option
-            val label = option?.name ?: "ALL"
-            Text(
-                text = label,
-                modifier = Modifier
-                    .background(if (selected) Color.Black else Color.White, RoundedCornerShape(18.dp))
-                    .border(1.dp, if (selected) Color.Black else Color(0xFFE0E0E0), RoundedCornerShape(18.dp))
-                    .clickable { onFilterSelected(option) }
-                    .padding(horizontal = 12.dp, vertical = 7.dp)
-                    .then(Modifier),
-                color = if (selected) Color.White else Color(0xFF888888),
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
+            .padding(bottom = 2.dp),
+        chipCornerRadius = 18.dp,
+        chipHorizontalPadding = 12.dp,
+        chipVerticalPadding = 7.dp,
+        unselectedTextColor = Color(0xFF888888),
+        showSelectedBorder = true,
+        letterSpacing = 0.sp
+    )
 }
 
 @Composable
