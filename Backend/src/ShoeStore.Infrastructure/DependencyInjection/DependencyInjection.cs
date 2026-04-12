@@ -49,6 +49,9 @@ public static class DependencyInjection
         services.AddScoped<IImageService, CloudinaryService>();
         services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
         services.AddScoped<ICartItemRepository, CartItemRepository>();
+        services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+        services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
+        services.AddScoped<IPaymentRepository, PaymentRepository>();
         return services;
     }
 }

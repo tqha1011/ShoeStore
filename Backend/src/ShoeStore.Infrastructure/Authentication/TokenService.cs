@@ -13,9 +13,9 @@ public class TokenService(IConfiguration configuration) : ITokenService
     public string GenerateToken(Guid userPublicId, string email, UserRole role)
     {
         // Gets variables from .env
-        var secretKey = configuration["JWT_KEY"] ?? throw new InvalidOperationException("JWT_KEY is missing");
-        var audience = configuration["JWT_AUDIENCE"];
-        var issuer = configuration["JWT_ISSUER"];
+        var secretKey = configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT_KEY is missing");
+        var audience = configuration["Jwt:Audience"];
+        var issuer = configuration["Jwt:Issuer"];
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var claims = new List<Claim>

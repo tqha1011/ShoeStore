@@ -14,6 +14,10 @@ public class ProductVariant : Entity<int>
     public required int Stock { get; set; }
     public required bool IsSelling { get; set; }
     public string? ImageUrl { get; set; }
+    
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    
+    public DateTime? UpdatedAt { get; set; }
     public required decimal Price { get; set; }
     public bool IsDeleted { get; set; } = false;
 }

@@ -1,18 +1,20 @@
 using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
-using DotNetEnv;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using ShoeStore.Api.Hubs;
 using ShoeStore.Api.JsonSerialize;
 using ShoeStore.Api.Middlewares;
 using ShoeStore.Application.DependencyInjection;
 using ShoeStore.Infrastructure.Cloudinary;
 using ShoeStore.Infrastructure.DependencyInjection;
+using ShoeStore.Infrastructure.Worker;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,7 +32,7 @@ builder.Services.AddControllers()
 
 builder.Services.AddHttpClient();
 builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("Cloudinary"));
-var jwtKey = builder.Configuration["JWT_KEY"];
+var jwtKey = builder.Configuration["Jwt:Key"];
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -43,8 +45,8 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["JWT_ISSUER"],
-        ValidAudience = builder.Configuration["JWT_AUDIENCE"],
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtKey ?? throw new InvalidOperationException("JWT_KEY is null"))
         ),
@@ -57,6 +59,18 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>(); // register global exception handler middleware
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHostedService<OrderCancellationService>();
+builder.Services.AddSignalR();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true)
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+});
 
 // Add rate-limit to protect API
 builder.Services.AddRateLimiter(options =>
@@ -114,13 +128,30 @@ builder.Services.AddRateLimiter(options =>
             });
     });
 });
+
+builder.Services.AddHybridCache(options =>
+{
+    options.DefaultEntryOptions = new HybridCacheEntryOptions
+    {
+        // local-cache is in-memory cache (called L1)
+        // distributed-cache is redis (called L2)
+        // L1's expiration must be less than L2's expiration
+        LocalCacheExpiration = TimeSpan.FromMinutes(7),
+        Expiration = TimeSpan.FromMinutes(10)
+    };
+});
+var redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection") ??
+                            throw new InvalidOperationException("RedisConnectionString is null");
+builder.Services.AddStackExchangeRedisCache(options => { options.Configuration = redisConnectionString; });
 var app = builder.Build();
 
 app.UseExceptionHandler(); // use GlobalExceptionHandler middleware to handle exceptions globally
+app.UseCors("AllowAll");
 app.MapOpenApi();
 app.MapScalarApiReference();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();
+app.MapHub<NotifyHub>("/hubs/notify");
 app.Run();
