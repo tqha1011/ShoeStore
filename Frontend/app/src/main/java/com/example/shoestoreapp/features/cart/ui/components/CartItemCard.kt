@@ -33,18 +33,18 @@ import androidx.compose.ui.draw.alpha
  * Hiển thị thông tin chi tiết của một item trong giỏ
  *
  * @param item - CartItem object
- * @param onIncreaseQuantity - Callback tăng số lượng
- * @param onDecreaseQuantity - Callback giảm số lượng
- * @param onRemove - Callback xóa item
- * @param onAddToWishlist - Callback thêm vào wishlist
+ * @param onIncreaseQuantity - Callback tăng số lượng (nhận String GUID)
+ * @param onDecreaseQuantity - Callback giảm số lượng (nhận String GUID)
+ * @param onRemove - Callback xóa item (nhận String GUID)
+ * @param onAddToWishlist - Callback thêm vào wishlist (nhận String GUID)
  */
 @Composable
 fun CartItemCard(
     item: CartItem,
-    onIncreaseQuantity: (Int) -> Unit = {},
-    onDecreaseQuantity: (Int) -> Unit = {},
-    onRemove: (Int) -> Unit = {},
-    onAddToWishlist: (Int) -> Unit = {}
+    onIncreaseQuantity: (String) -> Unit = {},
+    onDecreaseQuantity: (String) -> Unit = {},
+    onRemove: (String) -> Unit = {},
+    onAddToWishlist: (String) -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -139,7 +139,7 @@ fun CartItemCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(
-                            onClick = { onDecreaseQuantity(item.id) },
+                            onClick = { onDecreaseQuantity(item.id.toString()) },
                             enabled = item.stock > 0,
                             modifier = Modifier.size(24.dp)
                         ) {
@@ -158,7 +158,7 @@ fun CartItemCard(
                         )
 
                         IconButton(
-                            onClick = { onIncreaseQuantity(item.id) },
+                            onClick = { onIncreaseQuantity(item.id.toString()) },
                             enabled = item.stock > 0,
                             modifier = Modifier.size(24.dp)
                         ) {
@@ -189,7 +189,7 @@ fun CartItemCard(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     IconButton(
-                        onClick = { onRemove(item.id) },
+                        onClick = { onRemove(item.id.toString()) },
                         modifier = Modifier.size(16.dp)
                     ) {
                         Icon(

@@ -16,7 +16,7 @@ package com.example.shoestoreapp.features.cart.data.models
  */
 data class CartItem(
     val id: Int,
-    val productId: Int,
+    val productId: String,
     val name: String,
     val imageUrl: String,
     val description: String,

@@ -4,32 +4,34 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.features.cart.data.models.CartItem
 import com.example.shoestoreapp.features.cart.data.models.CartSummary
+import com.example.shoestoreapp.features.cart.data.remote.CartItemResponseDto
 import com.example.shoestoreapp.features.cart.data.repositories.CartRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
  * CartViewModel: Quản lý logic và state của giỏ hàng.
  *
  * Chức năng:
- * - Quản lý state UI (cart items, summary, loading, error)
- * - Xử lý business logic (add/remove/update items)
- * - Tính toán cart summary (subtotal, shipping, tax, total)
+ * - Quản lý state UI (cart items, loading, error)
+ * - Xử lý business logic (add/remove/update items) qua API
+ * - Tính toán cart summary
  * - Xử lý callbacks từ UI (user interactions)
  * - Kết nối giữa UI và Repository
+ * - Mapping CartItemResponseDto → CartItem
  *
- * State:
- * - cartItems: Danh sách items trong giỏ
- * - cartSummary: Tổng cộng (subtotal, shipping, tax, total)
- * - isLoading: Trạng thái loading
- * - errorMessage: Thông báo lỗi (nếu có)
- * - isCartEmpty: Giỏ hàng có items hay không
+ * API Methods sử dụng:
+ * - repository.addToCart(variantId, quantity) - Thêm sản phẩm
+ * - repository.updateCartItem(cartItemId, newVariantId, quantity) - Cập nhật item
+ * - repository.removeCartItem(cartItemId) - Xóa 1 item
+ * - repository.removeFromCart(cartItemIds) - Xóa nhiều items
  *
- * Lifecycle:
- * - init: Load dữ liệu cart khi ViewModel được tạo
- * - onCleared: Dọn dẹp khi ViewModel bị destroy (tự động xử lý bởi framework)
+ * Note:
+ * - Sử dụng GUID (String) thay vì Int ID
+ * - Tất cả operations gửi kèm token Authorization
  */
 class CartViewModel(
     private val repository: CartRepository = CartRepository()
@@ -51,6 +53,9 @@ class CartViewModel(
     private val _isCartEmpty = MutableStateFlow(true)
     val isCartEmpty: StateFlow<Boolean> = _isCartEmpty.asStateFlow()
 
+    // Map từ CartItem.id (hashCode) → cartItemId (GUID từ Backend)
+    private val idToCartItemIdMap = mutableMapOf<String, String>()
+
     // ============ INIT ============
     init {
         loadCart()
@@ -65,18 +70,11 @@ class CartViewModel(
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-
-                // Lấy items từ repository
-                val items = repository.getCartItems()
-                _cartItems.value = items
-
-                // Tính summary
-                val summary = repository.calculateSummary()
-                _cartSummary.value = summary
-
-                // Kiểm tra giỏ trống
-                _isCartEmpty.value = items.isEmpty()
-
+                // TODO: Implement backend GET /api/cart endpoint
+                // Tạm thời để empty list
+                _cartItems.value = emptyList()
+                _isCartEmpty.value = true
+                _errorMessage.value = ""
                 _isLoading.value = false
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Unknown error"
@@ -86,31 +84,160 @@ class CartViewModel(
     }
 
     /**
-     * Cập nhật cart items từ repository
-     * Được gọi sau khi có thay đổi trong repository
+     * Cập nhật cart summary dựa trên items hiện tại
+     * Tính toán: subtotal, shipping, tax, total
      */
-    private fun updateCart() {
-        val items = repository.getCartItems()
-        _cartItems.value = items
+    private fun updateCartSummary() {
+        val items = _cartItems.value
+        val subtotal = items.sumOf { it.price * it.quantity }
+        
+        // TODO: Tính shipping, tax theo business logic
+        val shipping = 0.0
+        val tax = subtotal * 0.1  // 10% tax
 
-        val summary = repository.calculateSummary()
-        _cartSummary.value = summary
-
-        _isCartEmpty.value = items.isEmpty()
+        _cartSummary.value = CartSummary(
+            subtotal = subtotal,
+            shippingCost = shipping,
+            tax = tax,
+            itemCount = items.size
+        )
     }
 
     // ============ CALLBACKS - USER INTERACTIONS ============
+    
     /**
-     * Xóa item khỏi giỏ
+     * Thêm sản phẩm vào giỏ hàng
+     * Gọi API: POST /api/cart
+     * 
+     * @param variantId - GUID của product variant
+     * @param quantity - Số lượng sản phẩm
      */
-    fun onRemoveItem(itemId: Int) {
+    fun onAddToCart(variantId: String, quantity: Int) {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-                val success = repository.removeFromCart(itemId)
+                
+                // Gọi repository thêm sản phẩm
+                val response = repository.addToCart(variantId, quantity).first()
+
+                if (response != null) {
+                    // Mapping DTO → CartItem
+                    val cartItem = mapDtoToCartItem(response)
+                    
+                    // Lưu mapping từ item.id → cartItemId
+                    idToCartItemIdMap[cartItem.id.toString()] = response.cartItemId
+                    
+                    // Thêm item vào list
+                    val updatedItems = _cartItems.value + cartItem
+                    _cartItems.value = updatedItems
+                    _isCartEmpty.value = false
+                    
+                    // Cập nhật summary
+                    updateCartSummary()
+                    
+                    _errorMessage.value = ""
+                } else {
+                    _errorMessage.value = "Không thể thêm sản phẩm vào giỏ"
+                }
+
+                _isLoading.value = false
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Lỗi khi thêm sản phẩm"
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Cập nhật item trong giỏ (variant và/hoặc quantity)
+     * Gọi API: PUT /api/cart
+     * 
+     * @param itemIdString - String ID của CartItem (từ UI)
+     * @param newVariantId - GUID của product variant mới
+     * @param newQuantity - Số lượng mới
+     */
+    fun onUpdateCartItem(itemIdString: String, newVariantId: String, newQuantity: Int) {
+        viewModelScope.launch {
+            try {
+                if (newQuantity <= 0) {
+                    _errorMessage.value = "Số lượng phải lớn hơn 0"
+                    return@launch
+                }
+
+                // Lấy cartItemId từ map
+                val cartItemId = idToCartItemIdMap[itemIdString]
+                if (cartItemId == null) {
+                    _errorMessage.value = "Không tìm thấy cart item"
+                    return@launch
+                }
+
+                _isLoading.value = true
+                
+                // Gọi repository cập nhật item
+                val response = repository.updateCartItem(cartItemId, newVariantId, newQuantity).first()
+
+                if (response != null) {
+                    // Mapping DTO → CartItem
+                    val updatedCartItem = mapDtoToCartItem(response)
+                    
+                    // Cập nhật mapping
+                    idToCartItemIdMap[updatedCartItem.id.toString()] = response.cartItemId
+                    
+                    // Cập nhật item trong list
+                    val updatedItems = _cartItems.value.map { item ->
+                        if (item.id == updatedCartItem.id) updatedCartItem else item
+                    }
+                    _cartItems.value = updatedItems
+                    
+                    // Cập nhật summary
+                    updateCartSummary()
+                    
+                    _errorMessage.value = ""
+                } else {
+                    _errorMessage.value = "Không thể cập nhật sản phẩm"
+                }
+
+                _isLoading.value = false
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Lỗi khi cập nhật"
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Xóa item khỏi giỏ
+     * Gọi API: POST /api/cart/remove-items
+     * 
+     * @param itemIdString - String ID của CartItem (từ UI)
+     */
+    fun onRemoveItem(itemIdString: String) {
+        viewModelScope.launch {
+            try {
+                // Lấy cartItemId từ map
+                val cartItemId = idToCartItemIdMap[itemIdString]
+                if (cartItemId == null) {
+                    _errorMessage.value = "Không tìm thấy cart item"
+                    return@launch
+                }
+
+                _isLoading.value = true
+                
+                // Gọi repository xóa item
+                val success = repository.removeCartItem(cartItemId).first()
 
                 if (success) {
-                    updateCart()
+                    // Xóa item khỏi list
+                    val updatedItems = _cartItems.value.filter { it.id.toString() != itemIdString }
+                    _cartItems.value = updatedItems
+                    _isCartEmpty.value = updatedItems.isEmpty()
+                    
+                    // Xóa mapping
+                    idToCartItemIdMap.remove(itemIdString)
+                    
+                    // Cập nhật summary
+                    updateCartSummary()
+                    
                     _errorMessage.value = ""
                 } else {
                     _errorMessage.value = "Không thể xóa item"
@@ -124,45 +251,26 @@ class CartViewModel(
         }
     }
 
-    /**
-     * Cập nhật số lượng item
-     */
-    fun onUpdateQuantity(itemId: Int, newQuantity: Int) {
-        viewModelScope.launch {
-            try {
-                _isLoading.value = true
-                val success = repository.updateQuantity(itemId, newQuantity)
-
-                if (success) {
-                    updateCart()
-                    _errorMessage.value = ""
-                } else {
-                    _errorMessage.value = "Số lượng không hợp lệ hoặc vượt tồn kho"
-                }
-
-                _isLoading.value = false
-            } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Lỗi khi cập nhật"
-                _isLoading.value = false
-            }
-        }
-    }
 
     /**
      * Tăng số lượng item (increment)
+     * 
+     * @param cartItemId - GUID của cart item
      */
-    fun onIncreaseQuantity(itemId: Int) {
-        val item = _cartItems.value.find { it.id == itemId } ?: return
-        onUpdateQuantity(itemId, item.quantity + 1)
+    fun onIncreaseQuantity(cartItemId: String) {
+        val item = _cartItems.value.find { it.id.toString() == cartItemId } ?: return
+        onUpdateCartItem(cartItemId, item.productId, item.quantity + 1)
     }
 
     /**
      * Giảm số lượng item (decrement)
+     * 
+     * @param cartItemId - GUID của cart item
      */
-    fun onDecreaseQuantity(itemId: Int) {
-        val item = _cartItems.value.find { it.id == itemId } ?: return
+    fun onDecreaseQuantity(cartItemId: String) {
+        val item = _cartItems.value.find { it.id.toString() == cartItemId } ?: return
         if (item.quantity > 1) {
-            onUpdateQuantity(itemId, item.quantity - 1)
+            onUpdateCartItem(cartItemId, item.productId, item.quantity - 1)
         }
     }
 
@@ -186,6 +294,26 @@ class CartViewModel(
      */
     fun clearErrorMessage() {
         _errorMessage.value = ""
+    }
+
+    /**
+     * Mapping CartItemResponseDto (từ API) → CartItem (for UI)
+     * 
+     * @param dto - Response từ backend
+     * @return CartItem - Model dùng cho UI
+     */
+    private fun mapDtoToCartItem(dto: CartItemResponseDto): CartItem {
+        return CartItem(
+            id = dto.cartItemId.hashCode(),
+            productId = dto.productVariantId ?: "",
+            name = dto.productName ?: "",
+            imageUrl = dto.imageUrl ?: "",
+            description = dto.brand ?: "",
+            price = dto.price,
+            quantity = dto.quantity,
+            size = "${dto.size} (${dto.colorName ?: ""})",  // Kích cỡ + Màu sắc
+            stock = dto.stock
+        )
     }
 }
 

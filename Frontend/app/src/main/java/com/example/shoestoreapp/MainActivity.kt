@@ -182,9 +182,9 @@ fun AppNavHost() {
         composable("product_list") {
             ProductListScreen(
                 viewModel = remember { ProductListViewModel() },
-                onNavigateToDetail = { productId ->
-                    println("🟢 onNavigateToDetail called - productId: $productId")
-                    navController.navigate("product_detail/$productId")
+                onNavigateToDetail = { productGuid ->  // ← Changed: productGuid is String GUID
+                    println("🟢 onNavigateToDetail called - productGuid: $productGuid")
+                    navController.navigate("product_detail/$productGuid")  // ← Pass GUID directly
                 },
                 onTopMenuClick = {
                     println("🔹 Menu clicked")
@@ -196,12 +196,12 @@ fun AppNavHost() {
         }
 
         // Route: Product Detail Screen
-        composable("product_detail/{productId}") { backStackEntry ->
-            // Lấy productId từ URL
-            val productId = backStackEntry.arguments?.getString("productId")?.toInt() ?: 1
+        composable("product_detail/{productGuid}") { backStackEntry ->
+            // ← Changed: Get productGuid as String (GUID), not Int
+            val productGuid = backStackEntry.arguments?.getString("productGuid") ?: ""
 
             ProductDetailScreen(
-                productId = productId,
+                productGuid = productGuid,  // ← String GUID
                 viewModel = remember { ProductDetailViewModel() },
                 onBackClick = {
                     // Click back -> quay lại ProductListScreen
