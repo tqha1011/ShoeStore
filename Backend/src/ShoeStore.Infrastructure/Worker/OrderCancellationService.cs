@@ -37,7 +37,7 @@ public class OrderCancellationService(
 
                         foreach (var detail in invoice.InvoiceDetails)
                         {
-                            detail.ProductVariant?.Stock += detail.Quantity;
+                            //detail.ProductVariant?.Stock += detail.Quantity;
                         }
 
                         logger.LogInformation("Invoice {InvoiceId} canceled", invoice.Id);
