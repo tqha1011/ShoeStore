@@ -46,7 +46,7 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
                 message = "You are not authorized to perform this action.",
                 description = "Please login to your account and try again."
             });
-        var result = await cartItemService.AddCartItem(dto, publicUserId, token);
+        var result = await cartItemService.AddCartItemAsync(dto, publicUserId, token);
         var response = result.Match<IActionResult>(
             responseDto => Ok(responseDto),
             errors => errors[0].Code switch
@@ -112,7 +112,7 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
                 description = "Please login to your account and try again."
             }); 
         }
-        var result = await cartItemService.UpdateCartItem(dto, token);
+        var result = await cartItemService.UpdateCartItemAsync(dto, token);
         var response = result.Match<IActionResult>(
             responseDto => Ok(responseDto),
             errors => errors[0].Code switch
@@ -171,7 +171,7 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
                 description = "Please login to your account and try again."
             }); 
         }
-        var result = await cartItemService.DeleteCartItem(cartItemList, token);
+        var result = await cartItemService.DeleteCartItemAsync(cartItemList, token);
         var response = result.Match<IActionResult>(
             _ => Ok(new { message = "Cart items deleted successfully" }),
             errors => errors[0].Code switch
