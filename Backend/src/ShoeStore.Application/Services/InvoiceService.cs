@@ -42,7 +42,8 @@ namespace ShoeStore.Application.Services
                 Status = i.Status,
                 PaymentName = i.Payment.Name,
                 Address = i.ShippingAddress,
-                Phone = i.Phone
+                Phone = i.Phone,
+                OrderCode = i.OrderCode                
             }).ToListAsync(token);
 
             if(invoices == null || invoices.Count == 0)

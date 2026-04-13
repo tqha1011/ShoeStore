@@ -32,7 +32,12 @@ namespace ShoeStore.Api.Controllers
                     }),
 
                     // Trường hợp người dùng không có quyền xem hóa đơn này
-                    "Invoice.Forbidden" => Forbid(),
+                    "Invoice.Forbidden" => StatusCode(StatusCodes.Status403Forbidden, new
+                    {
+                        code = "Invoice.Forbidden",
+                        message = "You do not have permission to access this invoice.",
+                        description = errors[0].Description
+                    }),
 
                     // Các lỗi validate dữ liệu đầu vào (nếu có)
                     "Invoice.BadRequest" => BadRequest(new
