@@ -7,6 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -30,6 +32,24 @@ import com.example.shoestoreapp.features.auth.presentation.reset_password.create
 import com.example.shoestoreapp.core.utils.TokenManager
 import kotlinx.coroutines.launch
 
+private object Routes {
+    const val WELCOME = "welcome"
+    const val SIGN_IN = "sign_in"
+    const val SIGN_UP = "sign_up"
+    const val FORGOT_PASSWORD = "forgot_password"
+    const val CREATE_NEW_PASSWORD = "create_new_password/{email}/{otp}"
+    const val PRODUCT_LIST = "product_list"
+    const val PRODUCT_DETAIL = "product_detail/{productId}"
+    const val USER_INVOICE_LIST = "user_invoice_list"
+    const val USER_PROFILE = "user_profile"
+    const val ADMIN_PRODUCT_LIST = "admin_product_list"
+    const val ADMIN_INVOICE_LIST = "admin_invoice_list"
+    const val ADMIN_SETTINGS = "admin_settings"
+
+    fun createNewPassword(email: String, otp: String): String = "create_new_password/$email/$otp"
+    fun productDetail(productId: Int): String = "product_detail/$productId"
+}
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,279 +68,238 @@ fun AppNavHost() {
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
 
-
     NavHost(
         navController = navController,
-        //startDestination = "welcome"
-        //startDestination = "product_list"  // ← Test ProductListScreen
-        startDestination = "welcome"  // Test AdminProductListScreen
+        startDestination = Routes.WELCOME
     ) {
+        authGraph(navController, tokenManager)
+        userGraph(navController, tokenManager)
+        adminGraph(navController, tokenManager)
+    }
+}
 
-        // Route 1: Welcome Screen
-        composable("welcome") {
-            // 1. COLLECT DATA FROM FLOW AS STATE
-            val token by tokenManager.getToken.collectAsState(initial = "LOADING")
-            val role by tokenManager.getRole.collectAsState(initial = "")
+private fun NavGraphBuilder.authGraph(navController: NavHostController, tokenManager: TokenManager) {
+    composable(Routes.WELCOME) {
+        val token by tokenManager.getToken.collectAsState(initial = "LOADING")
+        val role by tokenManager.getRole.collectAsState(initial = "")
 
-            // 2. AUTO-NAVIGATION LOGIC
-            LaunchedEffect(token, role) {
-                // Guard clause: Early return to prevent deep nesting (SonarCloud Fix)
-                if (token == "LOADING") return@LaunchedEffect
+        LaunchedEffect(token, role) {
+            if (token == "LOADING") return@LaunchedEffect
+            val destination = resolveWelcomeDestination(token, role)
+            navController.navigateAndPopTo(destination, Routes.WELCOME)
+        }
 
+        WelcomeScreen(
+            onNavigateToSignIn = {
+                navController.navigateAndPopTo(Routes.SIGN_IN, Routes.WELCOME)
+            }
+        )
+    }
 
-                // Flattened conditional logic using 'when' statement
-                val destination = when {
-                    token.isNullOrEmpty() -> "sign_in"
-                    role?.uppercase() == "ADMIN" -> "admin_product_list"
-                    else -> "product_list"
-                }
+    composable(Routes.SIGN_IN) {
+        LoginScreenContent(
+            onNavigateToSignUp = { navController.navigate(Routes.SIGN_UP) },
+            onNavigateToForgotPassword = { navController.navigate(Routes.FORGOT_PASSWORD) },
+            onNavigateToUserHome = {
+                navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.SIGN_IN)
+            },
+            onNavigateToAdminHome = {
+                navController.navigateAndPopTo(Routes.ADMIN_PRODUCT_LIST, Routes.SIGN_IN)
+            }
+        )
+    }
 
-                // Execute single navigation call
-                navController.navigate(destination) {
-                    popUpTo("welcome") { inclusive = true }
+    composable(Routes.FORGOT_PASSWORD) {
+        ForgotPasswordScreen(
+            onNavigateCreateNewPassword = { email, otp ->
+                navController.navigate(Routes.createNewPassword(email, otp))
+            },
+            onNavigateToSignIn = { navController.navigate(Routes.SIGN_IN) }
+        )
+    }
+
+    composable(Routes.CREATE_NEW_PASSWORD) { backStackEntry ->
+        val email = backStackEntry.arguments?.getString("email") ?: ""
+        val otp = backStackEntry.arguments?.getString("otp") ?: ""
+
+        CreateNewPasswordScreen(
+            email = email,
+            otp = otp,
+            onNavigateToSignIn = { navController.navigate(Routes.SIGN_IN) }
+        )
+    }
+
+    composable(Routes.SIGN_UP) {
+        RegisterScreenContent(
+            onNavigateToSignIn = { navController.navigate(Routes.SIGN_IN) },
+            onNavigateToUserHome = {
+                navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.SIGN_UP)
+            }
+        )
+    }
+}
+
+private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenManager: TokenManager) {
+    composable(Routes.PRODUCT_LIST) {
+        ProductListScreen(
+            viewModel = remember { ProductListViewModel() },
+            onNavigateToDetail = { productId ->
+                println("onNavigateToDetail called - productId: $productId")
+                navController.navigate(Routes.productDetail(productId))
+            },
+            onTopMenuClick = { println("Menu clicked") },
+            onNavigateToShoppingBag = { println("Shopping bag clicked") },
+            onBottomTabSelected = { tab -> handleUserHomeTabSelection(tab, navController) }
+        )
+    }
+
+    composable(Routes.USER_INVOICE_LIST) {
+        UserInvoiceScreen(
+            onTabSelected = { tab -> handleUserInvoiceTabSelection(tab, navController) }
+        )
+    }
+
+    composable(Routes.USER_PROFILE) {
+        val scope = rememberCoroutineScope()
+
+        UserProfileScreen(
+            onTabSelected = { tab -> handleUserProfileTabSelection(tab, navController) },
+            onLogoutClick = {
+                scope.launch {
+                    tokenManager.clearAuthInfo()
+                    navController.navigateAfterLogout()
                 }
             }
-            // 3. RENDER THE WELCOME UI
-            WelcomeScreen(
-                onNavigateToSignIn = {
-                    // Manual fallback just in case the user clicks the button
-                    // before the 1-second delay finishes
-                    navController.navigate("sign_in") {
-                        popUpTo("welcome") { inclusive = true }
-                    }
+        )
+    }
+
+    composable(Routes.PRODUCT_DETAIL) { backStackEntry ->
+        val productId = backStackEntry.arguments?.getString("productId")?.toInt() ?: 1
+
+        ProductDetailScreen(
+            productId = productId,
+            viewModel = remember { ProductDetailViewModel() },
+            onBackClick = { navController.popBackStack() },
+            onNavigateToCart = { println("Navigating to cart") }
+        )
+    }
+}
+
+private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenManager: TokenManager) {
+    composable(Routes.ADMIN_PRODUCT_LIST) {
+        AdminProductListScreen(
+            viewModel = remember { AdminProductListViewModel() },
+            onMenuClick = { println("Admin Menu clicked") },
+            onAddProductClick = { println("Add Product clicked") },
+            onTabSelected = { tab -> handleAdminProductTabSelection(tab, navController) }
+        )
+    }
+
+    composable(Routes.ADMIN_INVOICE_LIST) {
+        AdminInvoiceScreen(
+            onTabSelected = { tab -> handleAdminInvoiceTabSelection(tab, navController) }
+        )
+    }
+
+    composable(Routes.ADMIN_SETTINGS) {
+        val scope = rememberCoroutineScope()
+
+        AdminSettingsScreen(
+            onTabSelected = { tab -> handleAdminSettingsTabSelection(tab, navController) },
+            onLogoutClick = {
+                scope.launch {
+                    tokenManager.clearAuthInfo()
+                    navController.navigateAfterLogout()
                 }
-            )
+            }
+        )
+    }
+}
+
+private fun resolveWelcomeDestination(token: String?, role: String?): String = when {
+    token.isNullOrEmpty() -> Routes.SIGN_IN
+    role?.uppercase() == "ADMIN" -> Routes.ADMIN_PRODUCT_LIST
+    else -> Routes.PRODUCT_LIST
+}
+
+private fun NavHostController.navigateAndPopTo(destination: String, popUpRoute: String) {
+    navigate(destination) {
+        popUpTo(popUpRoute) { inclusive = true }
+    }
+}
+
+private fun NavHostController.navigateAfterLogout() {
+    navigate(Routes.SIGN_IN) {
+        popUpTo(graph.id) { inclusive = true }
+        launchSingleTop = true
+    }
+}
+
+private fun handleUserHomeTabSelection(tab: BottomNavTab, navController: NavHostController) {
+    when (tab) {
+        BottomNavTab.PROFILE -> navController.navigate(Routes.USER_PROFILE)
+        BottomNavTab.BAG -> navController.navigate(Routes.USER_INVOICE_LIST)
+        else -> Unit
+    }
+}
+
+private fun handleUserInvoiceTabSelection(tab: BottomNavTab, navController: NavHostController) {
+    when (tab) {
+        BottomNavTab.HOME, BottomNavTab.SHOP -> {
+            navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.USER_INVOICE_LIST)
         }
-
-        // Route 2: Sign-in Screen
-        composable("sign_in") {
-            LoginScreenContent(
-                onNavigateToSignUp = {
-                    navController.navigate("sign_up")
-                },
-                onNavigateToForgotPassword = {
-                    navController.navigate("forgot_password")
-                },
-                onNavigateToUserHome = {
-                    navController.navigate("product_list") {
-                        popUpTo("sign_in") { inclusive = true }
-                    }
-                },
-                onNavigateToAdminHome = {
-                    navController.navigate("admin_product_list") {
-                        popUpTo("sign_in") { inclusive = true }
-                    }
-                }
-            )
+        BottomNavTab.PROFILE -> {
+            navController.navigateAndPopTo(Routes.USER_PROFILE, Routes.USER_INVOICE_LIST)
         }
+        BottomNavTab.BAG -> Unit
+        else -> println("User Tab selected: $tab")
+    }
+}
 
-        // Route 2.1: Forgot Password
-        composable("forgot_password") {
-            ForgotPasswordScreen(
-                // Pass email and OTP to next screen via URL or bundle
-                onNavigateCreateNewPassword = { email, otp ->
-                    navController.navigate("create_new_password/$email/$otp")
-                },
-                onNavigateToSignIn = {
-                    navController.navigate("sign_in")
-                },
-            )
+private fun handleUserProfileTabSelection(tab: BottomNavTab, navController: NavHostController) {
+    when (tab) {
+        BottomNavTab.HOME, BottomNavTab.SHOP -> {
+            navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.USER_PROFILE)
         }
-
-        // Route 2.2: Create New Password
-        composable("create_new_password/{email}/{otp}") {
-                backStackEntry ->
-            val email = backStackEntry.arguments?.getString("email") ?: ""
-            val otp = backStackEntry.arguments?.getString("otp") ?: ""
-            CreateNewPasswordScreen(
-                email = email,
-                otp = otp,
-                onNavigateToSignIn = {
-                    navController.navigate("sign_in")
-                }
-            )
+        BottomNavTab.BAG -> {
+            navController.navigateAndPopTo(Routes.USER_INVOICE_LIST, Routes.USER_PROFILE)
         }
+        BottomNavTab.PROFILE -> Unit
+        else -> println("User Tab selected: $tab")
+    }
+}
 
-        // Route 3: Sign-up
-        composable("sign_up") {
-            RegisterScreenContent(
-                onNavigateToSignIn = {
-                    navController.navigate("sign_in")
-                },
-                onNavigateToUserHome = {
-                    navController.navigate("product_list") {
-                        popUpTo("sign_up") { inclusive = true }
-                    }
-                },
-            )
+private fun handleAdminProductTabSelection(tab: AdminBottomNavTab, navController: NavHostController) {
+    when (tab) {
+        AdminBottomNavTab.ADMIN -> Unit
+        AdminBottomNavTab.ORDERS -> navController.navigate(Routes.ADMIN_INVOICE_LIST)
+        AdminBottomNavTab.SETTINGS -> navController.navigate(Routes.ADMIN_SETTINGS)
+        else -> println("Admin Tab selected: $tab")
+    }
+}
+
+private fun handleAdminInvoiceTabSelection(tab: AdminBottomNavTab, navController: NavHostController) {
+    when (tab) {
+        AdminBottomNavTab.ADMIN -> {
+            navController.navigateAndPopTo(Routes.ADMIN_PRODUCT_LIST, Routes.ADMIN_INVOICE_LIST)
         }
-
-        // Route: Product List Screen
-        composable("product_list") {
-            ProductListScreen(
-                viewModel = remember { ProductListViewModel() },
-                onNavigateToDetail = { productId ->
-                    println("🟢 onNavigateToDetail called - productId: $productId")
-                    navController.navigate("product_detail/$productId")
-                },
-                onTopMenuClick = {
-                    println("🔹 Menu clicked")
-                },
-                onNavigateToShoppingBag = {
-                    println("🔹 Shopping bag clicked")
-                },
-                onBottomTabSelected = { tab ->
-                    when (tab) {
-                        BottomNavTab.PROFILE -> navController.navigate("user_profile")
-                        BottomNavTab.BAG -> navController.navigate("user_invoice_list")
-                        else -> Unit
-                    }
-                }
-            )
+        AdminBottomNavTab.ORDERS -> Unit
+        AdminBottomNavTab.SETTINGS -> {
+            navController.navigateAndPopTo(Routes.ADMIN_SETTINGS, Routes.ADMIN_INVOICE_LIST)
         }
+        else -> println("Admin Tab selected: $tab")
+    }
+}
 
-        // Route: User Invoice Screen
-        composable("user_invoice_list") {
-            UserInvoiceScreen(
-                onTabSelected = { tab ->
-                    when (tab) {
-                        BottomNavTab.HOME, BottomNavTab.SHOP -> navController.navigate("product_list") {
-                            popUpTo("user_invoice_list") { inclusive = true }
-                        }
-                        BottomNavTab.PROFILE -> navController.navigate("user_profile") {
-                            popUpTo("user_invoice_list") { inclusive = true }
-                        }
-                        BottomNavTab.BAG -> Unit
-                        else -> println("🔹 User Tab selected: $tab")
-                    }
-                }
-            )
+private fun handleAdminSettingsTabSelection(tab: AdminBottomNavTab, navController: NavHostController) {
+    when (tab) {
+        AdminBottomNavTab.ADMIN -> {
+            navController.navigateAndPopTo(Routes.ADMIN_PRODUCT_LIST, Routes.ADMIN_SETTINGS)
         }
-
-        // Route: User Profile Screen
-        composable("user_profile") {
-            val scope = rememberCoroutineScope()
-
-            UserProfileScreen(
-                onTabSelected = { tab ->
-                    when (tab) {
-                        BottomNavTab.HOME, BottomNavTab.SHOP -> {
-                            navController.navigate("product_list") {
-                                popUpTo("user_profile") { inclusive = true }
-                            }
-                        }
-                        BottomNavTab.BAG -> {
-                            navController.navigate("user_invoice_list") {
-                                popUpTo("user_profile") { inclusive = true }
-                            }
-                        }
-                        BottomNavTab.PROFILE -> Unit
-                        else -> println("🔹 User Tab selected: $tab")
-                    }
-                },
-                onLogoutClick = {
-                    scope.launch {
-                        tokenManager.clearAuthInfo()
-                        navController.navigate("sign_in") {
-                            popUpTo(navController.graph.id) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    }
-                }
-            )
+        AdminBottomNavTab.ORDERS -> {
+            navController.navigateAndPopTo(Routes.ADMIN_INVOICE_LIST, Routes.ADMIN_SETTINGS)
         }
-
-        // Route: Product Detail Screen
-        composable("product_detail/{productId}") { backStackEntry ->
-            // Lấy productId từ URL
-            val productId = backStackEntry.arguments?.getString("productId")?.toInt() ?: 1
-
-            ProductDetailScreen(
-                productId = productId,
-                viewModel = remember { ProductDetailViewModel() },
-                onBackClick = {
-                    // Click back -> quay lại ProductListScreen
-                    navController.popBackStack()
-                },
-                onNavigateToCart = {
-                    // Click "Add to Cart" -> điều hướng sang Cart screen
-                    println("🔹 Navigating to cart")
-                    // navController.navigate("cart")
-                }
-            )
-        }
-        // Route: Admin Product Screen
-        composable("admin_product_list") {
-            AdminProductListScreen(
-                viewModel = remember { AdminProductListViewModel() },
-                onMenuClick = {
-                    println("🔹 Admin Menu clicked")
-                },
-                onAddProductClick = {
-                    println("🔹 Add Product clicked")
-                },
-                onTabSelected = { tab ->
-                    when (tab) {
-                        AdminBottomNavTab.ADMIN -> Unit
-                        AdminBottomNavTab.ORDERS -> {
-                            navController.navigate("admin_invoice_list")
-                        }
-                        AdminBottomNavTab.SETTINGS -> {
-                            navController.navigate("admin_settings")
-                        }
-                        else -> {
-                            println("🔹 Admin Tab selected: $tab")
-                        }
-                    }
-                }
-            )
-        }
-
-        // Route: Admin Invoice Screen
-        composable("admin_invoice_list") {
-            AdminInvoiceScreen(
-                onTabSelected = { tab ->
-                    when (tab) {
-                        AdminBottomNavTab.ADMIN -> navController.navigate("admin_product_list") {
-                            popUpTo("admin_invoice_list") { inclusive = true }
-                        }
-                        AdminBottomNavTab.ORDERS -> Unit
-                        AdminBottomNavTab.SETTINGS -> navController.navigate("admin_settings") {
-                            popUpTo("admin_invoice_list") { inclusive = true }
-                        }
-                        else -> println("🔹 Admin Tab selected: $tab")
-                    }
-                }
-            )
-        }
-
-        // Route: Admin Settings Screen
-        composable("admin_settings") {
-            val scope = rememberCoroutineScope()
-
-            AdminSettingsScreen(
-                onTabSelected = { tab ->
-                    when (tab) {
-                        AdminBottomNavTab.ADMIN -> navController.navigate("admin_product_list") {
-                            popUpTo("admin_settings") { inclusive = true }
-                        }
-                        AdminBottomNavTab.ORDERS -> navController.navigate("admin_invoice_list") {
-                            popUpTo("admin_settings") { inclusive = true }
-                        }
-                        AdminBottomNavTab.SETTINGS -> Unit
-                        else -> println("🔹 Admin Tab selected: $tab")
-                    }
-                },
-                onLogoutClick = {
-                    scope.launch {
-                        tokenManager.clearAuthInfo()
-                        navController.navigate("sign_in") {
-                            popUpTo(navController.graph.id) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    }
-                }
-            )
-        }
+        AdminBottomNavTab.SETTINGS -> Unit
+        else -> println("Admin Tab selected: $tab")
     }
 }

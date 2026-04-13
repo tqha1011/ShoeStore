@@ -27,6 +27,10 @@ import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import com.example.shoestoreapp.features.invoice.model.PaymentMethod
+import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipColors
+import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipDimensions
+import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipStyle
+import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipTypography
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChips
 import com.example.shoestoreapp.features.user.invoice.viewmodel.UserInvoiceViewModel
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
@@ -93,12 +97,18 @@ private fun UserInvoiceFilterRow(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 2.dp),
-        chipCornerRadius = 18.dp,
-        chipHorizontalPadding = 12.dp,
-        chipVerticalPadding = 7.dp,
-        unselectedTextColor = Color(0xFF888888),
-        showSelectedBorder = true,
-        letterSpacing = 0.sp
+        style = InvoiceStatusFilterChipStyle(
+            dimensions = InvoiceStatusFilterChipDimensions(
+                chipCornerRadius = 18.dp,
+                chipHorizontalPadding = 12.dp,
+                chipVerticalPadding = 7.dp
+            ),
+            colors = InvoiceStatusFilterChipColors(
+                unselectedTextColor = Color(0xFF888888)
+            ),
+            typography = InvoiceStatusFilterChipTypography(letterSpacing = 0.sp),
+            showSelectedBorder = true
+        )
     )
 }
 
