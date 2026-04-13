@@ -29,7 +29,8 @@ public class CartItemService(
 
         if (cartItem.ProductVariantId != productVariant.Id)
         {
-            var existingItem = await cartItemRepository.GetExistCartItemAsync(cartItem.UserId, productVariant.Id, token);
+            var existingItem =
+                await cartItemRepository.GetExistCartItemAsync(cartItem.UserId, productVariant.Id, token);
             if (existingItem != null)
             {
                 existingItem.Quantity += dto.Quantity;
@@ -81,10 +82,19 @@ public class CartItemService(
         };
     }
 
-    public async Task<ErrorOr<UserCartItemResponseDto>> AddCartItem(AddCartItemDto dto, CancellationToken token)
+    public async Task<ErrorOr<Success>> DeleteCartItem(List<Guid> cartItemList, CancellationToken token)
+    {
+        var result = await cartItemRepository.DeleteListOfCartItemsAsync(cartItemList, token);
+        if (!result) return Error.NotFound("CartItem.NotFound", "One or more cart items were not found.");
+        await unitOfWork.SaveChangesAsync(token);
+        return Result.Success;
+    }
+
+    public async Task<ErrorOr<UserCartItemResponseDto>> AddCartItem(AddCartItemDto dto, Guid userPublicId,
+        CancellationToken token)
     {
         var existCartItem =
-            await cartItemRepository.GetExistCartItemByGuidAsync(dto.UserPublicId, dto.VariantPublicId, token);
+            await cartItemRepository.GetExistCartItemByGuidAsync(userPublicId, dto.VariantPublicId, token);
 
         var productVariant = await productVariantRepository.GetByGuidAsync(dto.VariantPublicId, token);
 
@@ -115,7 +125,7 @@ public class CartItemService(
 
         if (dto.Quantity > productVariant.Stock)
             return Error.Validation("CartItem.QuantityExceedsStock", "The quantity exceeds the available stock.");
-        var user = await userRepository.GetUserByPublicIdAsync(dto.UserPublicId, token);
+        var user = await userRepository.GetUserByPublicIdAsync(userPublicId, token);
         if (user == null) return Error.NotFound("User.NotFound", "User not found.");
 
         var newCartItem = new CartItem
@@ -142,13 +152,5 @@ public class CartItemService(
             ProductName = productVariant.Product?.ProductName ?? string.Empty,
             Brand = productVariant.Product?.Brand ?? string.Empty
         };
-    }
-
-    public async Task<ErrorOr<Success>> DeleteCartItem(List<Guid> cartItemList, CancellationToken token)
-    {
-        var result = await cartItemRepository.DeleteListOfCartItemsAsync(cartItemList, token);
-        if (!result) return Error.NotFound("CartItem.NotFound", "One or more cart items were not found.");
-        await unitOfWork.SaveChangesAsync(token);
-        return Result.Success;
     }
 }
