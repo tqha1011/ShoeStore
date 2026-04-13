@@ -20,19 +20,12 @@ namespace ShoeStore.Application.Services
 
         public async Task<ErrorOr<PageResult<InvoiceResponseDto>>> GetInvoiceAsync(InvoiceRequestDto request, CancellationToken token)
         {
-            if (!currentUser.IsAuthenticated)
-                return Error.Unauthorized("Unauthorized");
 
             var query = invoiceRepository.GetAll();
 
-            if (query == null)
-            {
-                return Error.NotFound("Invoice not found");
-            }
-
             // check admin or user
             if (!currentUser.IsAdmin)
-                query = query.Where(i => i.PublicId == currentUser.Id);
+                query = query.Where(i => i.User.PublicId == currentUser.Id);
 
             query = query.ApplyInvoiceFilters(request);
 
@@ -42,7 +35,7 @@ namespace ShoeStore.Application.Services
 
             var invoices = await query.Select(i => new InvoiceResponseDto
             {
-                Id = i.Id,
+                PublicId = i.PublicId,
                 Username = i.User.UserName,
                 DateCreated = i.CreatedAt,
                 UpdateCreated = i.UpdatedAt,
@@ -51,6 +44,12 @@ namespace ShoeStore.Application.Services
                 Address = i.ShippingAddress,
                 Phone = i.Phone
             }).ToListAsync(token);
+
+            if(invoices == null || invoices.Count == 0)
+            {
+                return Error.NotFound("Invoice not found");
+
+            }
 
             var pageResult = new PageResult<InvoiceResponseDto>
             {

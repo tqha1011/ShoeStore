@@ -3,7 +3,7 @@ namespace ShoeStore.Application.DTOs.InvoiceDTOs
 {
     public class InvoiceResponseDto
     {
-        public int Id { get; set; }
+        public Guid PublicId { get; set; }
         public string Username { get; set; } = string.Empty;
         public DateTime DateCreated { get; set; }
         public DateTime? UpdateCreated { get; set; } // Accept null value if the invoice has not been updated yet

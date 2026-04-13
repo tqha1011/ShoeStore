@@ -7,11 +7,11 @@ using ShoeStore.Application.Services;
 namespace ShoeStore.Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    //[Authorize]
+    [Route("api/invoice")]
+    [Authorize]
     public class InvoiceController(IInvoiceService invoiceService) : ControllerBase
     {
-        [HttpGet]
+        [HttpGet("get-all")]
         public async Task<IActionResult> GetInvoice([FromQuery] InvoiceRequestDto request, CancellationToken token)
         {
             var result = await invoiceService.GetInvoiceAsync(request, token);
@@ -50,7 +50,7 @@ namespace ShoeStore.Api.Controllers
                 }
             );
         }
-
+        [Authorize]
         [HttpGet("{invoiceGuid}/details")]
         public async Task<IActionResult> GetDetails(Guid invoiceGuid, CancellationToken token)
         {
@@ -80,8 +80,8 @@ namespace ShoeStore.Api.Controllers
             );
         }
 
-        [HttpPut("{invoiceGuid}/status")]
-        //[Authorize(Roles = "Admin")]
+        [HttpPut("{invoiceGuid}/admin/status")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateStatus(Guid invoiceGuid, [FromBody] UpdateStateRequestDto request, CancellationToken token)
         {
             var result = await invoiceService.UpdateInvoiceStateByAdminAsync(invoiceGuid, request, token);
@@ -113,9 +113,9 @@ namespace ShoeStore.Api.Controllers
                 }
             );
         }
-        [HttpPut("{invoiceGuid}/status")]
-        //[Authorize(Roles = "Costumer")]
-        public async Task<IActionResult> UpdateStatusByCostumer(Guid invoiceGuid, [FromBody] UpdateStateRequestDto request, CancellationToken token)
+        [HttpPut("{invoiceGuid}/customer/status")]
+        [Authorize(Roles = "Customer")]
+        public async Task<IActionResult> UpdateStatusByCustomer(Guid invoiceGuid, [FromBody] UpdateStateRequestDto request, CancellationToken token)
         {
             var result = await invoiceService.UpdateInvoiceStateByUserAsync(invoiceGuid, request, token);
             return result.Match<IActionResult>(
