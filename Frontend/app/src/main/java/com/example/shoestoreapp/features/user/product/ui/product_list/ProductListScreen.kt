@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
+import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
 import com.example.shoestoreapp.features.user.product.ui.components.FilterChips
 import com.example.shoestoreapp.features.user.product.ui.components.ProductCard
 import com.example.shoestoreapp.features.user.product.ui.components.SearchBar
@@ -52,7 +53,8 @@ fun ProductListScreen(
     viewModel: ProductListViewModel,
     onNavigateToDetail: (String) -> Unit = {},  // Changed from Int to String (GUID)
     onTopMenuClick: () -> Unit = {},
-    onNavigateToShoppingBag: () -> Unit = {}
+    onNavigateToShoppingBag: () -> Unit = {},
+    onBottomTabSelected: (BottomNavTab) -> Unit = {}
 ) {
     val productList = viewModel.productList.collectAsState()
     val selectedFilter = viewModel.selectedFilter.collectAsState()
@@ -93,6 +95,7 @@ fun ProductListScreen(
                 selectedTab = selectedBottomTab.value,
                 onTabSelected = { tab ->
                     viewModel.onTabSelected(tab)
+                    onBottomTabSelected(tab)
                 }
             )
         }

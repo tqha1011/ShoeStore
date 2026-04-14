@@ -18,7 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.shoestoreapp.features.auth.presentation.common.AuthUiEvent
+import com.example.shoestoreapp.features.auth.presentation.components.AuthUiEvent
 import com.example.shoestoreapp.features.auth.presentation.components.ResetPasswordContent
 import com.example.shoestoreapp.features.auth.presentation.components.ResetPasswordTopBar
 import com.example.shoestoreapp.features.auth.presentation.components.TitleBottom

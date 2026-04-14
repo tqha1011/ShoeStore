@@ -1,7 +1,7 @@
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Domain.Entities;
 
-namespace ShoeStore.Application.Interface;
+namespace ShoeStore.Application.Interface.Authentication;
 
 public interface IUserRestorePasswordRepository : IGenericRepository<UserRestorePassword,int>
 {

@@ -26,8 +26,6 @@ import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenCo
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
 import com.example.shoestoreapp.features.auth.presentation.welcome.WelcomeScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.CreateNewPasswordScreen
-import com.example.shoestoreapp.features.auth.HomeUserScreen
-import com.example.shoestoreapp.features.auth.HomeAdminScreen
 import com.example.shoestoreapp.core.utils.TokenManager
 import kotlinx.coroutines.launch
 
@@ -157,28 +155,28 @@ fun AppNavHost() {
             )
         }
 
-        // Route 4: User Home
-        composable("home_user") {
-            // 1. CREATE A COROUTINE SCOPE TO RUN SUSPEND FUNCTIONS
-            val coroutineScope = rememberCoroutineScope()
-
-            HomeUserScreen(
-                onLogoutClick = {
-                    // 2. LAUNCH A BACKGROUND TASK TO CLEAR DATASTORE
-                    coroutineScope.launch {
-                        // Clear Token and Role from the local storage
-                        tokenManager.clearAuthInfo()
-
-                        // 3. NAVIGATE BACK TO SIGN IN AND CLEAR ENTIRE BACKSTACK
-                        navController.navigate("sign_in") {
-                            // popUpTo(0) means clearing all previous screens
-                            // so the user cannot press the physical Back button to return to Home
-                            popUpTo(0) { inclusive = true }
-                        }
-                    }
-                }
-            )
-        }
+//        // Route 4: User Home
+//        composable("home_user") {
+//            // 1. CREATE A COROUTINE SCOPE TO RUN SUSPEND FUNCTIONS
+//            val coroutineScope = rememberCoroutineScope()
+//
+//            HomeUserScreen(
+//                onLogoutClick = {
+//                    // 2. LAUNCH A BACKGROUND TASK TO CLEAR DATASTORE
+//                    coroutineScope.launch {
+//                        // Clear Token and Role from the local storage
+//                        tokenManager.clearAuthInfo()
+//
+//                        // 3. NAVIGATE BACK TO SIGN IN AND CLEAR ENTIRE BACKSTACK
+//                        navController.navigate("sign_in") {
+//                            // popUpTo(0) means clearing all previous screens
+//                            // so the user cannot press the physical Back button to return to Home
+//                            popUpTo(0) { inclusive = true }
+//                        }
+//                    }
+//                }
+//            )
+//        }
 
         // Route: Product List Screen
         composable("product_list") {
@@ -268,17 +266,17 @@ fun AppNavHost() {
         }
 
         // Route 5: Admin Home
-        composable("home_admin") {
-            val coroutineScope = rememberCoroutineScope()
-            HomeAdminScreen( onLogoutClick = {
-                coroutineScope.launch {
-                    tokenManager.clearAuthInfo()
-
-                    navController.navigate("sign_in") {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
-            })
-        }
+//        composable("home_admin") {
+//            val coroutineScope = rememberCoroutineScope()
+//            HomeAdminScreen( onLogoutClick = {
+//                coroutineScope.launch {
+//                    tokenManager.clearAuthInfo()
+//
+//                    navController.navigate("sign_in") {
+//                        popUpTo(0) { inclusive = true }
+//                    }
+//                }
+//            })
+//        }
     }
 }

@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.auth.presentation.common
+package com.example.shoestoreapp.features.auth.presentation.components
 
 sealed interface AuthUiEvent {
     object NavigateToUserHome : AuthUiEvent

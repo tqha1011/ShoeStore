@@ -1,7 +1,7 @@
 using ErrorOr;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
 
-namespace ShoeStore.Application.Interface;
+namespace ShoeStore.Application.Interface.CheckoutInterface;
 
 public interface ICheckOutService
 {
