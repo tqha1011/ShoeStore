@@ -6,6 +6,7 @@ import com.example.shoestoreapp.features.admin.product.data.remote.AdminProductA
 import com.example.shoestoreapp.features.auth.data.remote.AuthApi
 import com.example.shoestoreapp.features.user.product.data.remote.ProductApi
 import com.example.shoestoreapp.features.cart.data.remote.CartApi
+import com.example.shoestoreapp.features.admin.crud.data.remote.AdminProductCrudApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -54,5 +55,10 @@ object RetrofitInstance {
     // 6. Create AdminApi service for admin endpoints
     val adminApi: AdminProductApi by lazy {
         retrofit.create(AdminProductApi::class.java)
+    }
+
+    // 7. Create AdminProductCrudApi service for admin CRUD endpoints
+    val adminCrudApi: AdminProductCrudApi by lazy {
+        retrofit.create(AdminProductCrudApi::class.java)
     }
 }

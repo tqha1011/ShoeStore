@@ -58,14 +58,16 @@ fun AdminProductCard(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             // Tên sản phẩm
-            Text(
-                text = product.name,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                color = Color.Black,
-                maxLines = 1,
-                modifier = Modifier.fillMaxWidth()
-            )
+            product.name?.let {
+                Text(
+                    text = it,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = Color.Black,
+                    maxLines = 1,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
             // Giá tiền
             Text(
                 text = String.format(Locale.US, "$%.0f", product.price),

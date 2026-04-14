@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.flowOn
 class AdminProductRepository(
     private val adminApi: AdminProductApi = RetrofitInstance.adminApi
 ) {
+    // 1. Search products with filters and pagination
     fun searchProducts(
         keyword: String?,
         inStock: Boolean?,
@@ -46,6 +47,7 @@ class AdminProductRepository(
 
     }.flowOn(Dispatchers.IO)
 
+    // 2. Get product detail by productGuid
     fun adminGetProductDetail(productGuid: String): Flow<AdminProduct?> = flow {
         val response = adminApi.adminSearchDetail(productGuid)
         if (response.isSuccessful && response.body() != null) {
@@ -59,6 +61,7 @@ class AdminProductRepository(
         emit(null)
     }.flowOn(Dispatchers.IO)
 
+    // 3. Delete product by productGuid
     fun adminDeleteProduct(productGuid: String): Flow<Boolean> = flow {
         val response = adminApi.adminDeleteProduct(productGuid)
         emit(response.isSuccessful)
@@ -66,16 +69,19 @@ class AdminProductRepository(
         emit(false)
     }.flowOn(Dispatchers.IO)
 
+    // 4. Create product
     fun adminCreateProduct(
         productName: String?,
-        variants: List<ProductVariantDto?>
+        variants: List<ProductVariantDto?>,
+        brand: String?
     ): Flow<Boolean> = flow {
-        val response = adminApi.adminCreateProduct(productName, variants)
+        val response = adminApi.adminCreateProduct(productName, variants, brand)
         emit(response.isSuccessful)
     }.catch { e ->
         emit(false)
     }.flowOn(Dispatchers.IO)
 
+    // 5. Update product
     fun adminUpdateProduct(
         productGuid: String,
         productName: String?,

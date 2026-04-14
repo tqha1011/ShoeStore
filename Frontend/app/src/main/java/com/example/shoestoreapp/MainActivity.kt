@@ -192,7 +192,7 @@ fun AppNavHost() {
                     println("🔹 Menu clicked")
                 },
                 onNavigateToShoppingBag = {
-                    println("🔹 Shopping bag clicked")
+                    navController.navigate("cart")
                 }
             )
         }
@@ -210,7 +210,6 @@ fun AppNavHost() {
                     navController.popBackStack()
                 },
                 onNavigateToCart = {
-                    println("🔹 Navigating to cart")
                     navController.navigate("cart")
                 }
             )
@@ -224,7 +223,6 @@ fun AppNavHost() {
                     navController.popBackStack()
                 },
                 onNavigateToCheckout = {
-                    println("🔹 Navigating to checkout")
                     navController.navigate("checkout")
                 }
             )
@@ -235,7 +233,6 @@ fun AppNavHost() {
             CheckoutScreen(
                 checkoutViewModel = remember { CheckoutViewModel() },
                 onBackClick = {
-                    println("🔹 Checkout Back clicked")
                     navController.popBackStack()
                 },
                 onShoppingBagClick = {
