@@ -1,14 +1,14 @@
-﻿using ErrorOr;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.InvoiceDTOs;
 using ShoeStore.Application.Interface.InvoiceInterface;
-using ShoeStore.Application.Services;
+
 namespace ShoeStore.Api.Controllers
 {
     [ApiController]
-    [Route("api/invoice/user")]
-    public class InvoiceController(IInvoiceService invoiceService) : ControllerBase
+    [Route("api/invoice/admin")]
+    [Authorize(Roles = "Admin")]
+    public class InvoiceAdminController(IInvoiceService invoiceService) : ControllerBase
     {
         [HttpGet("get-all")]
         public async Task<IActionResult> GetInvoice([FromQuery] InvoiceRequestDto request, CancellationToken token)
@@ -82,10 +82,10 @@ namespace ShoeStore.Api.Controllers
                 }
             );
         }
-        [HttpPut("{invoiceGuid}/customer/status")]
-        public async Task<IActionResult> UpdateStatusByCustomer(Guid invoiceGuid, [FromBody] UpdateStateRequestDto request, CancellationToken token)
+        [HttpGet("{invoiceGuid}/details")]
+        public async Task<IActionResult> UpdateStatusByAdmin(Guid invoiceGuid, [FromBody] UpdateStateRequestDto request, CancellationToken token)
         {
-            var result = await invoiceService.UpdateInvoiceStateByUserAsync(invoiceGuid, request, token);
+            var result = await invoiceService.UpdateInvoiceStateByAdminAsync(invoiceGuid, request, token);
             return result.Match<IActionResult>(
                 _ => Ok(new
                 {
@@ -115,4 +115,5 @@ namespace ShoeStore.Api.Controllers
             );
         }
     }
+}
 }
