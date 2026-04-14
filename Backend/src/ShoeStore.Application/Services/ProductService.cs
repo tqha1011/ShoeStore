@@ -1,6 +1,7 @@
 ﻿using ErrorOr;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.Logging;
 using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.ProductDTOs;
@@ -12,7 +13,8 @@ using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Services;
 
-public class ProductService(IUnitOfWork uow, IProductRepository productRepository, HybridCache cache) : IProductService
+public class ProductService(IUnitOfWork uow, IProductRepository productRepository, HybridCache cache,
+    ILogger<ProductService> logger) : IProductService
 {
     public async Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsAsync(ProductSearchRequest request,
         CancellationToken token)
@@ -148,7 +150,14 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
         // Add product to repository and save
         productRepository.Add(product);
         await uow.SaveChangesAsync(token);
-        await cache.RemoveByTagAsync(CacheTag.Product, token);
+        try
+        {
+            await cache.RemoveByTagAsync(CacheTag.Product, token);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error while adding product to cache");
+        }
         return product.PublicId;
     }
 
@@ -214,8 +223,15 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
         // Update product in repository and save
         productRepository.Update(product);
         await uow.SaveChangesAsync(token);
-        await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
-        await cache.RemoveByTagAsync(CacheTag.Product, token);
+        try
+        {
+            await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
+            await cache.RemoveByTagAsync(CacheTag.Product, token);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error while updating product.");
+        }
         return Result.Updated;
     }
 
@@ -231,8 +247,15 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
         // Soft delete: mark all variants as deleted
         foreach (var variant in product.ProductVariants) variant.IsDeleted = true;
         await uow.SaveChangesAsync(token);
-        await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(productGuid), token);
-        await cache.RemoveByTagAsync(CacheTag.Product, token);
+        try
+        {
+            await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(productGuid), token);
+            await cache.RemoveByTagAsync(CacheTag.Product, token);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error while deleting product.");
+        }
         return Result.Deleted;
     }
 }

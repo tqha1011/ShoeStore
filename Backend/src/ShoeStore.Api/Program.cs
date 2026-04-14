@@ -140,9 +140,12 @@ builder.Services.AddHybridCache(options =>
         Expiration = TimeSpan.FromMinutes(10)
     };
 });
+builder.Services.AddDistributedMemoryCache();
+/*
 var redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection") ??
                             throw new InvalidOperationException("RedisConnectionString is null");
 builder.Services.AddStackExchangeRedisCache(options => { options.Configuration = redisConnectionString; });
+*/
 var app = builder.Build();
 
 app.UseExceptionHandler(); // use GlobalExceptionHandler middleware to handle exceptions globally
