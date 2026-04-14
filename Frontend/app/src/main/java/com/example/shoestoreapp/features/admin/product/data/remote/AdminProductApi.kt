@@ -8,12 +8,17 @@ import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
-import retrofit2.http.QueryMap
+
 
 interface AdminProductApi {
     @GET("/api/admin/products/search")
     suspend fun adminSearchProducts(
-        @QueryMap options: Map<String, Any?>
+        @Query("Keyword") keyword: String?,
+        @Query("inStock") inStock: Boolean?,
+        @Query("outOfStock") outOfStock: Boolean?,
+        @Query("lowStock") lowStock: Boolean?,
+        @Query("pageIndex") pageIndex: Int?,
+        @Query("pageSize") pageSize: Int?
     ): Response<ProductSearchResponse>
 
     @GET("/api/admin/products/{productGuid}")
@@ -25,7 +30,6 @@ interface AdminProductApi {
     suspend fun adminUpdateProduct(
         @Path("productGuid") productGuid: String,
         @Query("productName") productName: String?,
-        @Query("brand") brand: String?,
         @Query("variants") variants: List<ProductVariantDto?>
     ): Response<Unit>
 
@@ -37,7 +41,6 @@ interface AdminProductApi {
     @POST("/api/admin/products")
     suspend fun adminCreateProduct(
         @Query("productName") productName: String?,
-        @Query("brand") brand: String?,
         @Query("variants") variants: List<ProductVariantDto?>
     ): Response<Unit>
 
