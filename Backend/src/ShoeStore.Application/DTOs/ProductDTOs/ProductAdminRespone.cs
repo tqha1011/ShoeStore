@@ -6,6 +6,7 @@ namespace ShoeStore.Application.DTOs.ProductDTOs
     {
         public Guid PublicID { get; set; }
         public string ProductName { get; set; } = string.Empty;
+
         public List<ProductVariantAdminResponeDto> Variants = new List<ProductVariantAdminResponeDto>();
     }
 }

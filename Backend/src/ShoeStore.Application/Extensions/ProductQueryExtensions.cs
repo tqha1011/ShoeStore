@@ -72,22 +72,26 @@ namespace ShoeStore.Application.Extensions
         }
         public static IQueryable<Product> ApplyStock(this IQueryable<Product> query, ProductAdminRequestDto request)
         {
-            if (request.InStock == true)
+            // 1. Kiểm tra xem có bất kỳ filter nào được chọn không
+            bool isFilterSelected = request.InStock == true || request.LowStock == true || request.OutOfStock == true;
+
+            if (isFilterSelected)
             {
-                query = query.Where(p => p.ProductVariants.Any(v => v.Stock >= 10));
+                // Sử dụng Any để kiểm tra: "Chỉ lấy Sản phẩm có ít nhất một Biến thể rơi vào nhóm trạng thái đang chọn"
+                query = query.Where(p => p.ProductVariants.Any(v =>
+                    (request.InStock == true && v.Stock >= 10) ||
+                    (request.LowStock == true && v.Stock < 10 && v.Stock > 0) ||
+                    (request.OutOfStock == true && v.Stock <= 0)
+                ));
             }
 
-            if(request.LowStock == true)
+            // 2. Kết hợp với Search Keyword (Lưu ý: Phải gán lại query)
+            if (!string.IsNullOrWhiteSpace(request.KeyWord))
             {
-                query = query.Where(p => p.ProductVariants.Any(v => v.Stock < 10 && v.Stock > 0));
+                // Giả sử ApplySearch là một extension method bạn đã viết
+                query = query.ApplySearch(request.KeyWord);
             }
 
-            if(request.OutOfStock == true)
-            {
-                query = query.Where(p => p.ProductVariants.Any(v => v.Stock <= 0));
-            }
-
-            query.ApplySearch(request.KeyWord);
             return query;
         }
     }

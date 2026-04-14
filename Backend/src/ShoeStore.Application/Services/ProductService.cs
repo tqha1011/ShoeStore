@@ -218,8 +218,7 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
 
     public async Task<ErrorOr<PageResult<ProductAdminRespone>>> GetProductsAdminAsync(ProductAdminRequestDto request, CancellationToken token)
     {
-        var query = productRepository.GetAll().AsNoTracking();
-        query.ApplyStock(request);
+        var query = productRepository.GetAll().ApplyStock(request).AsNoTracking();
 
         var totalCount = await query.CountAsync(token);
 
@@ -227,17 +226,22 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
         {
             PublicID = p.PublicId,
             ProductName = p.ProductName,
-            Variants = (List<ProductVariantAdminResponeDto>)p.ProductVariants.Where(v => v.IsSelling && !v.IsDeleted)
-                                        .Select(v => new ProductVariantAdminResponeDto
-                                        {
-                                            imgUrl = v.ImageUrl,
-                                            Price = v.Price,
-                                            Stock = v.Stock,
-                                            StockStatus = v.Stock > 10 ? "In Stock" : v.Stock <= 0 ? "Out Of Stock" : "Low Stock"
-                                        })
-
+            Variants = p.ProductVariants
+                    .Where(v => v.IsSelling && !v.IsDeleted)
+                    .Select(v => new ProductVariantAdminResponeDto
+                    {
+                        imgUrl = v.ImageUrl,
+                        Price = v.Price,
+                        Stock = v.Stock,
+                        // Đồng bộ logic hiển thị với logic lọc ở trên
+                        StockStatus = v.Stock <= 0 ? "Out of Stock" :
+                              v.Stock < 10 ? "Low Stock" : "In Stock"
+                    })
+                    .ToList()
         }).ToListAsync(token);
 
+        if (products == null || products.Count == 0)
+            return Error.NotFound("Product not found");
         var pageResult = new PageResult<ProductAdminRespone>
         {
             Items = products,

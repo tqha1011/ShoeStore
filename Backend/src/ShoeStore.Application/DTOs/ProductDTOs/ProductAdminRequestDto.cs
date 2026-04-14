@@ -3,9 +3,9 @@
     public class ProductAdminRequestDto
     {
         public string KeyWord { get; set; } = string.Empty;
-        public bool InStock = false;
-        public bool LowStock = false;
-        public bool OutOfStock = false;
+        public bool InStock { get; set; } = false;
+        public bool LowStock { get; set; } = false;
+        public bool OutOfStock { get; set; } = false;
 
         private int _pageIndex = 1;
         public int PageIndex
