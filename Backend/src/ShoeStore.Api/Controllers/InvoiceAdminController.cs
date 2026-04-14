@@ -82,7 +82,7 @@ namespace ShoeStore.Api.Controllers
                 }
             );
         }
-        [HttpGet("{invoiceGuid}/details")]
+        [HttpPut("{invoiceGuid}/status")]
         public async Task<IActionResult> UpdateStatusByAdmin(Guid invoiceGuid, [FromBody] UpdateStateRequestDto request, CancellationToken token)
         {
             var result = await invoiceService.UpdateInvoiceStateByAdminAsync(invoiceGuid, request, token);
