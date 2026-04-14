@@ -12,7 +12,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.shoestoreapp.core.utils.TokenManager
-import com.example.shoestoreapp.features.auth.presentation.common.AuthUiEvent
+import com.example.shoestoreapp.features.auth.presentation.components.AuthUiEvent
 import com.example.shoestoreapp.features.auth.presentation.components.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch

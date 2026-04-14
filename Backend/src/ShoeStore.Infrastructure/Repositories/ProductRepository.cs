@@ -28,7 +28,6 @@ public class ProductRepository(AppDbContext context) : GenericRepository<Product
             .ApplyProductId(request.ProductId)
             .ApplyPriceRange(request.MinPrice, request.MaxPrice)
             .ApplySort(request.Sort)
-            .ApplyPaging(request.PageIndex, request.PageSize)
             .AsQueryable();
     }
 

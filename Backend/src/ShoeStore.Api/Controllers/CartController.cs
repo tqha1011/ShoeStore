@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.CartItemDTOs;
@@ -38,7 +39,14 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
     [Authorize(Roles = "User")]
     public async Task<IActionResult> AddUserCartItem([FromBody] AddCartItemDto dto, CancellationToken token)
     {
-        var result = await cartItemService.AddCartItem(dto, token);
+        var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (validUser == null || !Guid.TryParse(validUser, out var publicUserId))
+            return Unauthorized(new
+            {
+                message = "You are not authorized to perform this action.",
+                description = "Please login to your account and try again."
+            });
+        var result = await cartItemService.AddCartItemAsync(dto, publicUserId, token);
         var response = result.Match<IActionResult>(
             responseDto => Ok(responseDto),
             errors => errors[0].Code switch
@@ -95,7 +103,16 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
     public async Task<IActionResult> UpdateUserCartItem([FromBody] UpdateCartItemDto dto,
         CancellationToken token)
     {
-        var result = await cartItemService.UpdateCartItem(dto, token);
+        var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (validUser == null || !Guid.TryParse(validUser, out _))
+        {
+            return Unauthorized(new
+            {
+                message = "You are not authorized to perform this action.",
+                description = "Please login to your account and try again."
+            }); 
+        }
+        var result = await cartItemService.UpdateCartItemAsync(dto, token);
         var response = result.Match<IActionResult>(
             responseDto => Ok(responseDto),
             errors => errors[0].Code switch
@@ -145,7 +162,16 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
     [Authorize(Roles = "User")]
     public async Task<IActionResult> DeleteUserCartItem([FromBody] List<Guid> cartItemList, CancellationToken token)
     {
-        var result = await cartItemService.DeleteCartItem(cartItemList, token);
+        var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (validUser == null || !Guid.TryParse(validUser, out _))
+        {
+            return Unauthorized(new
+            {
+                message = "You are not authorized to perform this action.",
+                description = "Please login to your account and try again."
+            }); 
+        }
+        var result = await cartItemService.DeleteCartItemAsync(cartItemList, token);
         var response = result.Match<IActionResult>(
             _ => Ok(new { message = "Cart items deleted successfully" }),
             errors => errors[0].Code switch
