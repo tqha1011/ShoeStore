@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Interface.CartItemInterface;
+using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
 using ShoeStore.Application.Interface.Notification;
@@ -18,6 +19,7 @@ using ShoeStore.Infrastructure.Data;
 using ShoeStore.Infrastructure.Notification;
 using ShoeStore.Infrastructure.Repositories;
 using ShoeStore.Infrastructure.RestorePassService;
+
 namespace ShoeStore.Infrastructure.DependencyInjection;
 
 public static class DependencyInjection
@@ -50,11 +52,10 @@ public static class DependencyInjection
         services.AddScoped<IImageService, CloudinaryService>();
         services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
         services.AddScoped<ICartItemRepository, CartItemRepository>();
-        //services.AddHttpContextAccessor();
+        services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<IInvoiceService, InvoiceService>();
-        services.AddScoped<IInvoiceRepository, InvoiceRepository>();
         services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         return services;
