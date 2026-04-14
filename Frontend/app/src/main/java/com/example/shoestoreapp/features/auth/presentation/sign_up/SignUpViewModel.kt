@@ -7,8 +7,8 @@ import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.auth.data.remote.RegisterRequest
 import com.example.shoestoreapp.features.auth.data.repository.AuthRepositoryImpl
 import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
-import com.example.shoestoreapp.features.auth.presentation.common.AuthUiEvent
-import com.example.shoestoreapp.features.auth.presentation.common.BaseAuthViewModel
+import com.example.shoestoreapp.features.auth.presentation.components.AuthUiEvent
+import com.example.shoestoreapp.features.auth.presentation.components.BaseAuthViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update

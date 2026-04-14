@@ -330,6 +330,10 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("brand");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
                     b.Property<string>("ProductName")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -384,6 +388,10 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("color_id");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
@@ -424,6 +432,10 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasDefaultValue(0)
                         .HasColumnName("stock");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.Property<uint>("Version")
                         .IsConcurrencyToken()

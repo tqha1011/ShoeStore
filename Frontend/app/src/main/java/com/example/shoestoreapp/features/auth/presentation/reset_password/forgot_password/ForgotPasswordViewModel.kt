@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.core.networks.RetrofitInstance
 import com.example.shoestoreapp.features.auth.data.repository.AuthRepositoryImpl
 import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
-import com.example.shoestoreapp.features.auth.presentation.common.AuthUiEvent // Dùng hàng chung
+import com.example.shoestoreapp.features.auth.presentation.components.AuthUiEvent // Dùng hàng chung
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

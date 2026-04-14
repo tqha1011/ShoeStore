@@ -56,5 +56,6 @@ public class ProductVariantConfiguration : IEntityTypeConfiguration<ProductVaria
         // optimistic locking to prevent race-condition
         builder.Property<uint>("Version")
             .IsRowVersion();
+        
     }
 }
