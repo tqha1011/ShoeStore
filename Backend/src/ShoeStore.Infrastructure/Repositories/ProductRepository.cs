@@ -37,4 +37,9 @@ public class ProductRepository(AppDbContext context) : GenericRepository<Product
         return await DbSet.Include(x => x.ProductVariants)
             .FirstOrDefaultAsync(x => x.PublicId == productGuid, token);
     }
+
+    public IQueryable<Product> GetAll()
+    {
+        return DbSet;
+    }
 }

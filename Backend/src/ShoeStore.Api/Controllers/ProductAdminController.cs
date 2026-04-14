@@ -13,7 +13,7 @@ namespace ShoeStore.API.Controllers;
 /// <param name="productService">Service for handling product management operations.</param>
 [Route("api/admin/products")]
 [ApiController]
-[Authorize(Roles = "Admin")]
+//[Authorize(Roles = "Admin")]
 public class AdminProductController(IProductService productService) : ControllerBase
 {
     /// <summary>
@@ -41,9 +41,9 @@ public class AdminProductController(IProductService productService) : Controller
     ///     wrong.
     /// </returns>
     [HttpGet("search")]
-    public async Task<IActionResult> Search([FromQuery] ProductSearchRequest request, CancellationToken token)
+    public async Task<IActionResult> Search([FromQuery] ProductAdminRequestDto request, CancellationToken token)
     {
-        var results = await productService.GetProductsAsync(request, token);
+        var results = await productService.GetProductsAdminAsync(request, token);
 
         if (results.IsError)
             return BadRequest(results.Errors);

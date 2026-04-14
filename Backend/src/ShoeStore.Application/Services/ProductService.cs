@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
+using ShoeStore.Application.Extensions;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Domain.Entities;
@@ -11,7 +12,7 @@ namespace ShoeStore.Application.Services;
 
 public class ProductService(IUnitOfWork uow, IProductRepository productRepository) : IProductService
 {
-    public async Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsAsync(ProductSearchRequest request,
+    public async Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsUserAsync(ProductSearchRequest request,
         CancellationToken token)
     {
         // Validate pagination parameters
@@ -213,5 +214,38 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
         await uow.SaveChangesAsync(token);
 
         return Result.Deleted;
+    }
+
+    public async Task<ErrorOr<PageResult<ProductAdminRespone>>> GetProductsAdminAsync(ProductAdminRequestDto request, CancellationToken token)
+    {
+        var query = productRepository.GetAll().AsNoTracking();
+        query.ApplyStock(request);
+
+        var totalCount = await query.CountAsync(token);
+
+        var products = await query.Select(p => new ProductAdminRespone
+        {
+            PublicID = p.PublicId,
+            ProductName = p.ProductName,
+            Variants = (List<ProductVariantAdminResponeDto>)p.ProductVariants.Where(v => v.IsSelling && !v.IsDeleted)
+                                        .Select(v => new ProductVariantAdminResponeDto
+                                        {
+                                            imgUrl = v.ImageUrl,
+                                            Price = v.Price,
+                                            Stock = v.Stock,
+                                            StockStatus = v.Stock > 10 ? "In Stock" : v.Stock <= 0 ? "Out Of Stock" : "Low Stock"
+                                        })
+
+        }).ToListAsync(token);
+
+        var pageResult = new PageResult<ProductAdminRespone>
+        {
+            Items = products,
+            TotalCount = totalCount,
+            PageNumber = request.PageIndex,
+            PageSize = request.PageSize
+        };
+
+        return pageResult;
     }
 }

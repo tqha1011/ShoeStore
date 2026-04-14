@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using ShoeStore.Domain.Entities;
-
+﻿using ShoeStore.Domain.Entities;
+using ShoeStore.Application.DTOs.ProductDTOs;
 namespace ShoeStore.Application.Extensions
 {
     public static class ProductQueryExtensions
@@ -74,6 +70,25 @@ namespace ShoeStore.Application.Extensions
         {
             return query.Skip((pageIndex - 1) *  pageSize).Take(pageSize);
         }
+        public static IQueryable<Product> ApplyStock(this IQueryable<Product> query, ProductAdminRequestDto request)
+        {
+            if (request.InStock == true)
+            {
+                query = query.Where(p => p.ProductVariants.Any(v => v.Stock >= 10));
+            }
 
+            if(request.LowStock == true)
+            {
+                query = query.Where(p => p.ProductVariants.Any(v => v.Stock < 10 && v.Stock > 0));
+            }
+
+            if(request.OutOfStock == true)
+            {
+                query = query.Where(p => p.ProductVariants.Any(v => v.Stock <= 0));
+            }
+
+            query.ApplySearch(request.KeyWord);
+            return query;
+        }
     }
 }
