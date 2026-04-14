@@ -8,7 +8,7 @@ namespace ShoeStore.Api.Controllers
 {
     [ApiController]
     [Route("api/invoice")]
-    [Authorize]
+    //[Authorize]
     public class InvoiceController(IInvoiceService invoiceService) : ControllerBase
     {
         [HttpGet("get-all")]
@@ -55,7 +55,7 @@ namespace ShoeStore.Api.Controllers
                 }
             );
         }
-        [Authorize]
+        //[Authorize]
         [HttpGet("{invoiceGuid}/details")]
         public async Task<IActionResult> GetDetails(Guid invoiceGuid, CancellationToken token)
         {
@@ -86,7 +86,7 @@ namespace ShoeStore.Api.Controllers
         }
 
         [HttpPut("{invoiceGuid}/admin/status")]
-        [Authorize(Roles = "Admin")]
+        //[Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateStatus(Guid invoiceGuid, [FromBody] UpdateStateRequestDto request, CancellationToken token)
         {
             var result = await invoiceService.UpdateInvoiceStateByAdminAsync(invoiceGuid, request, token);
@@ -119,7 +119,7 @@ namespace ShoeStore.Api.Controllers
             );
         }
         [HttpPut("{invoiceGuid}/customer/status")]
-        [Authorize(Roles = "Customer")]
+        //[Authorize(Roles = "Customer")]
         public async Task<IActionResult> UpdateStatusByCustomer(Guid invoiceGuid, [FromBody] UpdateStateRequestDto request, CancellationToken token)
         {
             var result = await invoiceService.UpdateInvoiceStateByUserAsync(invoiceGuid, request, token);

@@ -23,9 +23,9 @@ namespace ShoeStore.Application.Services
 
             var query = invoiceRepository.GetAll();
 
-            // check admin or user
-            if (!currentUser.IsAdmin)
-                query = query.Where(i => i.User.PublicId == currentUser.Id);
+            //// check admin or user
+            //if (!currentUser.IsAdmin)
+            //    query = query.Where(i => i.User.PublicId == currentUser.Id);
 
             query = query.ApplyInvoiceFilters(request);
 
@@ -89,7 +89,7 @@ namespace ShoeStore.Application.Services
             {
                 return Error.NotFound("Invoice not found");
             }
-            if (invoice.PublicId != currentUser.Id)
+            if (invoice.User.PublicId != currentUser.Id)
             {
                 return Error.Unauthorized("Unauthorized");
             }
