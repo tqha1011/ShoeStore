@@ -25,7 +25,7 @@ namespace ShoeStore.Application.Services
 
             // check admin or user
             if (!currentUser.IsAdmin)
-                query = query.Where(i => i.User.PublicId == currentUser.Id);
+                query = query.Where(i => i.User != null && i.User.PublicId == currentUser.Id);
 
             query = query.ApplyInvoiceFilters(request);
 
@@ -36,11 +36,11 @@ namespace ShoeStore.Application.Services
             var invoices = await query.Select(i => new InvoiceResponseDto
             {
                 PublicId = i.PublicId,
-                Username = i.User.UserName,
+                Username = i.User != null ? i.User.UserName : string.Empty,
                 DateCreated = i.CreatedAt,
                 UpdateCreated = i.UpdatedAt,
                 Status = i.Status,
-                PaymentName = i.Payment.Name,
+                PaymentName = i.Payment != null ? i.Payment.Name : string.Empty,
                 Address = i.ShippingAddress,
                 Phone = i.Phone,
                 OrderCode = i.OrderCode                
