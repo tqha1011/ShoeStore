@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 using ShoeStore.Api.Hubs;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
 using ShoeStore.Application.DTOs.HubDTOs;
-using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.Hub;
 
 namespace ShoeStore.Api.Controllers;
@@ -30,7 +30,7 @@ namespace ShoeStore.Api.Controllers;
 public class PaymentController(
     IConfiguration configuration,
     IPaymentService paymentService,
-    IHubContext<NotifyHub,INotifyHubClient> hubContext) : ControllerBase
+    IHubContext<NotifyHub, INotifyHubClient> hubContext) : ControllerBase
 {
     /// <summary>
     ///     Webhook endpoint for receiving payment notifications from SePay payment gateway.
@@ -124,7 +124,7 @@ public class PaymentController(
             var message =
                 $"Payment of {amount:#,##0} VND for order #{orderCode} has been successfully received.";
             var paymentNotification = new PaymentNotificationDto(message, amount, orderCode, true, DateTime.UtcNow);
-            
+
             await hubContext.Clients.Group(orderCode).ReceiveNotification(paymentNotification);
         }
 

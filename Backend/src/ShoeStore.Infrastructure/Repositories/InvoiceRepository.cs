@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.Interface.InvoiceInterface;
+using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Infrastructure.Data;
 

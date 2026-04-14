@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Interface.CartItemInterface;
+using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
 using ShoeStore.Application.Interface.Notification;
