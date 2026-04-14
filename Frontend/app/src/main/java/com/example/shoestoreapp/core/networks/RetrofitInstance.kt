@@ -1,5 +1,6 @@
 package com.example.shoestoreapp.core.networks
 
+import android.content.Context
 import com.example.shoestoreapp.core.utils.Constants
 import com.example.shoestoreapp.features.auth.data.remote.AuthApi
 import com.example.shoestoreapp.features.user.product.data.remote.ProductApi
@@ -11,6 +12,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitInstance {
 
+    private lateinit var appContext: Context
+
+    fun init(context: Context) {
+        appContext = context.applicationContext
+    }
     // 1. Logging interceptor for debugging network requests
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
