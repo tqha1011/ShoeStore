@@ -276,7 +276,6 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
                         imgUrl = v.ImageUrl,
                         Price = v.Price,
                         Stock = v.Stock,
-                        // Đồng bộ logic hiển thị với logic lọc ở trên
                         StockStatus = v.Stock <= 0 ? "Out of Stock" :
                               v.Stock < 10 ? "Low Stock" : "In Stock"
                     })
