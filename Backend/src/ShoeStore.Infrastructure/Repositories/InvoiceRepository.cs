@@ -29,14 +29,6 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
             .FirstOrDefaultAsync(token);
     }
 
-    public async Task<List<Invoice>> GetInvoicesByDateAsync(DateTime startDate, DateTime endDate,
-        CancellationToken token)
-    {
-        return await DbSet.AsNoTracking()
-            .Where(inv => inv.CreatedAt >= startDate && inv.CreatedAt <= endDate && inv.Status == InvoiceStatus.Paid)
-            .ToListAsync(token);
-    }
-
     public async Task<List<ProductHighestStatisticsDto>> GetTop3VariantsAsync(DateTime startDate, DateTime endDate,
         List<int> variantIds,
         CancellationToken token)
@@ -60,5 +52,46 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
             .OrderByDescending(p => p.TotalRevenue)
             .Take(3)
             .ToListAsync(token);
+    }
+
+    public async Task<List<(DateTime Date, decimal Revenue)>> GetChartDataAsync(DateTime startDate, DateTime endDate,
+        string groupByType, CancellationToken token)
+    {
+        var query = DbSet.AsNoTracking().Where(inv =>
+            inv.CreatedAt >= startDate && inv.CreatedAt <= endDate && inv.Status == InvoiceStatus.Paid);
+
+        if (groupByType == "month")
+        {
+            var rawMonthData = await query.GroupBy(inv => new { inv.CreatedAt.Year, inv.CreatedAt.Month })
+                .Select(iv => new { iv.Key.Year, iv.Key.Month, Revenue = iv.Sum(inv => inv.FinalPrice) })
+                .ToListAsync(token);
+
+            return rawMonthData
+                .Select(iv => new ValueTuple<DateTime, decimal>(new DateTime(iv.Year, iv.Month, 1), iv.Revenue))
+                .ToList();
+        }
+
+        // default group by day
+        var rawDayData = await query.GroupBy(inv => inv.CreatedAt.Date)
+            .Select(iv => new { Date = iv.Key, Revenue = iv.Sum(inv => inv.FinalPrice) })
+            .ToListAsync(token);
+
+        return rawDayData.Select(iv => new ValueTuple<DateTime, decimal>(iv.Date, iv.Revenue)).ToList();
+    }
+
+    public async Task<(int TotalInvoices, decimal TotalRevenue)> GetSummaryMetricsAsync(DateTime startDate,
+        DateTime endDate,
+        CancellationToken token)
+    {
+        var metrics = await DbSet.AsNoTracking()
+            .Where(inv => inv.CreatedAt >= startDate && inv.CreatedAt <= endDate && inv.Status == InvoiceStatus.Paid)
+            .GroupBy(inv => 1)
+            .Select(g => new
+            {
+                Count = g.Count(),
+                Revenue = g.Sum(inv => inv.FinalPrice)
+            })
+            .FirstOrDefaultAsync(token);
+        return metrics != null ? (metrics.Count, metrics.Revenue) : (0, 0m);
     }
 }

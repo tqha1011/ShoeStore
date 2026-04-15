@@ -12,8 +12,12 @@ public interface IInvoiceRepository : IGenericRepository<Invoice, int>
 
     Task<Invoice?> GetInvoiceByOrderCodeAsync(string orderCode, CancellationToken token);
 
-    Task<List<Invoice>> GetInvoicesByDateAsync(DateTime startDate, DateTime endDate, CancellationToken token);
+    Task<(int TotalInvoices, decimal TotalRevenue)> GetSummaryMetricsAsync(DateTime startDate, DateTime endDate,
+        CancellationToken token);
 
     Task<List<ProductHighestStatisticsDto>> GetTop3VariantsAsync(DateTime startDate, DateTime endDate,
         List<int> variantIds, CancellationToken token);
+
+    Task<List<(DateTime Date, decimal Revenue)>> GetChartDataAsync(DateTime startDate, DateTime endDate, string type,
+        CancellationToken token);
 }
