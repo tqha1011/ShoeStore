@@ -27,14 +27,11 @@ public class StatisticsService(IInvoiceRepository invoiceRepository) : IStatisti
         var previousStartDate = currentStartDate.AddMonths(-1);
         var previousEndDate = currentEndDate.AddMonths(-1);
 
-        var currentTask = invoiceRepository.GetSummaryMetricsAsync(currentStartDate, currentEndDate, cancellationToken);
-        var previousTask =
-            invoiceRepository.GetSummaryMetricsAsync(previousStartDate, previousEndDate, cancellationToken);
-
-        await Task.WhenAll(currentTask, previousTask);
-
-        var currentMetrics = currentTask.Result;
-        var previousMetrics = previousTask.Result;
+        var currentMetrics =
+            await invoiceRepository.GetSummaryMetricsAsync(currentStartDate, currentEndDate, cancellationToken);
+        ;
+        var previousMetrics =
+            await invoiceRepository.GetSummaryMetricsAsync(previousStartDate, previousEndDate, cancellationToken);
 
         var previousAverageRevenue = previousMetrics.TotalInvoices > 0
             ? previousMetrics.TotalRevenue / previousMetrics.TotalInvoices

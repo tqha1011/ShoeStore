@@ -7,7 +7,7 @@ using ShoeStore.Infrastructure.Data;
 
 namespace ShoeStore.Infrastructure.Repositories;
 
-public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice, int>(context),IInvoiceRepository
+public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice, int>(context), IInvoiceRepository
 {
     public IQueryable<Invoice> GetAll()
     {
@@ -33,32 +33,57 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
         List<int> variantIds,
         CancellationToken token)
     {
+        var utcStartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc);
+        var utcEndDate = DateTime.SpecifyKind(endDate, DateTimeKind.Utc);
         var query = DbSet.AsNoTracking().Where(inv =>
-                inv.CreatedAt >= startDate && inv.CreatedAt <= endDate && inv.Status == InvoiceStatus.Paid)
-            .SelectMany(inv => inv.InvoiceDetails);
-        if (variantIds.Count != 0) query = query.Where(invDet => variantIds.Contains(invDet.ProductVariantId));
-        return await query.GroupBy(x => new
+                inv.CreatedAt >= utcStartDate && inv.CreatedAt <= utcEndDate && inv.Status == InvoiceStatus.Paid)
+            .SelectMany(inv => inv.InvoiceDetails)
+            .Select(ivDet => new
             {
-                x.ProductVariantId, x.ProductVariant!.Product.PublicId, x.ProductVariant!.Product.ProductName,
-                x.ProductVariant!.ImageUrl
+                ivDet.ProductVariantId,
+                ProductPublicId = ivDet.ProductVariant!.Product.PublicId,
+                ivDet.ProductVariant!.Product.ProductName,
+                ImgUrl = ivDet.ProductVariant!.ImageUrl,
+                ivDet.InvoiceId,
+                LineTotal = ivDet.Quantity * ivDet.UnitPrice
+            });
+
+        if (variantIds.Count != 0) query = query.Where(invDet => variantIds.Contains(invDet.ProductVariantId));
+
+        var topVariants = query.GroupBy(x => new
+            {
+                x.ProductVariantId, x.ProductPublicId, x.ProductName, x.ImgUrl
             })
-            .Select(p => new ProductHighestStatisticsDto(
-                p.Key.PublicId,
+            .Select(p => new
+            {
+                p.Key.ProductPublicId,
                 p.Key.ProductVariantId,
                 p.Key.ProductName,
-                p.Key.ImageUrl,
-                p.Select(invDet => invDet.Invoice!.Id).Distinct().Count(),
-                p.Sum(invDet => invDet.UnitPrice * invDet.Quantity)))
+                p.Key.ImgUrl,
+                TotalInvoies = p.Select(invDet => invDet.InvoiceId).Distinct().Count(),
+                TotalRevenue = p.Sum(invDet => invDet.LineTotal)
+            })
             .OrderByDescending(p => p.TotalRevenue)
-            .Take(3)
-            .ToListAsync(token);
+            .Take(3);
+
+        var rawData = await topVariants.ToListAsync(token);
+
+        return rawData.Select(p => new ProductHighestStatisticsDto(
+            p.ProductPublicId,
+            p.ProductVariantId,
+            p.ProductName,
+            p.ImgUrl,
+            p.TotalInvoies,
+            p.TotalRevenue)).ToList();
     }
 
     public async Task<List<(DateTime Date, decimal Revenue)>> GetChartDataAsync(DateTime startDate, DateTime endDate,
         string groupByType, CancellationToken token)
     {
+        var utcStartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc);
+        var utcEndDate = DateTime.SpecifyKind(endDate, DateTimeKind.Utc);
         var query = DbSet.AsNoTracking().Where(inv =>
-            inv.CreatedAt >= startDate && inv.CreatedAt <= endDate && inv.Status == InvoiceStatus.Paid);
+            inv.CreatedAt >= utcStartDate && inv.CreatedAt <= utcEndDate && inv.Status == InvoiceStatus.Paid);
 
         if (groupByType == "month")
         {
@@ -83,8 +108,11 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
         DateTime endDate,
         CancellationToken token)
     {
+        var utcStartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc);
+        var utcEndDate = DateTime.SpecifyKind(endDate, DateTimeKind.Utc);
         var metrics = await DbSet.AsNoTracking()
-            .Where(inv => inv.CreatedAt >= startDate && inv.CreatedAt <= endDate && inv.Status == InvoiceStatus.Paid)
+            .Where(inv => inv.CreatedAt >= utcStartDate && inv.CreatedAt <= utcEndDate &&
+                          inv.Status == InvoiceStatus.Paid)
             .GroupBy(inv => 1)
             .Select(g => new
             {
@@ -94,6 +122,7 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
             .FirstOrDefaultAsync(token);
         return metrics != null ? (metrics.Count, metrics.Revenue) : (0, 0m);
     }
+
     public IQueryable<InvoiceDetail> GetInvoiceDetail(Guid invoiceGuid)
     {
         return DbSet.Where(inv => inv.PublicId == invoiceGuid)
