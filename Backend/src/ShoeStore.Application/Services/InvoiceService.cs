@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using ErrorOr;
+﻿using ErrorOr;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.InvoiceDetailDTOs;
@@ -64,7 +63,7 @@ namespace ShoeStore.Application.Services
 
         public async Task<ErrorOr<IEnumerable<InvoiceDetailResponseDto>>> GetInvoiceDetailAsync(Guid invoiceGuid, CancellationToken token)
         {
-            var details = invoiceRepository.GetaInvoiceDetail(invoiceGuid);
+            var details = invoiceRepository.GetInvoiceDetail(invoiceGuid);
 
             var result = await details.Select(d => new InvoiceDetailResponseDto
             {

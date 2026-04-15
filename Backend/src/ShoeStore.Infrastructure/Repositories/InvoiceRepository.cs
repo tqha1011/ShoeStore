@@ -1,14 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs.StatisticsDto;
 using ShoeStore.Application.Interface.InvoiceInterface;
-using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
 using ShoeStore.Infrastructure.Data;
 
 namespace ShoeStore.Infrastructure.Repositories;
 
-public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice, int>(context), IInvoiceRepository
+public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice, int>(context),IInvoiceRepository
 {
     public IQueryable<Invoice> GetAll()
     {
@@ -95,8 +94,7 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
             .FirstOrDefaultAsync(token);
         return metrics != null ? (metrics.Count, metrics.Revenue) : (0, 0m);
     }
-}
-    public IQueryable<InvoiceDetail> GetaInvoiceDetail(Guid invoiceGuid)
+    public IQueryable<InvoiceDetail> GetInvoiceDetail(Guid invoiceGuid)
     {
         return DbSet.Where(inv => inv.PublicId == invoiceGuid)
             .SelectMany(inv => inv.InvoiceDetails)

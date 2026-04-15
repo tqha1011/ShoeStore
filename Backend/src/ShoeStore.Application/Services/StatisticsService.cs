@@ -1,9 +1,8 @@
 using ErrorOr;
 using ShoeStore.Application.DTOs.StatisticsDto;
 using ShoeStore.Application.Extensions;
-using ShoeStore.Application.Interface.CheckoutInterface;
+using ShoeStore.Application.Interface.InvoiceInterface;
 using ShoeStore.Application.Interface.StatisticsInterface;
-using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Services;
 
@@ -155,7 +154,7 @@ public class StatisticsService(IInvoiceRepository invoiceRepository) : IStatisti
         if (previousInvoiceNumber == 0) return 100;
         return (decimal)(currentInvoiceNumber - previousInvoiceNumber) / previousInvoiceNumber * 100;
     }
-    
+
     private static decimal CalculateGrowthAverageRevenue(decimal previousAverageRevenue, decimal currentAverageRevenue)
     {
         if (previousAverageRevenue == 0) return 100; // Avoid division by zero
