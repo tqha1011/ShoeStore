@@ -13,7 +13,7 @@ namespace ShoeStore.API.Controllers;
 /// <param name="productService">Service for handling product management operations.</param>
 [Route("api/admin/products")]
 [ApiController]
-//[Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin")]
 public class AdminProductController(IProductService productService) : ControllerBase
 {
     /// <summary>
