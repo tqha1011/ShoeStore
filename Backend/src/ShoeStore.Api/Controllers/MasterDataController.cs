@@ -2,7 +2,7 @@ using ErrorOr;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.MasterDataDTOs;
-using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.MasterDataInterface;
 
 namespace ShoeStore.Api.Controllers;
 

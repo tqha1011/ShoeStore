@@ -1,8 +1,8 @@
 using ErrorOr;
 using Microsoft.Extensions.Caching.Hybrid;
 using ShoeStore.Application.DTOs.MasterDataDTOs;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Common;
+using ShoeStore.Application.Interface.MasterDataInterface;
 using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Services;
@@ -45,14 +45,11 @@ public class MasterDataService(
 
         return cachedCategory;
     }
-    
+
     public async Task<ErrorOr<List<SizeDto>>> AddSizeAsync(decimal size, CancellationToken token)
     {
         var existSize = await sizeRepository.ProductSizeExistsAsync(size, token);
-        if (existSize)
-        {
-            return Error.Conflict("Size.Conflict","Size already exists");
-        }
+        if (existSize) return Error.Conflict("Size.Conflict", "Size already exists");
         var newSize = new ProductSize
         {
             Size = size
@@ -67,10 +64,7 @@ public class MasterDataService(
     public async Task<ErrorOr<List<ColorDto>>> AddColorAsync(string colorName, CancellationToken token)
     {
         var existColor = await colorRepository.ColorNameExistAsync(colorName, token);
-        if (existColor)
-        {
-            return Error.Conflict("ColorName.Conflict", "Color already exists");
-        }
+        if (existColor) return Error.Conflict("ColorName.Conflict", "Color already exists");
         var newColor = new Color
         {
             ColorName = colorName
@@ -85,10 +79,7 @@ public class MasterDataService(
     public async Task<ErrorOr<List<CategoryDto>>> AddCategoryAsync(string categoryName, CancellationToken token)
     {
         var existCategory = await categoryRepository.CategoryNameExistAsync(categoryName, token);
-        if (existCategory)
-        {
-            return Error.Conflict("CategoryName.Conflict", "Category already exists");
-        }
+        if (existCategory) return Error.Conflict("CategoryName.Conflict", "Category already exists");
         var newCategory = new Category
         {
             Name = categoryName

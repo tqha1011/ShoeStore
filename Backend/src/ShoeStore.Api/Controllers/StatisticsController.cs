@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using ShoeStore.Application.DTOs.StatisticsDto;
 using ShoeStore.Application.Interface.StatisticsInterface;
 
 namespace ShoeStore.Api.Controllers;
@@ -24,6 +25,8 @@ public class StatisticsController(IStatisticsService statisticsService) : Contro
     /// <param name="token">Cancellation token for the request.</param>
     /// <response code="200">Summary statistics were returned successfully.</response>
     /// <response code="500">An unexpected server error occurred.</response>
+    [ProducesResponseType(typeof(StatisticsSummaryResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpGet("summary")]
     public async Task<IActionResult> GetSummary(CancellationToken token)
     {
@@ -45,6 +48,8 @@ public class StatisticsController(IStatisticsService statisticsService) : Contro
     /// <param name="token">Cancellation token for the request.</param>
     /// <response code="200">Top products statistics were returned successfully.</response>
     /// <response code="500">An unexpected server error occurred.</response>
+    [ProducesResponseType(typeof(List<ProductHighestStatisticsResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpGet("top-products")]
     public async Task<IActionResult> GetTopProducts(CancellationToken token)
     {
@@ -71,6 +76,8 @@ public class StatisticsController(IStatisticsService statisticsService) : Contro
     /// <param name="token">Cancellation token for the request.</param>
     /// <response code="200">Chart statistics were returned successfully.</response>
     /// <response code="500">An unexpected server error occurred.</response>
+    [ProducesResponseType(typeof(StatisticsChartResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpGet("chart")]
     public async Task<IActionResult> GetChart([FromQuery] string? type, CancellationToken token)
     {

@@ -1,7 +1,7 @@
 using ErrorOr;
 using ShoeStore.Application.DTOs.MasterDataDTOs;
 
-namespace ShoeStore.Application.Interface;
+namespace ShoeStore.Application.Interface.MasterDataInterface;
 
 public interface IMasterDataService
 {

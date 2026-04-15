@@ -49,6 +49,8 @@ public class ProductService(
                         PublicId = p.PublicId,
                         Brand = p.Brand ?? string.Empty,
                         ProductName = p.ProductName,
+                        CategoryId = p.CategoryId,
+                        CategoryName = p.Category != null ? p.Category.Name : string.Empty,
                         Variants = p.ProductVariants
                             .Where(v => v.IsSelling && !v.IsDeleted)
                             .Select(v => new ProductVariantResponseDto
