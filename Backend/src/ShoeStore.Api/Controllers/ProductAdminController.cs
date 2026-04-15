@@ -41,9 +41,9 @@ public class AdminProductController(IProductService productService) : Controller
     ///     wrong.
     /// </returns>
     [HttpGet("search")]
-    public async Task<IActionResult> Search([FromQuery] ProductSearchRequest request, CancellationToken token)
+    public async Task<IActionResult> Search([FromQuery] ProductAdminRequestDto request, CancellationToken token)
     {
-        var results = await productService.GetProductsAsync(request, token);
+        var results = await productService.GetProductsAdminAsync(request, token);
 
         if (results.IsError)
             return BadRequest(results.Errors);

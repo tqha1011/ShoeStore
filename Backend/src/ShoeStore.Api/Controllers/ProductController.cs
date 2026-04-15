@@ -41,7 +41,7 @@ public class ProductsController(IProductService productService) : ControllerBase
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] ProductSearchRequest request, CancellationToken token)
     {
-        var results = await productService.GetProductsAsync(request, token);
+        var results = await productService.GetProductsUserAsync(request, token);
 
         return results.Match<IActionResult>(
             pageResult => Ok(pageResult),

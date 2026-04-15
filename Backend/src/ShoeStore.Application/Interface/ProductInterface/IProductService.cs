@@ -8,9 +8,8 @@ public interface IProductService
 {
     // 1. Lấy danh sách (Search/Filter/Paging)
     // Trả về danh sách đã phân trang
-    Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsAsync(ProductSearchRequest request,
+    Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsUserAsync(ProductSearchRequest request,
         CancellationToken token);
-
     // 2. Lấy chi tiết (Dùng ProductResponseDto)
     Task<ErrorOr<ProductResponseDto>> GetProductByGuidAsync(Guid productGuid, CancellationToken token);
 
@@ -23,4 +22,5 @@ public interface IProductService
 
     // 5. Xóa: Dùng Status "Deleted"
     Task<ErrorOr<Deleted>> DeleteProductAsync(Guid productGuid, CancellationToken token);
+    Task<ErrorOr<PageResult<ProductAdminRespone>>> GetProductsAdminAsync(ProductAdminRequestDto request, CancellationToken token);
 }
