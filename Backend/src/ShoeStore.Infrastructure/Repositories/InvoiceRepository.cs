@@ -29,8 +29,8 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
             .FirstOrDefaultAsync(token);
     }
 
-    public async Task<List<ProductHighestStatisticsDto>> GetTop3VariantsAsync(DateTime startDate, DateTime endDate,
-        List<int> variantIds,
+    public async Task<List<ProductHighestStatisticsDto>> GetTop3ProductsAsync(DateTime startDate, DateTime endDate,
+        List<Guid> productIds,
         CancellationToken token)
     {
         var utcStartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc);
@@ -48,18 +48,17 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
                 LineTotal = ivDet.Quantity * ivDet.UnitPrice
             });
 
-        if (variantIds.Count != 0) query = query.Where(invDet => variantIds.Contains(invDet.ProductVariantId));
+        if (productIds.Count != 0) query = query.Where(invDet => productIds.Contains(invDet.ProductPublicId));
 
         var topVariants = query.GroupBy(x => new
             {
-                x.ProductVariantId, x.ProductPublicId, x.ProductName, x.ImgUrl
+                x.ProductPublicId, x.ProductName
             })
             .Select(p => new
             {
                 p.Key.ProductPublicId,
-                p.Key.ProductVariantId,
                 p.Key.ProductName,
-                p.Key.ImgUrl,
+                ImageUrl = p.Max(x => x.ImgUrl),
                 TotalInvoies = p.Select(invDet => invDet.InvoiceId).Distinct().Count(),
                 TotalRevenue = p.Sum(invDet => invDet.LineTotal)
             })
@@ -70,9 +69,8 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
 
         return rawData.Select(p => new ProductHighestStatisticsDto(
             p.ProductPublicId,
-            p.ProductVariantId,
             p.ProductName,
-            p.ImgUrl,
+            p.ImageUrl,
             p.TotalInvoies,
             p.TotalRevenue)).ToList();
     }

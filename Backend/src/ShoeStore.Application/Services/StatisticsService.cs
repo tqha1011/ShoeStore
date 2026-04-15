@@ -111,18 +111,18 @@ public class StatisticsService(IInvoiceRepository invoiceRepository) : IStatisti
         var previousStartDate = currentStartDate.AddMonths(-1);
         var previousEndDate = currentEndDate.AddMonths(-1);
         var currentTop3Product =
-            await invoiceRepository.GetTop3VariantsAsync(currentStartDate, currentEndDate, [], cancellationToken);
+            await invoiceRepository.GetTop3ProductsAsync(currentStartDate, currentEndDate, [], cancellationToken);
 
-        var variantIds = currentTop3Product.Select(variant => variant.VariantId).ToList();
+        var productIds = currentTop3Product.Select(product => product.ProductPublicId).ToList();
 
         var previousTop3Product =
-            await invoiceRepository.GetTop3VariantsAsync(previousStartDate, previousEndDate, variantIds,
+            await invoiceRepository.GetTop3ProductsAsync(previousStartDate, previousEndDate, productIds,
                 cancellationToken);
 
         var result = new List<ProductHighestStatisticsResponseDto>();
         foreach (var product in currentTop3Product)
         {
-            var matchVariant = previousTop3Product.FirstOrDefault(p => p.VariantId == product.VariantId);
+            var matchVariant = previousTop3Product.FirstOrDefault(p => p.ProductPublicId == product.ProductPublicId);
             var previousRevenue = matchVariant?.TotalRevenue ?? 0;
             var growthRevenue = previousRevenue > 0
                 ? CalculateGrowthTotalRevenue(previousRevenue, product.TotalRevenue)
