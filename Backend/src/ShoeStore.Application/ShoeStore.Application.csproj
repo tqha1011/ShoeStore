@@ -7,8 +7,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\ShoeStore.Domain\ShoeStore.Domain.csproj"/>
+        <ProjectReference Include="..\ShoeStore.Domain\ShoeStore.Domain.csproj" />
     </ItemGroup>
+
 
     <ItemGroup>
         <PackageReference Include="Cloudinary" Version="0.0.5"/>

@@ -47,9 +47,9 @@ public class AdminProductController(IProductService productService) : Controller
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpGet("search")]
-    public async Task<IActionResult> Search([FromQuery] ProductSearchRequest request, CancellationToken token)
+    public async Task<IActionResult> Search([FromQuery] ProductAdminRequestDto request, CancellationToken token)
     {
-        var results = await productService.GetProductsAsync(request, token);
+        var results = await productService.GetProductsAdminAsync(request, token);
 
         if (results.IsError)
             return BadRequest(results.Errors);
