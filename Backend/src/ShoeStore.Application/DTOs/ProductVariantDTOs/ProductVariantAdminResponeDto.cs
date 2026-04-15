@@ -2,9 +2,9 @@
 {
     public class ProductVariantAdminResponeDto
     {
-        public decimal Price = 0;
-        public string StockStatus = "In Stock";
-        public int Stock = 0;
-        public string imgUrl = string.Empty;
+        public decimal Price { get; set; } = 0;
+        public string StockStatus { get; set; } = string.Empty;
+        public int Stock { get; set; } = 0;
+        public string imgUrl { get; set; } = string.Empty;
     }
 }
