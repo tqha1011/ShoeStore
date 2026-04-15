@@ -18,7 +18,7 @@ public sealed record UserCartItemResponseDto
 
     public int SizeId { get; set; }
 
-    public int Size { get; set; }
+    public decimal Size { get; set; }
 
     public int ColorId { get; set; }
 
