@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ErrorOr;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.Interface.ProductInterface;
 
@@ -40,6 +42,10 @@ public class AdminProductController(IProductService productService) : Controller
     ///     An action result containing paginated product list on success, or an error response describing what went
     ///     wrong.
     /// </returns>
+    [ProducesResponseType(typeof(PageResult<ProductResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] ProductAdminRequestDto request, CancellationToken token)
     {
@@ -71,6 +77,10 @@ public class AdminProductController(IProductService productService) : Controller
     ///     An action result containing detailed product information on success, or an error response describing what went
     ///     wrong.
     /// </returns>
+    [ProducesResponseType(typeof(ProductResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpGet("{productGuid:guid}")]
     public async Task<IActionResult> GetByGuid(Guid productGuid, CancellationToken token)
     {
@@ -101,6 +111,10 @@ public class AdminProductController(IProductService productService) : Controller
     /// <response code="401">Unauthorized; user must have Admin role authorization.</response>
     /// <response code="500">Internal server error; an unexpected server error occurred.</response>
     /// <returns>An action result with status 201 (Created) on success, or an error response describing what went wrong.</returns>
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateProductDto productDto, CancellationToken token)
     {
@@ -136,6 +150,11 @@ public class AdminProductController(IProductService productService) : Controller
     ///     An action result containing the updated product details on success, or an error response describing what went
     ///     wrong.
     /// </returns>
+    [ProducesResponseType(typeof(Updated), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPut("{productGuid:guid}")]
     public async Task<IActionResult> Update(Guid productGuid, [FromBody] UpdateProductDto productDto,
         CancellationToken token)
@@ -167,6 +186,11 @@ public class AdminProductController(IProductService productService) : Controller
     /// <response code="401">Unauthorized; user must have Admin role authorization.</response>
     /// <response code="500">Internal server error; an unexpected server error occurred.</response>
     /// <returns>An action result with status 204 (No Content) on success, or an error response describing what went wrong.</returns>
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpDelete("{productGuid:guid}")]
     public async Task<IActionResult> Delete(Guid productGuid, CancellationToken token)
     {

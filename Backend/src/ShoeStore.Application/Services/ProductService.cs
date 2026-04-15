@@ -13,7 +13,10 @@ using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Services;
 
-public class ProductService(IUnitOfWork uow, IProductRepository productRepository, HybridCache cache,
+public class ProductService(
+    IUnitOfWork uow,
+    IProductRepository productRepository,
+    HybridCache cache,
     ILogger<ProductService> logger) : IProductService
 {
     public async Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsUserAsync(ProductSearchRequest request,
@@ -36,16 +39,18 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
             async cancel =>
             {
                 // Get total count before applying paging
-                var totalCount = await query.CountAsync(cancel);
-                
+                var totalCount = await query.Where(p => p.ProductVariants.Any(v => v.IsSelling && !v.IsDeleted))
+                    .CountAsync(cancel);
+
                 var products = await query
-                    .Where(p => p.ProductVariants.Any(v => v.IsSelling && !v.IsDeleted))
                     .ApplyPaging(request.PageIndex, request.PageSize)
                     .Select(p => new ProductResponseDto
                     {
                         PublicId = p.PublicId,
                         Brand = p.Brand ?? string.Empty,
                         ProductName = p.ProductName,
+                        CategoryId = p.CategoryId,
+                        CategoryName = p.Category != null ? p.Category.Name : string.Empty,
                         Variants = p.ProductVariants
                             .Where(v => v.IsSelling && !v.IsDeleted)
                             .Select(v => new ProductVariantResponseDto
@@ -94,6 +99,8 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
                     PublicId = productEntity.PublicId,
                     ProductName = productEntity.ProductName,
                     Brand = productEntity.Brand ?? string.Empty,
+                    CategoryName = productEntity.Category?.Name ?? string.Empty,
+                    CategoryId = productEntity.CategoryId,
                     Variants = productEntity.ProductVariants
                         .Select(v => new ProductVariantResponseDto
                         {
@@ -126,6 +133,7 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
         {
             ProductName = dto.ProductName,
             Brand = dto.Brand ?? string.Empty,
+            CategoryId = dto.CategoryId,
             ProductVariants = new List<ProductVariant>()
         };
 
@@ -158,6 +166,7 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
         {
             logger.LogError(ex, "Error while adding product to cache");
         }
+
         return product.PublicId;
     }
 
@@ -172,6 +181,7 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
         // Update basic product information
         product.ProductName = dto.ProductName;
         product.Brand = dto.Brand ?? string.Empty;
+        product.CategoryId = dto.CategoryId;
 
         // Get existing variants for comparison
         var existingVariants = product.ProductVariants.ToList();
@@ -232,6 +242,7 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
         {
             logger.LogError(ex, "Error while updating product.");
         }
+
         return Result.Updated;
     }
 
@@ -256,6 +267,7 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
         {
             logger.LogError(ex, "Error while deleting product.");
         }
+
         return Result.Deleted;
     }
 

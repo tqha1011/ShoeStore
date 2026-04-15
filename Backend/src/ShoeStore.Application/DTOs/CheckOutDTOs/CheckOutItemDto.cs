@@ -4,7 +4,7 @@ public sealed record CheckOutItemDto(
     Guid VariantId,
     string ProductName,
     string? ColorName,
-    int Size,
+    decimal Size,
     decimal UnitPrice,
     int Quantity,
     int StockAvailable,

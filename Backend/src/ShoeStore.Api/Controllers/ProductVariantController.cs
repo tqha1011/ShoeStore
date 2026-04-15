@@ -45,6 +45,11 @@ public class ProductVariantController(IProductVariantService variantService, IIm
     ///     An action result containing the created product variant details on success, or an error response describing
     ///     what went wrong.
     /// </returns>
+    [ProducesResponseType(typeof(ProductVariantResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost]
     [Consumes("multipart/form-data")]
     [Authorize(Roles = "Admin")]

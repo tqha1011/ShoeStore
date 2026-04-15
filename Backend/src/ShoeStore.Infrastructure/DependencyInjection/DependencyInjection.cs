@@ -6,6 +6,7 @@ using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.Common;
+using ShoeStore.Application.Interface.MasterDataInterface;
 using ShoeStore.Application.Interface.InvoiceInterface;
 using ShoeStore.Application.Interface.Notification;
 using ShoeStore.Application.Interface.ProductInterface;
@@ -58,6 +59,9 @@ public static class DependencyInjection
         services.AddScoped<IInvoiceService, InvoiceService>();
         services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
+        services.AddScoped<IColorRepository, ColorRepository>();
+        services.AddScoped<ISizeRepository, SizeRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
         return services;
     }
 }
