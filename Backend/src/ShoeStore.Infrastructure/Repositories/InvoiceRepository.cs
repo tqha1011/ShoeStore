@@ -59,7 +59,7 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
                 p.Key.ProductPublicId,
                 p.Key.ProductName,
                 ImageUrl = p.Max(x => x.ImgUrl),
-                TotalInvoies = p.Select(invDet => invDet.InvoiceId).Distinct().Count(),
+                TotalInvoices = p.Select(invDet => invDet.InvoiceId).Distinct().Count(),
                 TotalRevenue = p.Sum(invDet => invDet.LineTotal)
             })
             .OrderByDescending(p => p.TotalRevenue)
@@ -71,7 +71,7 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
             p.ProductPublicId,
             p.ProductName,
             p.ImageUrl,
-            p.TotalInvoies,
+            p.TotalInvoices,
             p.TotalRevenue)).ToList();
     }
 
