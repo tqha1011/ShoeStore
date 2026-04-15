@@ -10,4 +10,6 @@ public interface IProductRepository : IGenericRepository<Product, int>
     Task<Product?> GetForUpdateByGuidAsync(Guid productGuid, CancellationToken token);
 
     Task<Product?> GetDetailsByGuidAsync(Guid productGuid, CancellationToken token);
+
+    IQueryable<Product> GetAll();
 }
