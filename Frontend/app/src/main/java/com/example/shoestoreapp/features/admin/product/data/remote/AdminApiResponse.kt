@@ -23,8 +23,8 @@ data class ProductSearchDto(
 
 // 4. DTO cho biến thể sản phẩm
 data class ProductVariantDto(
+    @SerializedName("price") val price: Double?,
     @SerializedName("stockStatus") val stockStatus: String?,
     @SerializedName("stock") val stock: Int?,
-    @SerializedName("price") val price: Double?,
     @SerializedName("imageUrl") val imageUrl: String?,
 )

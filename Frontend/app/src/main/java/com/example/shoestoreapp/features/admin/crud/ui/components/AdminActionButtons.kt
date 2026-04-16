@@ -27,12 +27,7 @@ fun AdminActionButtons(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 16.dp)
-            .border(
-                width = 1.dp,
-                color = AdminCrudColors.outlineVariant,
-                shape = RoundedCornerShape(0.dp)
-            ),
+            .padding(horizontal = 16.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Delete Button
@@ -40,10 +35,15 @@ fun AdminActionButtons(
             onClick = { if (!isLoading) onDeleteClick() },
             modifier = Modifier
                 .weight(1f)
-                .height(56.dp),
+                .height(56.dp)
+                .border(
+                    shape = RoundedCornerShape(8.dp),
+                    width = 1.5.dp,
+                    color = AdminCrudColors.error
+                ),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.White,
-                contentColor = AdminCrudColors.gray500
+                contentColor = AdminCrudColors.error
             ),
             enabled = !isLoading
         ) {
@@ -55,9 +55,9 @@ fun AdminActionButtons(
                 )
             } else {
                 Text(
-                    text = "Delete Product",
+                    text = "DELETE PRODUCT",
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp
                 )
             }
@@ -84,14 +84,12 @@ fun AdminActionButtons(
                 )
             } else {
                 Text(
-                    text = "Save Product",
+                    text = "SAVE PRODUCT",
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp
                 )
             }
         }
     }
 }
-
-

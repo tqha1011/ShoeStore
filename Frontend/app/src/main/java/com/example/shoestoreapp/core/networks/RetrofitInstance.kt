@@ -7,6 +7,7 @@ import com.example.shoestoreapp.features.auth.data.remote.AuthApi
 import com.example.shoestoreapp.features.user.product.data.remote.ProductApi
 import com.example.shoestoreapp.features.cart.data.remote.CartApi
 import com.example.shoestoreapp.features.admin.crud.data.remote.AdminProductCrudApi
+import com.example.shoestoreapp.features.admin.crud.data.remote.MasterDataApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -19,12 +20,18 @@ object RetrofitInstance {
     fun init(context: Context) {
         appContext = context.applicationContext
     }
+
+    private val authInterceptor by lazy {
+        AuthInterceptor(appContext)
+    }
+
     // 1. Logging interceptor for debugging network requests
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
     private val client = OkHttpClient.Builder()
+        .addInterceptor(authInterceptor)
         .addInterceptor(loggingInterceptor)
         .build()
 
@@ -60,5 +67,10 @@ object RetrofitInstance {
     // 7. Create AdminProductCrudApi service for admin CRUD endpoints
     val adminCrudApi: AdminProductCrudApi by lazy {
         retrofit.create(AdminProductCrudApi::class.java)
+    }
+
+    // 8. Create MasterDataApi service for fetching master data (size, color, category)
+    val masterDataApi: MasterDataApi by lazy {
+        retrofit.create(MasterDataApi::class.java)
     }
 }

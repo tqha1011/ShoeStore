@@ -44,14 +44,15 @@ fun AdminCrudTopAppBar(
                 )
             }
 
+            Spacer(modifier = Modifier.weight(1f))
+
             Text(
-                text = "Admin Panel",
-                fontSize = 18.sp,
+                text = "ADMIN PANEL",
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = AdminCrudColors.primary,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.padding(end = 16.dp)
             )
         }
     }
 }
-

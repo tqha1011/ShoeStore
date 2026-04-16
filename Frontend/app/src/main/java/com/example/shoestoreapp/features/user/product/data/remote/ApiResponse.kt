@@ -47,12 +47,12 @@ data class ProductSearchResponse(
     val totalCount: Int,
     val pageNumber: Int,
     val pageSize: Int,
-    val items: List<ProductResponseDto>  // ← Updated to ProductResponseDto
+    val items: List<ProductResponseDto>
 )
 
 data class DetailResponse<T>(
     val message: String,
-    val data: T // Cái data này mới chứa thông tin đôi giày nè
+    val data: T
 )
 /**
  * ProductResponseDto: Response DTO từ Backend

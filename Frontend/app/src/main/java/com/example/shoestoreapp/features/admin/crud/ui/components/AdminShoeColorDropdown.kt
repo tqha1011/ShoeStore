@@ -17,22 +17,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.shoestoreapp.features.admin.crud.data.remote.master_data.CategoryDto
+import com.example.shoestoreapp.features.admin.crud.data.remote.master_data.ColorDto
 
 /**
- * Shoe Type Dropdown Component
+ * Shoe Color Dropdown Component
  */
 @Composable
-fun AdminShoeTypeDropdown(
-    selectedType: String,
-    categories: List<CategoryDto>,
-    onTypeSelected: (String, String) -> Unit
+fun AdminShoeColorDropdown(
+    selectedColor: String,
+    colorsList: List<ColorDto>,
+    onColorSelected: (String, String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     Column {
         Text(
-            text = "LOẠI GIÀY",
+            text = "MÀU",
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.5.sp,
@@ -63,9 +63,9 @@ fun AdminShoeTypeDropdown(
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = selectedType.ifEmpty { "Select shoe type" },
+                    text = selectedColor.ifEmpty { "Select shoe color" },
                     fontSize = 13.sp,
-                    color = if (selectedType.isEmpty()) AdminCrudColors.gray500 else AdminCrudColors.onSurface
+                    color = if (selectedColor.isEmpty()) AdminCrudColors.gray500 else AdminCrudColors.onSurface
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -84,11 +84,11 @@ fun AdminShoeTypeDropdown(
             onDismissRequest = { expanded = false },
             modifier = Modifier.fillMaxWidth(0.9f)
         ) {
-            categories.forEach { category ->
+            colorsList.forEach { color ->
                 DropdownMenuItem(
-                    text = { Text(category.categoryName) },
+                    text = { Text(color.colorName) },
                     onClick = {
-                        onTypeSelected(category.id, category.categoryName)
+                        onColorSelected(color.id, color.colorName)
                         expanded = false
                     }
                 )

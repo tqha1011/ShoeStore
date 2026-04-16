@@ -21,12 +21,16 @@ import com.example.shoestoreapp.features.checkout.ui.screens.CheckoutScreen
 import com.example.shoestoreapp.features.checkout.viewmodel.CheckoutViewModel
 import com.example.shoestoreapp.features.admin.product.ui.AdminProductListScreen
 import com.example.shoestoreapp.features.admin.product.viewmodel.AdminProductListViewModel
+import com.example.shoestoreapp.features.admin.crud.ui.AdminProductCrudScreen
+import com.example.shoestoreapp.features.admin.crud.viewmodel.ProductCrudViewModel
+import com.example.shoestoreapp.features.admin.crud.data.repositories.ProductCrudRepository
 import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenContent
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
 import com.example.shoestoreapp.features.auth.presentation.welcome.WelcomeScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.CreateNewPasswordScreen
 import com.example.shoestoreapp.core.utils.TokenManager
+import com.example.shoestoreapp.features.admin.crud.data.repositories.MasterDataRepository
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -51,8 +55,8 @@ fun AppNavHost() {
 
     NavHost(
         navController = navController,
-        //startDestination = "welcome"
-        startDestination = "product_list"  // ← Test ProductListScreen
+        startDestination = "welcome"
+        //startDestination = "product_list"  // ← Test ProductListScreen
         //startDestination = "admin_product_list"  // Test AdminProductListScreen
     ) {
 
@@ -258,10 +262,23 @@ fun AppNavHost() {
                 },
                 onAddProductClick = {
                     println("🔹 Add Product clicked")
+                    navController.navigate("admin_product_crud")
                 },
                 onTabSelected = { tab ->
                     println("🔹 Admin Tab selected: $tab")
                 }
+            )
+        }
+
+        // Route: Admin CRUD Screen
+        composable("admin_product_crud") {
+            AdminProductCrudScreen(
+                viewModel = remember { ProductCrudViewModel(ProductCrudRepository(),
+                    MasterDataRepository()
+                ) },
+                onBackClick = {
+                    navController.popBackStack()
+                },
             )
         }
 

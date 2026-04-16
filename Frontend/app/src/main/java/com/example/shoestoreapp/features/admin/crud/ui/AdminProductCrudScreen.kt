@@ -24,18 +24,20 @@ import com.example.shoestoreapp.features.admin.crud.viewmodel.ProductCrudViewMod
 fun AdminProductCrudScreen(
     viewModel: ProductCrudViewModel,
     onBackClick: () -> Unit = {},
-    onSaveSuccess: () -> Unit = {}
 ) {
     // Collect form state from ViewModel
+    val sizesList by viewModel.sizesList.collectAsState()
+    val colorsList by viewModel.colorsList.collectAsState()
+    val categoriesList by viewModel.categoriesList.collectAsState()
     val productName by viewModel.productName.collectAsState()
-    val productType by viewModel.shoeType.collectAsState()
+    val categoryName by viewModel.selectedCategoryName.collectAsState()
+    val sizeValue by viewModel.selectedSizeValue.collectAsState()
+    val colorName by viewModel.selectedColorName.collectAsState()
     val price by viewModel.price.collectAsState()
     val productId by viewModel.productId.collectAsState()
     val stock by viewModel.stock.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
-    val imageUrl by viewModel.imageUrl.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-
 
     // Clear messages after 3 seconds
     LaunchedEffect(errorMessage) {
@@ -70,9 +72,9 @@ fun AdminProductCrudScreen(
                 // Header
                 Column(modifier = Modifier.padding(bottom = 24.dp)) {
                     Text(
-                        text = "Add/Edit Product",
+                        text = "ADD/EDIT PRODUCT",
                         fontSize = 28.sp,
-                        fontWeight = FontWeight.Light,
+                        fontWeight = FontWeight.Bold,
                         color = AdminCrudColors.onSurface
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -87,9 +89,9 @@ fun AdminProductCrudScreen(
                 // Product Photography Section
                 Column(modifier = Modifier.padding(bottom = 24.dp)) {
                     Text(
-                        text = "Product Photography",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
+                        text = "PRODUCT PHOTOGRAPHY",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
                         letterSpacing = 0.5.sp,
                         color = AdminCrudColors.onPrimaryFixedVariant,
                         modifier = Modifier.padding(bottom = 16.dp)
@@ -103,7 +105,7 @@ fun AdminProductCrudScreen(
                 Column(modifier = Modifier.padding(bottom = 24.dp)) {
                     // Product Name
                     AdminFormField(
-                        label = "Tên sản phẩm",
+                        label = "TÊN SẢN PHẨM",
                         value = productName,
                         onValueChange = { viewModel.onProductNameChange(it) },
                         placeholder = "Enter product name..."
@@ -119,13 +121,16 @@ fun AdminProductCrudScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             AdminShoeTypeDropdown(
-                                selectedType = productType,
-                                onTypeSelected = { viewModel.onProductTypeChange(it) }
+                                selectedType = categoryName,
+                                categories = categoriesList,
+                                onTypeSelected = { id, name ->
+                                    viewModel.onCategorySelected(id, name)
+                                }
                             )
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             AdminFormField(
-                                label = "Giá ($)",
+                                label = "GIÁ ($)",
                                 value = price.toString(),
                                 onValueChange = { viewModel.onPriceChange(it.toDoubleOrNull() ?: 0.0) },
                                 placeholder = "0.00",
@@ -134,6 +139,32 @@ fun AdminProductCrudScreen(
                         }
                     }
 
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            AdminShoeSizeDropdown(
+                                selectedSize = sizeValue,
+                                sizesList = sizesList,
+                                onSizeSelected = { id, value ->
+                                    viewModel.onSizeSelected(id, value)
+                                }
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            AdminShoeColorDropdown(
+                                selectedColor = colorName,
+                                colorsList = colorsList,
+                                onColorSelected = { id, name ->
+                                    viewModel.onColorSelected(id, name)
+                                }
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // SKU and Stock Row
@@ -152,7 +183,7 @@ fun AdminProductCrudScreen(
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             AdminFormField(
-                                label = "Số lượng kho",
+                                label = "SỐ LƯỢNG KHO",
                                 value = stock.toString(),
                                 onValueChange = { viewModel.onStockChange(it.toIntOrNull() ?: 0) },
                                 placeholder = "0",
@@ -206,5 +237,3 @@ fun AdminProductCrudScreen(
         }
     }
 }
-
-

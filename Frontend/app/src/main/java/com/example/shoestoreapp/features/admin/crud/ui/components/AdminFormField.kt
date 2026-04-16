@@ -1,5 +1,6 @@
 package com.example.shoestoreapp.features.admin.crud.ui.components
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,8 +35,8 @@ fun AdminFormField(
         if (label.isNotEmpty()) {
             Text(
                 text = label,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
                 letterSpacing = 0.5.sp,
                 color = AdminCrudColors.onPrimaryFixedVariant,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -48,7 +49,12 @@ fun AdminFormField(
             placeholder = { Text(placeholder, fontSize = 13.sp) },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
+                .height(48.dp)
+                .border(
+                    width = 1.5.dp,
+                    color = AdminCrudColors.gray300,
+                    shape = RoundedCornerShape(8.dp)
+                ),
             enabled = isEnabled,
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
@@ -56,9 +62,9 @@ fun AdminFormField(
                 focusedContainerColor = Color.White,
                 unfocusedContainerColor = Color.White,
                 disabledContainerColor = Color.White,
-                focusedIndicatorColor = AdminCrudColors.primary,
-                unfocusedIndicatorColor = AdminCrudColors.gray200,
-                disabledIndicatorColor = AdminCrudColors.gray200,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent,
                 cursorColor = AdminCrudColors.primary
             ),
             shape = RoundedCornerShape(8.dp),
@@ -66,4 +72,3 @@ fun AdminFormField(
         )
     }
 }
-

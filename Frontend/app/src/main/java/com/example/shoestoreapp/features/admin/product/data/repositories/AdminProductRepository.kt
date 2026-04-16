@@ -61,38 +61,6 @@ class AdminProductRepository(
         emit(null)
     }.flowOn(Dispatchers.IO)
 
-    // 3. Delete product by productGuid
-    fun adminDeleteProduct(productGuid: String): Flow<Boolean> = flow {
-        val response = adminApi.adminDeleteProduct(productGuid)
-        emit(response.isSuccessful)
-    }.catch { e ->
-        emit(false)
-    }.flowOn(Dispatchers.IO)
-
-    // 4. Create product
-    fun adminCreateProduct(
-        productName: String?,
-        variants: List<ProductVariantDto?>,
-        brand: String?
-    ): Flow<Boolean> = flow {
-        val response = adminApi.adminCreateProduct(productName, variants, brand)
-        emit(response.isSuccessful)
-    }.catch { e ->
-        emit(false)
-    }.flowOn(Dispatchers.IO)
-
-    // 5. Update product
-    fun adminUpdateProduct(
-        productGuid: String,
-        productName: String?,
-        variants: List<ProductVariantDto?>
-    ): Flow<Boolean> = flow {
-        val response = adminApi.adminUpdateProduct(productGuid, productName, variants)
-        emit(response.isSuccessful)
-    }.catch { e ->
-        emit(false)
-    }.flowOn(Dispatchers.IO)
-
     private fun mapDtoToAdminProduct(dto: ProductSearchDto): AdminProduct {
         return AdminProduct(
             id = dto.publicId,
@@ -100,9 +68,9 @@ class AdminProductRepository(
             imageUrl = dto.variants?.firstOrNull()?.imageUrl ?: "",
             price = dto.variants?.firstOrNull()?.price ?: 0.0,
             stockStatus = when (dto.variants?.firstOrNull()?.stockStatus) {
-                "InStock" -> StockStatus.IN_STOCK
-                "LowStock" -> StockStatus.LOW_STOCK
-                "OutOfStock" -> StockStatus.OUT_OF_STOCK
+                "In Stock" -> StockStatus.IN_STOCK
+                "Low Stock" -> StockStatus.LOW_STOCK
+                "Out Of Stock" -> StockStatus.OUT_OF_STOCK
                 else -> StockStatus.IN_STOCK
             },
             stock = dto.variants?.firstOrNull()?.stock ?: 0

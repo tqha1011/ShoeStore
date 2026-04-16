@@ -1,7 +1,12 @@
 package com.example.shoestoreapp.features.admin.crud.data.remote
 
+import com.example.shoestoreapp.features.admin.crud.data.remote.master_data.CategoryDto
+import com.example.shoestoreapp.features.admin.crud.data.remote.master_data.ColorDto
+import com.example.shoestoreapp.features.admin.crud.data.remote.master_data.SizeDto
 import retrofit2.Response
+import retrofit2.http.Body
 import retrofit2.http.DELETE
+import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
@@ -12,8 +17,7 @@ interface AdminProductCrudApi {
     @PUT("/api/admin/products/{productGuid}")
     suspend fun adminUpdateProduct(
         @Path("productGuid") productGuid: String,
-        @Query("productName") productName: String?,
-        @Query("variants") variants: List<ProductVariantDto?>
+        @Body request: ProductUpdateDtoRequest
     ): Response<Unit>
 
     @DELETE("/api/admin/products/{productGuid}")
@@ -23,8 +27,6 @@ interface AdminProductCrudApi {
 
     @POST("/api/admin/products")
     suspend fun adminCreateProduct(
-        @Query("productName") productName: String?,
-        @Query("variants") variants: List<ProductVariantDto?>,
-        @Query("brand") brand: String?
+        @Body request: ProductCreateDtoRequest
     ): Response<Unit>
 }
