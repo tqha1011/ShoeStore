@@ -191,7 +191,7 @@ public class InvoiceController(
         }
 
         // Notify clients about the invoice status update
-        await hubContext.Clients.Group(result.Value)
+        await hubContext.Clients.Group("Admin")
             .ReceiveNotification(result.Value,request.Status);
 
         return Ok(new

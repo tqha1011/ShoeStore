@@ -156,19 +156,18 @@ public class InvoiceAdminController(IInvoiceService invoiceService) : Controller
             }),
             errors => errors[0].Code switch
             {
-                // Trường hợp không tìm thấy hóa đơn
                 "Invoice.NotFound" => NotFound(new
                 {
                     message = "Invoice not found",
                     description = errors[0].Description
                 }),
-                // Trường hợp trạng thái mới không hợp lệ
+
                 "Invoice.InvalidStatus" => BadRequest(new
                 {
                     message = "Invalid invoice status",
                     description = errors[0].Description
                 }),
-                // Lỗi mặc định (Internal Server Error)
+
                 _ => StatusCode(StatusCodes.Status500InternalServerError, new
                 {
                     message = "An unexpected error occurred. Please try again later",

@@ -1,5 +1,6 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using ShoeStore.Application.DTOs.HubDTOs;
 using ShoeStore.Application.Interface.Hub;
 
 namespace ShoeStore.Api.Hubs;
@@ -42,6 +43,7 @@ namespace ShoeStore.Api.Hubs;
 /// hubConnection.stop().blockingAwait()
 /// </code>
 /// </remarks>
+[Authorize]
 public class NotifyHub : Hub<INotifyHubClient>
 {
     /// <summary>
@@ -71,5 +73,42 @@ public class NotifyHub : Hub<INotifyHubClient>
     {
         var user = Context.ConnectionId;
         await Groups.RemoveFromGroupAsync(user, orderCode);
+    }
+
+    /// <summary>
+    ///     Handles client connection initialization by automatically adding the client to appropriate notification groups.
+    ///     Called automatically when a new client establishes a WebSocket connection to the hub.
+    /// </summary>
+    /// <remarks>
+    ///     <strong>Behavior:</strong>
+    ///     <list type="bullet">
+    ///         <item>
+    ///             <description>
+    ///                 Extracts the user role and identifier from the JWT claims in the connection context.
+    ///             </description>
+    ///         </item>
+    ///         <item>
+    ///             <description>
+    ///                 If the user has the <c>Admin</c> role, adds them to the <c>Admin</c> group to receive admin notifications.
+    ///             </description>
+    ///         </item>
+    ///         <item>
+    ///             <description>
+    ///                 Adds all users to a personal group named <c>User-{userId}</c> for receiving user-specific notifications.
+    ///             </description>
+    ///         </item>
+    ///     </list>
+    ///     <strong>Frontend Usage:</strong> This method is called automatically by SignalR when the connection is established.
+    ///     No explicit frontend call is required; the connection setup in the class-level remarks handles this.
+    /// </remarks>
+    /// <returns>A task that represents the asynchronous operation of initializing the client connection.</returns>
+    public override async Task OnConnectedAsync()
+    {
+        var user = Context.ConnectionId;
+        var role = Context.User?.FindFirst(ClaimTypes.Role)?.Value;
+        var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (role == "Admin") await Groups.AddToGroupAsync(user, "Admin");
+        await Groups.AddToGroupAsync(user, $"User-{userId}");
+        await base.OnConnectedAsync();
     }
 }
