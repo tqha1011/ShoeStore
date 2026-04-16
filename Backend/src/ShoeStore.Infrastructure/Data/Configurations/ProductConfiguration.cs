@@ -16,8 +16,13 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             .HasMaxLength(255);
 
         builder.HasIndex(p => p.PublicId).IsUnique();
-        
+
         builder.Property(p => p.PublicId)
             .HasDefaultValueSql("gen_random_uuid()");
+
+        builder.HasOne(p => p.Category)
+            .WithMany(c => c.Products)
+            .HasForeignKey(p => p.CategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

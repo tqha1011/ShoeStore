@@ -68,6 +68,30 @@ namespace ShoeStore.Infrastructure.Migrations
                     b.ToTable("cart_items", (string)null);
                 });
 
+            modelBuilder.Entity("ShoeStore.Domain.Entities.Category", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_category");
+
+                    b.ToTable("category", (string)null);
+                });
+
             modelBuilder.Entity("ShoeStore.Domain.Entities.Color", b =>
                 {
                     b.Property<int>("Id")
@@ -330,6 +354,10 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("brand");
 
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("integer")
+                        .HasColumnName("category_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -348,6 +376,9 @@ namespace ShoeStore.Infrastructure.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_products");
+
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("ix_products_category_id");
 
                     b.HasIndex("PublicId")
                         .IsUnique()
@@ -923,6 +954,18 @@ namespace ShoeStore.Infrastructure.Migrations
                     b.Navigation("Payment");
                 });
 
+            modelBuilder.Entity("ShoeStore.Domain.Entities.Product", b =>
+                {
+                    b.HasOne("ShoeStore.Domain.Entities.Category", "Category")
+                        .WithMany("Products")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_products_category_category_id");
+
+                    b.Navigation("Category");
+                });
+
             modelBuilder.Entity("ShoeStore.Domain.Entities.ProductVariant", b =>
                 {
                     b.HasOne("ShoeStore.Domain.Entities.Color", "Color")
@@ -1016,6 +1059,11 @@ namespace ShoeStore.Infrastructure.Migrations
                     b.Navigation("Invoice");
 
                     b.Navigation("Voucher");
+                });
+
+            modelBuilder.Entity("ShoeStore.Domain.Entities.Category", b =>
+                {
+                    b.Navigation("Products");
                 });
 
             modelBuilder.Entity("ShoeStore.Domain.Entities.Invoice", b =>

@@ -38,10 +38,13 @@ public class ProductsController(IProductService productService) : ControllerBase
     ///     An action result containing paginated product list on success, or an error response describing what went
     ///     wrong.
     /// </returns>
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] ProductSearchRequest request, CancellationToken token)
     {
-        var results = await productService.GetProductsAsync(request, token);
+        var results = await productService.GetProductsUserAsync(request, token);
 
         return results.Match<IActionResult>(
             pageResult => Ok(pageResult),
@@ -74,6 +77,9 @@ public class ProductsController(IProductService productService) : ControllerBase
     ///     An action result containing detailed product information on success, or an error response describing what went
     ///     wrong.
     /// </returns>
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpGet("{productGuid}")]
     public async Task<IActionResult> ShowDetail(Guid productGuid, CancellationToken token)
     {
