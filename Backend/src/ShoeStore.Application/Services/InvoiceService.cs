@@ -94,21 +94,22 @@ public class InvoiceService(
         return invoice.OrderCode;
     }
 
-    public async Task<ErrorOr<Updated>> UpdateInvoiceStateByAdminAsync(Guid invoiceGuid, UpdateStateRequestDto request,
+    public async Task<ErrorOr<UpdateStateAdminResponseDto>> UpdateInvoiceStateByAdminAsync(Guid invoiceGuid,
+        UpdateStateRequestDto request,
         CancellationToken token)
     {
         var invoice = await invoiceRepository.GetByPublicIdAsync(invoiceGuid, token);
-        if (invoice == null) return Error.NotFound("Invoice not found");
+        if (invoice == null) return Error.NotFound("Invoice.NotFound", "Invoice not found");
         if (!UpdateInvoiceStateRule.CanAdminUpdateState(invoice.Status, request.Status))
-            return Error.Forbidden("Admin cannot change to this status");
+            return Error.Forbidden("Invoice.Forbidden", "Admin cannot change to this status");
 
         if (request.Status == InvoiceStatus.Paid && invoice.Payment == null)
-            return Error.Validation("Cannot mark as paid without payment");
+            return Error.Validation("Invoice.InvalidStatus", "Cannot mark as paid without payment");
 
         invoice.Status = request.Status;
         invoice.UpdatedAt = DateTime.UtcNow;
         invoiceRepository.Update(invoice);
         await uow.SaveChangesAsync(token);
-        return Result.Updated;
+        return new UpdateStateAdminResponseDto(invoice.OrderCode, invoice.Status, invoice.User!.PublicId);
     }
 }

@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using ShoeStore.Api.Hubs;
 using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.InvoiceDetailDTOs;
 using ShoeStore.Application.DTOs.InvoiceDTOs;
+using ShoeStore.Application.Interface.Hub;
 using ShoeStore.Application.Interface.InvoiceInterface;
 
 namespace ShoeStore.Api.Controllers;
@@ -18,7 +21,9 @@ namespace ShoeStore.Api.Controllers;
 [ApiController]
 [Route("api/invoice/admin")]
 [Authorize(Roles = "Admin")]
-public class InvoiceAdminController(IInvoiceService invoiceService) : ControllerBase
+public class InvoiceAdminController(
+    IInvoiceService invoiceService,
+    IHubContext<NotifyHub, INotifyHubClient> hubContext) : ControllerBase
 {
     /// <summary>
     ///     Gets a paginated list of invoices for admin management.
@@ -149,31 +154,43 @@ public class InvoiceAdminController(IInvoiceService invoiceService) : Controller
         CancellationToken token)
     {
         var result = await invoiceService.UpdateInvoiceStateByAdminAsync(invoiceGuid, request, token);
-        return result.Match<IActionResult>(
-            _ => Ok(new
-            {
-                message = "Update invoice status successfully"
-            }),
-            errors => errors[0].Code switch
+        if (result.IsError)
+        {
+            var firstError = result.FirstError;
+            return firstError.Code switch
             {
                 "Invoice.NotFound" => NotFound(new
                 {
                     message = "Invoice not found",
-                    description = errors[0].Description
+                    description = firstError.Description
+                }),
+
+                "Invoice.Forbidden" => StatusCode(StatusCodes.Status403Forbidden, new
+                {
+                    message = "You do not have permission to access this invoice.",
+                    description = firstError.Description
                 }),
 
                 "Invoice.InvalidStatus" => BadRequest(new
                 {
                     message = "Invalid invoice status",
-                    description = errors[0].Description
+                    description = firstError.Description
                 }),
 
                 _ => StatusCode(StatusCodes.Status500InternalServerError, new
                 {
                     message = "An unexpected error occurred. Please try again later",
-                    description = errors[0].Description
+                    description = firstError.Description
                 })
-            }
-        );
+            };
+        }
+
+        await hubContext.Clients.Group($"User-{result.Value.PublicUserId}")
+            .ReceiveNotification(result.Value.OrderCode,result.Value.Status);
+
+        return Ok(new
+        {
+            message = $"Invoice {result.Value.OrderCode} status updated to {result.Value.Status} successfully"
+        });
     }
 }
