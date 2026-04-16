@@ -50,7 +50,7 @@ public class NotifyHub : Hub<INotifyHubClient>
     /// </summary>
     /// <remarks>
     ///     <strong>Usage:</strong> Call immediately after placing an order to start listening for payment updates.
-    ///     The client remains in the group until <see cref="LeftInvoiceGroup" /> is invoked or connection is lost.
+    ///     The client remains in the group until <see cref="LeaveInvoiceGroup" /> is invoked or connection is lost.
     /// </remarks>
     /// <param name="orderCode">The order code to join (e.g., "DH000001").</param>
     public async Task JoinInvoiceGroup(string orderCode)
@@ -67,7 +67,7 @@ public class NotifyHub : Hub<INotifyHubClient>
     ///     <strong>Usage:</strong> Call when user navigates away from order details page or closes the order screen.
     /// </remarks>
     /// <param name="orderCode">The order code to leave (e.g., "DH000001").</param>
-    public async Task LeftInvoiceGroup(string orderCode)
+    public async Task LeaveInvoiceGroup(string orderCode)
     {
         var user = Context.ConnectionId;
         await Groups.RemoveFromGroupAsync(user, orderCode);
