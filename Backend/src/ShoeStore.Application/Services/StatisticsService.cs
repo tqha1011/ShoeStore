@@ -29,7 +29,7 @@ public class StatisticsService(IInvoiceRepository invoiceRepository) : IStatisti
 
         var currentMetrics =
             await invoiceRepository.GetSummaryMetricsAsync(currentStartDate, currentEndDate, cancellationToken);
-        ;
+
         var previousMetrics =
             await invoiceRepository.GetSummaryMetricsAsync(previousStartDate, previousEndDate, cancellationToken);
 

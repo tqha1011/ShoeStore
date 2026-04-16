@@ -9,7 +9,7 @@ public class SizeRepository(AppDbContext context) : GenericRepository<ProductSiz
 {
     public async Task<List<ProductSize>> GetProductSizesAsync(CancellationToken token)
     {
-        return await DbSet.AsNoTracking().ToListAsync(token);
+        return await DbSet.AsNoTracking().OrderBy(x => x.Size).ToListAsync(token);
     }
 
     public Task<bool> ProductSizeExistsAsync(decimal size, CancellationToken token)
