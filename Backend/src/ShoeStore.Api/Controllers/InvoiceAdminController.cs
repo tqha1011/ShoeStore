@@ -190,7 +190,8 @@ public class InvoiceAdminController(
 
         return Ok(new
         {
-            message = $"Invoice {result.Value.OrderCode} status updated to {result.Value.Status} successfully"
+            invoiceCode =  result.Value.OrderCode,
+            invoiceStatus = result.Value.Status,
         });
     }
 }
