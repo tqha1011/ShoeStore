@@ -14,5 +14,7 @@ public class Product : Entity<int>
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public bool IsDeleted { get; set; } = false;
+
     public ICollection<ProductVariant> ProductVariants { get; set; } = new List<ProductVariant>();
 }

@@ -257,6 +257,7 @@ public class ProductService(
 
         // Soft delete: mark all variants as deleted
         foreach (var variant in product.ProductVariants) variant.IsDeleted = true;
+        product.IsDeleted = true;
         await uow.SaveChangesAsync(token);
         try
         {
@@ -271,9 +272,10 @@ public class ProductService(
         return Result.Deleted;
     }
 
-    public async Task<ErrorOr<PageResult<ProductAdminRespone>>> GetProductsAdminAsync(ProductAdminRequestDto request, CancellationToken token)
+    public async Task<ErrorOr<PageResult<ProductAdminRespone>>> GetProductsAdminAsync(ProductAdminRequestDto request,
+        CancellationToken token)
     {
-        var query = productRepository.GetAll().ApplyStock(request).AsNoTracking();
+        var query = productRepository.GetAll().ApplyStock(request).AsNoTracking().Where(p => !p.IsDeleted);
 
         var totalCount = await query.CountAsync(token);
 
@@ -282,23 +284,20 @@ public class ProductService(
             PublicID = p.PublicId,
             ProductName = p.ProductName,
             Variants = p.ProductVariants
-                    .Where(v => v.IsSelling && !v.IsDeleted)
-                    .Select(v => new ProductVariantAdminResponeDto
-                    {
-                        imgUrl = v.ImageUrl,
-                        Price = v.Price,
-                        Stock = v.Stock,
-                        StockStatus = v.Stock <= 0 ? "Out of Stock" :
-                              v.Stock < 10 ? "Low Stock" : "In Stock"
-                    })
-                    .ToList()
+                .Where(v => v.IsSelling && !v.IsDeleted)
+                .Select(v => new ProductVariantAdminResponeDto
+                {
+                    imgUrl = v.ImageUrl,
+                    Price = v.Price,
+                    Stock = v.Stock,
+                    StockStatus = v.Stock <= 0 ? "Out of Stock" :
+                        v.Stock < 10 ? "Low Stock" : "In Stock"
+                })
+                .ToList()
         }).ToListAsync(token);
-
-        if (products.Count == 0)
-            return Error.NotFound("Product not found");
         var pageResult = new PageResult<ProductAdminRespone>
         {
-            Items = products,
+            Items = products.Count == 0 ? [] : products,
             TotalCount = totalCount,
             PageNumber = request.PageIndex,
             PageSize = request.PageSize
