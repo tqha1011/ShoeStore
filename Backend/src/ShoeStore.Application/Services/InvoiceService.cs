@@ -45,7 +45,7 @@ public class InvoiceService(
             OrderCode = i.OrderCode,
             FinalPrice = i.FinalPrice
         }).ToListAsync(token);
-
+        
         var pageResult = new PageResult<InvoiceResponseDto>
         {
             Items = invoices.Count == 0 ? [] : invoices,
