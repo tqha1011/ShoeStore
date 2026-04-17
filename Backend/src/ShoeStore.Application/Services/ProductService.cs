@@ -295,7 +295,6 @@ public class ProductService(
                 })
                 .ToList()
         }).ToListAsync(token);
-        
         var pageResult = new PageResult<ProductAdminRespone>
         {
             Items = products.Count == 0 ? [] : products,
