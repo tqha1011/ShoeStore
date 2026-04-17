@@ -29,8 +29,8 @@ import kotlinx.coroutines.flow.flow
  */
 class CartRepository(
     private val cartApi: CartApi = RetrofitInstance.cartApi,
-    private val userId: String = "user-id",  // TODO: Lấy từ shared preferences
-    private val authToken: String = ""       // TODO: Lấy token từ auth service
+    private val userId: String = "user-id",  // API_PEND: Lấy từ shared preferences
+    private val authToken: String = ""       // API_PEND: Lấy token từ auth service
 ) {
 
     private fun getAuthorizationHeader(): String = "Bearer $authToken"

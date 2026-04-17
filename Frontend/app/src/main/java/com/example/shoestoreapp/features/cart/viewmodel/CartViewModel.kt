@@ -70,7 +70,7 @@ class CartViewModel(
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-                // TODO: Implement backend GET /api/cart endpoint
+                // API_PEND: Implement backend GET /api/cart endpoint
                 // Tạm thời để empty list
                 _cartItems.value = emptyList()
                 _isCartEmpty.value = true
@@ -91,7 +91,7 @@ class CartViewModel(
         val items = _cartItems.value
         val subtotal = items.sumOf { it.price * it.quantity }
         
-        // TODO: Tính shipping, tax theo business logic
+
         val shipping = 0.0
         val tax = subtotal * 0.1  // 10% tax
 

@@ -93,8 +93,8 @@ fun CartScreen(
                         BottomNavTab.HOME -> onNavigateToHome()
                         BottomNavTab.SHOP -> onNavigateToShop()
                         BottomNavTab.FAVORITES -> onNavigateToFavorites()
-                        BottomNavTab.BAG -> {} // Already on BAG
                         BottomNavTab.PROFILE -> onNavigateToProfile()
+                        else -> {} // Already on BAG, no action needed
                     }
                 }
             )
@@ -136,7 +136,6 @@ fun CartScreen(
                                 onIncreaseQuantity = { viewModel.onIncreaseQuantity(it) },
                                 onDecreaseQuantity = { viewModel.onDecreaseQuantity(it) },
                                 onRemove = { viewModel.onRemoveItem(it) },
-                                onAddToWishlist = { /* TODO: Implement wishlist feature */ }
                             )
                         }
 

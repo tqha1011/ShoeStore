@@ -79,12 +79,14 @@ fun OrderSummarySection(
 
             // Pricing Breakdown
             PricingBreakdown(
-                subtotal = orderSummary.subtotal,
-                shipping = orderSummary.shipping,
-                tax = orderSummary.tax,
-                total = orderSummary.total,
-                promoCode = orderSummary.promoCode,
-                discountAmount = orderSummary.discountAmount,
+                pricingInfo = PricingInfo(
+                    subtotal = orderSummary.subtotal,
+                    shipping = orderSummary.shipping,
+                    tax = orderSummary.tax,
+                    total = orderSummary.total,
+                    promoCode = orderSummary.promoCode,
+                    discountAmount = orderSummary.discountAmount
+                ),
                 currency = selectedCurrency
             )
         }
@@ -147,17 +149,24 @@ fun ProductItemRow(
 }
 
 /**
+ * Data class chứa thông tin giá của đơn hàng.
+ */
+data class PricingInfo(
+    val subtotal: Double,
+    val shipping: Double,
+    val tax: Double,
+    val total: Double,
+    val promoCode: String = "",
+    val discountAmount: Double = 0.0
+)
+
+/**
  * Component hiển thị chi tiết phí vận chuyển, thuế và tổng tiền.
  */
 @Composable
 fun PricingBreakdown(
     modifier: Modifier = Modifier,
-    subtotal: Double,
-    shipping: Double,
-    tax: Double,
-    total: Double,
-    promoCode: String = "",
-    discountAmount: Double = 0.0,
+    pricingInfo: PricingInfo,
     currency: CurrencyType
 ) {
     Column(
@@ -167,29 +176,29 @@ fun PricingBreakdown(
         // Subtotal
         PricingRow(
             label = "Subtotal",
-            value = formatPrice(subtotal, currency),
+            value = formatPrice(pricingInfo.subtotal, currency),
             isHighlight = false
         )
 
         // Shipping
         PricingRow(
             label = "Estimated Shipping",
-            value = if (shipping == 0.0) "Free" else formatPrice(shipping, currency),
+            value = if (pricingInfo.shipping == 0.0) "Free" else formatPrice(pricingInfo.shipping, currency),
             isHighlight = false
         )
 
         // Tax
         PricingRow(
             label = "Tax",
-            value = formatPrice(tax, currency),
+            value = formatPrice(pricingInfo.tax, currency),
             isHighlight = false
         )
 
         // Discount (if any)
-        if (promoCode.isNotEmpty() && discountAmount > 0) {
+        if (pricingInfo.promoCode.isNotEmpty() && pricingInfo.discountAmount > 0) {
             PricingRow(
-                label = "Discount ($promoCode)",
-                value = "- ${formatPrice(discountAmount, currency)}",
+                label = "Discount (${pricingInfo.promoCode})",
+                value = "- ${formatPrice(pricingInfo.discountAmount, currency)}",
                 isHighlight = false,
                 valueColor = Color(0xFF27AE60)
             )
@@ -212,7 +221,7 @@ fun PricingBreakdown(
             )
 
             Text(
-                text = formatPrice(total, currency),
+                text = formatPrice(pricingInfo.total, currency),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 0.3.sp,

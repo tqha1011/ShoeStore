@@ -70,9 +70,9 @@ class AdminProductListViewModel(
                 val nextPage = _currentPage.value + 1
 
                 val keyword = _searchText.value.ifEmpty { null }
-                val inStock = if (_selectedFilter.value == "IN STOCK") true else null
-                val outOfStock = if (_selectedFilter.value == "OUT OF STOCK") true else null
-                val lowStock = if (_selectedFilter.value == "LOW STOCK") true else null
+                val inStock = (_selectedFilter.value == "IN STOCK").takeIf { it }
+                val outOfStock = (_selectedFilter.value == "OUT OF STOCK").takeIf { it }
+                val lowStock = (_selectedFilter.value == "LOW STOCK").takeIf { it }
                 val pageIndex = nextPage + 1
                 val pageSize = 4
 
@@ -119,9 +119,9 @@ class AdminProductListViewModel(
     private fun applyFiltersAndSearch() {
         viewModelScope.launch{
             val keyword = _searchText.value.ifEmpty {null}
-            val inStock = if (_selectedFilter.value == "IN STOCK") true else null
-            val outOfStock = if (_selectedFilter.value == "OUT OF STOCK") true else null
-            val lowStock = if (_selectedFilter.value == "LOW STOCK") true else null
+            val inStock = (_selectedFilter.value == "IN STOCK").takeIf { it }
+            val outOfStock = (_selectedFilter.value == "OUT OF STOCK").takeIf { it }
+            val lowStock = (_selectedFilter.value == "LOW STOCK").takeIf { it }
             val pageIndex = 1
             val pageSize = 4
             repository.searchProducts(keyword, inStock, outOfStock,lowStock,pageIndex, pageSize).collect {

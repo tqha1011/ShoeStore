@@ -64,24 +64,9 @@ fun ProductListScreen(
     val isLoadingMore = viewModel.isLoadingMore.collectAsState()
     val errorMessage = viewModel.errorMessage.collectAsState()
 
-    // LazyListState để track scroll position
     val lazyGridState = rememberLazyGridState()
 
-    // Detect khi user scroll gần đến cuối
-    LaunchedEffect(lazyGridState) {
-        snapshotFlow { lazyGridState.layoutInfo.visibleItemsInfo }
-            .collect { visibleItems ->
-                if (visibleItems.isNotEmpty()) {
-                    val lastVisibleIndex = visibleItems.last().index
-                    val totalItems = productList.value?.size
-                    
-                    // Trigger load khi scroll gần đến cuối (2 items từ cuối)
-                    if (lastVisibleIndex >= (totalItems?.minus(2) ?: 0) && !isLoadingMore.value) {
-                        viewModel.loadNextPage()
-                    }
-                }
-            }
-    }
+    SetupInfiniteScroll(lazyGridState, productList.value, isLoadingMore.value, viewModel)
 
     Scaffold(
         topBar = {
@@ -115,80 +100,150 @@ fun ProductListScreen(
                 }
             )
 
-            Box(
-                modifier = Modifier.padding(vertical = 12.dp)
-            ) {
-                FilterChips(
-                    filters = listOf("All Shoes", "Air Max", "Dunk", "Pegasus", "Jordan"),
-                    selectedFilter = selectedFilter.value,
-                    onFilterSelected = { filter ->
-                        viewModel.onFilterSelected(filter)
+            FilterChipsSection(
+                selectedFilter = selectedFilter.value,
+                onFilterSelected = { filter ->
+                    viewModel.onFilterSelected(filter)
+                }
+            )
+
+            ErrorMessageBox(errorMessage.value)
+
+            ProductListContent(
+                isLoading = isLoading.value,
+                productList = productList.value,
+                isLoadingMore = isLoadingMore.value,
+                lazyGridState = lazyGridState,
+                onNavigateToDetail = onNavigateToDetail
+            )
+        }
+    }
+}
+
+@Composable
+private fun SetupInfiniteScroll(
+    lazyGridState: androidx.compose.foundation.lazy.grid.LazyGridState,
+    productList: List<*>?,
+    isLoadingMore: Boolean,
+    viewModel: ProductListViewModel
+) {
+    LaunchedEffect(lazyGridState) {
+        snapshotFlow { lazyGridState.layoutInfo.visibleItemsInfo }
+            .collect { visibleItems ->
+                if (visibleItems.isNotEmpty()) {
+                    val lastVisibleIndex = visibleItems.last().index
+                    val totalItems = productList?.size
+
+                    if (lastVisibleIndex >= (totalItems?.minus(2) ?: 0) && !isLoadingMore) {
+                        viewModel.loadNextPage()
                     }
+                }
+            }
+    }
+}
+
+@Composable
+private fun FilterChipsSection(
+    selectedFilter: String,
+    onFilterSelected: (String) -> Unit
+) {
+    Box(modifier = Modifier.padding(vertical = 12.dp)) {
+        FilterChips(
+            filters = listOf("All Shoes", "Air Max", "Dunk", "Pegasus", "Jordan"),
+            selectedFilter = selectedFilter,
+            onFilterSelected = onFilterSelected
+        )
+    }
+}
+
+@Composable
+private fun ErrorMessageBox(errorMessage: String?) {
+    if (!errorMessage.isNullOrEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFFFCDD2), shape = RoundedCornerShape(4.dp))
+                .padding(12.dp)
+        ) {
+            Text(
+                text = errorMessage,
+                color = Color(0xFFC62828),
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProductListContent(
+    isLoading: Boolean,
+    productList: List<*>?,
+    isLoadingMore: Boolean,
+    lazyGridState: androidx.compose.foundation.lazy.grid.LazyGridState,
+    onNavigateToDetail: (String) -> Unit
+) {
+    if (isLoading && productList?.isEmpty() == true) {
+        LoadingSpinner()
+    } else {
+        ProductGrid(
+            productList = productList,
+            isLoadingMore = isLoadingMore,
+            lazyGridState = lazyGridState,
+            onNavigateToDetail = onNavigateToDetail
+        )
+    }
+}
+
+@Composable
+private fun LoadingSpinner() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator()
+    }
+}
+
+@Composable
+private fun ProductGrid(
+    productList: List<*>?,
+    isLoadingMore: Boolean,
+    lazyGridState: androidx.compose.foundation.lazy.grid.LazyGridState,
+    onNavigateToDetail: (String) -> Unit
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(2),
+        state = lazyGridState,
+        contentPadding = PaddingValues(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        items(productList?.size ?: 0) { index ->
+            @Suppress("UNCHECKED_CAST")
+            val product = (productList as? List<com.example.shoestoreapp.features.user.product.data.models.Product>)?.getOrNull(index)
+            product?.let {
+                ProductCard(
+                    product = it,
+                    onProductClick = { productGuid: String ->
+                        onNavigateToDetail(productGuid)
+                    },
+                    onFavoriteClick = {}
                 )
             }
+        }
 
-            if (!errorMessage.value.isNullOrEmpty()) {
+        if (isLoadingMore) {
+            item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFFFFCDD2), shape = RoundedCornerShape(4.dp))
-                        .padding(12.dp)
-                ) {
-                    Text(
-                        text = errorMessage.value!!,
-                        color = Color(0xFFC62828),
-                        fontSize = 12.sp
-                    )
-                }
-            }
-
-            // Loading spinner cho initial load
-            if (isLoading.value && productList.value?.isEmpty() == true) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
+                        .padding(16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator()
-                }
-            } else {
-                // Products Grid - Infinite Scroll
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    state = lazyGridState,  // ← Add LazyGridState
-                    contentPadding = PaddingValues(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(productList.value?.size ?: 0) { index ->
-                        productList.value?.getOrNull(index)?.let { product ->
-                            ProductCard(
-                                product = product,
-                                onProductClick = { productGuid: String ->
-                                    onNavigateToDetail(productGuid)
-                                },
-                                onFavoriteClick = { //productGuid: String ->
-                                    //viewModel.toggleFavorite(productGuid)
-                                }
-                            )
-                        }
-                    }
-
-                    // Loading More Indicator
-                    if (isLoadingMore.value) {
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(32.dp)
-                                )
-                            }
-                        }
-                    }
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(32.dp)
+                    )
                 }
             }
         }

@@ -105,79 +105,114 @@ fun PaymentMethodCard(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        PaymentMethodDetails(
+            paymentMethod = paymentMethod,
+            modifier = Modifier.weight(1f)
+        )
+
+        SelectionIndicator(isSelected = isSelected)
+    }
+}
+
+@Composable
+private fun PaymentMethodDetails(
+    paymentMethod: PaymentMethod,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        PaymentIconBadge(paymentType = paymentMethod.type)
+
+        PaymentInfo(
+            displayName = paymentMethod.displayName,
+            expiryDate = paymentMethod.expiryDate
+        )
+    }
+}
+
+@Composable
+private fun PaymentIconBadge(
+    paymentType: PaymentType,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(40.dp, 24.dp)
+            .background(
+                color = if (paymentType == PaymentType.APPLE_PAY) Color.Black else Color(0xFFF5F5F5),
+                shape = RoundedCornerShape(4.dp)
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        val (text, fontSize, fontWeight, color) = getPaymentBadgeStyle(paymentType)
+        Text(
+            text = text,
+            fontSize = fontSize,
+            fontWeight = fontWeight,
+            color = color
+        )
+    }
+}
+
+private fun getPaymentBadgeStyle(
+    paymentType: PaymentType
+): Tuple4<String, androidx.compose.ui.unit.TextUnit, FontWeight, Color> {
+    return if (paymentType == PaymentType.APPLE_PAY) {
+        Tuple4("iOS", 14.sp, FontWeight.Bold, Color.White)
+    } else {
+        Tuple4(paymentType.name.take(4), 10.sp, FontWeight.Black, Color.Black)
+    }
+}
+
+private data class Tuple4<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
+
+@Composable
+private fun PaymentInfo(
+    displayName: String,
+    expiryDate: String
+) {
+    Column {
+        Text(
+            text = displayName,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
+
+        if (expiryDate.isNotEmpty()) {
+            Text(
+                text = "Expires $expiryDate",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color(0xFF999999),
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SelectionIndicator(isSelected: Boolean) {
+    if (isSelected) {
+        Icon(
+            imageVector = Icons.Default.CheckCircle,
+            contentDescription = "Selected",
+            modifier = Modifier.size(24.dp),
+            tint = Color.Black
+        )
+    } else {
+        Box(
             modifier = Modifier
-                .weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Payment Icon/Badge
-            Box(
-                modifier = Modifier
-                    .size(40.dp, 24.dp)
-                    .background(
-                        color = if (paymentMethod.type == PaymentType.APPLE_PAY) Color.Black else Color(0xFFF5F5F5),
-                        shape = RoundedCornerShape(4.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                if (paymentMethod.type == PaymentType.APPLE_PAY) {
-                    Text(
-                        text = "iOS",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                } else {
-                    Text(
-                        text = paymentMethod.type.name.take(4),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.Black
-                    )
-                }
-            }
-
-            // Payment Details
-            Column {
-                Text(
-                    text = paymentMethod.displayName,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                .size(20.dp)
+                .border(
+                    width = 1.dp,
+                    color = Color(0xFFD0D0D0),
+                    shape = RoundedCornerShape(50)
                 )
-
-                if (paymentMethod.expiryDate.isNotEmpty()) {
-                    Text(
-                        text = "Expires ${paymentMethod.expiryDate}",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = Color(0xFF999999),
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
-            }
-        }
-
-        // Selection Indicator
-        if (isSelected) {
-            Icon(
-                imageVector = Icons.Default.CheckCircle,
-                contentDescription = "Selected",
-                modifier = Modifier.size(24.dp),
-                tint = Color.Black
-            )
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(20.dp)
-                    .border(
-                        width = 1.dp,
-                        color = Color(0xFFD0D0D0),
-                        shape = RoundedCornerShape(50)
-                    )
-            )
-        }
+        )
     }
 }
 

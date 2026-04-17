@@ -55,6 +55,7 @@ private object Routes {
     fun createNewPassword(email: String, otp: String): String = "create_new_password/$email/$otp"
 }
 
+@Suppress("DEPRECATION")
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         RetrofitInstance.init(this)

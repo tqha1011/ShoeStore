@@ -42,7 +42,7 @@ class AdminProductRepository(
         } else {
             emit(emptyList())
         }
-    }.catch { e ->
+    }.catch { _ ->
         emit(emptyList())
 
     }.flowOn(Dispatchers.IO)
@@ -57,7 +57,7 @@ class AdminProductRepository(
         } else {
             emit(null)
         }
-    }.catch { e ->
+    }.catch { _ ->
         emit(null)
     }.flowOn(Dispatchers.IO)
 

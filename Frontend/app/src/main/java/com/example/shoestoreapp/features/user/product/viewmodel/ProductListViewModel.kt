@@ -31,13 +31,13 @@ class ProductListViewModel(
     // ============ STATE ============
     private val _products = MutableStateFlow<List<Product>?>(emptyList())
     val productList: StateFlow<List<Product>?> = _products.asStateFlow()
-    
+
     private val _selectedFilter = MutableStateFlow("All Shoes")
     val selectedFilter: StateFlow<String> = _selectedFilter.asStateFlow()
-    
+
     private val _searchText = MutableStateFlow("")
     val searchText: StateFlow<String> = _searchText.asStateFlow()
-    
+
     private val _selectedBottomTab = MutableStateFlow(BottomNavTab.SHOP)
     val selectedBottomTab: StateFlow<BottomNavTab> = _selectedBottomTab.asStateFlow()
 
@@ -93,7 +93,7 @@ class ProductListViewModel(
         _selectedFilter.value = filter
         applyFiltersAndSearch()
     }
-    
+
     /**
      * Xử lý khi user gõ text tìm kiếm
      * Sử dụng: repository.searchProducts() với searchTerm
@@ -104,7 +104,7 @@ class ProductListViewModel(
         _searchText.value = query
         applyFiltersAndSearch()
     }
-    
+
     /**
      * Xử lý khi user chọn tab ở BottomNavBar
      * 
@@ -133,7 +133,7 @@ class ProductListViewModel(
             try {
                 val nextPage = _currentPage.value + 1
                 val categoryId = getCategoryIdFromFilter(_selectedFilter.value)
-                
+
                 val request = ProductSearchRequest(
                     keyword = _searchText.value.ifEmpty { null },
                     brand = categoryId,
@@ -142,7 +142,7 @@ class ProductListViewModel(
                 )
 
                 val products = repository.searchProducts(request).first()
-                
+
                 // Thêm sản phẩm mới vào danh sách hiện tại (append, không replace)
                 if (products?.isNotEmpty() ?: false) {
                     _products.value = _products.value?.plus(products)
@@ -172,7 +172,7 @@ class ProductListViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             val categoryId = getCategoryIdFromFilter(_selectedFilter.value)
-            val searchTerm = searchText.value.ifEmpty {null}
+            val searchTerm = searchText.value.ifEmpty { null }
             val request = ProductSearchRequest(
                 keyword = searchTerm,
                 brand = categoryId,
@@ -203,20 +203,4 @@ class ProductListViewModel(
             else -> null // "All Shoes" → null (không filter)
         }
     }
-
-    /**
-     * Xử lý khi user click yêu thích sản phẩm
-     * Sử dụng: repository.updateFavoriteToAPI(productGuid, status)
-     * 
-     * Logic:
-     * 1. Gọi API để cập nhật trên backend
-     * 2. Cập nhật local state UI
-     * 3. Handle errors gracefully
-     *
-     */
-//    fun toggleFavorite(productGuid: String) {
-//        viewModelScope.launch {
-//
-//        }
-//    }
 }

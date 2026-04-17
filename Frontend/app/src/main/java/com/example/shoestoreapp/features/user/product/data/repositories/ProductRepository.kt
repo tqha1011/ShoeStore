@@ -31,7 +31,7 @@ class ProductRepository(
             emit(emptyList())
         }
     }.catch {
-        e -> emit(emptyList())
+        _ -> emit(emptyList())
 
     }.flowOn(Dispatchers.IO)
 
@@ -40,39 +40,16 @@ class ProductRepository(
         val response = productApi.getProductDetail(productGuid)
         if (response.isSuccessful && response.body() != null) {
             val body = response.body()?.data
-            val product = body?.let {mapDetailDtoToProduct(it)}
+            val product = body?.let {mapDtoToProduct(it)}
             emit(product)
         } else {
             emit(null)
         }
     }.catch {
-        e -> emit(null)
+        _ -> emit(null)
     }.flowOn(Dispatchers.IO)
 
     private fun mapDtoToProduct(dto: ProductResponseDto): Product {
-        val variants = dto.variants.map { variantDto ->
-            ProductVariant(
-                publicId = variantDto.publicId,
-                sizeId = variantDto.sizeId,
-                size = variantDto.size,
-                colorId = variantDto.colorId,
-                colorName = variantDto.colorName,
-                stock = variantDto.stock,
-                price = variantDto.price,
-                imageUrl = variantDto.imageUrl,
-                isSelling = variantDto.isSelling,
-                isDelete = variantDto.isDelete
-            )
-        }
-        return Product(
-            publicId = dto.publicId,
-            productName = dto.productName,
-            brand = dto.brand,
-            variants = variants
-        )
-    }
-
-    private fun mapDetailDtoToProduct(dto: ProductResponseDto): Product {
         val variants = dto.variants.map { variantDto ->
             ProductVariant(
                 publicId = variantDto.publicId,

@@ -126,16 +126,6 @@ class ProductDetailViewModel(
         _selectedSize.value = size
     }
 
-    // ============ HÀM TOGGLE FAVORITE ============
-    /**
-     * Đánh dấu hoặc bỏ đánh dấu sản phẩm yêu thích
-     */
-//    fun toggleFavorite(productGuid: String) {
-//        viewModelScope.launch {
-//            //
-//        }
-//    }
-
     // ============ HÀM THÊM VÀO GIỎ HÀNG ============
     /**
      * Thêm sản phẩm vào giỏ hàng
