@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import com.example.shoestoreapp.features.admin.crud.ui.components.*
 import com.example.shoestoreapp.features.admin.crud.viewmodel.ProductCrudViewModel
 
@@ -24,6 +25,7 @@ import com.example.shoestoreapp.features.admin.crud.viewmodel.ProductCrudViewMod
 fun AdminProductCrudScreen(
     viewModel: ProductCrudViewModel,
     onBackClick: () -> Unit = {},
+    navController: NavHostController,
 ) {
     // Collect form state from ViewModel
     val sizesList by viewModel.sizesList.collectAsState()
@@ -39,13 +41,18 @@ fun AdminProductCrudScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // Clear messages after 3 seconds
-    LaunchedEffect(errorMessage) {
-        if (errorMessage != null) {
+    val isActionSuccess by viewModel.actionSuccess.collectAsState()
+
+
+    LaunchedEffect(isActionSuccess) {
+        if (isActionSuccess) {
+            navController.previousBackStackEntry?.savedStateHandle?.set("refresh_list", true)
             kotlinx.coroutines.delay(3000)
-            viewModel.clearErrorMessage()
+            viewModel.resetActionState()
+            navController.popBackStack()
         }
     }
+
 
     Scaffold(
         topBar = {
@@ -105,10 +112,10 @@ fun AdminProductCrudScreen(
                 Column(modifier = Modifier.padding(bottom = 24.dp)) {
                     // Product Name
                     AdminFormField(
-                        label = "TÊN SẢN PHẨM",
+                        label = "PRODUCT NAME",
                         value = productName,
                         onValueChange = { viewModel.onProductNameChange(it) },
-                        placeholder = "Enter product name..."
+                        placeholder = "Enter product name"
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -130,9 +137,9 @@ fun AdminProductCrudScreen(
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             AdminFormField(
-                                label = "GIÁ ($)",
-                                value = price.toString(),
-                                onValueChange = { viewModel.onPriceChange(it.toDoubleOrNull() ?: 0.0) },
+                                label = "PRICE ($)",
+                                value = price,
+                                onValueChange = { viewModel.onPriceChange(it) },
                                 placeholder = "0.00",
                                 keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
                             )
@@ -176,14 +183,14 @@ fun AdminProductCrudScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             AdminFormField(
                                 label = "SKU",
-                                value = productId ?: " ",
+                                value = productId ?: "",
                                 onValueChange = { viewModel.onProductIdChange(it) },
                                 placeholder = "NK-XXXX-XXXX"
                             )
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             AdminFormField(
-                                label = "SỐ LƯỢNG KHO",
+                                label = "STOCK",
                                 value = stock.toString(),
                                 onValueChange = { viewModel.onStockChange(it.toIntOrNull() ?: 0) },
                                 placeholder = "0",

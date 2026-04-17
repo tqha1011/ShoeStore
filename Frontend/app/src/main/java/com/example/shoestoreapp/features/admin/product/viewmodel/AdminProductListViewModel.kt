@@ -38,7 +38,7 @@ class AdminProductListViewModel(
         loadProducts()
     }
     // ============ LOAD DATA ============
-    private fun loadProducts() {
+    fun loadProducts() {
         viewModelScope.launch {
             _isLoading.value = true
             try {

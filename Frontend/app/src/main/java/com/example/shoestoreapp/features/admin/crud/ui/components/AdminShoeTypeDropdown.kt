@@ -32,7 +32,7 @@ fun AdminShoeTypeDropdown(
 
     Column {
         Text(
-            text = "LOẠI GIÀY",
+            text = "CATEGORY",
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.5.sp,
@@ -43,7 +43,7 @@ fun AdminShoeTypeDropdown(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp)
+                .height(56.dp)
                 .background(
                     color = Color.White,
                     shape = RoundedCornerShape(8.dp)

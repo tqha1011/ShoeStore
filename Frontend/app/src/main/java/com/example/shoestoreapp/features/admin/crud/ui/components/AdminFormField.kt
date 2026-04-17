@@ -1,16 +1,14 @@
 package com.example.shoestoreapp.features.admin.crud.ui.components
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,33 +40,31 @@ fun AdminFormField(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
         }
-
-        TextField(
+        OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text(placeholder, fontSize = 13.sp) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .border(
-                    width = 1.5.dp,
-                    color = AdminCrudColors.gray300,
-                    shape = RoundedCornerShape(8.dp)
-                ),
+            placeholder = {
+                Text(
+                    text = placeholder,
+                    fontSize = 13.sp,
+                    color = Color.Gray
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
             enabled = isEnabled,
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                disabledContainerColor = Color.White,
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent,
-                disabledIndicatorColor = Color.Transparent,
-                cursorColor = AdminCrudColors.primary
-            ),
             shape = RoundedCornerShape(8.dp),
-            textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
+            textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                disabledContainerColor = Color.Transparent,
+                focusedBorderColor = AdminCrudColors.primary,
+                unfocusedBorderColor = AdminCrudColors.gray300,
+                disabledBorderColor = AdminCrudColors.gray300,
+                cursorColor = AdminCrudColors.primary
+            )
         )
     }
 }

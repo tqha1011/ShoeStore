@@ -38,10 +38,10 @@ class ProductCrudViewModel(
     private val _selectedCategoryId = MutableStateFlow("")
     val selectedCategoryId = _selectedCategoryId.asStateFlow()
 
-    private val _selectedCategoryName = MutableStateFlow("Chọn loại giày")
+    private val _selectedCategoryName = MutableStateFlow("Choose Category")
     val selectedCategoryName = _selectedCategoryName.asStateFlow()
 
-    private val _price = MutableStateFlow(0.0)
+    private val _price = MutableStateFlow("")
     val price = _price.asStateFlow()
 
     private val _stock = MutableStateFlow(0)
@@ -50,13 +50,13 @@ class ProductCrudViewModel(
     private val _selectedSizeId = MutableStateFlow("")
     val selectedSizeId = _selectedSizeId.asStateFlow()
 
-    private val _selectedSizeValue = MutableStateFlow("Chọn Size")
+    private val _selectedSizeValue = MutableStateFlow("Choose Size")
     val selectedSizeValue = _selectedSizeValue.asStateFlow()
 
     private val _selectedColorId = MutableStateFlow("")
     val selectedColorId = _selectedColorId.asStateFlow()
 
-    private val _selectedColorName = MutableStateFlow("Chọn màu")
+    private val _selectedColorName = MutableStateFlow("Choose color")
     val selectedColorName = _selectedColorName.asStateFlow()
 
     private val _imageUrl = MutableStateFlow<String?>(null)
@@ -72,6 +72,9 @@ class ProductCrudViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage = _errorMessage.asStateFlow()
 
+    private val _actionSuccess = MutableStateFlow(false)
+
+    val actionSuccess = _actionSuccess.asStateFlow()
 
     init {
         fetchMasterData()
@@ -87,11 +90,18 @@ class ProductCrudViewModel(
 
     // --- HANDLERS ---
     fun onProductNameChange(newName: String) { _productName.value = newName }
-    fun onPriceChange(newPrice: Double) { _price.value = newPrice }
+    fun onPriceChange(newValue: String) {
+        if (newValue.isEmpty() || newValue.matches(Regex("""^\d*\.?\d*$"""))) {
+            _price.value = newValue
+        }
+    }
     fun onStockChange(newStock: Int) { _stock.value = newStock }
     fun onImageUrlChange(newUrl: String) { _imageUrl.value = newUrl }
     fun onProductIdChange(newId: String?) { _productId.value = newId }
-    fun clearErrorMessage() { _errorMessage.value = null }
+
+    fun clearErrorMessage(){
+        _errorMessage.value = null
+    }
 
 
     fun onCategorySelected(id: String, name: String) {
@@ -127,7 +137,7 @@ class ProductCrudViewModel(
                             colorId = _selectedColorId.value.toIntOrNull() ?: 0,
                             colorName = _selectedColorName.value,
                             stock = _stock.value,
-                            price = _price.value,
+                            price = _price.value.toDoubleOrNull() ?: 0.0,
                             imageUrl = _imageUrl.value ?: "",
                             isSelling = true
                         )
@@ -148,7 +158,7 @@ class ProductCrudViewModel(
                             sizeId = _selectedSizeId.value.toIntOrNull() ?: 0,
                             colorId = _selectedColorId.value.toIntOrNull() ?: 0,
                             stock = _stock.value,
-                            price = _price.value,
+                            price = _price.value.toDoubleOrNull() ?: 0.0,
                             imageUrl = _imageUrl.value,
                             isSelling = true
                         )
@@ -171,6 +181,12 @@ class ProductCrudViewModel(
         }
     }
 
+    fun resetActionState() {
+        _actionSuccess.value = false
+        _errorMessage.value = null
+    }
+
+
     /**
      * Hàm dùng chung để xử lý Resource truyền từ Repository về
      * @param resource: Dữ liệu bọc trong Resource (Loading, Success, Error)
@@ -185,10 +201,12 @@ class ProductCrudViewModel(
             is Resource.Success -> {
                 _isLoading.value = false
                 _errorMessage.value = successMsg // In ra thông báo thành công riêng biệt
+                _actionSuccess.value = true
             }
             is Resource.Error -> {
                 _isLoading.value = false
                 _errorMessage.value = resource.message // In ra lỗi từ Backend (400, 500...)
+                _actionSuccess.value = false
             }
         }
     }
