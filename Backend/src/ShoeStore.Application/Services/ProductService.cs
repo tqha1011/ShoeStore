@@ -295,12 +295,10 @@ public class ProductService(
                 })
                 .ToList()
         }).ToListAsync(token);
-
-        if (products.Count == 0)
-            return Error.NotFound("Product not found");
+        
         var pageResult = new PageResult<ProductAdminRespone>
         {
-            Items = products,
+            Items = products.Count == 0 ? [] : products,
             TotalCount = totalCount,
             PageNumber = request.PageIndex,
             PageSize = request.PageSize
