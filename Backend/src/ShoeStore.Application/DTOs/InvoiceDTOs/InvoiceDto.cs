@@ -1,7 +1,7 @@
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
 
-namespace ShoeStore.Application.DTOs;
+namespace ShoeStore.Application.DTOs.InvoiceDTOs;
 
 public sealed record InvoiceDto(
     Guid InvoicePublicId,
