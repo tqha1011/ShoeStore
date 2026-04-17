@@ -94,7 +94,9 @@ fun CartScreen(
                         BottomNavTab.SHOP -> onNavigateToShop()
                         BottomNavTab.FAVORITES -> onNavigateToFavorites()
                         BottomNavTab.PROFILE -> onNavigateToProfile()
-                        else -> {} // Already on BAG, no action needed
+                        else -> {
+                            // Already on BAG, no action needed
+                        }
                     }
                 }
             )
