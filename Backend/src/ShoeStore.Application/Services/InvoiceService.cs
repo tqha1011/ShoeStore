@@ -44,12 +44,10 @@ public class InvoiceService(
             Phone = i.Phone,
             OrderCode = i.OrderCode
         }).ToListAsync(token);
-
-        if (invoices.Count == 0) return Error.NotFound("Invoice not found");
-
+        
         var pageResult = new PageResult<InvoiceResponseDto>
         {
-            Items = invoices,
+            Items = invoices.Count == 0 ? [] : invoices,
             TotalCount = totalCount,
             PageNumber = request.PageNumber,
             PageSize = request.PageSize
