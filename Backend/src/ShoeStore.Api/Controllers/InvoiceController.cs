@@ -196,7 +196,6 @@ public class InvoiceController(
 
         return Ok(new
         {
-            message = "Invoice has been updated successfully",
             invoiceCode = result.Value,
             newStatus = request.Status,
         });
