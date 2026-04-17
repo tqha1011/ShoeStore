@@ -1,11 +1,8 @@
 package com.example.shoestoreapp.features.user.product.ui.product_detail
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,12 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -27,11 +19,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.user.product.ui.components.ActionButtonsSection
 import com.example.shoestoreapp.features.user.product.ui.components.ExpandableSection
+import com.example.shoestoreapp.features.user.product.ui.components.ProductDetailTopAppBar
 import com.example.shoestoreapp.features.user.product.ui.components.ProductHeaderInfo
 import com.example.shoestoreapp.features.user.product.ui.components.ProductHeroImage
 import com.example.shoestoreapp.features.user.product.ui.components.SizeSelector
@@ -39,14 +30,14 @@ import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailVie
 
 /**
  * ProductDetailScreen: Màn hình hiển thị chi tiết sản phẩm
- * @param productId - ID của sản phẩm cần hiển thị
+ * @param productGuid - GUID của sản phẩm cần hiển thị (String, không phải Int)
  * @param viewModel - ProductDetailViewModel quản lý logic
  * @param onBackClick - Callback khi user click nút back
  * @param onNavigateToCart - Callback khi user thêm vào giỏ hàng
  */
 @Composable
 fun ProductDetailScreen(
-    productId: Int,
+    productGuid: String,  // Changed from Int to String (GUID)
     viewModel: ProductDetailViewModel = ProductDetailViewModel(),
     onBackClick: () -> Unit = {},
     onNavigateToCart: () -> Unit = {}
@@ -57,8 +48,8 @@ fun ProductDetailScreen(
     val isShippingExpanded by viewModel.isShippingExpanded.collectAsState(initial = false)
     val isDescriptionExpanded by viewModel.isDescriptionExpanded.collectAsState(initial = false)
 
-    LaunchedEffect(productId) {
-        viewModel.loadProductDetail(productId)
+    LaunchedEffect(productGuid) {
+        viewModel.loadProductDetail(productGuid)  // Pass GUID string
     }
 
     if (isLoading || productDetail == null) {
@@ -86,51 +77,15 @@ fun ProductDetailScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .clickable { onBackClick() }
-                        .padding(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.Black,
-                        modifier = Modifier.width(24.dp)
-                    )
-                }
-
-                Text(
-                    text = "NIKE",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Color.Black
-                )
-
-                Box(
-                    modifier = Modifier
-                        .clickable { }
-                        .padding(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.ShoppingBag,
-                        contentDescription = "Shopping Bag",
-                        tint = Color.Black,
-                        modifier = Modifier.width(24.dp)
-                    )
-                }
-            }
+            ProductDetailTopAppBar(
+                onBackClick = onBackClick,
+                onShoppingBagClick = {onNavigateToCart() }
+            )
 
             ProductHeroImage(
-                imageUrl = productDetail?.imageUrl,
-                contentDescription = productDetail?.name
+                imageUrl = productDetail?.variants?.firstOrNull()?.imageUrl,
+                contentDescription = productDetail?.productName,
+                modifier = Modifier.padding(top = 12.dp)
             )
 
             Column(
@@ -139,11 +94,11 @@ fun ProductDetailScreen(
                     .padding(horizontal = 24.dp, vertical = 32.dp)
             ) {
                 ProductHeaderInfo(
-                    name = productDetail?.name ?: "",
-                    price = productDetail?.price ?: 0.0,
-                    rating = productDetail?.rating ?: 0.0,
-                    reviewCount = productDetail?.reviewCount ?: 0,
-                    productType = productDetail?.productType ?: ""
+                    name = productDetail?.productName ?: "",
+                    price = productDetail?.variants?.firstOrNull()?.price ?: 0.0,
+                    rating = 0.0,  // Backend không cung cấp rating
+                    reviewCount = 0,  // Backend không cung cấp reviewCount
+                    productType = productDetail?.brand ?: ""  // Dùng brand thay vì productType
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -162,17 +117,17 @@ fun ProductDetailScreen(
 
                 ActionButtonsSection(
                     onAddToCartClick = {
-                        productDetail?.id?.let { id ->
-                            viewModel.addToCart(id)
+                        productDetail?.publicId?.let { guid ->  // Use publicId instead of productGuid
+                            viewModel.addToCart(guid, 1)
                             onNavigateToCart()
                         }
                     },
                     onFavoriteClick = {
-                        productDetail?.id?.let { id ->
-                            viewModel.toggleFavorite(id)
+                        productDetail?.publicId?.let {
+                            // Favorite feature sẽ implement khi Backend có endpoint
                         }
                     },
-                    isFavorite = productDetail?.isFavorite ?: false
+                    isFavorite = false  // Backend không cung cấp favorite status
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -195,7 +150,7 @@ fun ProductDetailScreen(
 
                 ExpandableSection(
                     title = "Product Description",
-                    content = productDetail?.description ?: "The Nike Air Max 270 was the first lifestyle Air Max from Nike, delivering style, comfort and a giant attitude. The design draws inspiration from Air Max icons, showcasing Nike's greatest innovation with its large window and fresh array of colors.",
+                    content = "Premium product from ${productDetail?.brand ?: "our collection"}. Crafted with quality materials and designed for comfort.",
                     isExpanded = isDescriptionExpanded,
                     onExpandedChange = { viewModel.toggleDescriptionExpanded() }
                 )

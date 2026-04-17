@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.features.user.product.data.models.Product
 import com.example.shoestoreapp.features.user.product.data.repositories.ProductRepository
+import com.example.shoestoreapp.features.cart.data.repositories.CartRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+
 
 /**
  * ProductDetailViewModel: ViewModel quản lý logic và state cho màn hình chi tiết sản phẩm
@@ -20,7 +22,8 @@ import kotlinx.coroutines.launch
  * @param productRepository - Repository cung cấp dữ liệu sản phẩm
  */
 class ProductDetailViewModel(
-    private val productRepository: ProductRepository = ProductRepository()
+    private val productRepository: ProductRepository = ProductRepository(),
+    private val cartRepository: CartRepository = CartRepository()
 ) : ViewModel() {
 
     // ============ STATE QUẢN LÝ THÔNG TIN SẢN PHẨM ============
@@ -89,23 +92,21 @@ class ProductDetailViewModel(
 
     // ============ HÀM LOAD CHI TIẾT SẢN PHẨM ============
     /**
-     * Tải thông tin chi tiết sản phẩm theo ID
+     * Tải thông tin chi tiết sản phẩm theo GUID
      *
-     * @param productId - ID của sản phẩm cần tải
+     * @param productGuid - GUID của sản phẩm cần tải
      *
      * Chi tiết hoạt động:
      * 1. Set _isLoading = true để hiển thị loading screen
-     * 2. Lấy danh sách tất cả sản phẩm từ Repository
-     * 3. Tìm kiếm sản phẩm có ID trùng khớp
-     * 4. Lưu vào _productDetail
-     * 5. Set _isLoading = false khi hoàn thành
+     * 2. Lấy chi tiết sản phẩm từ Repository bằng GUID
+     * 3. Lưu vào _productDetail
+     * 4. Set _isLoading = false khi hoàn thành
      */
-    fun loadProductDetail(productId: Int) {
+    fun loadProductDetail(productGuid: String) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val products = productRepository.getAllProducts().first()
-                val product = products.find { it.id == productId }
+                val product = productRepository.getProductDetail(productGuid).first()
                 _productDetail.value = product
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -125,18 +126,6 @@ class ProductDetailViewModel(
         _selectedSize.value = size
     }
 
-    // ============ HÀM TOGGLE FAVORITE ============
-    /**
-     * Đánh dấu hoặc bỏ đánh dấu sản phẩm yêu thích
-     *
-     * @param productId - ID của sản phẩm cần toggle
-     */
-    fun toggleFavorite(productId: Int) {
-        viewModelScope.launch {
-            productRepository.toggleFavorite(productId)
-        }
-    }
-
     // ============ HÀM THÊM VÀO GIỎ HÀNG ============
     /**
      * Thêm sản phẩm vào giỏ hàng
@@ -145,32 +134,21 @@ class ProductDetailViewModel(
      * - Phải chọn size (_selectedSize không được null)
      * - Sản phẩm phải có (productDetail không được null)
      *
-     * @param productId - ID của sản phẩm cần thêm
+     * @param - GUID của sản phẩm cần thêm
      */
-    fun addToCart(productId: Int) {
+    fun addToCart(variantId: String, quantity: Int) {
         viewModelScope.launch {
-            // Kiểm tra xem đã chọn size chưa
-            if (_selectedSize.value == null) {
-                println("Error: Please select a size before adding to cart")
-                return@launch
+            try {
+                _isLoading.value = true
+                cartRepository.addToCart(variantId, quantity).first()
+        } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                _isLoading.value = false
             }
-
-            // Gọi hàm addToCart từ Repository
-            productRepository.addToCart(productId)
-            println("Added product $productId (Size: ${_selectedSize.value}) to cart")
         }
     }
 
-    // ============ HÀM RESET STATE ============
-    /**
-     * Reset tất cả state về giá trị ban đầu
-     * - Dùng khi user quay lại màn hình danh sách
-     */
-    fun resetState() {
-        _productDetail.value = null
-        _selectedSize.value = null
-        _isLoading.value = false
-    }
 
     // ============ HÀM TOGGLE EXPANDED SECTIONS ============
     /**
