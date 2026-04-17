@@ -42,9 +42,10 @@ public class InvoiceService(
             PaymentName = i.Payment != null ? i.Payment.Name : string.Empty,
             Address = i.ShippingAddress,
             Phone = i.Phone,
-            OrderCode = i.OrderCode
+            OrderCode = i.OrderCode,
+            FinalPrice = i.FinalPrice
         }).ToListAsync(token);
-        
+
         var pageResult = new PageResult<InvoiceResponseDto>
         {
             Items = invoices.Count == 0 ? [] : invoices,
@@ -66,7 +67,8 @@ public class InvoiceService(
             Size = d.ProductVariant.Size!.Size,
             Color = d.ProductVariant.Color!.ColorName,
             Quantity = d.Quantity,
-            UnitPrice = d.UnitPrice
+            UnitPrice = d.UnitPrice,
+            ImageUrl = d.ProductVariant.ImageUrl ?? string.Empty,
         }).ToListAsync(token);
 
         if (result.Count == 0) return Error.NotFound("Invoice detail not found");
