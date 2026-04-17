@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
-using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.CheckoutInterface;
 
 namespace ShoeStore.Api.Controllers;
 
@@ -39,6 +39,11 @@ public class CheckOutController(ICheckOutService checkOutService) : ControllerBa
     ///     An action result containing the checkout summary with pricing and item details on success, or an error
     ///     response describing what went wrong.
     /// </returns>
+    [ProducesResponseType(typeof(CheckOutResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status429TooManyRequests)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost("prepare")]
     [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> PrepareCheckOut(List<CheckOutRequestDto> checkOutList, CancellationToken token)
@@ -94,6 +99,13 @@ public class CheckOutController(ICheckOutService checkOutService) : ControllerBa
     ///     An action result containing the order confirmation on success, or an error response describing what went
     ///     wrong.
     /// </returns>
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status429TooManyRequests)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost("place-order")]
     [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> PlaceOrder(PlaceOrderRequestDto placeOrderRequestDto, bool fromUserCart,

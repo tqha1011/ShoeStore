@@ -12,10 +12,12 @@ public class ProductRepository(AppDbContext context) : GenericRepository<Product
     public async Task<Product?> GetDetailsByGuidAsync(Guid productGuid, CancellationToken token)
     {
         return await DbSet.AsNoTracking()
+            .AsSplitQuery()
             .Include(x => x.ProductVariants)
             .ThenInclude(x => x.Size)
             .Include(x => x.ProductVariants)
             .ThenInclude(x => x.Color)
+            .Include(x => x.Category)
             .FirstOrDefaultAsync(x => x.PublicId == productGuid, token);
     }
 
@@ -28,13 +30,18 @@ public class ProductRepository(AppDbContext context) : GenericRepository<Product
             .ApplyProductId(request.ProductId)
             .ApplyPriceRange(request.MinPrice, request.MaxPrice)
             .ApplySort(request.Sort)
-            .ApplyPaging(request.PageIndex, request.PageSize)
             .AsQueryable();
     }
 
     public async Task<Product?> GetForUpdateByGuidAsync(Guid productGuid, CancellationToken token)
     {
         return await DbSet.Include(x => x.ProductVariants)
+            .Include(x => x.Category)
             .FirstOrDefaultAsync(x => x.PublicId == productGuid, token);
+    }
+
+    public IQueryable<Product> GetAll()
+    {
+        return DbSet;
     }
 }

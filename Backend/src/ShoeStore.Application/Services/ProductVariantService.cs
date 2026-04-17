@@ -1,4 +1,6 @@
 ﻿using ErrorOr;
+using Microsoft.Extensions.Caching.Hybrid;
+using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.ProductInterface;
@@ -9,7 +11,8 @@ namespace ShoeStore.Application.Services;
 public class ProductVariantService(
     IUnitOfWork uow,
     IProductVariantRepository productVariantRepository,
-    IProductRepository productRepository)
+    IProductRepository productRepository,
+    HybridCache cache)
     : IProductVariantService
 {
     public async Task<ErrorOr<ProductVariantResponseDto>> CreateAsync(Guid productGuid, CreateProductVariantDto dto,
@@ -31,6 +34,8 @@ public class ProductVariantService(
 
         productVariantRepository.Add(productVariant);
         await uow.SaveChangesAsync(token);
+        await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(productGuid), token);
+        await cache.RemoveByTagAsync(CacheTag.Product, token);
 
         return new ProductVariantResponseDto
         {

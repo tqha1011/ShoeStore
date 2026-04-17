@@ -32,6 +32,10 @@ public class RestorePassController(IRestorePasswordService restorePasswordServic
     /// <response code="429">Too many requests; rate limit exceeded for this email address.</response>
     /// <response code="500">Internal server error; failed to send OTP email.</response>
     /// <returns>An action result containing a success message on success, or an error response describing what went wrong.</returns>
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status429TooManyRequests)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost("verify-email")]
     [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> VerifyEmail([FromBody] EmailVerifyDto emailVerifyDto, CancellationToken token)
@@ -77,6 +81,10 @@ public class RestorePassController(IRestorePasswordService restorePasswordServic
     /// <response code="429">Too many requests; rate limit exceeded for this email address.</response>
     /// <response code="500">Internal server error; an unexpected server error occurred during OTP verification.</response>
     /// <returns>An action result containing a success message on success, or an error response describing what went wrong.</returns>
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status429TooManyRequests)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost("verify-otp")]
     [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> VerifyOtp([FromBody] OtpVerifyDto otpVerifyDto, CancellationToken token)
@@ -123,6 +131,10 @@ public class RestorePassController(IRestorePasswordService restorePasswordServic
     /// <response code="429">Too many requests; rate limit exceeded for this email address.</response>
     /// <response code="500">Internal server error; an unexpected server error occurred during password update.</response>
     /// <returns>An action result containing a success message on success, or an error response describing what went wrong.</returns>
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status429TooManyRequests)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost("update-password")]
     [EnableRateLimiting("limit-per-user")]
     public async Task<IActionResult> UpdatePassword([FromBody] UpdatePasswordDto updatePasswordDto,

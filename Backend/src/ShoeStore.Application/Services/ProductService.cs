@@ -1,100 +1,129 @@
 ﻿using ErrorOr;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.Logging;
+using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
+using ShoeStore.Application.Extensions;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Services;
 
-public class ProductService(IUnitOfWork uow, IProductRepository productRepository) : IProductService
+public class ProductService(
+    IUnitOfWork uow,
+    IProductRepository productRepository,
+    HybridCache cache,
+    ILogger<ProductService> logger) : IProductService
 {
-    public async Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsAsync(ProductSearchRequest request,
+    public async Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsUserAsync(ProductSearchRequest request,
         CancellationToken token)
     {
         // Validate pagination parameters
         if (request.PageIndex <= 0)
             return Error.Validation("Pagination.PageIndex", "Page index must be greater than 0.");
 
-        if (request.PageSize <= 0 || request.PageSize > 50)
+        if (request.PageSize is <= 0 or > 50)
             return Error.Validation("Pagination.PageSize", "Page size must be between 1 and 50.");
 
 
         // Get the queryable result from repository
         var query = productRepository.SearchProduct(request);
 
-        // Get total count before applying paging
-        var totalCount = await query.CountAsync(token);
-
         // Apply pagination and fetch products
-        var products = await query
-            .Select(p => new ProductResponseDto
+        var cachedListProduct = await cache.GetOrCreateAsync(
+            CacheKey.GenerateProductListCacheKey(request),
+            async cancel =>
             {
-                PublicId = p.PublicId,
-                Brand = p.Brand ?? string.Empty,
-                ProductName = p.ProductName,
-                Variants = p.ProductVariants
-                    .Where(v => v.IsSelling && !v.IsDeleted)
-                    .Select(v => new ProductVariantResponseDto
+                // Get total count before applying paging
+                var totalCount = await query.Where(p => p.ProductVariants.Any(v => v.IsSelling && !v.IsDeleted))
+                    .CountAsync(cancel);
+
+                var products = await query
+                    .ApplyPaging(request.PageIndex, request.PageSize)
+                    .Select(p => new ProductResponseDto
                     {
-                        PublicId = v.PublicId,
-                        SizeId = v.SizeId,
-                        Size = v.Size!.Size,
-                        ColorId = v.ColorId,
-                        ColorName = v.Color != null ? v.Color.ColorName : null,
-                        Stock = v.Stock,
-                        Price = v.Price,
-                        ImageUrl = v.ImageUrl,
-                        IsSelling = v.IsSelling
+                        PublicId = p.PublicId,
+                        Brand = p.Brand ?? string.Empty,
+                        ProductName = p.ProductName,
+                        CategoryId = p.CategoryId,
+                        CategoryName = p.Category != null ? p.Category.Name : string.Empty,
+                        Variants = p.ProductVariants
+                            .Where(v => v.IsSelling && !v.IsDeleted)
+                            .Select(v => new ProductVariantResponseDto
+                            {
+                                PublicId = v.PublicId,
+                                SizeId = v.SizeId,
+                                Size = v.Size != null ? v.Size.Size : 0,
+                                ColorId = v.ColorId,
+                                ColorName = v.Color != null ? v.Color.ColorName : null,
+                                Stock = v.Stock,
+                                Price = v.Price,
+                                ImageUrl = v.ImageUrl,
+                                IsSelling = v.IsSelling
+                            })
+                            .ToList()
                     })
-                    .ToList()
-            })
-            .ToListAsync(token);
+                    .ToListAsync(cancel);
 
-        // Build and return paged result
-        var pageResult = new PageResult<ProductResponseDto>
-        {
-            Items = products,
-            TotalCount = totalCount,
-            PageNumber = request.PageIndex,
-            PageSize = request.PageSize
-        };
+                var pageResult = new PageResult<ProductResponseDto>
+                {
+                    Items = products,
+                    TotalCount = totalCount,
+                    PageNumber = request.PageIndex,
+                    PageSize = request.PageSize
+                };
+                return pageResult;
+            },
+            tags: [CacheTag.Product],
+            cancellationToken: token);
 
-        return pageResult;
+        return cachedListProduct;
     }
 
     public async Task<ErrorOr<ProductResponseDto>> GetProductByGuidAsync(Guid productGuid, CancellationToken token)
     {
-        var product = await productRepository.GetDetailsByGuidAsync(productGuid, token);
+        // Try to get product details from cache. If not found, fetch from database and cache it for future requests.
+        var cachedProductDto = await cache.GetOrCreateAsync(
+            CacheKey.GenerateProductDetailsCacheKey(productGuid),
+            async cancel =>
+            {
+                var productEntity = await productRepository.GetDetailsByGuidAsync(productGuid, cancel);
+                if (productEntity == null) return null;
 
-        if (product == null)
-            return Error.NotFound("Product.NotFound", $"Product with ID '{productGuid}' was not found.");
-
-        // Map Product entity to ProductResponseDto
-        var productDto = new ProductResponseDto
-        {
-            PublicId = product.PublicId,
-            ProductName = product.ProductName,
-            Brand = product.Brand ?? string.Empty,
-            Variants = product.ProductVariants
-                .Select(v => new ProductVariantResponseDto
+                var productDto = new ProductResponseDto
                 {
-                    PublicId = v.PublicId,
-                    SizeId = v.SizeId,
-                    Size = v.Size!.Size,
-                    ColorId = v.ColorId,
-                    ColorName = v.Color?.ColorName,
-                    Stock = v.Stock,
-                    Price = v.Price,
-                    ImageUrl = v.ImageUrl,
-                    IsSelling = v.IsSelling
-                })
-                .ToList()
-        };
+                    PublicId = productEntity.PublicId,
+                    ProductName = productEntity.ProductName,
+                    Brand = productEntity.Brand ?? string.Empty,
+                    CategoryName = productEntity.Category?.Name ?? string.Empty,
+                    CategoryId = productEntity.CategoryId,
+                    Variants = productEntity.ProductVariants
+                        .Select(v => new ProductVariantResponseDto
+                        {
+                            PublicId = v.PublicId,
+                            SizeId = v.SizeId,
+                            Size = v.Size?.Size ?? 0,
+                            ColorId = v.ColorId,
+                            ColorName = v.Color?.ColorName,
+                            Stock = v.Stock,
+                            Price = v.Price,
+                            ImageUrl = v.ImageUrl,
+                            IsSelling = v.IsSelling
+                        })
+                        .ToList()
+                };
+                return productDto;
+            },
+            cancellationToken: token);
 
-        return productDto;
+        // if in cache, return it directly without accessing the database
+        return cachedProductDto != null
+            ? cachedProductDto
+            : Error.NotFound("Product.NotFound", $"Product with ID {productGuid} was not found.");
     }
 
     public async Task<ErrorOr<Guid>> AddProductAsync(CreateProductDto dto, CancellationToken token)
@@ -104,6 +133,7 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
         {
             ProductName = dto.ProductName,
             Brand = dto.Brand ?? string.Empty,
+            CategoryId = dto.CategoryId,
             ProductVariants = new List<ProductVariant>()
         };
 
@@ -128,6 +158,14 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
         // Add product to repository and save
         productRepository.Add(product);
         await uow.SaveChangesAsync(token);
+        try
+        {
+            await cache.RemoveByTagAsync(CacheTag.Product, token);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error while adding product to cache");
+        }
 
         return product.PublicId;
     }
@@ -143,6 +181,7 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
         // Update basic product information
         product.ProductName = dto.ProductName;
         product.Brand = dto.Brand ?? string.Empty;
+        product.CategoryId = dto.CategoryId;
 
         // Get existing variants for comparison
         var existingVariants = product.ProductVariants.ToList();
@@ -161,6 +200,7 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
                 existingVariant.IsSelling = variantDto.IsSelling;
                 existingVariant.ImageUrl = variantDto.ImageUrl;
                 existingVariant.Price = variantDto.Price;
+                existingVariant.UpdatedAt = DateTime.UtcNow;
             }
             else
             {
@@ -176,7 +216,6 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
                     ProductId = product.Id
                 };
                 product.ProductVariants.Add(newProductVariant);
-                await uow.SaveChangesAsync(token);
             }
         }
 
@@ -189,12 +228,20 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
             .ToList();
 
         // soft delete
-        foreach (var variant in variantsToRemove)
-            variant.IsDeleted = true;
+        foreach (var variant in variantsToRemove) variant.IsDeleted = true;
 
         // Update product in repository and save
         productRepository.Update(product);
         await uow.SaveChangesAsync(token);
+        try
+        {
+            await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
+            await cache.RemoveByTagAsync(CacheTag.Product, token);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error while updating product.");
+        }
 
         return Result.Updated;
     }
@@ -211,7 +258,52 @@ public class ProductService(IUnitOfWork uow, IProductRepository productRepositor
         // Soft delete: mark all variants as deleted
         foreach (var variant in product.ProductVariants) variant.IsDeleted = true;
         await uow.SaveChangesAsync(token);
+        try
+        {
+            await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(productGuid), token);
+            await cache.RemoveByTagAsync(CacheTag.Product, token);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error while deleting product.");
+        }
 
         return Result.Deleted;
+    }
+
+    public async Task<ErrorOr<PageResult<ProductAdminRespone>>> GetProductsAdminAsync(ProductAdminRequestDto request, CancellationToken token)
+    {
+        var query = productRepository.GetAll().ApplyStock(request).AsNoTracking();
+
+        var totalCount = await query.CountAsync(token);
+
+        var products = await query.Select(p => new ProductAdminRespone
+        {
+            PublicID = p.PublicId,
+            ProductName = p.ProductName,
+            Variants = p.ProductVariants
+                    .Where(v => v.IsSelling && !v.IsDeleted)
+                    .Select(v => new ProductVariantAdminResponeDto
+                    {
+                        imgUrl = v.ImageUrl,
+                        Price = v.Price,
+                        Stock = v.Stock,
+                        StockStatus = v.Stock <= 0 ? "Out of Stock" :
+                              v.Stock < 10 ? "Low Stock" : "In Stock"
+                    })
+                    .ToList()
+        }).ToListAsync(token);
+
+        if (products == null || products.Count == 0)
+            return Error.NotFound("Product not found");
+        var pageResult = new PageResult<ProductAdminRespone>
+        {
+            Items = products,
+            TotalCount = totalCount,
+            PageNumber = request.PageIndex,
+            PageSize = request.PageSize
+        };
+
+        return pageResult;
     }
 }

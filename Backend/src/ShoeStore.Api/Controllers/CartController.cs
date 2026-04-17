@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.CartItemDTOs;
@@ -34,11 +35,23 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
     /// <response code="401">Unauthorized; user must have User role authorization.</response>
     /// <response code="500">Internal server error; an unexpected server error occurred.</response>
     /// <returns>An action result containing the cart item data on success, or an error response describing what went wrong.</returns>
+    [ProducesResponseType(typeof(UserCartItemResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost]
     [Authorize(Roles = "User")]
     public async Task<IActionResult> AddUserCartItem([FromBody] AddCartItemDto dto, CancellationToken token)
     {
-        var result = await cartItemService.AddCartItem(dto, token);
+        var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (validUser == null || !Guid.TryParse(validUser, out var publicUserId))
+            return Unauthorized(new
+            {
+                message = "You are not authorized to perform this action.",
+                description = "Please login to your account and try again."
+            });
+        var result = await cartItemService.AddCartItemAsync(dto, publicUserId, token);
         var response = result.Match<IActionResult>(
             responseDto => Ok(responseDto),
             errors => errors[0].Code switch
@@ -90,12 +103,24 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
     ///     An action result containing the updated cart item data on success, or an error response describing what went
     ///     wrong.
     /// </returns>
+    [ProducesResponseType(typeof(UserCartItemResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPut]
     [Authorize(Roles = "User")]
     public async Task<IActionResult> UpdateUserCartItem([FromBody] UpdateCartItemDto dto,
         CancellationToken token)
     {
-        var result = await cartItemService.UpdateCartItem(dto, token);
+        var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (validUser == null || !Guid.TryParse(validUser, out _))
+            return Unauthorized(new
+            {
+                message = "You are not authorized to perform this action.",
+                description = "Please login to your account and try again."
+            });
+        var result = await cartItemService.UpdateCartItemAsync(dto, token);
         var response = result.Match<IActionResult>(
             responseDto => Ok(responseDto),
             errors => errors[0].Code switch
@@ -141,11 +166,22 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
     /// <response code="401">Unauthorized; user must have User role authorization.</response>
     /// <response code="500">Internal server error; an unexpected server error occurred.</response>
     /// <returns>An action result containing a success message on success, or an error response describing what went wrong.</returns>
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost("remove-items")]
     [Authorize(Roles = "User")]
     public async Task<IActionResult> DeleteUserCartItem([FromBody] List<Guid> cartItemList, CancellationToken token)
     {
-        var result = await cartItemService.DeleteCartItem(cartItemList, token);
+        var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (validUser == null || !Guid.TryParse(validUser, out _))
+            return Unauthorized(new
+            {
+                message = "You are not authorized to perform this action.",
+                description = "Please login to your account and try again."
+            });
+        var result = await cartItemService.DeleteCartItemAsync(cartItemList, token);
         var response = result.Match<IActionResult>(
             _ => Ok(new { message = "Cart items deleted successfully" }),
             errors => errors[0].Code switch

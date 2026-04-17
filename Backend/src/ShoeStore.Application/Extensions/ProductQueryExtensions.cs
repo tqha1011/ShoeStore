@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using ShoeStore.Domain.Entities;
+﻿using ShoeStore.Domain.Entities;
+using ShoeStore.Application.DTOs.ProductDTOs;
 
 namespace ShoeStore.Application.Extensions
 {
@@ -23,6 +20,34 @@ namespace ShoeStore.Application.Extensions
             return query.Where(p => p.Brand != null && p.Brand.Contains(brand));
         }
 
+        public static IQueryable<Product> ApplyPaging(this IQueryable<Product> query, int pageIndex, int pageSize)
+        {
+            return query.Skip((pageIndex - 1) *  pageSize).Take(pageSize);
+        }
+        public static IQueryable<Product> ApplyStock(this IQueryable<Product> query, ProductAdminRequestDto request)
+        {
+            // 1. Kiểm tra xem có bất kỳ filter nào được chọn không
+            bool isFilterSelected = request.InStock == true || request.LowStock == true || request.OutOfStock == true;
+
+            if (isFilterSelected)
+            {
+                // Sử dụng Any để kiểm tra: "Chỉ lấy Sản phẩm có ít nhất một Biến thể rơi vào nhóm trạng thái đang chọn"
+                query = query.Where(p => p.ProductVariants.Any(v =>
+                    (request.InStock == true && v.Stock >= 10) ||
+                    (request.LowStock == true && v.Stock < 10 && v.Stock > 0) ||
+                    (request.OutOfStock == true && v.Stock <= 0)
+                ));
+            }
+
+            // 2. Kết hợp với Search Keyword (Lưu ý: Phải gán lại query)
+            if (!string.IsNullOrWhiteSpace(request.KeyWord))
+            {
+                // Giả sử ApplySearch là một extension method bạn đã viết
+                query = query.ApplySearch(request.KeyWord);
+            }
+
+            return query;
+        }
         public static IQueryable<Product> ApplySizeId(this IQueryable<Product> query, List<int?>? sizeIds)
         {
             if (sizeIds == null || !sizeIds.Any()) return query;
@@ -58,22 +83,18 @@ namespace ShoeStore.Application.Extensions
 
         public static IQueryable<Product> ApplySort(this IQueryable<Product> query, string? sort)
         {
-            return sort switch
+            return sort?.Trim().ToLower() switch
             {
                 "price_asc" => query.OrderBy(p => p.ProductVariants
-                            .Where(v => v.IsSelling && !v.IsDeleted)
-                            .Min(v => (decimal?)v.Price)),
+                    .Where(v => v.IsSelling && !v.IsDeleted)
+                    .Min(v => (decimal?)v.Price)),
                 "price_desc" => query.OrderByDescending(p => p.ProductVariants
-                                    .Where(v => v.IsSelling && !v.IsDeleted)
-                                    .Max(v => (decimal?)v.Price)),
-                _ => query.OrderBy(p => p.ProductName)
+                    .Where(v => v.IsSelling && !v.IsDeleted)
+                    .Max(v => (decimal?)v.Price)),
+                "name_asc" => query.OrderBy(p => p.ProductName),
+                "name_desc" => query.OrderByDescending(p => p.ProductName),
+                _ => query.OrderByDescending(p => p.CreatedAt)
             };
         }
-
-        public static IQueryable<Product> ApplyPaging(this IQueryable<Product> query, int pageIndex, int pageSize)
-        {
-            return query.Skip((pageIndex - 1) *  pageSize).Take(pageSize);
-        }
-
     }
 }
