@@ -362,6 +362,10 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
                     b.Property<string>("ProductName")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -396,8 +400,8 @@ namespace ShoeStore.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("Size")
-                        .HasColumnType("integer")
+                    b.Property<decimal>("Size")
+                        .HasColumnType("numeric")
                         .HasColumnName("size");
 
                     b.HasKey("Id")

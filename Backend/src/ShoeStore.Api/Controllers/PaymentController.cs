@@ -125,7 +125,7 @@ public class PaymentController(
                 $"Payment of {amount:#,##0} VND for order #{orderCode} has been successfully received.";
             var paymentNotification = new PaymentNotificationDto(message, amount, orderCode, true, DateTime.UtcNow);
 
-            await hubContext.Clients.Group(orderCode).ReceiveNotification(paymentNotification);
+            await hubContext.Clients.Group(orderCode).ReceivePaymentNotification(paymentNotification);
         }
 
         return Ok(new

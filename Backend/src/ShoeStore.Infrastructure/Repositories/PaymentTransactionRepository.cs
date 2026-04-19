@@ -13,4 +13,9 @@ public class PaymentTransactionRepository(AppDbContext context)
     {
         return await DbSet.Where(p => p.OrderCode == orderCode).ToListAsync(token);
     }
+
+    public Task<bool> CheckPaymentTransactionExistsAsync(string orderCode, decimal finalPrice, CancellationToken token)
+    {
+        return DbSet.AnyAsync(p => p.OrderCode == orderCode && p.Amount >= finalPrice, token);
+    }
 }

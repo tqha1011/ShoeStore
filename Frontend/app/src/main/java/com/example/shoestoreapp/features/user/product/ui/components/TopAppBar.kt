@@ -1,66 +1,73 @@
 package com.example.shoestoreapp.features.user.product.ui.components
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 
 /**
- * TopAppBar: Thanh ứng dụng phía trên cùng
+ * TopAppBar: Thanh ứng dụng phía trên cùng (sử dụng CenterAlignedTopAppBar)
  * @param onMenuClick - Callback khi click menu
  * @param onShoppingBagClick - Callback khi click shopping bag
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopAppBar(
     onMenuClick: () -> Unit = {},
     onShoppingBagClick: () -> Unit = {}
 ) {
-    Row(
+    CenterAlignedTopAppBar(
+        title = {
+            Text(
+                text = "NIKE",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.Black,
+                letterSpacing = 2.sp
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = onMenuClick) {
+                Icon(
+                    imageVector = Icons.Filled.Menu,
+                    contentDescription = "Menu",
+                    tint = Color.Black
+                )
+            }
+        },
+        actions = {
+            IconButton(onClick = onShoppingBagClick) {
+                Icon(
+                    imageVector = Icons.Filled.ShoppingBag,
+                    contentDescription = "Shopping Bag",
+                    tint = Color.Black
+                )
+            }
+        },
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = Color.White,
+            titleContentColor = Color.Black,
+            navigationIconContentColor = Color.Black,
+            actionIconContentColor = Color.Black
+        ),
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp)
-            .padding(horizontal = 24.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Menu icon
-        Icon(
-            imageVector = Icons.Filled.Menu,
-            contentDescription = "Menu",
-            modifier = Modifier.clickable { onMenuClick() },
-            tint = Color.Black
-        )
-
-        // Nike logo
-        Text(
-            text = "NIKE",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Black,
-            color = Color.Black,
-            letterSpacing = 2.sp
-        )
-
-        // Shopping bag icon
-        Icon(
-            imageVector = Icons.Filled.ShoppingBag,
-            contentDescription = "Shopping Bag",
-            modifier = Modifier.clickable { onShoppingBagClick() },
-            tint = Color.Black
-        )
-    }
+            .background(Color.White)
+            .padding(top = 12.dp)
+    )
 }
 
