@@ -33,7 +33,7 @@ public class OrderCancellationService(
                 if (expiredInvoices.Count != 0)
                     foreach (var invoice in expiredInvoices)
                     {
-                        invoice.Status = InvoiceStatus.Canceled;
+                        invoice.Status = InvoiceStatus.Cancelled;
 
                         foreach (var detail in invoice.InvoiceDetails)
                         {
