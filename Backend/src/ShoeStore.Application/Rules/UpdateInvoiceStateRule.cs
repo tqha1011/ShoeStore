@@ -10,21 +10,21 @@ namespace ShoeStore.Application.Rules
             return (currentStatus, newStatus) switch
             {
                 (InvoiceStatus.Pending, InvoiceStatus.Paid) => true,
-                (InvoiceStatus.Pending, InvoiceStatus.Canceled) => true,
-                (InvoiceStatus.Paid, InvoiceStatus.Canceled) => true,
+                (InvoiceStatus.Pending, InvoiceStatus.Cancelled) => true,
+                (InvoiceStatus.Paid, InvoiceStatus.Cancelled) => true,
                 _ => false
             };
         }
         public static bool CanAdminUpdateState(InvoiceStatus currentStatus, InvoiceStatus newStatus)
         {
-            // Admin can change to any status except from Canceled to Paid
+            // Admin can change to any status except from Cancelled to Paid, Cancelled to Delivering
             return (currentStatus, newStatus) switch
             {
-                (InvoiceStatus.Pending, InvoiceStatus.Canceled) => true,
+                (InvoiceStatus.Pending, InvoiceStatus.Cancelled) => true,
                 (InvoiceStatus.Pending, InvoiceStatus.Paid) => true,
-                (InvoiceStatus.Paid, InvoiceStatus.Canceled) => true,
+                (InvoiceStatus.Paid, InvoiceStatus.Cancelled) => true,
                 (InvoiceStatus.Paid, InvoiceStatus.Delivering) => true,
-                _ => true
+                _ => false
             };
         }
     }
