@@ -4,11 +4,12 @@ using ErrorOr;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
+
 namespace ShoeStore.Application.Services
 {
     public class VoucherService : IVoucherService
     {
-        private readonly IVoucherRepository voucherRepository;
+        private readonly IVoucherRepository repository;
         private readonly IUnitOfWork uow;
 
         public VoucherService(IVoucherRepository voucherRepository, IUnitOfWork uow)
@@ -35,30 +36,15 @@ namespace ShoeStore.Application.Services
                 IsDeleted = false
             };
 
-            voucherRepository.Add(voucher);
+            repository.Add(voucher);
             await uow.SaveChangesAsync(token);
             return Result.Created;
             
         }
 
-        //public Task<ErrorOr<Deleted>> DeleteVoucherAsync(Guid voucherGuid, CancellationToken token)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //public Task<ErrorOr<IEnumerable<VoucherDto>>> GetAllVouchersAsync(CancellationToken token)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //public Task<ErrorOr<VoucherDto>> GetVoucherByGuidAsync(Guid voucherGuid, CancellationToken token)
-        //{
-        //    throw new NotImplementedException();
-        //}
-
-        //public Task<ErrorOr<Updated>> UpdateVoucherAsync(Guid voucherGuid, UpdateVoucherDto voucherUpdateDto, CancellationToken token)
-        //{
-        //    throw new NotImplementedException();
-        //}
+        public Task<ErrorOr<Updated>> UpdateVoucherAsync(Guid voucherGuid, UpdateVoucherDto voucherUpdateDto, CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
