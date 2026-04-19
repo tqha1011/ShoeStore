@@ -8,5 +8,7 @@ namespace ShoeStore.Application.DTOs.InvoiceDetailDTOs
         public string Color { get; set; } = string.Empty;
         public int Quantity { get; set; } = 0;
         public decimal UnitPrice { get; set; } = 0;
+        
+        public string ImageUrl { get; set; } = string.Empty;
     }
 }
