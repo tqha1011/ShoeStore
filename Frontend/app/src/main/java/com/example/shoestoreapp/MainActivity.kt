@@ -164,6 +164,9 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
 
         UserProfileScreen(
             onTabSelected = { tab -> handleUserProfileTabSelection(tab, navController) },
+            onViewOrdersClick = {
+                navController.navigate(Routes.USER_INVOICE_LIST)
+            },
             onLogoutClick = {
                 scope.launch {
                     tokenManager.clearAuthInfo()
@@ -238,7 +241,7 @@ private fun NavHostController.navigateAfterLogout() {
 private fun handleUserHomeTabSelection(tab: BottomNavTab, navController: NavHostController) {
     when (tab) {
         BottomNavTab.PROFILE -> navController.navigate(Routes.USER_PROFILE)
-        BottomNavTab.BAG -> navController.navigate(Routes.USER_INVOICE_LIST)
+        BottomNavTab.BAG -> Unit
         else -> Unit
     }
 }
@@ -261,9 +264,7 @@ private fun handleUserProfileTabSelection(tab: BottomNavTab, navController: NavH
         BottomNavTab.HOME, BottomNavTab.SHOP -> {
             navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.USER_PROFILE)
         }
-        BottomNavTab.BAG -> {
-            navController.navigateAndPopTo(Routes.USER_INVOICE_LIST, Routes.USER_PROFILE)
-        }
+        BottomNavTab.BAG -> Unit
         BottomNavTab.PROFILE -> Unit
         else -> println("User Tab selected: $tab")
     }

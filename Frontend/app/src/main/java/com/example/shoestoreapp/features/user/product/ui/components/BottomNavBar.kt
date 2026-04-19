@@ -11,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -25,9 +24,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * BottomNavBar: Thanh điều hướng phía dưới
- * @param selectedTab - Tab hiện tại được chọn
- * @param onTabSelected - Callback khi chọn tab khác
+ * Bottom navigation bar.
+ * @param selectedTab currently selected tab.
+ * @param onTabSelected callback when a tab is selected.
  */
 @Composable
 fun BottomNavBar(
@@ -63,12 +62,6 @@ fun BottomNavBar(
             onClick = { onTabSelected(BottomNavTab.FAVORITES) }
         )
 
-        BottomNavItem(
-            icon = Icons.Filled.ShoppingBag,
-            label = "Bag",
-            isSelected = selectedTab == BottomNavTab.BAG,
-            onClick = { onTabSelected(BottomNavTab.BAG) }
-        )
 
         BottomNavItem(
             icon = Icons.Filled.Person,

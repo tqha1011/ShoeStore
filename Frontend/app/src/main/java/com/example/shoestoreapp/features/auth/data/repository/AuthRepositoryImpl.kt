@@ -10,6 +10,7 @@
     import com.example.shoestoreapp.features.auth.data.remote.UpdatePasswordRequest
     import com.example.shoestoreapp.features.auth.data.remote.VerifyEmailRequest
     import com.example.shoestoreapp.features.auth.data.remote.VerifyOtpRequest
+    import kotlinx.coroutines.CancellationException
     import retrofit2.HttpException
     import java.io.IOException
     class AuthRepositoryImpl(
@@ -40,6 +41,8 @@
                     Result.failure(Exception(errorMessage))
                 }
                 // No internet connection
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Result.failure(Exception(ERROR_OFFLINE))
             }

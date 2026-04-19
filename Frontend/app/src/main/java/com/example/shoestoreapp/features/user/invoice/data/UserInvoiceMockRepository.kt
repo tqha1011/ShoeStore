@@ -4,8 +4,7 @@ import com.example.shoestoreapp.features.invoice.mock.InvoiceMockData
 import com.example.shoestoreapp.features.invoice.model.Invoice
 
 class UserInvoiceMockRepository {
-    fun getInvoicesByUser(userId: Int): List<Invoice> {
-        return InvoiceMockData.invoices().filter { it.userId == userId }
+    fun getInvoicesByUserName(userName: String): List<Invoice> {
+        return InvoiceMockData.invoices().filter { it.userName.equals(userName, ignoreCase = true) }
     }
 }
-
