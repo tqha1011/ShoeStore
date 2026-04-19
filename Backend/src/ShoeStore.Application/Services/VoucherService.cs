@@ -4,6 +4,7 @@ using ErrorOr;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
+using Microsoft.EntityFrameworkCore;
 
 namespace ShoeStore.Application.Services
 {
@@ -12,9 +13,9 @@ namespace ShoeStore.Application.Services
         private readonly IVoucherRepository repository;
         private readonly IUnitOfWork uow;
 
-        public VoucherService(IVoucherRepository voucherRepository, IUnitOfWork uow)
+        public VoucherService(IVoucherRepository repository, IUnitOfWork uow)
         {
-            this.voucherRepository = voucherRepository;
+            this.repository = repository;
             this.uow = uow;
         }
         public async Task<ErrorOr<Created>> CreateVoucherAsync(CreateVoucherDto voucherCreateDto, CancellationToken token)
@@ -42,9 +43,47 @@ namespace ShoeStore.Application.Services
             
         }
 
-        public Task<ErrorOr<Updated>> UpdateVoucherAsync(Guid voucherGuid, UpdateVoucherDto voucherUpdateDto, CancellationToken token)
+        public async Task<ErrorOr<Updated>> UpdateVoucherAsync(
+    Guid voucherGuid,
+    UpdateVoucherDto voucherUpdateDto,
+    CancellationToken token)
         {
-            throw new NotImplementedException();
+
+            var voucher = await repository
+                .GetVoucherByGuid(voucherGuid)
+                .FirstOrDefaultAsync();
+
+            if (voucher == null)
+            {
+                return Error.NotFound(
+                    "VOUCHER_NOT_FOUND",
+                    "The voucher with the specified GUID does not exist."
+                );
+            }
+
+            // Update logic
+            voucher.VoucherDescription = voucherUpdateDto.VoucherDescription ?? voucher.VoucherDescription;
+
+            voucher.VoucherScope = (VoucherScope)voucherUpdateDto.VoucherScope;
+            voucher.DiscountType = (DiscountType)voucherUpdateDto.DiscountType;
+
+            voucher.MaxPriceDiscount = voucherUpdateDto.MaxPriceDiscount;
+
+            voucher.ValidFrom = voucherUpdateDto.ValidFrom ?? voucher.ValidFrom;
+            voucher.ValidTo = voucherUpdateDto.ValidTo ?? voucher.ValidTo;
+
+            voucher.MaxUsagePerUser = voucherUpdateDto.MaxUsagePerUser ?? voucher.MaxUsagePerUser;
+            voucher.TotalQuantity = voucherUpdateDto.TotalQuantity ?? voucher.TotalQuantity;
+            voucher.MinOrderPrice = voucherUpdateDto.MinOrderPrice ?? voucher.MinOrderPrice;
+
+            voucher.UpdatedAt = DateTime.UtcNow;
+
+            repository.Update(voucher);
+            await uow.SaveChangesAsync(token);
+
+            return Result.Updated;
+            
         }
+
     }
 }

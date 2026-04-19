@@ -13,7 +13,7 @@ namespace ShoeStore.Api.Controllers;
 /// <param name="voucherService">Service for handling voucher logic operations.</param>
 [ApiController]
 [Route("api/admin/vouchers")]
-[Authorize(Roles = "Admin")]
+// [Authorize(Roles = "Admin")]
 public class VoucherController(IVoucherService voucherService) : ControllerBase
 {
     /// <summary>
@@ -39,6 +39,7 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
+
     [HttpPost]
     public async Task<IActionResult> CreateVoucher([FromBody] CreateVoucherDto createVoucherDto, CancellationToken token)
     {
@@ -51,5 +52,20 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
                 message = "Failed to create voucher",
                 details = errors
             }));
+    }
+
+    [HttpPut("{voucherGuid}")]
+    public async Task<IActionResult> UpdateVoucher(Guid voucherGuid, [FromBody] UpdateVoucherDto updateVoucherDto, CancellationToken token)
+    {
+        var result = await voucherService.UpdateVoucherAsync(voucherGuid, updateVoucherDto, token);
+        return result.Match<IActionResult>(
+            _ => Ok(new { message = "Voucher updated successfully" }),
+            errors => errors.Any(e => e.Type == ErrorType.NotFound)
+                ? NotFound(new { message = "Voucher not found" })
+                : BadRequest(new
+                {
+                    message = "Failed to update voucher",
+                    details = errors
+                }));
     }
 }
