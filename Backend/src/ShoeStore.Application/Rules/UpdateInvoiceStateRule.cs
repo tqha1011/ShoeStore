@@ -10,8 +10,8 @@ public static class UpdateInvoiceStateRule
         return (currentStatus, newStatus) switch
         {
             (InvoiceStatus.Pending, InvoiceStatus.Paid) => true,
-            (InvoiceStatus.Pending, InvoiceStatus.Canceled) => true,
-            (InvoiceStatus.Paid, InvoiceStatus.Canceled) => true,
+            (InvoiceStatus.Pending, InvoiceStatus.Cancelled) => true,
+            (InvoiceStatus.Paid, InvoiceStatus.Cancelled) => true,
             _ => false
         };
     }
@@ -22,8 +22,8 @@ public static class UpdateInvoiceStateRule
         return (method, currentStatus, newStatus) switch
         {
             // both 2 payment method
-            (_, InvoiceStatus.Pending, InvoiceStatus.Canceled) => true,
-            (_, InvoiceStatus.Paid, InvoiceStatus.Canceled) => true,
+            (_, InvoiceStatus.Pending, InvoiceStatus.Cancelled) => true,
+            (_, InvoiceStatus.Paid, InvoiceStatus.Cancelled) => true,
 
             // COD payment method (paymentId = 2)
             (PaymentMethod.Cod, InvoiceStatus.Delivering, InvoiceStatus.Paid) => true,
