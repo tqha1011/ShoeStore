@@ -9,9 +9,7 @@ public static class UpdateInvoiceStateRule
         // Define valid state transitions
         return (currentStatus, newStatus) switch
         {
-            (InvoiceStatus.Pending, InvoiceStatus.Paid) => true,
             (InvoiceStatus.Pending, InvoiceStatus.Cancelled) => true,
-            (InvoiceStatus.Paid, InvoiceStatus.Cancelled) => true,
             _ => false
         };
     }
