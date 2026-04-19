@@ -12,6 +12,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.shoestoreapp.core.networks.RetrofitInstance
 import com.example.shoestoreapp.features.user.product.ui.product_detail.ProductDetailScreen
 import com.example.shoestoreapp.features.user.product.ui.product_list.ProductListScreen
 import com.example.shoestoreapp.features.admin.invoice.ui.AdminInvoiceScreen
@@ -24,6 +25,10 @@ import com.example.shoestoreapp.features.user.profile.ui.UserProfileScreen
 import com.example.shoestoreapp.features.admin.product.ui.AdminProductListScreen
 import com.example.shoestoreapp.features.admin.settings.ui.AdminSettingsScreen
 import com.example.shoestoreapp.features.admin.product.viewmodel.AdminProductListViewModel
+import com.example.shoestoreapp.features.admin.crud.ui.AdminProductCrudScreen
+import com.example.shoestoreapp.features.admin.crud.viewmodel.ProductCrudViewModel
+import com.example.shoestoreapp.features.admin.crud.data.repositories.ProductCrudRepository
+import com.example.shoestoreapp.features.admin.crud.data.repositories.MasterDataRepository
 import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenContent
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
@@ -39,19 +44,21 @@ private object Routes {
     const val FORGOT_PASSWORD = "forgot_password"
     const val CREATE_NEW_PASSWORD = "create_new_password/{email}/{otp}"
     const val PRODUCT_LIST = "product_list"
-    const val PRODUCT_DETAIL = "product_detail/{productId}"
+    const val PRODUCT_DETAIL = "product_detail/{productGuid}"
     const val USER_INVOICE_LIST = "user_invoice_list"
     const val USER_PROFILE = "user_profile"
     const val ADMIN_PRODUCT_LIST = "admin_product_list"
+    const val ADMIN_CRUD = "admin_crud"
     const val ADMIN_INVOICE_LIST = "admin_invoice_list"
     const val ADMIN_SETTINGS = "admin_settings"
 
     fun createNewPassword(email: String, otp: String): String = "create_new_password/$email/$otp"
-    fun productDetail(productId: Int): String = "product_detail/$productId"
 }
 
+@Suppress("DEPRECATION")
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        RetrofitInstance.init(this)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
@@ -143,9 +150,9 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
     composable(Routes.PRODUCT_LIST) {
         ProductListScreen(
             viewModel = remember { ProductListViewModel() },
-            onNavigateToDetail = { productId ->
-                println("onNavigateToDetail called - productId: $productId")
-                navController.navigate(Routes.productDetail(productId))
+            onNavigateToDetail = { productGuid ->
+                println("onNavigateToDetail called - productGuid: $productGuid")
+                navController.navigate(Routes.PRODUCT_DETAIL.replace("{productGuid}", productGuid))
             },
             onTopMenuClick = { println("Menu clicked") },
             onNavigateToShoppingBag = { println("Shopping bag clicked") },
@@ -174,10 +181,10 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
     }
 
     composable(Routes.PRODUCT_DETAIL) { backStackEntry ->
-        val productId = backStackEntry.arguments?.getString("productId")?.toInt() ?: 1
+        val productGuid = backStackEntry.arguments?.getString("productGuid") ?: "unknown"
 
         ProductDetailScreen(
-            productId = productId,
+            productGuid = productGuid,
             viewModel = remember { ProductDetailViewModel() },
             onBackClick = { navController.popBackStack() },
             onNavigateToCart = { println("Navigating to cart") }
@@ -190,8 +197,24 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
         AdminProductListScreen(
             viewModel = remember { AdminProductListViewModel() },
             onMenuClick = { println("Admin Menu clicked") },
-            onAddProductClick = { println("Add Product clicked") },
-            onTabSelected = { tab -> handleAdminProductTabSelection(tab, navController) }
+            onAddProductClick = {
+                navController.navigate(Routes.ADMIN_CRUD)
+            },
+            onTabSelected = { tab -> handleAdminProductTabSelection(tab, navController) },
+            navController = navController
+        )
+    }
+
+    composable(Routes.ADMIN_CRUD) {
+        AdminProductCrudScreen(
+            viewModel = remember {
+                ProductCrudViewModel(
+                    repository = ProductCrudRepository(),
+                    masterDataRepo = MasterDataRepository()
+                )
+            },
+            onBackClick = { navController.popBackStack() },
+            navController = navController
         )
     }
 

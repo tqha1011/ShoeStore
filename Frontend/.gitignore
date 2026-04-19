@@ -13,3 +13,5 @@
 .externalNativeBuild
 .cxx
 local.properties
+*.md
+GUIDE_WHY_INITIAL_IS_REQUIRED.kt

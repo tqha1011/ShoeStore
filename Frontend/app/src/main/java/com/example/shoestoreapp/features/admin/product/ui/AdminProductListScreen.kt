@@ -7,15 +7,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavBar
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminFilterChips
@@ -41,6 +47,7 @@ import com.example.shoestoreapp.features.admin.product.viewmodel.AdminProductLis
 @Composable
 fun AdminProductListScreen(
     viewModel: AdminProductListViewModel = AdminProductListViewModel(),
+    navController: NavHostController,
     onMenuClick: () -> Unit = {},
     onAddProductClick: () -> Unit = {},
     onTabSelected: (AdminBottomNavTab) -> Unit = {}
@@ -49,6 +56,38 @@ fun AdminProductListScreen(
     val selectedFilter by viewModel.selectedFilter.collectAsState(initial = "ALL PRODUCTS")
     val searchText by viewModel.searchText.collectAsState(initial = "")
     val isLoading by viewModel.isLoading.collectAsState(initial = false)
+    val isLoadingMore by viewModel.isLoadingMore.collectAsState(initial = false)
+    val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
+
+    val shouldRefresh by savedStateHandle
+        ?.getStateFlow("refresh_list", false)
+        ?.collectAsState() ?: remember { mutableStateOf(false) }
+
+    LaunchedEffect(shouldRefresh) {
+        if (shouldRefresh) {
+            savedStateHandle?.set("refresh_list", false)
+            viewModel.loadProducts()
+        }
+    }
+
+    // LazyListState để track scroll position
+    val lazyGridState = rememberLazyGridState()
+
+    // Detect khi user scroll gần đến cuối
+    LaunchedEffect(lazyGridState) {
+        snapshotFlow { lazyGridState.layoutInfo.visibleItemsInfo }
+            .collect { visibleItems ->
+                if (visibleItems.isNotEmpty()) {
+                    val lastVisibleIndex = visibleItems.last().index
+                    val totalItems = products?.size
+
+                    // Trigger load khi scroll gần đến cuối (2 items từ cuối)
+                    if (lastVisibleIndex >= (totalItems?.minus(2) ?: 0) && !isLoadingMore) {
+                        viewModel.loadNextPage()
+                    }
+                }
+            }
+    }
     if (isLoading) {
         Box(
             modifier = Modifier
@@ -106,9 +145,9 @@ fun AdminProductListScreen(
                 horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp),
                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
             ) {
-                items(products.size) { index ->
+                items(products?.size ?: 0) { index ->
                     AdminProductCard(
-                        product = products[index],
+                        product = products?.get(index) ?: return@items,
                         onProductClick = { _ ->
                             println("Edit product: ")
                         }

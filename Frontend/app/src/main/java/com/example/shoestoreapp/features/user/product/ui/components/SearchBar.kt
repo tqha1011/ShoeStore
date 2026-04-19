@@ -19,16 +19,18 @@ import androidx.compose.ui.unit.sp
 
 /**
  * SearchBar: Ô tìm kiếm sản phẩm
+ * @param modifier - Modifier để tùy chỉnh layout
  * @param searchText - Text hiện tại trong search box (state được lift từ parent)
  * @param onSearchChanged - Callback khi text thay đổi
  */
 @Composable
 fun SearchBar(
+    modifier: Modifier = Modifier,
     searchText: String = "",
     onSearchChanged: (String) -> Unit = {}
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(Color(0xFFF5F5F5), RoundedCornerShape(50.dp))
             .padding(horizontal = 16.dp, vertical = 12.dp),
