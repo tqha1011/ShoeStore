@@ -12,6 +12,6 @@
         public int? MaxUsagePerUser { get; set; }
         public int? TotalQuantity { get; set; }
         public bool? IsDeleted { get; set; } = false;
-        public decimal? MinOrderPrice { get; set; };
+        public decimal? MinOrderPrice { get; set; }
     }
 }
