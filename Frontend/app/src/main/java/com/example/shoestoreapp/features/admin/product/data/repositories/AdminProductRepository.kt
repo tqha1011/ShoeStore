@@ -62,18 +62,20 @@ class AdminProductRepository(
     }.flowOn(Dispatchers.IO)
 
     private fun mapDtoToAdminProduct(dto: ProductSearchDto): AdminProduct {
+        val stock = dto.variants?.firstOrNull()?.stock ?: 0
+        val stockStatus = when {
+            stock == 0 -> StockStatus.OUT_OF_STOCK
+            stock < 10 -> StockStatus.LOW_STOCK
+            else -> StockStatus.IN_STOCK
+        }
+
         return AdminProduct(
             id = dto.publicId,
             name = dto.productName,
             imageUrl = dto.variants?.firstOrNull()?.imageUrl ?: "",
             price = dto.variants?.firstOrNull()?.price ?: 0.0,
-            stockStatus = when (dto.variants?.firstOrNull()?.stockStatus) {
-                "In Stock" -> StockStatus.IN_STOCK
-                "Low Stock" -> StockStatus.LOW_STOCK
-                "Out Of Stock" -> StockStatus.OUT_OF_STOCK
-                else -> StockStatus.IN_STOCK
-            },
-            stock = dto.variants?.firstOrNull()?.stock ?: 0
+            stockStatus = stockStatus,
+            stock = stock
         )
     }
 }

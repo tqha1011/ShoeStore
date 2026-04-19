@@ -72,6 +72,9 @@ class ProductCrudViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage = _errorMessage.asStateFlow()
 
+    private val _successMessage = MutableStateFlow<String?>(null)
+    val successMessage = _successMessage.asStateFlow()
+
     private val _actionSuccess = MutableStateFlow(false)
 
     val actionSuccess = _actionSuccess.asStateFlow()
@@ -101,6 +104,10 @@ class ProductCrudViewModel(
 
     fun clearErrorMessage(){
         _errorMessage.value = null
+    }
+
+    fun clearSuccessMessage(){
+        _successMessage.value = null
     }
 
 
@@ -200,7 +207,8 @@ class ProductCrudViewModel(
             }
             is Resource.Success -> {
                 _isLoading.value = false
-                _errorMessage.value = successMsg // In ra thông báo thành công riêng biệt
+                _errorMessage.value = null
+                _successMessage.value = successMsg // In ra thông báo thành công riêng biệt
                 _actionSuccess.value = true
             }
             is Resource.Error -> {

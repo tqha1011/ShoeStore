@@ -39,6 +39,7 @@ fun AdminProductCrudScreen(
     val productId by viewModel.productId.collectAsState()
     val stock by viewModel.stock.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val successMessage by viewModel.successMessage.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
     val isActionSuccess by viewModel.actionSuccess.collectAsState()
@@ -227,7 +228,7 @@ fun AdminProductCrudScreen(
                 }
             }
 
-            errorMessage?.let { successMsg ->
+            successMessage?.let { successMsg ->
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -237,7 +238,7 @@ fun AdminProductCrudScreen(
                     AdminMessageBanner(
                         message = successMsg,
                         isError = false,
-                        onDismiss = { viewModel.clearErrorMessage() }
+                        onDismiss = { viewModel.clearSuccessMessage() }
                     )
                 }
             }
