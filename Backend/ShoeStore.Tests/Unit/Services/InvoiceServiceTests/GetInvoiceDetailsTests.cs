@@ -38,4 +38,66 @@ public class GetInvoiceDetailsTests
         Assert.True(result.IsError);
         Assert.Equal("InvoiceDetail.NotFound", result.FirstError.Code);
     }
+
+    [Fact]
+    public async Task GetInvoiceDetails_WhenInvoiceDetailsExist_ReturnInvoiceDetailsResponse()
+    {
+        var fakeGuid = Guid.NewGuid();
+
+        var fakeDetails = new List<InvoiceDetail>
+        {
+            new()
+            {
+                Id = 1,
+                InvoiceId = 1,
+                ProductVariantId = 1,
+                Quantity = 2,
+                UnitPrice = 120,
+                ProductVariant = new ProductVariant
+                {
+                    Id = 1,
+                    ProductId = 1,
+                    SizeId = 1,
+                    ColorId = 1,
+                    Stock = 20,
+                    IsSelling = true,
+                    Price = 120,
+                    ImageUrl = "https://image.test/shoe.jpg",
+                    Product = new Product
+                    {
+                        Id = 1,
+                        ProductName = "Jordan 1"
+                    },
+                    Size = new ProductSize
+                    {
+                        Id = 1,
+                        Size = 42
+                    },
+                    Color = new Color
+                    {
+                        Id = 1,
+                        ColorName = "Black"
+                    }
+                }
+            }
+        }.BuildMock().AsQueryable();
+
+        _mockRepo.Setup(repo => repo.GetInvoiceDetail(fakeGuid))
+            .Returns(fakeDetails);
+
+        var result = await _getInvoiceDetails.GetInvoiceDetailAsync(fakeGuid, CancellationToken.None);
+
+        Assert.False(result.IsError);
+
+        var details = result.Value.ToList();
+        Assert.Single(details);
+
+        var detail = details[0];
+        Assert.Equal("Jordan 1", detail.ProductName);
+        Assert.Equal(42, detail.Size);
+        Assert.Equal("Black", detail.Color);
+        Assert.Equal(2, detail.Quantity);
+        Assert.Equal(120, detail.UnitPrice);
+        Assert.Equal("https://image.test/shoe.jpg", detail.ImageUrl);
+    }
 }

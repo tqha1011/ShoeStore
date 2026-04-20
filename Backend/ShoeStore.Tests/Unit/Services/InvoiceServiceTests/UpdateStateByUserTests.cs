@@ -80,6 +80,8 @@ public class UpdateStateByUserTests
 
         Assert.True(result.IsError);
         Assert.Equal("Invoice.Forbidden", result.FirstError.Code);
+
+        VerifySafeDatabase(Times.Never);
     }
 
     [Fact]
@@ -105,6 +107,8 @@ public class UpdateStateByUserTests
         // stage 3: Assert
         Assert.True(adminResult.IsError);
         Assert.Equal("Invoice.NotFound", adminResult.FirstError.Code);
+
+        VerifySafeDatabase(Times.Never);
     }
 
     [Fact]
@@ -149,5 +153,13 @@ public class UpdateStateByUserTests
 
         Assert.True(result.IsError);
         Assert.Equal("User.Unauthorized", result.FirstError.Code);
+
+        VerifySafeDatabase(Times.Never);
+    }
+
+    private void VerifySafeDatabase(Func<Times> times)
+    {
+        _mockRepo.Verify(repo => repo.Update(It.IsAny<Invoice>()), times);
+        _mockUow.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), times);
     }
 }

@@ -14,11 +14,11 @@ public class UpdateStateByAdminTests
 {
     private readonly Mock<ICurrentUser> _currentUser = new();
 
+    private readonly InvoiceService _invoiceService;
+
     // generate mock data by using Moq nuget
     private readonly Mock<IInvoiceRepository> _mockRepo = new();
     private readonly Mock<IUnitOfWork> _mockUow = new();
-
-    private readonly InvoiceService _invoiceService;
 
     public UpdateStateByAdminTests()
     {
@@ -48,6 +48,8 @@ public class UpdateStateByAdminTests
         // stage 3: Assert
         Assert.True(adminResult.IsError);
         Assert.Equal("Invoice.NotFound", adminResult.FirstError.Code);
+        
+        VerifySafeDatabase(Times.Never);
     }
 
     [Theory]
@@ -107,6 +109,8 @@ public class UpdateStateByAdminTests
         // step 3: Assert
         Assert.True(result.IsError);
         Assert.Equal("Invoice.Forbidden", result.FirstError.Code);
+        
+        VerifySafeDatabase(Times.Never);
     }
 
     [Theory]
@@ -155,6 +159,8 @@ public class UpdateStateByAdminTests
 
         Assert.True(result.IsError);
         Assert.Equal("Invoice.InvalidStatus", result.FirstError.Code);
+        
+        VerifySafeDatabase(Times.Never);
     }
 
     [Theory]
@@ -222,6 +228,8 @@ public class UpdateStateByAdminTests
 
         Assert.True(result.IsError);
         Assert.Equal("Invoice.InvalidStatus", result.FirstError.Code);
+        
+        VerifySafeDatabase(Times.Never);
     }
 
     [Theory]
@@ -279,6 +287,8 @@ public class UpdateStateByAdminTests
 
         Assert.True(result.IsError);
         Assert.Equal("Invoice.Forbidden", result.FirstError.Code);
+        
+        VerifySafeDatabase(Times.Never);
     }
 
     [Fact]
@@ -304,6 +314,8 @@ public class UpdateStateByAdminTests
         // stage 3: Assert
         Assert.True(adminResult.IsError);
         Assert.Equal("Invoice.NotFound", adminResult.FirstError.Code);
+        
+        VerifySafeDatabase(Times.Never);
     }
 
     [Fact]
@@ -348,6 +360,8 @@ public class UpdateStateByAdminTests
 
         Assert.True(result.IsError);
         Assert.Equal("User.Unauthorized", result.FirstError.Code);
+        
+        VerifySafeDatabase(Times.Never);
     }
 
     [Fact]
@@ -364,5 +378,91 @@ public class UpdateStateByAdminTests
 
         Assert.True(result.IsError);
         Assert.Equal("InvoiceDetail.NotFound", result.FirstError.Code);
+
+        VerifySafeDatabase(Times.Never);
+    }
+
+    // test case for happy path
+    [Theory]
+    // SePay
+    [InlineData(1, InvoiceStatus.Pending, InvoiceStatus.Paid)]
+    [InlineData(1, InvoiceStatus.Paid, InvoiceStatus.Delivering)]
+    [InlineData(1, InvoiceStatus.Pending, InvoiceStatus.Cancelled)]
+    [InlineData(1, InvoiceStatus.Paid, InvoiceStatus.Cancelled)]
+
+    // COD
+    [InlineData(2, InvoiceStatus.Pending, InvoiceStatus.Delivering)]
+    [InlineData(2, InvoiceStatus.Delivering, InvoiceStatus.Paid)]
+    [InlineData(2, InvoiceStatus.Pending, InvoiceStatus.Cancelled)]
+    [InlineData(2, InvoiceStatus.Paid, InvoiceStatus.Cancelled)]
+    public async Task UpdateStateByAdmin_WhenUpdateSuccess_ReturnUpdateStateAdminResponseDto(
+        int paymentId,
+        InvoiceStatus currStatus,
+        InvoiceStatus newStatus)
+    {
+        var fakeGuid = Guid.NewGuid();
+
+        var fakeUser = new User
+        {
+            Id = 1,
+            UserName = "testuser",
+            Password = "testpass",
+            PublicId = Guid.NewGuid(),
+            Email = ""
+        };
+
+        var fakeRequest = new UpdateStateRequestDto
+        {
+            Status = newStatus
+        };
+
+        List<PaymentTransaction> fakeTransactions =
+        [
+            new()
+            {
+                Id = 1,
+                Amount = 100,
+                OrderCode = "DH123",
+                InvoiceId = 1,
+                PaymentId = paymentId
+            }
+        ];
+
+        var fakeInvoice = new Invoice
+        {
+            Id = 1,
+            UserId = 1,
+            FullName = "Test User",
+            User = fakeUser,
+            Status = currStatus,
+            Phone = "",
+            PaymentId = paymentId,
+            ShippingAddress = "",
+            FinalPrice = 100,
+            OrderCode = "DH123",
+            PaymentTransactions = fakeTransactions
+        };
+
+        _mockRepo.Setup(repo => repo.GetByPublicIdAsync(fakeGuid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fakeInvoice);
+
+        var result =
+            await _invoiceService.UpdateInvoiceStateByAdminAsync(fakeGuid, fakeRequest, CancellationToken.None);
+
+        Assert.False(result.IsError);
+
+        var dto = result.Value;
+        Assert.Equal(fakeInvoice.Status, dto.Status);
+        Assert.Equal(fakeInvoice.OrderCode, dto.OrderCode);
+        Assert.Equal(fakeInvoice.User.PublicId, dto.PublicUserId);
+        
+        // check if database saved the data
+        VerifySafeDatabase(Times.Once);
+    }
+
+    private void VerifySafeDatabase(Func<Times> times)
+    {
+        _mockRepo.Verify(repo => repo.Update(It.IsAny<Invoice>()), times);
+        _mockUow.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), times);
     }
 }
