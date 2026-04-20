@@ -58,23 +58,13 @@ public class PrepareCheckOutTests
         [
             new(fakeVariantId)
         ];
-        
-        var fakeProduct = new Product
-        {
-            Id = 1,
-            ProductName = "Product Name",
-            CategoryId = 1,
-            Category = new Category
-            {
-                Id = 1,
-                Name = "Category Name"
-            },
-        };
+
+        var fakeProduct = BuildFakeProduct();
 
         var fakeColor = new Color
         {
             Id = 1,
-            ColorName = "Color Name",
+            ColorName = "Color Name"
         };
 
         var fakeSize = new ProductSize
@@ -84,30 +74,14 @@ public class PrepareCheckOutTests
         };
 
 
-        List<ProductVariant> fakeProductVariants =
-        [
-            new()
-            {
-                Id = 1,
-                ProductId = 1,
-                Product = fakeProduct,
-                ColorId = 1,
-                Color = fakeColor,
-                Price = 100,
-                PublicId = fakeVariantId,
-                SizeId = 1,
-                Size = fakeSize,
-                Stock = 0,
-                IsSelling = true
-            }
-        ];
+        var fakeProductVariants = BuildFakeProductVariants(fakeProduct, fakeColor, fakeSize, fakeVariantId, true);
 
         _productVariantRepository
             .Setup(x => x.GetListVariantsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(fakeProductVariants);
-        
+
         var result = await _checkOutService.PrepareCheckOutAsync(fakeRequest, CancellationToken.None);
-        
+
         Assert.False(result.IsError);
         var item = Assert.Single(result.Value.Items);
         Assert.True(item.IsOutOfStock);
@@ -122,23 +96,13 @@ public class PrepareCheckOutTests
         [
             new(fakeVariantId)
         ];
-        
-        var fakeProduct = new Product
-        {
-            Id = 1,
-            ProductName = "Product Name",
-            CategoryId = 1,
-            Category = new Category
-            {
-                Id = 1,
-                Name = "Category Name"
-            },
-        };
+
+        var fakeProduct = BuildFakeProduct();
 
         var fakeColor = new Color
         {
             Id = 1,
-            ColorName = "Color Name",
+            ColorName = "Color Name"
         };
 
         var fakeSize = new ProductSize
@@ -147,24 +111,7 @@ public class PrepareCheckOutTests
             Size = 40
         };
 
-
-        List<ProductVariant> fakeProductVariants =
-        [
-            new()
-            {
-                Id = 1,
-                ProductId = 1,
-                Product = fakeProduct,
-                ColorId = 1,
-                Color = fakeColor,
-                Price = 100,
-                PublicId = fakeVariantId,
-                SizeId = 1,
-                Size = fakeSize,
-                Stock = 20,
-                IsSelling = true
-            }
-        ];
+        var fakeProductVariants = BuildFakeProductVariants(fakeProduct, fakeColor, fakeSize, fakeVariantId);
 
         _productVariantRepository
             .Setup(x => x.GetListVariantsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
@@ -187,5 +134,43 @@ public class PrepareCheckOutTests
         Assert.Equal(20, item.StockAvailable);
         Assert.False(item.IsOutOfStock);
         Assert.Equal(100, item.SubTotal);
+    }
+
+    private static Product BuildFakeProduct()
+    {
+        return new Product
+        {
+            Id = 1,
+            ProductName = "Product Name",
+            CategoryId = 1,
+            Category = new Category
+            {
+                Id = 1,
+                Name = "Category Name"
+            }
+        };
+    }
+
+    private static List<ProductVariant> BuildFakeProductVariants(Product fakeProduct, Color fakeColor,
+        ProductSize fakeSize, Guid fakeVariantId, bool isOutOfStock = false)
+    {
+        List<ProductVariant> fakeProductVariants =
+        [
+            new()
+            {
+                Id = 1,
+                ProductId = 1,
+                Product = fakeProduct,
+                ColorId = 1,
+                Color = fakeColor,
+                Price = 100,
+                PublicId = fakeVariantId,
+                SizeId = 1,
+                Size = fakeSize,
+                Stock = isOutOfStock ? 0 : 20,
+                IsSelling = true
+            }
+        ];
+        return fakeProductVariants;
     }
 }

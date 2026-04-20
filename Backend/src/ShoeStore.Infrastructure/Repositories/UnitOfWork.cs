@@ -29,7 +29,7 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
         return context.Database.RollbackTransactionAsync(token);
     }
 
-    public async Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> action, CancellationToken token = default)
+    public async Task<T> ExecuteWithStrategyAsync<T>(Func<Task<T>> action, CancellationToken token = default)
     {
         var strategy = context.Database.CreateExecutionStrategy();
         return await strategy.ExecuteAsync(action);
