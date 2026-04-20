@@ -2,15 +2,15 @@ using ErrorOr;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
 using ShoeStore.Application.Extensions;
-using ShoeStore.Application.Interface.InvoiceInterface;
+using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.Common;
+using ShoeStore.Application.Interface.InvoiceInterface;
 using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Application.Utilities;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
-using ShoeStore.Application.Interface;
 
 namespace ShoeStore.Application.Services;
 
@@ -70,7 +70,7 @@ public class CheckOutService(
     public async Task<ErrorOr<InvoiceDto>> PlaceOrderAsync(PlaceOrderRequestDto placeOrderRequestDto, Guid publicUserId,
         bool fromCart, CancellationToken token)
     {
-        return await unitOfWork.ExecuteInTransactionAsync<ErrorOr<InvoiceDto>>(async () =>
+        return await unitOfWork.ExecuteWithStrategyAsync<ErrorOr<InvoiceDto>>(async () =>
         {
             using var transaction = await unitOfWork.BeginTransactionAsync(token);
             // transaction has 4 stages
