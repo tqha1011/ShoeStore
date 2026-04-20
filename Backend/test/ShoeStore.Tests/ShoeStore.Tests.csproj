@@ -21,7 +21,12 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\..\src\ShoeStore.Application\ShoeStore.Application.csproj" />
         <ProjectReference Include="..\src\ShoeStore.Application\ShoeStore.Application.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Unit\Services\CheckOutServiceTests\" />
     </ItemGroup>
 
 </Project>
