@@ -72,7 +72,7 @@ public class InvoiceService(
             ImageUrl = d.ProductVariant.ImageUrl ?? string.Empty
         }).ToListAsync(token);
 
-        if (result.Count == 0) return Error.NotFound("Invoice detail not found");
+        if (result.Count == 0) return Error.NotFound("InvoiceDetail.NotFound", "Invoice detail not found");
         return result;
     }
 
