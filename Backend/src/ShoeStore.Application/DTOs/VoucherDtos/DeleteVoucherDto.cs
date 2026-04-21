@@ -4,8 +4,8 @@ using System.Text;
 
 namespace ShoeStore.Application.DTOs.VoucherDtos
 {
-    public class ResponseVoucherDto
+    public class DeleteVoucherDto
     {
-
+        public bool IsDeleted { get; set; } = true;
     }
 }

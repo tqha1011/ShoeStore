@@ -65,6 +65,8 @@ public static class DependencyInjection
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IVoucherRepository, VoucherRepository>();
         services.AddScoped<IVoucherService, VoucherService>();
+        services.AddScoped<IUserVoucherRepository, UserVoucherRepository>();
+        services.AddScoped<IUserVoucherService, VoucherService>();
         return services;
     }
 }

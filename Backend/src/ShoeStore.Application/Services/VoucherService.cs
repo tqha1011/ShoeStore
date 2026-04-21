@@ -5,18 +5,21 @@ using ShoeStore.Application.Interface.Common;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
 using Microsoft.EntityFrameworkCore;
+using ShoeStore.Application.DTOs;
 
 namespace ShoeStore.Application.Services
 {
-    public class VoucherService : IVoucherService
+    public class VoucherService : IVoucherService, IUserVoucherService
     {
-        private readonly IVoucherRepository repository;
+        private readonly IVoucherRepository voucherRepository;
         private readonly IUnitOfWork uow;
+        private readonly IUserVoucherRepository userVoucherRepository;
 
-        public VoucherService(IVoucherRepository repository, IUnitOfWork uow)
+        public VoucherService(IVoucherRepository voucherRepository, IUnitOfWork uow, IUserVoucherRepository userVoucherRepository)
         {
-            this.repository = repository;
+            this.voucherRepository = voucherRepository;
             this.uow = uow;
+            this.userVoucherRepository = userVoucherRepository; 
         }
         public async Task<ErrorOr<Created>> CreateVoucherAsync(CreateVoucherDto voucherCreateDto, CancellationToken token)
         {
@@ -37,19 +40,123 @@ namespace ShoeStore.Application.Services
                 IsDeleted = false
             };
 
-            repository.Add(voucher);
+            voucherRepository.Add(voucher);
             await uow.SaveChangesAsync(token);
             return Result.Created;
             
         }
 
-        public async Task<ErrorOr<Updated>> UpdateVoucherAsync(
-    Guid voucherGuid,
-    UpdateVoucherDto voucherUpdateDto,
-    CancellationToken token)
+        public async Task<ErrorOr<Deleted>> DeleteVoucherByGuidAsync(Guid voucherGuid, CancellationToken token)
         {
+            var voucher = await voucherRepository
+                .GetVoucherByGuid(voucherGuid)
+                .Where(v => !v.IsDeleted)
+                .FirstOrDefaultAsync();
+            if (voucher == null)
+            {
+                return Error.NotFound(
+                    "VOUCHER_NOT_FOUND",
+                    "The voucher with the specified GUID does not exist."
+                );
+            }
+            // Soft delete logic
+            voucher.IsDeleted = true;
+            voucher.UpdatedAt = DateTime.UtcNow;
+            voucherRepository.Update(voucher);
+            await uow.SaveChangesAsync(token);
+            return Result.Deleted;
+        }
 
-            var voucher = await repository
+        public async Task<ErrorOr<Deleted>> DeleteVoucherExpireAsync(CancellationToken token)
+        {
+            var vouchersToDelete = voucherRepository
+                .GetAllVouchers()
+                .Where(v => v.ValidTo < DateTime.UtcNow && !v.IsDeleted)
+                .ToList();
+            if(!vouchersToDelete.Any())
+            {
+                return Error.NotFound(
+                    "NO_EXPIRED_VOUCHERS",
+                    "There are no expired vouchers to delete."
+                );
+            }
+            foreach (var voucher in vouchersToDelete)
+            {
+                voucher.IsDeleted = true;
+                voucher.UpdatedAt = DateTime.UtcNow;
+                voucherRepository.Update(voucher);
+            }
+            await uow.SaveChangesAsync(token);
+            return Result.Deleted;
+        }
+
+        public async Task<ErrorOr<PageResult<ResponseVoucherUserDto>>> GetAllVoucherForUserAsync(Guid UserGuid, CancellationToken token)
+        {
+            var vouchers = await userVoucherRepository
+                .GetVouchersByUserGuid(UserGuid)
+                .Where(v => !v.Voucher.IsDeleted && v.Voucher.ValidTo > DateTime.UtcNow)
+                .Select(v => new ResponseVoucherUserDto
+                {
+                    VoucherName = v.Voucher.VoucherName ?? string.Empty,
+                    Description = v.Voucher.VoucherDescription ?? string.Empty,
+                    Discount = v.Voucher.Discount,
+                    ValidFrom = v.Voucher.ValidFrom,
+                    ValidTo = v.Voucher.ValidTo
+                })
+                .ToListAsync(token);
+
+            if(vouchers == null || !vouchers.Any())
+            {
+                return Error.NotFound(
+                    "NO_VOUCHERS_FOUND",
+                    "No vouchers were found for the user."
+                );
+            }
+
+            var result = new PageResult<ResponseVoucherUserDto>
+            {
+                Items = vouchers,
+                TotalCount = vouchers.Count
+            };
+            return result;
+        }
+
+        public async Task<ErrorOr<PageResult<ResponseVoucherAdminDto>>> GetVoucherForAdminAsync(CancellationToken token)
+        {
+            var vouchers = await voucherRepository
+                .GetAllVouchers()
+                .Where(v => !v.IsDeleted)
+                .Select(v => new ResponseVoucherAdminDto
+                {
+                    VoucherName = v.VoucherName,
+                    Discount = v.Discount,
+                    VoucherScope = (int)v.VoucherScope,
+                    DiscountType = (int)v.DiscountType,
+                    MaxPriceDiscount = v.MaxPriceDiscount,
+                    ValidFrom = v.ValidFrom,
+                    ValidTo = v.ValidTo,
+                    MinOrderPrice = v.MinOrderPrice
+                })
+                .ToListAsync();
+            if(vouchers == null || !vouchers.Any())
+            {
+                return Error.NotFound(
+                    "NO_VOUCHERS_FOUND",
+                    "No vouchers were found in the system."
+                );
+            }
+
+            var pageResult = new PageResult<ResponseVoucherAdminDto>
+            {
+                Items = vouchers,
+                TotalCount = vouchers.Count
+            };
+            return pageResult;
+        }
+
+        public async Task<ErrorOr<Updated>> UpdateVoucherAsync(Guid voucherGuid, UpdateVoucherDto voucherUpdateDto, CancellationToken token)
+        {
+            var voucher = await voucherRepository
                 .GetVoucherByGuid(voucherGuid)
                 .FirstOrDefaultAsync();
 
@@ -78,7 +185,7 @@ namespace ShoeStore.Application.Services
 
             voucher.UpdatedAt = DateTime.UtcNow;
 
-            repository.Update(voucher);
+            voucherRepository.Update(voucher);
             await uow.SaveChangesAsync(token);
 
             return Result.Updated;

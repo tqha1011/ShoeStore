@@ -2,6 +2,7 @@
 using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Infrastructure.Data;
+
 namespace ShoeStore.Infrastructure.Repositories
 {
     public class VoucherRepository(AppDbContext context) : GenericRepository<Voucher, int>(context), IVoucherRepository

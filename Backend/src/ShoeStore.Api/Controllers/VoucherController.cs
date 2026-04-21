@@ -14,7 +14,7 @@ namespace ShoeStore.Api.Controllers;
 [ApiController]
 [Route("api/admin/vouchers")]
 // [Authorize(Roles = "Admin")]
-public class VoucherController(IVoucherService voucherService) : ControllerBase
+public class VoucherController(IVoucherService voucherService, IUserVoucherService userVoucherService) : ControllerBase
 {
     /// <summary>
     ///     Creates a new voucher for the store.
@@ -67,5 +67,58 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
                     message = "Failed to update voucher",
                     details = errors
                 }));
+    }
+
+    [HttpDelete("{voucherGuid}")]
+    public async Task<IActionResult> DeleteVoucher(Guid voucherGuid, CancellationToken token)
+    {
+        var result = await voucherService.DeleteVoucherByGuidAsync(voucherGuid, token);
+        return result.Match<IActionResult>(
+            _ => Ok(new { message = "Voucher deleted successfully" }),
+            errors => errors.Any(e => e.Type == ErrorType.NotFound)
+                ? NotFound(new { message = "Voucher not found" })
+                : BadRequest(new
+                {
+                    message = "Failed to delete voucher",
+                    details = errors
+                }));
+    }
+    [HttpDelete("expire")]
+    public async Task<IActionResult> DeleteExpiredVouchers(CancellationToken token)
+    {
+        var result = await voucherService.DeleteVoucherExpireAsync(token);
+        return result.Match<IActionResult>(
+            _ => Ok(new { message = "Expired vouchers deleted successfully" }),
+            errors => BadRequest(new
+            {
+                message = "Failed to delete expired vouchers",
+                details = errors
+            }));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetVouchersForAdmin(CancellationToken token)
+    {
+        var result = await voucherService.GetVoucherForAdminAsync(token);
+        return result.Match<IActionResult>(
+            vouchers => Ok(vouchers),
+            errors => BadRequest(new
+            {
+                message = "Failed to retrieve vouchers",
+                details = errors
+            }));
+    }
+
+    [HttpGet("user/{userGuid}")]
+    public async Task<IActionResult> GetVouchersForUser(Guid userGuid, CancellationToken token)
+    {
+        var result = await userVoucherService.GetAllVoucherForUserAsync(userGuid, token);
+        return result.Match<IActionResult>(
+            vouchers => Ok(vouchers),
+            errors => BadRequest(new
+            {
+                message = "Failed to retrieve vouchers for user",
+                details = errors
+            }));
     }
 }

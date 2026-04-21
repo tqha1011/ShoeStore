@@ -1,13 +1,18 @@
 ﻿using ShoeStore.Application.DTOs.VoucherDtos;
 using ErrorOr;
+using ShoeStore.Application.DTOs;
 namespace ShoeStore.Application.Interface.VoucherInterface
 {
     public interface IVoucherService
     {
-            Task<ErrorOr<Created>> CreateVoucherAsync(CreateVoucherDto voucherCreateDto, CancellationToken token);
-            //Task<ErrorOr<VoucherDto>> GetVoucherByGuidAsync(Guid voucherGuid, CancellationToken token);
-            //Task<ErrorOr<IEnumerable<VoucherDto>>> GetAllVouchersAsync(CancellationToken token);
-            Task<ErrorOr<Updated>> UpdateVoucherAsync(Guid voucherGuid, UpdateVoucherDto voucherUpdateDto, CancellationToken token);
-            //Task<ErrorOr<Deleted>> DeleteVoucherAsync(Guid voucherGuid, CancellationToken token );
+        // CREATE
+        Task<ErrorOr<Created>> CreateVoucherAsync(CreateVoucherDto voucherCreateDto, CancellationToken token);
+        // GET
+        Task<ErrorOr<PageResult<ResponseVoucherAdminDto>>> GetVoucherForAdminAsync(CancellationToken token);
+        // UPDATE
+        Task<ErrorOr<Updated>> UpdateVoucherAsync(Guid voucherGuid, UpdateVoucherDto voucherUpdateDto, CancellationToken token);
+        // DELETE
+        Task<ErrorOr<Deleted>> DeleteVoucherByGuidAsync(Guid voucherGuid, CancellationToken token );
+        Task<ErrorOr<Deleted>> DeleteVoucherExpireAsync(CancellationToken token);
     }
 }
