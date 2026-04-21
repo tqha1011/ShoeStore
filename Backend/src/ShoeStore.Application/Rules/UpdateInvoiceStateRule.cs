@@ -26,10 +26,12 @@ public static class UpdateInvoiceStateRule
             // COD payment method (paymentId = 2)
             (PaymentMethod.Cod, InvoiceStatus.Delivering, InvoiceStatus.Paid) => true,
             (PaymentMethod.Cod, InvoiceStatus.Pending, InvoiceStatus.Delivering) => true,
+            (PaymentMethod.Cod, InvoiceStatus.Paid, InvoiceStatus.Delivered) => true,
 
             // SePay payment method (paymentId = 1)
             (PaymentMethod.SePay, InvoiceStatus.Paid, InvoiceStatus.Delivering) => true,
             (PaymentMethod.SePay, InvoiceStatus.Pending, InvoiceStatus.Paid) => true,
+            (PaymentMethod.SePay, InvoiceStatus.Delivering, InvoiceStatus.Delivered) => true,
             _ => false
         };
     }
