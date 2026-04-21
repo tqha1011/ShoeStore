@@ -121,4 +121,16 @@ public class VoucherController(IVoucherService voucherService, IUserVoucherServi
                 details = errors
             }));
     }
+    [HttpGet("all")]
+    public async Task<IActionResult> GetAllVouchers(CancellationToken token)
+    {
+        var result = await voucherService.GetAllVouchersAsync(token);
+        return result.Match<IActionResult>(
+            vouchers => Ok(vouchers),
+            errors => BadRequest(new
+            {
+                message = "Failed to retrieve all vouchers",
+                details = errors
+            }));
+    }
 }

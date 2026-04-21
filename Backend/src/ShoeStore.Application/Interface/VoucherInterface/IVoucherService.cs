@@ -9,6 +9,7 @@ namespace ShoeStore.Application.Interface.VoucherInterface
         Task<ErrorOr<Created>> CreateVoucherAsync(CreateVoucherDto voucherCreateDto, CancellationToken token);
         // GET
         Task<ErrorOr<PageResult<ResponseVoucherAdminDto>>> GetVoucherForAdminAsync(CancellationToken token);
+        Task<ErrorOr<PageResult<ResponseVoucherAdminDto>>> GetAllVouchersAsync(CancellationToken token);
         // UPDATE
         Task<ErrorOr<Updated>> UpdateVoucherAsync(Guid voucherGuid, UpdateVoucherDto voucherUpdateDto, CancellationToken token);
         // DELETE

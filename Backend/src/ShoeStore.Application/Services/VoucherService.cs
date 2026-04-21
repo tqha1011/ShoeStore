@@ -121,6 +121,40 @@ namespace ShoeStore.Application.Services
             return result;
         }
 
+        public async Task<ErrorOr<PageResult<ResponseVoucherAdminDto>>> GetAllVouchersAsync(CancellationToken token)
+        {
+            var vouchers = await voucherRepository
+                .GetAllVouchers()
+                .Where(v => !v.IsDeleted)
+                .Select(v => new ResponseVoucherAdminDto
+                {
+                    VoucherName = v.VoucherName,
+                    Discount = v.Discount,
+                    VoucherScope = (int)v.VoucherScope,
+                    DiscountType = (int)v.DiscountType,
+                    MaxPriceDiscount = v.MaxPriceDiscount,
+                    ValidFrom = v.ValidFrom,
+                    ValidTo = v.ValidTo,
+                    MinOrderPrice = v.MinOrderPrice
+                })
+                .ToListAsync(token);
+            if(vouchers == null || !vouchers.Any())
+            {
+                return Error.NotFound(
+                   "NO_VOUCHERS_FOUND",
+                   "Dont have voucher created"
+               );
+            }
+
+            var pageResult = new PageResult<ResponseVoucherAdminDto>
+            {
+                Items = vouchers,
+                TotalCount = vouchers.Count
+            };
+            return pageResult;
+
+        }
+
         public async Task<ErrorOr<PageResult<ResponseVoucherAdminDto>>> GetVoucherForAdminAsync(CancellationToken token)
         {
             var vouchers = await voucherRepository
