@@ -57,12 +57,16 @@ public class UpdateStateByAdminTests
     [InlineData(1, InvoiceStatus.Cancelled, InvoiceStatus.Paid)]
     [InlineData(1, InvoiceStatus.Cancelled, InvoiceStatus.Delivering)]
     [InlineData(1, InvoiceStatus.Cancelled, InvoiceStatus.Pending)]
+    [InlineData(1, InvoiceStatus.Paid, InvoiceStatus.Delivered)]
+    [InlineData(1, InvoiceStatus.Delivered, InvoiceStatus.Cancelled)]
     [InlineData(1, InvoiceStatus.Delivering, InvoiceStatus.Pending)]
     [InlineData(1, InvoiceStatus.Paid, InvoiceStatus.Pending)]
     // COD (paymentId = 2)
     [InlineData(2, InvoiceStatus.Cancelled, InvoiceStatus.Paid)]
     [InlineData(2, InvoiceStatus.Cancelled, InvoiceStatus.Delivering)]
     [InlineData(2, InvoiceStatus.Cancelled, InvoiceStatus.Pending)]
+    [InlineData(2, InvoiceStatus.Delivering, InvoiceStatus.Delivered)]
+    [InlineData(2, InvoiceStatus.Delivered, InvoiceStatus.Cancelled)]
     [InlineData(2, InvoiceStatus.Pending, InvoiceStatus.Paid)]
     [InlineData(2, InvoiceStatus.Delivering, InvoiceStatus.Pending)]
     [InlineData(2, InvoiceStatus.Paid, InvoiceStatus.Pending)]
@@ -237,12 +241,16 @@ public class UpdateStateByAdminTests
     [InlineData(1, InvoiceStatus.Cancelled, InvoiceStatus.Paid)]
     [InlineData(1, InvoiceStatus.Cancelled, InvoiceStatus.Delivering)]
     [InlineData(1, InvoiceStatus.Cancelled, InvoiceStatus.Pending)]
+    [InlineData(1, InvoiceStatus.Paid, InvoiceStatus.Delivered)]
+    [InlineData(1, InvoiceStatus.Delivered, InvoiceStatus.Cancelled)]
     [InlineData(1, InvoiceStatus.Delivering, InvoiceStatus.Pending)]
     [InlineData(1, InvoiceStatus.Paid, InvoiceStatus.Pending)]
     // COD (paymentId = 2)
     [InlineData(2, InvoiceStatus.Cancelled, InvoiceStatus.Paid)]
     [InlineData(2, InvoiceStatus.Cancelled, InvoiceStatus.Delivering)]
     [InlineData(2, InvoiceStatus.Cancelled, InvoiceStatus.Pending)]
+    [InlineData(2, InvoiceStatus.Delivering, InvoiceStatus.Delivered)]
+    [InlineData(2, InvoiceStatus.Delivered, InvoiceStatus.Cancelled)]
     [InlineData(2, InvoiceStatus.Pending, InvoiceStatus.Paid)]
     [InlineData(2, InvoiceStatus.Delivering, InvoiceStatus.Pending)]
     [InlineData(2, InvoiceStatus.Paid, InvoiceStatus.Pending)]
@@ -387,12 +395,14 @@ public class UpdateStateByAdminTests
     // SePay
     [InlineData(1, InvoiceStatus.Pending, InvoiceStatus.Paid)]
     [InlineData(1, InvoiceStatus.Paid, InvoiceStatus.Delivering)]
+    [InlineData(1, InvoiceStatus.Delivering, InvoiceStatus.Delivered)]
     [InlineData(1, InvoiceStatus.Pending, InvoiceStatus.Cancelled)]
     [InlineData(1, InvoiceStatus.Paid, InvoiceStatus.Cancelled)]
 
     // COD
     [InlineData(2, InvoiceStatus.Pending, InvoiceStatus.Delivering)]
     [InlineData(2, InvoiceStatus.Delivering, InvoiceStatus.Paid)]
+    [InlineData(2, InvoiceStatus.Paid, InvoiceStatus.Delivered)]
     [InlineData(2, InvoiceStatus.Pending, InvoiceStatus.Cancelled)]
     [InlineData(2, InvoiceStatus.Paid, InvoiceStatus.Cancelled)]
     public async Task UpdateStateByAdmin_WhenUpdateSuccess_ReturnUpdateStateAdminResponseDto(
