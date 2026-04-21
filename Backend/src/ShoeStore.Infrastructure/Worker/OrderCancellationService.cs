@@ -23,13 +23,14 @@ public class OrderCancellationService(
                 var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
                 var expiredTime = DateTime.UtcNow.AddMinutes(-15);
+                const int sePayId = (int)PaymentMethod.SePay;
 
                 var expiredInvoices = await dbContext.Invoices
                     .Include(iv => iv.InvoiceDetails)
                     .ThenInclude(dt => dt.ProductVariant)
                     .Where(iv =>
                         iv.Status == InvoiceStatus.Pending && iv.CreatedAt <= expiredTime &&
-                        iv.PaymentId == (int)PaymentMethod.SePay)
+                        iv.PaymentId == sePayId)
                     .Take(100)
                     .ToListAsync(stoppingToken);
 
