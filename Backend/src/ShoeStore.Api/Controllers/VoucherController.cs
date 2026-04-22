@@ -13,7 +13,7 @@ namespace ShoeStore.Api.Controllers;
 /// <param name="voucherService">Service for handling voucher logic operations.</param>
 [ApiController]
 [Route("api/admin/vouchers")]
-// [Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin")]
 public class VoucherController(IVoucherService voucherService, IUserVoucherService userVoucherService) : ControllerBase
 {
     /// <summary>
@@ -105,19 +105,6 @@ public class VoucherController(IVoucherService voucherService, IUserVoucherServi
             errors => BadRequest(new
             {
                 message = "Failed to retrieve vouchers",
-                details = errors
-            }));
-    }
-
-    [HttpGet("user/{userGuid}")]
-    public async Task<IActionResult> GetVouchersForUser(Guid userGuid, CancellationToken token)
-    {
-        var result = await userVoucherService.GetAllVoucherForUserAsync(userGuid, token);
-        return result.Match<IActionResult>(
-            vouchers => Ok(vouchers),
-            errors => BadRequest(new
-            {
-                message = "Failed to retrieve vouchers for user",
                 details = errors
             }));
     }
