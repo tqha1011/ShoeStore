@@ -1,20 +1,27 @@
 package com.example.shoestoreapp.features.user.profile.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.shoestoreapp.features.common.ui.components.LogoutActionSection
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
 
 @Composable
 fun UserProfileScreen(
     onTabSelected: (BottomNavTab) -> Unit = {},
+    onViewOrdersClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
     Scaffold(
@@ -25,15 +32,46 @@ fun UserProfileScreen(
             )
         }
     ) { paddingValues ->
-        LogoutActionSection(
-            title = "Profile",
-            description = "Log out to switch account quickly.",
-            onLogoutClick = onLogoutClick,
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
                 .padding(paddingValues)
-                .padding(horizontal = 20.dp, vertical = 24.dp)
-        )
+                .padding(horizontal = 20.dp, vertical = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Text(
+                text = "Profile",
+                color = Color.Black,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = "Manage your account and orders.",
+                color = Color(0xFF666666)
+            )
+
+            Button(
+                onClick = onViewOrdersClick,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Black,
+                    contentColor = Color.White
+                )
+            ) {
+                Text(text = "View Orders")
+            }
+
+            Button(
+                onClick = onLogoutClick,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color.Black
+                )
+            ) {
+                Text(text = "Log out")
+            }
+        }
     }
 }

@@ -10,10 +10,10 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class UserInvoiceViewModel(
     private val repository: UserInvoiceMockRepository = UserInvoiceMockRepository(),
-    userId: Int = 1
+    userName: String = "Marcus Alexander"
 ) : ViewModel() {
 
-    private val userInvoices = repository.getInvoicesByUser(userId)
+    private val userInvoices = repository.getInvoicesByUserName(userName)
     private val _selectedStatus = MutableStateFlow<InvoiceStatus?>(null)
     private val _visibleInvoices = MutableStateFlow(userInvoices)
 
