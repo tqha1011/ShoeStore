@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.invoice.ui.components
+package com.example.shoestoreapp.features.admin.invoice.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -36,12 +36,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import com.example.shoestoreapp.features.invoice.model.displayName
+import com.example.shoestoreapp.features.invoice.ui.components.StatusBadge
 
 @Composable
 fun AdminOrderCard(
@@ -51,6 +53,10 @@ fun AdminOrderCard(
     onDetailsClick: () -> Unit
 ) {
     var isStatusMenuExpanded by remember { mutableStateOf(false) }
+
+    val paymentMethodText = invoice.paymentMethod?.trim().orEmpty().ifEmpty { "-" }
+    val createdAtText = invoice.createdAt?.trim().orEmpty().ifEmpty { "-" }
+    val finalPriceText = invoice.finalPrice?.trim().orEmpty().ifEmpty { "-" }
 
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -68,8 +74,6 @@ fun AdminOrderCard(
                 modifier = Modifier.width(100.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OrderImage(imageUrl = invoice.imageUrl, size = 100.dp)
-
                 OutlinedButton(
                     onClick = onDetailsClick,
                     modifier = Modifier
@@ -95,7 +99,7 @@ fun AdminOrderCard(
                         letterSpacing = 0.8.sp,
                         fontWeight = FontWeight.SemiBold
                     )
-                    PaymentMethodBadge(paymentMethod = invoice.paymentMethod)
+                    PaymentMethodBadge(paymentMethod = paymentMethodText)
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))
@@ -111,7 +115,14 @@ fun AdminOrderCard(
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    StatusBadge(status = invoice.status)
+                    invoice.status?.let { status ->
+                        StatusBadge(status = status)
+                    } ?: Text(
+                        text = "Unknown",
+                        color = Color(0xFF8C8C8C),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -122,12 +133,12 @@ fun AdminOrderCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = invoice.createdAt,
+                        text = createdAtText,
                         color = Color(0xFF6D6D6D),
                         fontSize = 12.sp
                     )
                     Text(
-                        text = invoice.finalPrice,
+                        text = finalPriceText,
                         color = Color.Black,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.ExtraBold
@@ -183,7 +194,7 @@ fun AdminOrderCard(
 }
 
 @Composable
-private fun OrderImage(imageUrl: String, size: androidx.compose.ui.unit.Dp) {
+private fun OrderImage(imageUrl: String, size: Dp) {
     Box(
         modifier = Modifier
             .size(size)
@@ -209,4 +220,3 @@ private fun PaymentMethodBadge(paymentMethod: String) {
         fontWeight = FontWeight.Bold
     )
 }
-

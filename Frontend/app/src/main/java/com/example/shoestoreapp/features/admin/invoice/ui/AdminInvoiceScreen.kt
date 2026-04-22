@@ -36,7 +36,7 @@ import com.example.shoestoreapp.features.admin.invoice.viewmodel.AdminInvoiceVie
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavBar
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
 import com.example.shoestoreapp.features.invoice.model.displayName
-import com.example.shoestoreapp.features.invoice.ui.components.AdminOrderCard
+import com.example.shoestoreapp.features.admin.invoice.ui.components.AdminOrderCard
 import kotlinx.coroutines.launch
 
 @Composable

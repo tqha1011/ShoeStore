@@ -1,6 +1,6 @@
 package com.example.shoestoreapp.features.user.invoice.data
 
-import com.example.shoestoreapp.features.invoice.mock.InvoiceMockData
+import com.example.shoestoreapp.features.invoice.data.InvoiceMockData
 import com.example.shoestoreapp.features.invoice.model.Invoice
 
 class UserInvoiceMockRepository {

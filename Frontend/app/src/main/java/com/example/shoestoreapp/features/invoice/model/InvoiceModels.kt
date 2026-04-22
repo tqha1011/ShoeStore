@@ -1,6 +1,6 @@
 package com.example.shoestoreapp.features.invoice.model
 
-enum class InvoiceStatus(val id: Int) {
+enum class InvoiceStatus(val id: Int?) {
     PENDING(1),
     PAID(2),
     CANCELED(3),
@@ -11,11 +11,10 @@ enum class InvoiceStatus(val id: Int) {
 data class Invoice(
     val orderCode: String,
     val userName: String,
-    val paymentMethod: String,
-    val status: InvoiceStatus,
-    val createdAt: String,
-    val finalPrice: String,
-    val imageUrl: String
+    val paymentMethod: String?,
+    val status: InvoiceStatus?,
+    val createdAt: String?,
+    val finalPrice: String?,
 )
 
 fun InvoiceStatus.displayName(): String {
@@ -29,15 +28,16 @@ fun InvoiceStatus.displayName(): String {
 }
 
 fun Invoice.nextWorkflowStatus(): InvoiceStatus? {
-    return when (paymentMethod.uppercase()) {
-        "SEPAY" -> when (status) {
+    val currentStatus = status ?: return null
+    return when (paymentMethod?.trim()?.uppercase()) {
+        "SEPAY" -> when (currentStatus) {
             InvoiceStatus.PENDING -> InvoiceStatus.PAID
             InvoiceStatus.PAID -> InvoiceStatus.DELIVERING
             InvoiceStatus.DELIVERING -> InvoiceStatus.DELIVERED
             InvoiceStatus.DELIVERED, InvoiceStatus.CANCELED -> null
         }
 
-        "COD" -> when (status) {
+        "COD" -> when (currentStatus) {
             InvoiceStatus.PENDING -> InvoiceStatus.DELIVERING
             InvoiceStatus.DELIVERING -> InvoiceStatus.PAID
             InvoiceStatus.PAID -> InvoiceStatus.DELIVERED
@@ -46,4 +46,9 @@ fun Invoice.nextWorkflowStatus(): InvoiceStatus? {
 
         else -> null
     }
+}
+
+fun Int?.toInvoiceStatusOrNull(): InvoiceStatus? {
+    val rawValue = this ?: return null
+    return InvoiceStatus.entries.firstOrNull { it.id == rawValue }
 }

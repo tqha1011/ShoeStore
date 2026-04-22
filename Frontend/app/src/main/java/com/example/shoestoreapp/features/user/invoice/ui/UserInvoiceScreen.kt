@@ -24,7 +24,7 @@ import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilt
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipStyle
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipTypography
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChips
-import com.example.shoestoreapp.features.invoice.ui.components.UserOrderCard
+import com.example.shoestoreapp.features.user.invoice.ui.components.UserOrderCard
 import com.example.shoestoreapp.features.user.invoice.viewmodel.UserInvoiceViewModel
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
