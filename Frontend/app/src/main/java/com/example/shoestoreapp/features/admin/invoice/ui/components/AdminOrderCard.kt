@@ -15,8 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -36,7 +34,9 @@ import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import com.example.shoestoreapp.features.invoice.model.displayName
-import com.example.shoestoreapp.features.invoice.ui.components.StatusBadge
+import com.example.shoestoreapp.features.invoice.ui.components.InvoiceCardContainer
+import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusOrUnknown
+import com.example.shoestoreapp.features.invoice.ui.components.invoiceTextOrDash
 
 @Composable
 fun AdminOrderCard(
@@ -47,15 +47,11 @@ fun AdminOrderCard(
 ) {
     var isStatusMenuExpanded by remember { mutableStateOf(false) }
 
-    val paymentMethodText = invoice.paymentMethod?.trim().orEmpty().ifEmpty { "-" }
-    val createdAtText = invoice.createdAt?.trim().orEmpty().ifEmpty { "-" }
-    val finalPriceText = invoice.finalPrice?.trim().orEmpty().ifEmpty { "-" }
+    val paymentMethodText = invoiceTextOrDash(invoice.paymentMethod)
+    val createdAtText = invoiceTextOrDash(invoice.createdAt)
+    val finalPriceText = invoiceTextOrDash(invoice.finalPrice)
 
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, Color(0xFFE5E5E5))
-    ) {
+    InvoiceCardContainer {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -108,14 +104,7 @@ fun AdminOrderCard(
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    invoice.status?.let { status ->
-                        StatusBadge(status = status)
-                    } ?: Text(
-                        text = "Unknown",
-                        color = Color(0xFF8C8C8C),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                    InvoiceStatusOrUnknown(status = invoice.status)
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

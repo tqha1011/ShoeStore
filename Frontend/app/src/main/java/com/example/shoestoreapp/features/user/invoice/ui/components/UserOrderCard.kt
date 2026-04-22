@@ -1,6 +1,5 @@
 package com.example.shoestoreapp.features.user.invoice.ui.components
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,8 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -24,22 +21,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.invoice.model.Invoice
-import com.example.shoestoreapp.features.invoice.ui.components.StatusBadge
+import com.example.shoestoreapp.features.invoice.ui.components.InvoiceCardContainer
+import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusOrUnknown
+import com.example.shoestoreapp.features.invoice.ui.components.invoiceTextOrDash
 
 @Composable
 fun UserOrderCard(
     invoice: Invoice,
     onDetailsClick: () -> Unit
 ) {
-    val paymentMethodText = invoice.paymentMethod?.trim().orEmpty().ifEmpty { "-" }
-    val createdAtText = invoice.createdAt?.trim().orEmpty().ifEmpty { "-" }
-    val finalPriceText = invoice.finalPrice?.trim().orEmpty().ifEmpty { "-" }
+    val paymentMethodText = invoiceTextOrDash(invoice.paymentMethod)
+    val createdAtText = invoiceTextOrDash(invoice.createdAt)
+    val finalPriceText = invoiceTextOrDash(invoice.finalPrice)
 
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, Color(0xFFE5E5E5))
-    ) {
+    InvoiceCardContainer {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -59,14 +54,7 @@ fun UserOrderCard(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
                     )
-                    invoice.status?.let { status ->
-                        StatusBadge(status = status)
-                    } ?: Text(
-                        text = "Unknown",
-                        color = Color(0xFF8C8C8C),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+                    InvoiceStatusOrUnknown(status = invoice.status, unknownFontSize = 11.sp)
                 }
 
                 Spacer(modifier = Modifier.size(4.dp))
