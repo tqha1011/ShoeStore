@@ -13,7 +13,7 @@ namespace ShoeStore.Application.Validations.InvoiceValidation
 
             // Client Only Cancel
             RuleFor(x => x.Status)
-                .Must(status => status == InvoiceStatus.Canceled)
+                .Must(status => status == InvoiceStatus.Cancelled)
                 .WithMessage("You can only cancel the order");
         }
     }

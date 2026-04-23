@@ -102,5 +102,7 @@ Navigate to `http://localhost:<port>/scalar/v1` to see the **API Docs**
 
 [Conventional Commit Guidelines](docs/guildlines/conventional-commit.md)
 
-[Support FE](docs/api-guildlines)
+[Support FE](docs/api-guildlines/checkout-flow.md)
+
+[Test Coverage](docs/testing/unit-testing-strategy-test-matrix.md)
 
