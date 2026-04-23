@@ -9,7 +9,7 @@ import retrofit2.http.Query
 
 interface InvoiceApi {
     @GET ("api/invoice/admin/get-all")
-    suspend fun getallInvoices(
+    suspend fun getAllInvoices(
         @Query("PageNumber") pageNumber: Int = 1,
         @Query("PageSize") pageSize: Int = 10
         ): Response<InvoiceListDto>

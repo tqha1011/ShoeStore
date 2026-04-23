@@ -3,7 +3,7 @@ package com.example.shoestoreapp.features.invoice.data.remote
 
 import com.google.gson.annotations.SerializedName
 
-data class Data(
+data class DetailDto(
     @SerializedName("color")
     val color: String?,
     @SerializedName("imageUrl")
