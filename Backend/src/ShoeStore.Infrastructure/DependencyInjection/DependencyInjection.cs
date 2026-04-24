@@ -62,6 +62,7 @@ public static class DependencyInjection
         services.AddScoped<IColorRepository, ColorRepository>();
         services.AddScoped<ISizeRepository, SizeRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IGoogleValidator, GoogleValidator>();
         return services;
     }
 }
