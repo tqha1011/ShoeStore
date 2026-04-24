@@ -9,7 +9,7 @@ data class InvoiceListDto(
     @SerializedName("hasPrevious")
     val hasPrevious: Boolean?,
     @SerializedName("items")
-    val item: List<Item>?,
+    val itemDto: List<ItemDto>?,
     @SerializedName("pageNumber")
     val pageNumber: String?,
     @SerializedName("pageSize")

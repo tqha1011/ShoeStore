@@ -16,6 +16,15 @@ data class Invoice(
     val createdAt: String?,
     val finalPrice: String?,
 )
+// Data Details
+data class Detail (
+    val color: String,
+    val imageUrl: String,
+    val productName: String,
+    val quantity: Int,
+    val size: Int,
+    val unitPrice: Int
+)
 
 fun InvoiceStatus.displayName(): String {
     return when (this) {

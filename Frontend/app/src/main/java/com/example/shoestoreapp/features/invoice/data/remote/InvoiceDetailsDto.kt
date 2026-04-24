@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName
 
 data class InvoiceDetailsDto(
     @SerializedName("data")
-    val `data`: List<Data?>?,
+    val detailDto: List<DetailDto>?,
     @SerializedName("message")
     val message: String?
 )
