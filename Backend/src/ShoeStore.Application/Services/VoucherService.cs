@@ -197,21 +197,23 @@ namespace ShoeStore.Application.Services
 
         public async Task<ErrorOr<Success>> NotifyUserAboutNewVoucherAsync(string adminEmail, string voucherName, DateTime validTo, CancellationToken token)
         {
-            var users = await userRepository
-                .GetAllUsers()
-                .Where(u => u.Email != adminEmail)
-                .ToListAsync(token);
-
-            foreach (var user in users)
+            try
             {
-                if (user.Email != adminEmail)
+                var users = await userRepository
+                    .GetAllUsers()
+                    .Where(u => u.Email != adminEmail)
+                    .ToListAsync(token);
+
+                foreach (var user in users)
                 {
-                    return Error.NotFound(
-                        "USER_NOT_FOUND",
-                        "The user with the specified email does not exist."
-                    );
-                }
-                string emailBody = $@"
+                    if (user.Email != adminEmail)
+                    {
+                        return Error.NotFound(
+                            "USER_NOT_FOUND",
+                            "The user with the specified email does not exist."
+                        );
+                    }
+                    string emailBody = $@"
                     Hi {user.UserName},
 
                     Great news! A new voucher has been added to your account:
@@ -224,12 +226,20 @@ namespace ShoeStore.Application.Services
                     Best regards,
                     Shoe Store Team";
 
-                await emailService.SendEmailAsync(
-                    from: adminEmail,
-                    to: user.Email,
-                    subject: "🎁 New Voucher Received!",
-                    body: emailBody,
-                    token: token
+                    await emailService.SendEmailAsync(
+                        from: adminEmail,
+                        to: user.Email,
+                        subject: "🎁 New Voucher Received!",
+                        body: emailBody,
+                        token: token
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                return Error.Failure(
+                    "EMAIL_SENDING_FAILED",
+                    $"Failed to send email notifications: {ex.Message}"
                 );
             }
             return Result.Success;
