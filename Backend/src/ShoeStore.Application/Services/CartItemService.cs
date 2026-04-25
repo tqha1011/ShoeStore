@@ -102,6 +102,9 @@ public class CartItemService(
     public async Task<ErrorOr<UserCartItemResponseDto>> AddCartItemAsync(AddCartItemDto dto, Guid userPublicId,
         CancellationToken token)
     {
+        var user = await userRepository.GetUserByPublicIdAsync(userPublicId, token);
+        if (user == null) return Error.NotFound("User.NotFound", "User not found.");
+
         var existCartItem =
             await cartItemRepository.GetExistCartItemByGuidAsync(userPublicId, dto.VariantPublicId, token);
 
@@ -134,8 +137,6 @@ public class CartItemService(
 
         if (dto.Quantity > productVariant.Stock)
             return Error.Validation("CartItem.QuantityExceedsStock", "The quantity exceeds the available stock.");
-        var user = await userRepository.GetUserByPublicIdAsync(userPublicId, token);
-        if (user == null) return Error.NotFound("User.NotFound", "User not found.");
 
         var newCartItem = new CartItem
         {
