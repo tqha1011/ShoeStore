@@ -222,7 +222,7 @@ public class PlaceOrderTests
 
         Assert.NotNull(addedInvoice);
         _cartItemRepository.Verify(
-            repo => repo.DeleteCartItem(It.Is<IEnumerable<CartItem>>(items => items.Count() == 1)), Times.Once);
+            repo => repo.DeleteListCartItem(It.Is<IEnumerable<CartItem>>(items => items.Count() == 1)), Times.Once);
         _invoiceRepository.Verify(repo => repo.Add(It.IsAny<Invoice>()), Times.Once);
         VerifyUnitOfWorkCalls(_mockUow, Times.Once, Times.Once, Times.Never);
     }

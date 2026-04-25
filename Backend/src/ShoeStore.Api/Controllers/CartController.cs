@@ -175,13 +175,13 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
     public async Task<IActionResult> DeleteUserCartItem([FromBody] List<Guid> cartItemList, CancellationToken token)
     {
         var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (validUser == null || !Guid.TryParse(validUser, out _))
+        if (validUser == null || !Guid.TryParse(validUser, out var publicUserId))
             return Unauthorized(new
             {
                 message = "You are not authorized to perform this action.",
                 description = "Please login to your account and try again."
             });
-        var result = await cartItemService.DeleteCartItemAsync(cartItemList, token);
+        var result = await cartItemService.DeleteCartItemAsync(cartItemList, publicUserId, token);
         var response = result.Match<IActionResult>(
             _ => Ok(new { message = "Cart items deleted successfully" }),
             errors => errors[0].Code switch
@@ -189,6 +189,11 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
                 "CartItem.NotFound" => NotFound(new
                 {
                     message = "One or more cart items not found",
+                    detail = errors[0].Description
+                }),
+                "User.Unauthorized" => Unauthorized(new
+                {
+                    message = "You are not authorized to perform this action.",
                     detail = errors[0].Description
                 }),
                 _ => StatusCode(StatusCodes.Status500InternalServerError, new

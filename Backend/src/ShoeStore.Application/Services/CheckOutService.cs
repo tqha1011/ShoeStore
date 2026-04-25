@@ -106,7 +106,7 @@ public class CheckOutService(
                             variantIdList.Contains(cartItem.ProductVariant?.PublicId ?? Guid.Empty))
                         .Distinct()
                         .ToList();
-                    cartItemRepository.DeleteCartItem(userCartItem);
+                    cartItemRepository.DeleteListCartItem(userCartItem);
                 }
 
                 // Stage 3: decrease the variant's stocks
