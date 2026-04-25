@@ -13,7 +13,9 @@ namespace ShoeStore.Application.Interface.VoucherInterface
         // UPDATE
         Task<ErrorOr<Updated>> UpdateVoucherAsync(Guid voucherGuid, UpdateVoucherDto voucherUpdateDto, CancellationToken token);
         // DELETE
-        Task<ErrorOr<Deleted>> DeleteVoucherByGuidAsync(Guid voucherGuid, CancellationToken token );
+        Task<ErrorOr<Deleted>> DeleteVoucherByGuidAsync(Guid voucherGuid, CancellationToken token);
         Task<ErrorOr<Deleted>> DeleteVoucherExpireAsync(CancellationToken token);
+        // NOTIFY
+        Task<ErrorOr<Success>> NotifyUserAboutNewVoucherAsync(string adminEmail, string voucherName, DateTime validTo, CancellationToken token);
     }
 }

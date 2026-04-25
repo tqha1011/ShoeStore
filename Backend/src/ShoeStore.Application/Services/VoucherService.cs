@@ -1,11 +1,14 @@
-﻿using ShoeStore.Application.Interface.VoucherInterface;
-using ShoeStore.Application.DTOs.VoucherDtos;
+﻿using System.ComponentModel.DataAnnotations;
 using ErrorOr;
-using ShoeStore.Application.Interface.Common;
-using ShoeStore.Domain.Entities;
-using ShoeStore.Domain.Enum;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs;
+using ShoeStore.Application.DTOs.VoucherDtos;
+using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.Common;
+using ShoeStore.Application.Interface.Notification;
+using ShoeStore.Application.Interface.VoucherInterface;
+using ShoeStore.Domain.Entities;
+using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Application.Services
 {
@@ -14,12 +17,16 @@ namespace ShoeStore.Application.Services
         private readonly IVoucherRepository voucherRepository;
         private readonly IUnitOfWork uow;
         private readonly IUserVoucherRepository userVoucherRepository;
+        private readonly IEmailService emailService;
+        private readonly IUserRepository userRepository;
 
-        public VoucherService(IVoucherRepository voucherRepository, IUnitOfWork uow, IUserVoucherRepository userVoucherRepository)
+        public VoucherService(IVoucherRepository voucherRepository, IUnitOfWork uow, IUserVoucherRepository userVoucherRepository, IEmailService emailService, IUserRepository userRepository)
         {
             this.voucherRepository = voucherRepository;
             this.uow = uow;
             this.userVoucherRepository = userVoucherRepository; 
+            this.emailService = emailService;
+            this.userRepository = userRepository;
         }
         public async Task<ErrorOr<Created>> CreateVoucherAsync(CreateVoucherDto voucherCreateDto, CancellationToken token)
         {
@@ -43,8 +50,8 @@ namespace ShoeStore.Application.Services
             voucherRepository.Add(voucher);
             await uow.SaveChangesAsync(token);
             return Result.Created;
-            
         }
+
 
         public async Task<ErrorOr<Deleted>> DeleteVoucherByGuidAsync(Guid voucherGuid, CancellationToken token)
         {
@@ -187,6 +194,47 @@ namespace ShoeStore.Application.Services
             };
             return pageResult;
         }
+
+        public async Task<ErrorOr<Success>> NotifyUserAboutNewVoucherAsync(string adminEmail, string voucherName, DateTime validTo, CancellationToken token)
+        {
+            var users = await userRepository
+                .GetAllUsers()
+                .Where(u => u.Email != adminEmail)
+                .ToListAsync(token);
+
+            foreach (var user in users)
+            {
+                if (user.Email != adminEmail)
+                {
+                    return Error.NotFound(
+                        "USER_NOT_FOUND",
+                        "The user with the specified email does not exist."
+                    );
+                }
+                string emailBody = $@"
+                    Hi {user.UserName},
+
+                    Great news! A new voucher has been added to your account:
+
+                    🎁 {voucherName.ToUpper()}
+                    📅 Valid until: {validTo:MMMM dd, yyyy}
+
+                    Check your wallet and start shopping now to enjoy your discount!
+
+                    Best regards,
+                    Shoe Store Team";
+
+                await emailService.SendEmailAsync(
+                    from: adminEmail,
+                    to: user.Email,
+                    subject: "🎁 New Voucher Received!",
+                    body: emailBody,
+                    token: token
+                );
+            }
+            return Result.Success;
+        }
+
 
         public async Task<ErrorOr<Updated>> UpdateVoucherAsync(Guid voucherGuid, UpdateVoucherDto voucherUpdateDto, CancellationToken token)
         {

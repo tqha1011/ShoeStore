@@ -23,4 +23,9 @@ public class UserRepository(AppDbContext context) : GenericRepository<User, int>
             .Include(u => u.UserVouchers)
             .FirstOrDefaultAsync(x => x.PublicId == publicId, token);
     }
+
+    public IQueryable<User> GetAllUsers()
+    {
+        return DbSet.AsNoTracking();
+    }
 }

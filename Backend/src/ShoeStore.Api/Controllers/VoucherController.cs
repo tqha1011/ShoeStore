@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using ErrorOr;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -45,13 +46,26 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     {
         var result = await voucherService.CreateVoucherAsync(createVoucherDto, token);
 
-        return result.Match<IActionResult>(
-            _ => Created("", new { message = "Voucher created successfully" }),
-            errors => BadRequest(new
-            {
-                message = "Failed to create voucher",
-                detail = errors[0].Description
-            }));
+        return await result.MatchAsync<IActionResult>(
+        async _ =>
+        {
+            var adminEmail = User.FindFirstValue(ClaimTypes.Email) ?? "admin@example.com";
+
+            await voucherService.NotifyUserAboutNewVoucherAsync(
+                adminEmail: adminEmail,
+                voucherName: createVoucherDto.VoucherName ?? "New Discount",
+                validTo: createVoucherDto.ValidTo ?? DateTime.UtcNow,
+                token: token
+            );
+
+            return Created("", new { message = "Voucher created and users notified" });
+        },
+        errors => Task.FromResult<IActionResult>(BadRequest(new
+        {
+            message = "Failed to create voucher",
+            detail = errors[0].Description
+        }))
+        );
     }
 
     /// <summary>

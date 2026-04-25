@@ -38,13 +38,11 @@ public class UserVoucherController(IUserVoucherService userVoucherService) : Con
     [HttpGet("user")]
     public async Task<IActionResult> GetVouchersForUser(CancellationToken token)
     {
-        var userGuidString = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
+       var userGuidString = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userGuidString))
             return Unauthorized();
 
         var userGuid = Guid.Parse(userGuidString);
-
         var result = await userVoucherService.GetAllVoucherForUserAsync(userGuid, token);
         return result.Match<IActionResult>(
             vouchers => Ok(vouchers),
