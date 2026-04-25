@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs;
@@ -34,9 +35,16 @@ public class UserVoucherController(IUserVoucherService userVoucherService) : Con
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
-    [HttpGet("user/{userGuid}")]
-    public async Task<IActionResult> GetVouchersForUser(Guid userGuid, CancellationToken token)
+    [HttpGet("user")]
+    public async Task<IActionResult> GetVouchersForUser(CancellationToken token)
     {
+        var userGuidString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userGuidString))
+            return Unauthorized();
+
+        var userGuid = Guid.Parse(userGuidString);
+
         var result = await userVoucherService.GetAllVoucherForUserAsync(userGuid, token);
         return result.Match<IActionResult>(
             vouchers => Ok(vouchers),

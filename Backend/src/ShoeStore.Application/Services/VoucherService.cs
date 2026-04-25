@@ -9,7 +9,7 @@ using ShoeStore.Application.DTOs;
 
 namespace ShoeStore.Application.Services
 {
-    public class VoucherService : IVoucherService, IUserVoucherService
+    public class VoucherService : IVoucherService
     {
         private readonly IVoucherRepository voucherRepository;
         private readonly IUnitOfWork uow;
@@ -105,7 +105,7 @@ namespace ShoeStore.Application.Services
                 })
                 .ToListAsync(token);
 
-            if(vouchers == null || !vouchers.Any())
+            if(!vouchers.Any())
             {
                 return Error.NotFound(
                     "NO_VOUCHERS_FOUND",

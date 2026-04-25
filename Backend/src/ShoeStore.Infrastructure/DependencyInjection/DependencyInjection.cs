@@ -63,14 +63,10 @@ public static class DependencyInjection
         services.AddScoped<IColorRepository, ColorRepository>();
         services.AddScoped<ISizeRepository, SizeRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
-<<<<<<< HEAD
         services.AddScoped<IVoucherRepository, VoucherRepository>();
         services.AddScoped<IVoucherService, VoucherService>();
         services.AddScoped<IUserVoucherRepository, UserVoucherRepository>();
-        services.AddScoped<IUserVoucherService, VoucherService>();
-=======
         services.AddScoped<IGoogleValidator, GoogleValidator>();
->>>>>>> 1ef445073c48ac01c2f8c4961f37165bef0c2623
         return services;
     }
 }
