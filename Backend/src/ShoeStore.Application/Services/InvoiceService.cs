@@ -72,7 +72,7 @@ public class InvoiceService(
             ImageUrl = d.ProductVariant.ImageUrl ?? string.Empty
         }).ToListAsync(token);
 
-        if (result.Count == 0) return Error.NotFound("Invoice detail not found");
+        if (result.Count == 0) return Error.NotFound("InvoiceDetail.NotFound", "Invoice detail not found");
         return result;
     }
 
@@ -80,13 +80,12 @@ public class InvoiceService(
         CancellationToken token)
     {
         var invoice = await invoiceRepository.GetByPublicIdAsync(invoiceGuid, token);
-        if (invoice == null) return Error.NotFound("Invoice not found");
-        if (invoice.User?.PublicId != currentUser.Id) return Error.Unauthorized("Invoice.Unauthorized");
+        if (invoice == null) return Error.NotFound("Invoice.NotFound", "Invoice not found");
+        if (invoice.User?.PublicId != currentUser.Id)
+            return Error.Unauthorized("User.Unauthorized", "You are not authorized to update this invoice");
 
         if (!UpdateInvoiceStateRule.CanClientUpdateState(invoice.Status, request.Status))
-            return Error.Forbidden("Client cannot change to this status");
-        if (request.Status == InvoiceStatus.Paid && invoice.Payment == null)
-            return Error.Validation("Cannot mark as paid without payment");
+            return Error.Forbidden("Invoice.Forbidden", "Client cannot change to this status");
 
         invoice.Status = request.Status;
         invoice.UpdatedAt = DateTime.UtcNow;

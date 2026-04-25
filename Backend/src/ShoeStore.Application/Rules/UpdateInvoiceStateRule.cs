@@ -9,9 +9,7 @@ public static class UpdateInvoiceStateRule
         // Define valid state transitions
         return (currentStatus, newStatus) switch
         {
-            (InvoiceStatus.Pending, InvoiceStatus.Paid) => true,
             (InvoiceStatus.Pending, InvoiceStatus.Cancelled) => true,
-            (InvoiceStatus.Paid, InvoiceStatus.Cancelled) => true,
             _ => false
         };
     }
@@ -28,10 +26,12 @@ public static class UpdateInvoiceStateRule
             // COD payment method (paymentId = 2)
             (PaymentMethod.Cod, InvoiceStatus.Delivering, InvoiceStatus.Paid) => true,
             (PaymentMethod.Cod, InvoiceStatus.Pending, InvoiceStatus.Delivering) => true,
+            (PaymentMethod.Cod, InvoiceStatus.Paid, InvoiceStatus.Delivered) => true,
 
             // SePay payment method (paymentId = 1)
             (PaymentMethod.SePay, InvoiceStatus.Paid, InvoiceStatus.Delivering) => true,
             (PaymentMethod.SePay, InvoiceStatus.Pending, InvoiceStatus.Paid) => true,
+            (PaymentMethod.SePay, InvoiceStatus.Delivering, InvoiceStatus.Delivered) => true,
             _ => false
         };
     }

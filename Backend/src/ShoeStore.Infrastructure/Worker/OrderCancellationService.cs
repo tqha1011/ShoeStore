@@ -23,11 +23,15 @@ public class OrderCancellationService(
                 var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
                 var expiredTime = DateTime.UtcNow.AddMinutes(-15);
+                const int sePayId = (int)PaymentMethod.SePay;
 
                 var expiredInvoices = await dbContext.Invoices
                     .Include(iv => iv.InvoiceDetails)
                     .ThenInclude(dt => dt.ProductVariant)
-                    .Where(iv => iv.Status == InvoiceStatus.Pending && iv.CreatedAt <= expiredTime)
+                    .Where(iv =>
+                        iv.Status == InvoiceStatus.Pending && iv.CreatedAt <= expiredTime &&
+                        iv.PaymentId == sePayId)
+                    .Take(100)
                     .ToListAsync(stoppingToken);
 
                 if (expiredInvoices.Count != 0)
@@ -36,9 +40,8 @@ public class OrderCancellationService(
                         invoice.Status = InvoiceStatus.Cancelled;
 
                         foreach (var detail in invoice.InvoiceDetails)
-                        {
-                            //detail.ProductVariant?.Stock += detail.Quantity;
-                        }
+                            if (detail.ProductVariant != null)
+                                detail.ProductVariant.Stock += detail.Quantity;
 
                         logger.LogInformation("Invoice {InvoiceId} canceled", invoice.Id);
                     }
