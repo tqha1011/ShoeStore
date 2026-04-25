@@ -1,4 +1,3 @@
-using ErrorOr;
 using Moq;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.CartItemInterface;
