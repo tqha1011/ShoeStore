@@ -18,7 +18,7 @@ fun StatusBadge(status: InvoiceStatus, modifier: Modifier = Modifier) {
     val (bg, fg) = when (status) {
         InvoiceStatus.PENDING -> Color(0xFFFFF8E1) to Color(0xFF9A6700)
         InvoiceStatus.PAID -> Color(0xFFE8F2FF) to Color(0xFF1F5FAE)
-        InvoiceStatus.CANCELED -> Color(0xFFFFECEB) to Color(0xFFB3261E)
+        InvoiceStatus.CANCELLED -> Color(0xFFFFECEB) to Color(0xFFB3261E)
         InvoiceStatus.DELIVERING -> Color(0xFFEDEBFF) to Color(0xFF4C2A9B)
         InvoiceStatus.DELIVERED -> Color(0xFFEAF7EE) to Color(0xFF1E7D32)
     }
