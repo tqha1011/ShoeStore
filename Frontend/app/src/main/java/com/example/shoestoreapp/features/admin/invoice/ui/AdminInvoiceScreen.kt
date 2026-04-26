@@ -2,29 +2,14 @@ package com.example.shoestoreapp.features.admin.invoice.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,22 +17,46 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.admin.invoice.ui.components.AdminInvoiceFilterChips
-import com.example.shoestoreapp.features.admin.invoice.viewmodel.AdminInvoiceViewModel
+import com.example.shoestoreapp.features.admin.invoice.viewmodel.AdminInvoiceViewmodel
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavBar
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
-import com.example.shoestoreapp.features.invoice.model.displayName
 import com.example.shoestoreapp.features.admin.invoice.ui.components.AdminOrderCard
-import kotlinx.coroutines.launch
+import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
+import com.example.shoestoreapp.features.invoice.model.nextWorkflowStatus
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminInvoiceScreen(
-    viewModel: AdminInvoiceViewModel = AdminInvoiceViewModel(),
+    // BOMB 1 FIXED: Do not initialize "= AdminInvoiceViewModel()" here anymore.
+    // Inject it from NavGraph or MainActivity to avoid crashes.
+    viewModel: AdminInvoiceViewmodel,
     onTabSelected: (AdminBottomNavTab) -> Unit = {}
 ) {
-    val selectedStatus by viewModel.selectedStatus.collectAsState()
-    val invoices by viewModel.visibleInvoices.collectAsState()
+    // 1. GET STATE FROM API (The new data engine)
+    val state = viewModel.state
+
+    // 2. KEEP YOUR UI STATE INTACT
+    // Note: Since the new state doesn't have a filter variable yet, manage it locally here.
+    var selectedStatus by remember { mutableStateOf<InvoiceStatus?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
+
+    // Filter the list based on UI selection (Assuming API returns all items initially)
+    val visibleInvoices = if (selectedStatus == null) {
+        state.invoices
+    } else {
+        state.invoices.filter { it.status == selectedStatus }
+    }
+
+    LaunchedEffect(state.error, state.successMessage) {
+        state.error?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearTransientMessage()
+        }
+        state.successMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearTransientMessage()
+        }
+    }
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
@@ -61,22 +70,14 @@ fun AdminInvoiceScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Menu,
-                    contentDescription = "Menu",
-                    tint = Color.Black
-                )
+                Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.Black)
                 Text(
                     text = "SHOE STORE",
                     color = Color.Black,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 1.6.sp
                 )
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search",
-                    tint = Color(0xFF666666)
-                )
+                Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF666666))
             }
         },
         bottomBar = {
@@ -100,40 +101,116 @@ fun AdminInvoiceScreen(
                 color = Color.Black
             )
 
+            // Keep Filter Chips as is
             AdminInvoiceFilterChips(
                 selectedStatus = selectedStatus,
-                onFilterSelected = viewModel::onFilterChange
+                onFilterSelected = { newStatus -> selectedStatus = newStatus }
             )
 
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(invoices) { invoice ->
-                    AdminOrderCard(
-                        invoice = invoice,
-                        statusOptions = viewModel.getStatusOptions(invoice),
-                        onStatusSelected = { targetStatus ->
-                            viewModel.updateStatus(
-                                orderCode = invoice.orderCode,
-                                targetStatus = targetStatus
+            // ==========================================
+            // HANDLE 3 STATES: LOADING - ERROR - SUCCESS
+            // ==========================================
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (state.isLoading && state.invoices.isEmpty()) {
+                    // Initial data loading -> Show spinner
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                } else if (state.error != null && state.invoices.isEmpty()) {
+                    // API Error -> Show error message
+                    Text(
+                        text = "Error: ${state.error}",
+                        color = Color.Red,
+                        modifier = Modifier.align(Alignment.Center).padding(16.dp)
+                    )
+                } else {
+                    // Success -> Render your List Card UI
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(visibleInvoices) { invoice ->
+                            AdminOrderCard(
+                                invoice = invoice,
+                                statusOptions = listOfNotNull(invoice.nextWorkflowStatus()),
+                                onStatusSelected = { targetStatus ->
+                                    viewModel.updateInvoiceStatus(invoice, targetStatus)
+                                },
+                                onDetailsClick = {
+                                    viewModel.openInvoiceDetails(invoice)
+                                }
                             )
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-                            scope.launch {
-                                val result = snackbarHostState.showSnackbar(
-                                    message = "Status updated to ${targetStatus.displayName()}",
-                                    actionLabel = "Undo",
-                                    duration = SnackbarDuration.Short
+    // ====================================================
+    // BOTTOM SHEET FOR INVOICE DETAILS
+    // ====================================================
+    if (state.selectedInvoice != null) {
+        ModalBottomSheet(
+            onDismissRequest = { viewModel.clearDetails() }
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.7f) // Chiếm 70% màn hình
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                if (state.isDetailLoading) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                } else {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Text("Order details", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                            Text("Product", modifier = Modifier.weight(2f), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                            Text("Qty", modifier = Modifier.weight(0.5f), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                            Text("Unit price", modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                        }
+                        HorizontalDivider(color = Color.LightGray)
+
+                        if (state.invoiceDetails.isEmpty()) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                Text(
+                                    text = "No details found for this order.",
+                                    color = Color(0xFF6D6D6D),
+                                    modifier = Modifier.align(Alignment.Center)
                                 )
-                                if (result == SnackbarResult.ActionPerformed) {
-                                    viewModel.undoLastStatusChange()
+                            }
+                        } else {
+                            LazyColumn(modifier = Modifier.weight(1f)) {
+                                items(state.invoiceDetails) { detail ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(2f)) {
+                                            Text(text = detail.productName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                            Text(text = "Color: ${detail.color} | Size: ${detail.size}", fontSize = 12.sp, color = Color.Gray)
+                                        }
+                                        Text(
+                                            text = "x${detail.quantity}",
+                                            modifier = Modifier.weight(0.5f),
+                                            fontSize = 14.sp
+                                        )
+                                        Text(
+                                            text = "${detail.unitPrice} đ",
+                                            modifier = Modifier.weight(1f),
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    HorizontalDivider(color = Color(0xFFF0F0F0))
                                 }
                             }
-                        },
-                        onDetailsClick = {}
-                    )
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
                 }
             }
         }
