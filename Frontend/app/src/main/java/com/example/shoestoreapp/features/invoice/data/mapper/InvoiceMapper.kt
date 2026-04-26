@@ -30,14 +30,3 @@ fun DetailDto.toDomain() : Detail {
         unitPrice = this.unitPrice ?: 0
     )
 }
-
-fun DetailDto.toDomain() : Detail {
-    return Detail(
-        color = this.color ?: "",
-        imageUrl = this.imageUrl ?: "",
-        productName = this.productName ?: "",
-        quantity = this.quantity ?: 0,
-        size = this.size ?: 0,
-        unitPrice = this.unitPrice ?: 0
-    )
-}

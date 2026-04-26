@@ -9,6 +9,7 @@ import com.example.shoestoreapp.features.admin.invoice.data.AdminInvoiceReposito
 import com.example.shoestoreapp.features.invoice.model.Detail
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
+import com.example.shoestoreapp.features.invoice.model.displayName
 import com.example.shoestoreapp.features.invoice.model.nextWorkflowStatus
 import kotlinx.coroutines.launch
 
@@ -83,8 +84,13 @@ class AdminInvoiceViewmodel (private val repository: AdminInvoiceRepository)
         }
 
         val nextStatus = invoice.nextWorkflowStatus()
-        if (nextStatus != null && targetStatus != nextStatus) {
-            state = state.copy(error = "Invalid transition. Next status must be ${nextStatus.name}.")
+        if (nextStatus == null || targetStatus != nextStatus) {
+            val message = if (nextStatus == null) {
+                "Invalid transition. This order cannot be updated manually at its current state."
+            } else {
+                "Invalid transition. Next status must be ${nextStatus.name}."
+            }
+            state = state.copy(error = message)
             return
         }
 
@@ -95,7 +101,7 @@ class AdminInvoiceViewmodel (private val repository: AdminInvoiceRepository)
                 error = null
             )
 
-            repository.updateInvoiceStatusAdmin(invoiceGuid, targetStatus.id)
+            repository.updateInvoiceStatusAdmin(invoiceGuid, targetStatus.displayName())
                 .onSuccess {
                     val updatedInvoices = state.invoices.map { current ->
                         if (current.publicId == invoiceGuid) current.copy(status = targetStatus) else current

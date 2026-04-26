@@ -29,8 +29,8 @@ class UserInvoiceRepository (private val api : InvoiceApi) {
     }
 
 
-    suspend fun updateInvoiceStatusUser(invoiceGuid: String, statusId: Int): Result<Unit> = runCatching {
-        val request = UpdateStatusRequestDto(status = statusId)
+    suspend fun updateInvoiceStatusUser(invoiceGuid: String, status: String): Result<Unit> = runCatching {
+        val request = UpdateStatusRequestDto(status = status)
         val response = api.updateInvoiceStatusUser(invoiceGuid, request)
         if (!response.isSuccessful) {
             throw Exception("Lỗi update : ${response.code()} - ${response.message()}")

@@ -1,7 +1,6 @@
 package com.example.shoestoreapp.features.admin.invoice.ui.components
 
-import android.content.Intent // Library for dial phone
-import android.net.Uri // library for dial phone
+import android.content.Intent // library dial phone
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -40,6 +39,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import com.example.shoestoreapp.features.invoice.model.displayName
@@ -260,7 +260,7 @@ fun AdminOrderCard(
                             isClickable = phoneText != "-",
                             onClick = {
                                 val dialIntent = Intent(Intent.ACTION_DIAL).apply {
-                                    data = Uri.parse("tel:$phoneText")
+                                    data = "tel:$phoneText".toUri()
                                 }
                                 context.startActivity(dialIntent)
                             }

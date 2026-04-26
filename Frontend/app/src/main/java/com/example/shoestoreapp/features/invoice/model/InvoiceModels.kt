@@ -29,15 +29,6 @@ data class Detail (
     val size: Int,
     val unitPrice: Int
 )
-// Data Details
-data class Detail (
-    val color: String,
-    val imageUrl: String,
-    val productName: String,
-    val quantity: Int,
-    val size: Int,
-    val unitPrice: Int
-)
 
 fun InvoiceStatus.displayName(): String {
     return when (this) {
@@ -53,7 +44,8 @@ fun Invoice.nextWorkflowStatus(): InvoiceStatus? {
     val currentStatus = status ?: return null
     return when (paymentMethod?.trim()?.uppercase()) {
         "SEPAY" -> when (currentStatus) {
-            InvoiceStatus.PENDING -> InvoiceStatus.PAID
+            // Paid must come from payment callback/webhook, not manual update.
+            InvoiceStatus.PENDING -> null
             InvoiceStatus.PAID -> InvoiceStatus.DELIVERING
             InvoiceStatus.DELIVERING -> InvoiceStatus.DELIVERED
             InvoiceStatus.DELIVERED, InvoiceStatus.CANCELLED -> null

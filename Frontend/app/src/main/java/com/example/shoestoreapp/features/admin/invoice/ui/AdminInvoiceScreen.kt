@@ -1,7 +1,6 @@
 package com.example.shoestoreapp.features.admin.invoice.ui
 
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import com.example.shoestoreapp.features.admin.invoice.ui.components.AdminInvoiceFilterChips
 import com.example.shoestoreapp.features.admin.invoice.viewmodel.AdminInvoiceViewmodel
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavBar
@@ -32,6 +32,7 @@ import com.example.shoestoreapp.features.invoice.model.Detail
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import com.example.shoestoreapp.features.invoice.model.nextWorkflowStatus
 import coil.compose.AsyncImage
+import com.example.shoestoreapp.features.admin.invoice.ui.components.formatAdminDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -178,7 +179,7 @@ fun AdminInvoiceScreen(
                         Text("Order details", fontSize = 28.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        val selectedInvoice = state.selectedInvoice!!
+                        val selectedInvoice = state.selectedInvoice
                         DetailMetaRow(
                             label = "Phone",
                             value = selectedInvoice.phones.orEmpty().ifBlank { "-" },
@@ -188,7 +189,7 @@ fun AdminInvoiceScreen(
                                 if (phone.isNotEmpty()) {
                                     // Launch phone dialer
                                     val dialIntent = Intent(Intent.ACTION_DIAL).apply {
-                                        data = Uri.parse("tel:$phone")
+                                        data = "tel:$phone".toUri()
                                     }
                                     // Launch the intent
                                     context.startActivity(dialIntent)
@@ -203,14 +204,14 @@ fun AdminInvoiceScreen(
                         Spacer(modifier = Modifier.height(6.dp))
                         DetailMetaRow(
                             label = "Created",
-                            value = selectedInvoice.createdAt.orEmpty().ifBlank { "-" }
+                            value = formatAdminDate(selectedInvoice.createdAt.orEmpty().ifBlank { "-" })
                         )
                         Spacer(modifier = Modifier.height(14.dp))
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
                             Text("Product", modifier = Modifier.weight(2f), fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
-                            Text("Qty", modifier = Modifier.weight(0.55f), fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
+                            Text("Qty", modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
                             Text("Unit price", modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
                         }
                         HorizontalDivider(color = Color.LightGray)
@@ -279,7 +280,7 @@ private fun InvoiceDetailRow(detail: Detail) {
 
         Text(
             text = "x${detail.quantity}",
-            modifier = Modifier.weight(0.55f),
+            modifier = Modifier.weight(0.9f),
             fontSize = 17.sp
         )
         Text(

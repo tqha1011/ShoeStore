@@ -30,8 +30,8 @@ class AdminInvoiceRepository ( private val api : InvoiceApi) {
     }
 
     // get invoice details
-    suspend fun updateInvoiceStatusAdmin(invoiceGuid: String, statusId: Int): Result<Unit> = runCatching {
-        val request = UpdateStatusRequestDto(status = statusId)
+    suspend fun updateInvoiceStatusAdmin(invoiceGuid: String, status: String): Result<Unit> = runCatching {
+        val request = UpdateStatusRequestDto(status = status)
         val response = api.updateInvoiceStatusAdmin(invoiceGuid, request)
         if (!response.isSuccessful) {
             val backendMessage = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
