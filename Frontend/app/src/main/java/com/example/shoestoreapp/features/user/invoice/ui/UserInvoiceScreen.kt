@@ -34,52 +34,7 @@ fun UserInvoiceScreen(
     viewModel: UserInvoiceViewModel = UserInvoiceViewModel(),
     onTabSelected: (BottomNavTab) -> Unit = {}
 ) {
-    val selectedStatus by viewModel.selectedStatus.collectAsState()
-    val invoices by viewModel.visibleInvoices.collectAsState()
 
-    Scaffold(
-        bottomBar = {
-            BottomNavBar(
-                selectedTab = BottomNavTab.PROFILE,
-                onTabSelected = onTabSelected
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(Color.White)
-                .padding(horizontal = 16.dp)
-        ) {
-            Text(
-                text = "My Orders",
-                modifier = Modifier.padding(top = 16.dp, bottom = 12.dp),
-                color = Color.Black,
-                fontWeight = FontWeight.Black,
-                fontSize = 28.sp
-            )
-
-            UserInvoiceFilterRow(
-                selectedStatus = selectedStatus,
-                onFilterSelected = viewModel::onFilterChange
-            )
-
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(invoices) { invoice ->
-                    UserOrderCard(
-                        invoice = invoice,
-                        onDetailsClick = {}
-                    )
-                }
-            }
-        }
-    }
 }
 
 @Composable
