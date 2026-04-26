@@ -1,8 +1,11 @@
 package com.example.shoestoreapp.features.admin.invoice.ui.components
 
+import android.content.Intent // Library for dial phone
+import android.net.Uri // library for dial phone
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,7 +34,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -80,6 +85,7 @@ fun AdminOrderCard(
     onStatusSelected: (InvoiceStatus) -> Unit,
     onDetailsClick: () -> Unit
 ) {
+    val context = LocalContext.current
     var isStatusMenuExpanded by remember { mutableStateOf(false) }
     var isQuickInfoVisible by remember { mutableStateOf(false) }
 
@@ -245,16 +251,26 @@ fun AdminOrderCard(
                         Text(
                             text = "Order Quick Details",
                             color = Color.Black,
-                            fontSize = 14.sp,
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
                         )
-                        QuickInfoRow(label = "Phone", value = phoneText)
+                        QuickInfoRow(
+                            label = "Phone",
+                            value = phoneText,
+                            isClickable = phoneText != "-",
+                            onClick = {
+                                val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                                    data = Uri.parse("tel:$phoneText")
+                                }
+                                context.startActivity(dialIntent)
+                            }
+                        )
                         QuickInfoRow(label = "Address", value = addressText)
                         QuickInfoRow(label = "Created", value = createdAtText)
                         Text(
                             text = "Tap to close",
                             color = Color(0xFF777777),
-                            fontSize = 11.sp
+                            fontSize = 13.sp
                         )
                     }
                 }
@@ -264,21 +280,28 @@ fun AdminOrderCard(
 }
 
 @Composable
-private fun QuickInfoRow(label: String, value: String) {
+private fun QuickInfoRow(
+    label: String,
+    value: String,
+    isClickable: Boolean = false,
+    onClick: (() -> Unit)? = null
+) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = "$label:",
             color = Color(0xFF555555),
-            fontSize = 12.sp,
+            fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold
         )
         Text(
             text = value,
-            color = Color.Black,
-            fontSize = 12.sp,
+            color = if (isClickable) Color(0xFF1976D2) else Color.Black,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            textDecoration = if (isClickable) TextDecoration.Underline else TextDecoration.None,
+            modifier = if (isClickable && onClick != null) Modifier.clickable { onClick() } else Modifier
         )
     }
 }

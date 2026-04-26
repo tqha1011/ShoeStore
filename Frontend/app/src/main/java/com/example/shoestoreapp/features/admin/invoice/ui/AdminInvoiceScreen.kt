@@ -1,7 +1,11 @@
 package com.example.shoestoreapp.features.admin.invoice.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,7 +17,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.admin.invoice.ui.components.AdminInvoiceFilterChips
@@ -21,8 +28,10 @@ import com.example.shoestoreapp.features.admin.invoice.viewmodel.AdminInvoiceVie
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavBar
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
 import com.example.shoestoreapp.features.admin.invoice.ui.components.AdminOrderCard
+import com.example.shoestoreapp.features.invoice.model.Detail
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import com.example.shoestoreapp.features.invoice.model.nextWorkflowStatus
+import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +41,8 @@ fun AdminInvoiceScreen(
     viewModel: AdminInvoiceViewmodel,
     onTabSelected: (AdminBottomNavTab) -> Unit = {}
 ) {
+    val context = LocalContext.current
+
     // 1. GET STATE FROM API (The new data engine)
     val state = viewModel.state
 
@@ -164,13 +175,43 @@ fun AdminInvoiceScreen(
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 } else {
                     Column(modifier = Modifier.fillMaxSize()) {
-                        Text("Order details", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text("Order details", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        val selectedInvoice = state.selectedInvoice!!
+                        DetailMetaRow(
+                            label = "Phone",
+                            value = selectedInvoice.phones.orEmpty().ifBlank { "-" },
+                            isClickable = selectedInvoice.phones?.isNotBlank() == true,
+                            onClick = {
+                                val phone = selectedInvoice.phones?.trim().orEmpty()
+                                if (phone.isNotEmpty()) {
+                                    // Launch phone dialer
+                                    val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                                        data = Uri.parse("tel:$phone")
+                                    }
+                                    // Launch the intent
+                                    context.startActivity(dialIntent)
+                                }
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        DetailMetaRow(
+                            label = "Address",
+                            value = selectedInvoice.address.orEmpty().ifBlank { "-" }
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        DetailMetaRow(
+                            label = "Created",
+                            value = selectedInvoice.createdAt.orEmpty().ifBlank { "-" }
+                        )
+                        Spacer(modifier = Modifier.height(14.dp))
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-                            Text("Product", modifier = Modifier.weight(2f), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                            Text("Qty", modifier = Modifier.weight(0.5f), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                            Text("Unit price", modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                            Text("Product", modifier = Modifier.weight(2f), fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
+                            Text("Qty", modifier = Modifier.weight(0.55f), fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
+                            Text("Unit price", modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
                         }
                         HorizontalDivider(color = Color.LightGray)
 
@@ -178,33 +219,15 @@ fun AdminInvoiceScreen(
                             Box(modifier = Modifier.fillMaxSize()) {
                                 Text(
                                     text = "No details found for this order.",
-                                    color = Color(0xFF6D6D6D),
+                                                    color = Color(0xFF6D6D6D),
+                                                    fontSize = 17.sp,
                                     modifier = Modifier.align(Alignment.Center)
                                 )
                             }
                         } else {
                             LazyColumn(modifier = Modifier.weight(1f)) {
                                 items(state.invoiceDetails) { detail ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column(modifier = Modifier.weight(2f)) {
-                                            Text(text = detail.productName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                            Text(text = "Color: ${detail.color} | Size: ${detail.size}", fontSize = 12.sp, color = Color.Gray)
-                                        }
-                                        Text(
-                                            text = "x${detail.quantity}",
-                                            modifier = Modifier.weight(0.5f),
-                                            fontSize = 14.sp
-                                        )
-                                        Text(
-                                            text = "${detail.unitPrice} đ",
-                                            modifier = Modifier.weight(1f),
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
+                                    InvoiceDetailRow(detail = detail)
                                     HorizontalDivider(color = Color(0xFFF0F0F0))
                                 }
                             }
@@ -214,5 +237,90 @@ fun AdminInvoiceScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun InvoiceDetailRow(detail: Detail) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            modifier = Modifier.weight(2f),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (detail.imageUrl.isBlank()) {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .background(Color(0xFFF1F1F1), RoundedCornerShape(8.dp))
+                        .border(1.dp, Color(0xFFE7E7E7), RoundedCornerShape(8.dp))
+                )
+            } else {
+                AsyncImage(
+                    model = detail.imageUrl,
+                    contentDescription = detail.productName,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(52.dp)
+                        .background(Color(0xFFF1F1F1), RoundedCornerShape(8.dp))
+                        .border(1.dp, Color(0xFFE7E7E7), RoundedCornerShape(8.dp))
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Column {
+                Text(text = detail.productName, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                Text(text = "Color: ${detail.color} | Size: ${detail.size}", fontSize = 15.sp, color = Color.Gray)
+            }
+        }
+
+        Text(
+            text = "x${detail.quantity}",
+            modifier = Modifier.weight(0.55f),
+            fontSize = 17.sp
+        )
+        Text(
+            text = "${detail.unitPrice} đ",
+            modifier = Modifier.weight(1f),
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun DetailMetaRow(
+    label: String,
+    value: String,
+    isClickable: Boolean = false,
+    onClick: (() -> Unit)? = null
+) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        Text(
+            text = "$label:",
+            modifier = Modifier.width(72.dp),
+            color = Color(0xFF666666),
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            text = value,
+            modifier = Modifier
+                .weight(1f)
+                .then(
+                    if (isClickable && onClick != null) {
+                        Modifier.clickable { onClick() }
+                    } else {
+                        Modifier
+                    }
+                ),
+            color = if (isClickable) Color(0xFF1976D2) else Color(0xFF2E2E2E),
+            fontSize = 17.sp,
+            fontWeight = FontWeight.SemiBold,
+            textDecoration = if (isClickable) TextDecoration.Underline else TextDecoration.None
+        )
     }
 }
