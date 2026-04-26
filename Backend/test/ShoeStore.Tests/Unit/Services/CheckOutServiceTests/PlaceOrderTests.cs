@@ -8,6 +8,7 @@ using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
 using ShoeStore.Application.Interface.ProductInterface;
+using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Services;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;

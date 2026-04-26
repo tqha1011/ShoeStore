@@ -11,4 +11,6 @@ public interface ICartItemService
         CancellationToken token);
 
     Task<ErrorOr<Success>> DeleteCartItemAsync(List<Guid> cartItemList, Guid publicUserId, CancellationToken token);
+
+    Task<ErrorOr<List<UserCartItemResponseDto>>> GetCartItemsByUserIdAsync(Guid userPublicId, CancellationToken token);
 }
