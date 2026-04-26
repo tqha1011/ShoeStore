@@ -1,9 +1,10 @@
 using ErrorOr;
+using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs.CartItemDTOs;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.ProductInterface;
+using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Services;
@@ -55,7 +56,8 @@ public class CartItemService(
                     ImageUrl = productVariant.ImageUrl,
                     ProductVariantId = productVariant.PublicId,
                     ProductName = productVariant.Product?.ProductName ?? string.Empty,
-                    Brand = productVariant.Product?.Brand ?? string.Empty
+                    Brand = productVariant.Product?.Brand ?? string.Empty,
+                    IsSelling = productVariant.IsSelling
                 };
             }
 
@@ -79,7 +81,8 @@ public class CartItemService(
             ImageUrl = productVariant.ImageUrl,
             ProductVariantId = productVariant.PublicId,
             ProductName = productVariant.Product?.ProductName ?? string.Empty,
-            Brand = productVariant.Product?.Brand ?? string.Empty
+            Brand = productVariant.Product?.Brand ?? string.Empty,
+            IsSelling = productVariant.IsSelling
         };
     }
 
@@ -131,7 +134,8 @@ public class CartItemService(
                 ImageUrl = productVariant.ImageUrl,
                 ProductVariantId = productVariant.PublicId,
                 ProductName = productVariant.Product?.ProductName ?? string.Empty,
-                Brand = productVariant.Product?.Brand ?? string.Empty
+                Brand = productVariant.Product?.Brand ?? string.Empty,
+                IsSelling = productVariant.IsSelling
             };
         }
 
@@ -160,7 +164,34 @@ public class CartItemService(
             ImageUrl = productVariant.ImageUrl,
             ProductVariantId = productVariant.PublicId,
             ProductName = productVariant.Product?.ProductName ?? string.Empty,
-            Brand = productVariant.Product?.Brand ?? string.Empty
+            Brand = productVariant.Product?.Brand ?? string.Empty,
+            IsSelling = productVariant.IsSelling
         };
+    }
+
+    public async Task<ErrorOr<List<UserCartItemResponseDto>>> GetCartItemsByUserIdAsync(Guid userPublicId,
+        CancellationToken token)
+    {
+        var user = await userRepository.CheckUserExistsAsync(userPublicId, token);
+        if (!user) return Error.NotFound("User.NotFound", "User not found.");
+        
+        var cartItems = cartItemRepository.GetCartItemsByUserId(userPublicId);
+        var response = await cartItems.Select(x => new UserCartItemResponseDto
+        {
+            CartItemId = x.PublicId,
+            Quantity = x.Quantity,
+            Brand = x.ProductVariant!.Product.Brand ?? string.Empty,
+            ProductName = x.ProductVariant.Product.ProductName,
+            Price = x.ProductVariant!.Price,
+            ColorId = x.ProductVariant.ColorId,
+            SizeId = x.ProductVariant.SizeId,
+            ColorName = x.ProductVariant!.Color.ColorName,
+            Size = x.ProductVariant.Size!.Size,
+            ImageUrl = x.ProductVariant.ImageUrl ?? string.Empty,
+            Stock = x.ProductVariant.Stock,
+            ProductVariantId = x.ProductVariant.PublicId,
+            IsSelling = x.ProductVariant.IsSelling
+        }).ToListAsync(token);
+        return response;
     }
 }

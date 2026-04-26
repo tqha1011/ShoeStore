@@ -6,7 +6,7 @@ namespace ShoeStore.Application.Interface.CartItemInterface;
 
 public interface ICartItemRepository : IGenericRepository<CartItem, int>
 {
-    Task<List<UserCartItemResponseDto>> GetCartItemsByUserIdAsync(Guid userId, CancellationToken token);
+    IQueryable<CartItem> GetCartItemsByUserId(Guid userId);
 
     Task<CartItem?> GetCartItemByGuidAsync(Guid publicId, CancellationToken token, bool trackChanges = false);
 

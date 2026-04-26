@@ -1,7 +1,7 @@
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Domain.Entities;
 
-namespace ShoeStore.Application.Interface;
+namespace ShoeStore.Application.Interface.UserInterface;
 
 public interface IUserRepository : IGenericRepository<User, int>
 {
@@ -10,4 +10,6 @@ public interface IUserRepository : IGenericRepository<User, int>
     Task<User?> GetUserByEmailAsync(string email, CancellationToken token);
 
     Task<User?> GetUserByPublicIdAsync(Guid publicId, CancellationToken token);
+    
+    Task<bool> CheckUserExistsAsync(Guid publicId, CancellationToken token);
 }

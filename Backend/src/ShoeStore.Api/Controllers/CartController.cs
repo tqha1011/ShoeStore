@@ -14,6 +14,7 @@ namespace ShoeStore.Api.Controllers;
 /// <param name="cartItemService">Service for handling cart item operations.</param>
 [Route("api/cart")]
 [ApiController]
+[Authorize(Roles = "User")]
 public class CartController(ICartItemService cartItemService) : ControllerBase
 {
     /// <summary>
@@ -41,7 +42,6 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost]
-    [Authorize(Roles = "User")]
     public async Task<IActionResult> AddUserCartItem([FromBody] AddCartItemDto dto, CancellationToken token)
     {
         var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -109,7 +109,6 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPut]
-    [Authorize(Roles = "User")]
     public async Task<IActionResult> UpdateUserCartItem([FromBody] UpdateCartItemDto dto,
         CancellationToken token)
     {
@@ -171,7 +170,6 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost("remove-items")]
-    [Authorize(Roles = "User")]
     public async Task<IActionResult> DeleteUserCartItem([FromBody] List<Guid> cartItemList, CancellationToken token)
     {
         var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -203,6 +201,57 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
                 })
             }
         );
+        return response;
+    }
+    
+    /// <summary>
+    ///     Retrieves all cart items belonging to the currently authenticated user.
+    /// </summary>
+    /// <remarks>
+    ///     Requires a valid authenticated user identity from JWT claims.
+    ///     This endpoint returns the user's cart items with product variant details used by the frontend cart screen.
+    ///     If the user does not exist in the system, a not-found response is returned.
+    /// </remarks>
+    /// <param name="token">Cancellation token for the request.</param>
+    /// <response code="200">Cart items were retrieved successfully. Returns the user's cart item list.</response>
+    /// <response code="401">Unauthorized; user is not authenticated or identity claim is invalid.</response>
+    /// <response code="404">Not found; the user does not exist.</response>
+    /// <response code="500">Internal server error; an unexpected server error occurred.</response>
+    /// <returns>
+    ///     An action result containing the user's cart items on success, or an error response describing what went wrong.
+    /// </returns>
+    [ProducesResponseType(typeof(List<UserCartItemResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
+    [HttpGet("user-cart-items")]
+    public async Task<IActionResult> GetUserCartItem(CancellationToken token)
+    {
+        var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if(validUser == null || !Guid.TryParse(validUser, out var publicUserId))
+            return Unauthorized(new
+            {
+                message = "You are not authorized to perform this action.",
+                description = "Please login to your account and try again."
+            });
+        
+        var result = await cartItemService.GetCartItemsByUserIdAsync(publicUserId, token);
+
+        var response = result.Match<IActionResult>(
+            cartItems => Ok(cartItems),
+            errors => errors[0].Code switch
+            {
+                "User.NotFound" => NotFound(new
+                {
+                    message = "User not found",
+                    detail = errors[0].Description
+                }),
+                _ => StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "Something went wrong",
+                    detail = errors[0].Description
+                })
+            });
         return response;
     }
 }
