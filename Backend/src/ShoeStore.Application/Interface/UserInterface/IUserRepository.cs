@@ -10,6 +10,6 @@ public interface IUserRepository : IGenericRepository<User, int>
     Task<User?> GetUserByEmailAsync(string email, CancellationToken token);
 
     Task<User?> GetUserByPublicIdAsync(Guid publicId, CancellationToken token);
-    
+    IQueryable<User> GetAllUsers();    
     Task<bool> CheckUserExistsAsync(Guid publicId, CancellationToken token);
 }
