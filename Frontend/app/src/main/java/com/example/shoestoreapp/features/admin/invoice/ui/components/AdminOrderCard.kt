@@ -1,6 +1,11 @@
 package com.example.shoestoreapp.features.admin.invoice.ui.components
 
+import android.content.Intent // library dial phone
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,16 +33,51 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import com.example.shoestoreapp.features.invoice.model.displayName
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceCardContainer
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusOrUnknown
 import com.example.shoestoreapp.features.invoice.ui.components.invoiceTextOrDash
+import java.util.Locale
 
+fun formatAdminDate(isoString: String?): String {
+    if (isoString.isNullOrEmpty() || isoString == "-") return "-"
+    return try {
+        val datePart = isoString.substringBefore("T")
+        val dateTokens = datePart.split("-")
+        if (dateTokens.size < 3) return isoString
+
+        val month = dateTokens[1]
+        val day = dateTokens[2]
+        val rawTime = isoString.substringAfter("T", "")
+        val timeTokens = rawTime.split(":")
+        val timePart = if (timeTokens.size >= 2) {
+            "${timeTokens[0]}:${timeTokens[1]}"
+        } else {
+            "--:--"
+        }
+
+        "$timePart - $day/$month"
+    } catch (_: Exception) {
+        isoString
+    }
+}
+
+fun formatAdminPrice(priceStr: String?): String {
+    if (priceStr.isNullOrEmpty() || priceStr == "-") return "0 đ"
+    val price = priceStr.toDoubleOrNull() ?: 0.0
+    return String.format(Locale.US, "%,.0f đ", price).replace(",", ".")
+}
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AdminOrderCard(
     invoice: Invoice,
@@ -45,37 +85,30 @@ fun AdminOrderCard(
     onStatusSelected: (InvoiceStatus) -> Unit,
     onDetailsClick: () -> Unit
 ) {
+    val context = LocalContext.current
     var isStatusMenuExpanded by remember { mutableStateOf(false) }
+    var isQuickInfoVisible by remember { mutableStateOf(false) }
 
     val paymentMethodText = invoiceTextOrDash(invoice.paymentMethod)
-    val createdAtText = invoiceTextOrDash(invoice.createdAt)
-    val finalPriceText = invoiceTextOrDash(invoice.finalPrice)
+    val createdAtText = formatAdminDate(invoiceTextOrDash(invoice.createdAt))
+    val finalPriceText = formatAdminPrice(invoiceTextOrDash(invoice.finalPrice))
+    val phoneText = invoiceTextOrDash(invoice.phones)
+    val addressText = invoiceTextOrDash(invoice.address)
 
     InvoiceCardContainer {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.Top
-        ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
             Column(
-                modifier = Modifier.width(100.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .combinedClickable(
+                        onClick = {
+                            if (isQuickInfoVisible) isQuickInfoVisible = false
+                        },
+                        onLongClick = { isQuickInfoVisible = true }
+                    )
+                    .padding(12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedButton(
-                    onClick = onDetailsClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(38.dp),
-                    border = BorderStroke(1.dp, Color(0xFF1F1F1F)),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(text = "Details", color = Color.Black)
-                }
-            }
-
-            Column(modifier = Modifier.weight(1f)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -86,12 +119,14 @@ fun AdminOrderCard(
                         color = Color(0xFF8C8C8C),
                         fontSize = 11.sp,
                         letterSpacing = 0.8.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
                     PaymentMethodBadge(paymentMethod = paymentMethodText)
                 }
-
-                Spacer(modifier = Modifier.height(6.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -101,77 +136,173 @@ fun AdminOrderCard(
                     Text(
                         text = invoice.userName,
                         color = Color.Black,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
                     InvoiceStatusOrUnknown(status = invoice.status)
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Bottom
                 ) {
                     Text(
                         text = createdAtText,
                         color = Color(0xFF6D6D6D),
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = finalPriceText,
                         color = Color.Black,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        maxLines = 1
                     )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                Box {
-                    Button(
-                        onClick = { isStatusMenuExpanded = true },
-                        enabled = statusOptions.isNotEmpty(),
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedButton(
+                        onClick = onDetailsClick,
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .weight(0.38f)
                             .height(42.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Black,
-                            contentColor = Color.White
-                        )
+                        border = BorderStroke(1.dp, Color(0xFF1F1F1F)),
+                        shape = RoundedCornerShape(8.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text(text = "Update Status")
-                            Icon(
-                                imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = "Update status",
-                                modifier = Modifier.padding(start = 4.dp)
-                            )
-                        }
+                        Text(text = "Details", color = Color.Black, maxLines = 1)
                     }
 
-                    DropdownMenu(
-                        expanded = isStatusMenuExpanded,
-                        onDismissRequest = { isStatusMenuExpanded = false }
-                    ) {
-                        statusOptions.forEach { targetStatus ->
-                            DropdownMenuItem(
-                                text = { Text(text = targetStatus.displayName()) },
-                                onClick = {
-                                    isStatusMenuExpanded = false
-                                    onStatusSelected(targetStatus)
-                                }
+                    Box(modifier = Modifier.weight(0.62f)) {
+                        Button(
+                            onClick = { isStatusMenuExpanded = true },
+                            enabled = statusOptions.isNotEmpty(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(42.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Black,
+                                contentColor = Color.White
                             )
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Text(text = "Update Status", maxLines = 1)
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Update status",
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = isStatusMenuExpanded,
+                            onDismissRequest = { isStatusMenuExpanded = false }
+                        ) {
+                            statusOptions.forEach { targetStatus ->
+                                DropdownMenuItem(
+                                    text = { Text(text = targetStatus.displayName()) },
+                                    onClick = {
+                                        isStatusMenuExpanded = false
+                                        onStatusSelected(targetStatus)
+                                    }
+                                )
+                            }
                         }
                     }
                 }
             }
+
+            if (isQuickInfoVisible) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.Black.copy(alpha = 0.48f))
+                        .combinedClickable(
+                            onClick = { isQuickInfoVisible = false },
+                            onLongClick = { isQuickInfoVisible = false }
+                        )
+                        .padding(10.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .fillMaxWidth()
+                            .background(Color.White, RoundedCornerShape(8.dp))
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "Order Quick Details",
+                            color = Color.Black,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        QuickInfoRow(
+                            label = "Phone",
+                            value = phoneText,
+                            isClickable = phoneText != "-",
+                            onClick = {
+                                val dialIntent = Intent(Intent.ACTION_DIAL).apply {
+                                    data = "tel:$phoneText".toUri()
+                                }
+                                context.startActivity(dialIntent)
+                            }
+                        )
+                        QuickInfoRow(label = "Address", value = addressText)
+                        QuickInfoRow(label = "Created", value = createdAtText)
+                        Text(
+                            text = "Tap to close",
+                            color = Color(0xFF777777),
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+            }
         }
+    }
+}
+
+@Composable
+private fun QuickInfoRow(
+    label: String,
+    value: String,
+    isClickable: Boolean = false,
+    onClick: (() -> Unit)? = null
+) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "$label:",
+            color = Color(0xFF555555),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            text = value,
+            color = if (isClickable) Color(0xFF1976D2) else Color.Black,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textDecoration = if (isClickable) TextDecoration.Underline else TextDecoration.None,
+            modifier = if (isClickable && onClick != null) Modifier.clickable { onClick() } else Modifier
+        )
     }
 }
 

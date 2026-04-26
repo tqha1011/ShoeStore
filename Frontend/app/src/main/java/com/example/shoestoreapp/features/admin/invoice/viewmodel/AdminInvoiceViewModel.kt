@@ -1,108 +1,141 @@
 package com.example.shoestoreapp.features.admin.invoice.viewmodel
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import com.example.shoestoreapp.features.admin.invoice.data.AdminInvoiceMockRepository
+import androidx.lifecycle.viewModelScope
+import com.example.shoestoreapp.features.admin.invoice.data.AdminInvoiceRepository
+import com.example.shoestoreapp.features.invoice.model.Detail
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
+import com.example.shoestoreapp.features.invoice.model.displayName
 import com.example.shoestoreapp.features.invoice.model.nextWorkflowStatus
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-class AdminInvoiceViewModel(
-    repository: AdminInvoiceMockRepository = AdminInvoiceMockRepository()
-) : ViewModel() {
+data class AdminInvoiceState(
+    val isLoading: Boolean = false,
+    val invoices: List<Invoice> = emptyList(),
+    val error: String? = null,
+    val successMessage: String? = null,
+    val isDetailLoading: Boolean = false,
+    val selectedInvoice: Invoice? = null,
+    val invoiceDetails: List<Detail> = emptyList(),
+    val isUpdatingStatus: Boolean = false,
+    val updatingInvoicePublicId: String? = null
+)
 
-    private data class LastStatusChange(
-        val orderCode: String,
-        val previousStatus: InvoiceStatus
-    )
-
-    private val _allInvoices = MutableStateFlow(repository.getInvoices())
-    private val _selectedStatus = MutableStateFlow<InvoiceStatus?>(null)
-    private val _visibleInvoices = MutableStateFlow(_allInvoices.value)
-    private var lastStatusChange: LastStatusChange? = null
-
-    val selectedStatus: StateFlow<InvoiceStatus?> = _selectedStatus.asStateFlow()
-    val visibleInvoices: StateFlow<List<Invoice>> = _visibleInvoices.asStateFlow()
+class AdminInvoiceViewmodel (private val repository: AdminInvoiceRepository)
+    : ViewModel() {
+    var state by mutableStateOf(AdminInvoiceState())
+        private set
 
     init {
-        applyFilter()
+        loadInvoices()
     }
-
-    fun onFilterChange(status: InvoiceStatus?) {
-        _selectedStatus.value = status
-        applyFilter()
-    }
-
-    fun getNextStatus(invoice: Invoice): InvoiceStatus? {
-        return invoice.nextWorkflowStatus()
-    }
-
-    fun getStatusOptions(invoice: Invoice): List<InvoiceStatus> {
-        val nextStatus = invoice.nextWorkflowStatus()
-        val canCancel = invoice.status == InvoiceStatus.PENDING
-
-        return buildList {
-            if (nextStatus != null) add(nextStatus)
-            if (canCancel) add(InvoiceStatus.CANCELED)
-        }
-    }
-
-    fun advanceStatus(orderCode: String) {
-        val invoice = _allInvoices.value.firstOrNull { it.orderCode == orderCode } ?: return
-        val next = invoice.nextWorkflowStatus() ?: return
-        updateStatus(orderCode = orderCode, targetStatus = next)
-    }
-
-    fun updateStatus(orderCode: String, targetStatus: InvoiceStatus) {
-        var previousStatus: InvoiceStatus? = null
-
-        _allInvoices.update { invoices ->
-            invoices.map { invoice ->
-                if (invoice.orderCode != orderCode) return@map invoice
-                if (invoice.status == targetStatus) return@map invoice
-
-                previousStatus = invoice.status
-                invoice.copy(status = targetStatus)
-            }
-        }
-
-        if (previousStatus != null) {
-            lastStatusChange = LastStatusChange(orderCode = orderCode, previousStatus = previousStatus!!)
-            applyFilter()
-        }
-    }
-
-    fun undoLastStatusChange() {
-        val change = lastStatusChange ?: return
-        lastStatusChange = null
-
-        _allInvoices.update { invoices ->
-            invoices.map { invoice ->
-                if (invoice.orderCode == change.orderCode) {
-                    invoice.copy(status = change.previousStatus)
-                } else {
-                    invoice
+    fun loadInvoices(){
+        viewModelScope.launch {
+            state = state.copy(isLoading = true, error = null)
+            repository.getAllInvoicesAdmin()
+                .onSuccess { list ->
+                    state = state.copy(isLoading = false, invoices = list)
                 }
+                .onFailure { exception ->
+                    state = state.copy(isLoading = false, error = exception.message)
+                }
+        }
+    }
+
+    fun openInvoiceDetails(invoice: Invoice) {
+        val invoiceGuid = invoice.publicId.trim()
+        if (invoiceGuid.isEmpty()) {
+            state = state.copy(error = "Cannot open details: missing invoice id")
+            return
+        }
+
+        viewModelScope.launch {
+            state = state.copy(
+                selectedInvoice = invoice,
+                invoiceDetails = emptyList(),
+                isDetailLoading = true,
+                error = null
+            )
+
+            repository.getInvoiceDetailsAdmin(invoiceGuid)
+                .onSuccess { detailsList ->
+                    state = state.copy(isDetailLoading = false, invoiceDetails = detailsList)
+                }
+                .onFailure { exception ->
+                    state = state.copy(isDetailLoading = false, error = exception.message)
+                }
+        }
+    }
+
+    fun updateInvoiceStatus(invoice: Invoice, targetStatus: InvoiceStatus) {
+        val invoiceGuid = invoice.publicId.trim()
+        if (invoiceGuid.isEmpty()) {
+            state = state.copy(error = "Cannot update status: missing invoice id")
+            return
+        }
+
+        if (invoice.status == targetStatus) {
+            state = state.copy(successMessage = "Order is already ${targetStatus.name.lowercase()}.")
+            return
+        }
+
+        val nextStatus = invoice.nextWorkflowStatus()
+        if (nextStatus == null || targetStatus != nextStatus) {
+            val message = if (nextStatus == null) {
+                "Invalid transition. This order cannot be updated manually at its current state."
+            } else {
+                "Invalid transition. Next status must be ${nextStatus.name}."
             }
+            state = state.copy(error = message)
+            return
         }
-        applyFilter()
+
+        viewModelScope.launch {
+            state = state.copy(
+                isUpdatingStatus = true,
+                updatingInvoicePublicId = invoiceGuid,
+                error = null
+            )
+
+            repository.updateInvoiceStatusAdmin(invoiceGuid, targetStatus.displayName())
+                .onSuccess {
+                    val updatedInvoices = state.invoices.map { current ->
+                        if (current.publicId == invoiceGuid) current.copy(status = targetStatus) else current
+                    }
+                    val updatedSelectedInvoice = state.selectedInvoice?.let { selected ->
+                        if (selected.publicId == invoiceGuid) selected.copy(status = targetStatus) else selected
+                    }
+                    state = state.copy(
+                        invoices = updatedInvoices,
+                        selectedInvoice = updatedSelectedInvoice,
+                        isUpdatingStatus = false,
+                        updatingInvoicePublicId = null,
+                        successMessage = "Order status updated successfully"
+                    )
+                }
+                .onFailure { exception ->
+                    state = state.copy(
+                        isUpdatingStatus = false,
+                        updatingInvoicePublicId = null,
+                        error = exception.message
+                    )
+                }
+        }
     }
 
-    // Keep old method name to avoid breaking temporary callers.
-    fun cycleStatus(orderCode: String) {
-        advanceStatus(orderCode)
+    fun clearDetails() {
+        state = state.copy(
+            selectedInvoice = null,
+            invoiceDetails = emptyList(),
+            isDetailLoading = false
+        )
     }
 
-    private fun applyFilter() {
-        val status = _selectedStatus.value
-        _visibleInvoices.value = if (status == null) {
-            _allInvoices.value
-        } else {
-            _allInvoices.value.filter { it.status == status }
-        }
+    fun clearTransientMessage() {
+        state = state.copy(error = null, successMessage = null)
     }
 }
-

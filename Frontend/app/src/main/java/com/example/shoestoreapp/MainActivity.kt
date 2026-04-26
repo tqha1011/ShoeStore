@@ -16,6 +16,8 @@ import com.example.shoestoreapp.core.networks.RetrofitInstance
 import com.example.shoestoreapp.features.user.product.ui.product_detail.ProductDetailScreen
 import com.example.shoestoreapp.features.user.product.ui.product_list.ProductListScreen
 import com.example.shoestoreapp.features.admin.invoice.ui.AdminInvoiceScreen
+import com.example.shoestoreapp.features.admin.invoice.data.AdminInvoiceRepository
+import com.example.shoestoreapp.features.admin.invoice.viewmodel.AdminInvoiceViewmodel
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
@@ -35,6 +37,7 @@ import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScree
 import com.example.shoestoreapp.features.auth.presentation.welcome.WelcomeScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.CreateNewPasswordScreen
 import com.example.shoestoreapp.core.utils.TokenManager
+import com.example.shoestoreapp.core.utils.JwtUtils
 import kotlinx.coroutines.launch
 
 private object Routes {
@@ -92,6 +95,14 @@ private fun NavGraphBuilder.authGraph(navController: NavHostController, tokenMan
 
         LaunchedEffect(token, role) {
             if (token == "LOADING") return@LaunchedEffect
+
+            // check expired token and redirect to login screen
+            if (!token.isNullOrBlank() && JwtUtils.isTokenExpired(token)) {
+                tokenManager.clearAuthInfo()
+                navController.navigateAndPopTo(Routes.SIGN_IN, Routes.WELCOME)
+                return@LaunchedEffect
+            }
+
             val destination = resolveWelcomeDestination(token, role)
             navController.navigateAndPopTo(destination, Routes.WELCOME)
         }
@@ -223,6 +234,11 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
 
     composable(Routes.ADMIN_INVOICE_LIST) {
         AdminInvoiceScreen(
+            viewModel = remember {
+                AdminInvoiceViewmodel(
+                    repository = AdminInvoiceRepository(RetrofitInstance.invoiceApi)
+                )
+            },
             onTabSelected = { tab -> handleAdminInvoiceTabSelection(tab, navController) }
         )
     }
