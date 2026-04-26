@@ -15,7 +15,7 @@ namespace ShoeStore.Api.Controllers;
 /// <param name="voucherService">Service for handling voucher logic operations.</param>
 [ApiController]
 [Route("api/admin/vouchers")]
-// [Authorize(Roles = "Admin")]
+[Authorize(Roles = "Admin")]
 public class VoucherController(IVoucherService voucherService) : ControllerBase
 {
     /// <summary>
