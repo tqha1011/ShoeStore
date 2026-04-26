@@ -92,6 +92,7 @@ dependencies {
     implementation(libs.coil.compose)
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.8.5")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
     implementation(libs.foundation) // Icons Library
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services)
