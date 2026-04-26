@@ -163,23 +163,38 @@ fun AdminInvoiceScreen(
     // BOTTOM SHEET FOR INVOICE DETAILS
     // ====================================================
     if (state.selectedInvoice != null) {
-        ModalBottomSheet(
-            onDismissRequest = { viewModel.clearDetails() }
+        InvoiceDetailsBottomSheet(
+            state = state,
+            onDismissRequest = { viewModel.clearDetails() },
+            context = context
+        )
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun InvoiceDetailsBottomSheet(
+    state: com.example.shoestoreapp.features.admin.invoice.viewmodel.AdminInvoiceState, // Thay bằng đường dẫn tới State của sếp nếu cần
+    onDismissRequest: () -> Unit,
+    context: android.content.Context
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismissRequest
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.7f) // Chiếm 70% màn hình
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.7f) // Chiếm 70% màn hình
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                if (state.isDetailLoading) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                } else {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        Text("Order details", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.height(12.dp))
+            if (state.isDetailLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Text("Order details", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                        val selectedInvoice = state.selectedInvoice
+                    val selectedInvoice = state.selectedInvoice
+                    if (selectedInvoice != null) {
                         DetailMetaRow(
                             label = "Phone",
                             value = selectedInvoice.phones.orEmpty().ifBlank { "-" },
@@ -187,11 +202,9 @@ fun AdminInvoiceScreen(
                             onClick = {
                                 val phone = selectedInvoice.phones?.trim().orEmpty()
                                 if (phone.isNotEmpty()) {
-                                    // Launch phone dialer
                                     val dialIntent = Intent(Intent.ACTION_DIAL).apply {
                                         data = "tel:$phone".toUri()
                                     }
-                                    // Launch the intent
                                     context.startActivity(dialIntent)
                                 }
                             }
@@ -208,39 +221,38 @@ fun AdminInvoiceScreen(
                         )
                         Spacer(modifier = Modifier.height(14.dp))
                         Spacer(modifier = Modifier.height(16.dp))
-
-                        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
-                            Text("Product", modifier = Modifier.weight(2f), fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
-                            Text("Qty", modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
-                            Text("Unit price", modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
-                        }
-                        HorizontalDivider(color = Color.LightGray)
-
-                        if (state.invoiceDetails.isEmpty()) {
-                            Box(modifier = Modifier.fillMaxSize()) {
-                                Text(
-                                    text = "No details found for this order.",
-                                                    color = Color(0xFF6D6D6D),
-                                                    fontSize = 17.sp,
-                                    modifier = Modifier.align(Alignment.Center)
-                                )
-                            }
-                        } else {
-                            LazyColumn(modifier = Modifier.weight(1f)) {
-                                items(state.invoiceDetails) { detail ->
-                                    InvoiceDetailRow(detail = detail)
-                                    HorizontalDivider(color = Color(0xFFF0F0F0))
-                                }
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
                     }
+
+                    Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                        Text("Product", modifier = Modifier.weight(2f), fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
+                        Text("Qty", modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold, fontSize = 17.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        Text("Unit price", modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold, fontSize = 17.sp, textAlign = androidx.compose.ui.text.style.TextAlign.End)
+                    }
+                    HorizontalDivider(color = Color.LightGray)
+
+                    if (state.invoiceDetails.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            Text(
+                                text = "No details found for this order.",
+                                color = Color(0xFF6D6D6D),
+                                fontSize = 17.sp,
+                                modifier = Modifier.align(Alignment.Center)
+                            )
+                        }
+                    } else {
+                        LazyColumn(modifier = Modifier.weight(1f)) {
+                            items(state.invoiceDetails) { detail ->
+                                InvoiceDetailRow(detail = detail)
+                                HorizontalDivider(color = Color(0xFFF0F0F0))
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }
     }
 }
-
 @Composable
 private fun InvoiceDetailRow(detail: Detail) {
     Row(
