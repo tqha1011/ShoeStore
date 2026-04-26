@@ -1,20 +1,24 @@
 package com.example.shoestoreapp.features.invoice.model
 
-enum class InvoiceStatus(val id: Int?) {
+
+enum class InvoiceStatus(val id: Int){
     PENDING(1),
     PAID(2),
-    CANCELED(3),
+    CANCELLED(3),
     DELIVERING(4),
     DELIVERED(5)
 }
 
 data class Invoice(
+    val publicId: String,
     val orderCode: String,
     val userName: String,
     val paymentMethod: String?,
     val status: InvoiceStatus?,
     val createdAt: String?,
     val finalPrice: String?,
+    val address: String?,
+    val phones: String?,
 )
 // Data Details
 data class Detail (
@@ -30,7 +34,7 @@ fun InvoiceStatus.displayName(): String {
     return when (this) {
         InvoiceStatus.PENDING -> "Pending"
         InvoiceStatus.PAID -> "Paid"
-        InvoiceStatus.CANCELED -> "Canceled"
+        InvoiceStatus.CANCELLED -> "Cancelled"
         InvoiceStatus.DELIVERING -> "Delivering"
         InvoiceStatus.DELIVERED -> "Delivered"
     }
@@ -43,21 +47,28 @@ fun Invoice.nextWorkflowStatus(): InvoiceStatus? {
             InvoiceStatus.PENDING -> InvoiceStatus.PAID
             InvoiceStatus.PAID -> InvoiceStatus.DELIVERING
             InvoiceStatus.DELIVERING -> InvoiceStatus.DELIVERED
-            InvoiceStatus.DELIVERED, InvoiceStatus.CANCELED -> null
+            InvoiceStatus.DELIVERED, InvoiceStatus.CANCELLED -> null
         }
 
         "COD" -> when (currentStatus) {
             InvoiceStatus.PENDING -> InvoiceStatus.DELIVERING
             InvoiceStatus.DELIVERING -> InvoiceStatus.PAID
             InvoiceStatus.PAID -> InvoiceStatus.DELIVERED
-            InvoiceStatus.DELIVERED, InvoiceStatus.CANCELED -> null
+            InvoiceStatus.DELIVERED, InvoiceStatus.CANCELLED -> null
         }
 
         else -> null
     }
 }
 
-fun Int?.toInvoiceStatusOrNull(): InvoiceStatus? {
-    val rawValue = this ?: return null
-    return InvoiceStatus.entries.firstOrNull { it.id == rawValue }
+fun String?.toInvoiceStatus(): InvoiceStatus {
+    return when (this?.trim()?.uppercase()) {
+        "PENDING" -> InvoiceStatus.PENDING
+        "PAID" -> InvoiceStatus.PAID
+        "CANCELED", "CANCELLED" -> InvoiceStatus.CANCELLED
+        "DELIVERING" -> InvoiceStatus.DELIVERING
+        "DELIVERED" -> InvoiceStatus.DELIVERED
+        else -> InvoiceStatus.PENDING
+    }
 }
+

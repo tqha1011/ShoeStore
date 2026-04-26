@@ -19,7 +19,7 @@ data class ItemDto(
     @SerializedName("publicId")
     val publicId: String?,
     @SerializedName("status")
-    val status: Int?,
+    val status: String?,
     @SerializedName("updateCreated")
     val updateCreated: Any?,
     @SerializedName("username")

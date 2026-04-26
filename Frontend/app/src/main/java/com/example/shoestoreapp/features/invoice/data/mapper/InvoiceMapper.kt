@@ -4,23 +4,19 @@ import com.example.shoestoreapp.features.invoice.data.remote.DetailDto
 import com.example.shoestoreapp.features.invoice.data.remote.ItemDto
 import com.example.shoestoreapp.features.invoice.model.Detail
 import com.example.shoestoreapp.features.invoice.model.Invoice
-import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
+import com.example.shoestoreapp.features.invoice.model.toInvoiceStatus
 
 fun ItemDto.toDomain() : Invoice {
     return Invoice(
+        publicId = this.publicId ?: "",
         orderCode = this.orderCode ?: "",
         userName = this.username ?: "Empty",
         paymentMethod =  this.paymentName,
-        status = when (this.status){
-            1 -> InvoiceStatus.PENDING
-            2 -> InvoiceStatus.PAID
-            3 -> InvoiceStatus.CANCELED
-            4 -> InvoiceStatus.DELIVERING
-            5 -> InvoiceStatus.DELIVERED
-            else -> InvoiceStatus.PENDING
-        },
+        status = this.status.toInvoiceStatus(),
         createdAt = this.dateCreated,
-        finalPrice = this.finalPrice
+        finalPrice = this.finalPrice,
+        address = this.address,
+        phones = this.phone
     )
 }
 
