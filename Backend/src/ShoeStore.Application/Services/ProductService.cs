@@ -256,7 +256,11 @@ public class ProductService(
             return Error.NotFound("Product.NotFound", $"Product with ID {productGuid} not found.");
 
         // Soft delete: mark all variants as deleted
-        foreach (var variant in product.ProductVariants) variant.IsDeleted = true;
+        foreach (var variant in product.ProductVariants)
+        {
+            variant.IsDeleted = true;
+            variant.IsSelling = false; // Also mark as not selling to prevent it from showing up in searches
+        }
         product.IsDeleted = true;
         await uow.SaveChangesAsync(token);
         try
@@ -287,7 +291,7 @@ public class ProductService(
                 .Where(v => v.IsSelling && !v.IsDeleted)
                 .Select(v => new ProductVariantAdminResponeDto
                 {
-                    imgUrl = v.ImageUrl,
+                    imgUrl = v.ImageUrl ?? string.Empty,
                     Price = v.Price,
                     Stock = v.Stock,
                     StockStatus = v.Stock <= 0 ? "Out of Stock" :

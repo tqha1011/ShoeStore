@@ -10,8 +10,11 @@ namespace ShoeStore.Infrastructure.Authentication.Strategies;
 ///     Apply strategy pattern to handle different social authentication providers.
 ///     This class implements the ISocialAuthStrategy interface for Google authentication.
 /// </summary>
-public class GoogleAuthStrategy(IConfiguration configuration) : ISocialAuthStrategy
+public class GoogleAuthStrategy(
+    IConfiguration configuration,
+    IGoogleValidator googleValidator) : ISocialAuthStrategy
 {
+    // accessToken is idToken provided by Google
     public async Task<ErrorOr<SocialUserDto>> VerifySocialToken(string accessToken, CancellationToken token = default)
     {
         var clientId = configuration["GoogleAuthentication:ClientId"];
@@ -19,12 +22,7 @@ public class GoogleAuthStrategy(IConfiguration configuration) : ISocialAuthStrat
             return Error.Unexpected("Google.MissingClientId", "Google Client ID is not configured.");
         try
         {
-            var settings = new GoogleJsonWebSignature.ValidationSettings
-            {
-                Audience = [clientId]
-            };
-
-            var payload = await GoogleJsonWebSignature.ValidateAsync(accessToken, settings);
+            var payload = await googleValidator.ValidateTokenAsync(accessToken, clientId, token);
             if (payload == null)
                 return Error.Unauthorized(
                     "Google.EmptyPayload",
