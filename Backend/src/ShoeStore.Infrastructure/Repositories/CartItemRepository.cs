@@ -50,17 +50,16 @@ public class CartItemRepository(AppDbContext context) : GenericRepository<CartIt
             x => x.User!.PublicId == publicUserId && x.ProductVariant!.PublicId == publicVariantId, token);
     }
 
-    public async Task<bool> DeleteListOfCartItemsAsync(List<Guid> cartItemsList, CancellationToken token)
+    public async Task<List<CartItem>> GetListOfCartItemsAsync(List<Guid> cartItemsList, CancellationToken token)
     {
-        var cartItems = await DbSet.Where(x => cartItemsList.Contains(x.PublicId))
+        var cartItems = await DbSet.Include(x => x.User)
+            .Where(x => cartItemsList.Contains(x.PublicId))
             .Distinct()
             .ToListAsync(token);
-        if (cartItems.Count != cartItemsList.Count) return false;
-        DbSet.RemoveRange(cartItems);
-        return true;
+        return cartItems;
     }
 
-    public void DeleteCartItem(IEnumerable<CartItem> cartItems)
+    public void DeleteListCartItem(IEnumerable<CartItem> cartItems)
     {
         DbSet.RemoveRange(cartItems);
     }
