@@ -1,15 +1,14 @@
 ﻿using FluentValidation;
 using ShoeStore.Application.DTOs.InvoiceDTOs;
 
-namespace ShoeStore.Application.Validations.InvoiceValidation
+namespace ShoeStore.Application.Validations.InvoiceValidation;
+
+public class UpdateStateRequestDtoValidation : AbstractValidator<UpdateStateRequestDto>
 {
-    public class UpdateStateRequestDtoValidation : AbstractValidator<UpdateStateRequestDto>
+    public UpdateStateRequestDtoValidation()
     {
-        public UpdateStateRequestDtoValidation()
-        {
-            RuleFor(x => x.Status)
-                .IsInEnum()
-                .WithMessage("Invalid status value");
-        }
+        RuleFor(x => x.Status)
+            .IsInEnum()
+            .WithMessage("Invalid status value");
     }
 }
