@@ -5,6 +5,7 @@ using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.Strategies;
+using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
 
