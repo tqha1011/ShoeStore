@@ -8,6 +8,7 @@ using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
 using ShoeStore.Application.Interface.ProductInterface;
+using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Utilities;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
@@ -106,7 +107,7 @@ public class CheckOutService(
                             variantIdList.Contains(cartItem.ProductVariant?.PublicId ?? Guid.Empty))
                         .Distinct()
                         .ToList();
-                    cartItemRepository.DeleteCartItem(userCartItem);
+                    cartItemRepository.DeleteListCartItem(userCartItem);
                 }
 
                 // Stage 3: decrease the variant's stocks

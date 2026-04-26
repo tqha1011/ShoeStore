@@ -6,6 +6,7 @@ namespace ShoeStore.Application.DTOs.VoucherDtos
 {
     public class ResponseVoucherAdminDto
     {
+        public Guid VoucherGuid { get; set; }
         public string? VoucherName { get; set; }
         public decimal Discount { get; set; } = 0;
         public int? VoucherScope { get; set; }

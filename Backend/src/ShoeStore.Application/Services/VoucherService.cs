@@ -6,6 +6,7 @@ using ShoeStore.Application.DTOs.VoucherDtos;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.Notification;
+using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
@@ -24,7 +25,7 @@ namespace ShoeStore.Application.Services
         {
             this.voucherRepository = voucherRepository;
             this.uow = uow;
-            this.userVoucherRepository = userVoucherRepository; 
+            this.userVoucherRepository = userVoucherRepository;
             this.emailService = emailService;
             this.userRepository = userRepository;
         }
@@ -51,7 +52,6 @@ namespace ShoeStore.Application.Services
             await uow.SaveChangesAsync(token);
             return Result.Created;
         }
-
 
         public async Task<ErrorOr<Deleted>> DeleteVoucherByGuidAsync(Guid voucherGuid, CancellationToken token)
         {
@@ -80,7 +80,7 @@ namespace ShoeStore.Application.Services
                 .GetAllVouchers()
                 .Where(v => v.ValidTo < DateTime.UtcNow && !v.IsDeleted)
                 .ToList();
-            if(!vouchersToDelete.Any())
+            if (!vouchersToDelete.Any())
             {
                 return Error.NotFound(
                     "NO_EXPIRED_VOUCHERS",
@@ -104,6 +104,7 @@ namespace ShoeStore.Application.Services
                 .Where(v => !v.Voucher.IsDeleted && v.Voucher.ValidTo > DateTime.UtcNow)
                 .Select(v => new ResponseVoucherUserDto
                 {
+                    VoucherGuid = v.Voucher.PublicId,
                     VoucherName = v.Voucher.VoucherName ?? string.Empty,
                     Description = v.Voucher.VoucherDescription ?? string.Empty,
                     Discount = v.Voucher.Discount,
@@ -112,7 +113,7 @@ namespace ShoeStore.Application.Services
                 })
                 .ToListAsync(token);
 
-            if(!vouchers.Any())
+            if (!vouchers.Any())
             {
                 return Error.NotFound(
                     "NO_VOUCHERS_FOUND",
@@ -128,40 +129,6 @@ namespace ShoeStore.Application.Services
             return result;
         }
 
-        public async Task<ErrorOr<PageResult<ResponseVoucherAdminDto>>> GetAllVouchersAsync(CancellationToken token)
-        {
-            var vouchers = await voucherRepository
-                .GetAllVouchers()
-                .Where(v => !v.IsDeleted)
-                .Select(v => new ResponseVoucherAdminDto
-                {
-                    VoucherName = v.VoucherName,
-                    Discount = v.Discount,
-                    VoucherScope = (int)v.VoucherScope,
-                    DiscountType = (int)v.DiscountType,
-                    MaxPriceDiscount = v.MaxPriceDiscount,
-                    ValidFrom = v.ValidFrom,
-                    ValidTo = v.ValidTo,
-                    MinOrderPrice = v.MinOrderPrice
-                })
-                .ToListAsync(token);
-            if(vouchers == null || !vouchers.Any())
-            {
-                return Error.NotFound(
-                   "NO_VOUCHERS_FOUND",
-                   "Dont have voucher created"
-               );
-            }
-
-            var pageResult = new PageResult<ResponseVoucherAdminDto>
-            {
-                Items = vouchers,
-                TotalCount = vouchers.Count
-            };
-            return pageResult;
-
-        }
-
         public async Task<ErrorOr<PageResult<ResponseVoucherAdminDto>>> GetVoucherForAdminAsync(CancellationToken token)
         {
             var vouchers = await voucherRepository
@@ -169,6 +136,7 @@ namespace ShoeStore.Application.Services
                 .Where(v => !v.IsDeleted)
                 .Select(v => new ResponseVoucherAdminDto
                 {
+                    VoucherGuid = v.PublicId,
                     VoucherName = v.VoucherName,
                     Discount = v.Discount,
                     VoucherScope = (int)v.VoucherScope,
@@ -179,7 +147,7 @@ namespace ShoeStore.Application.Services
                     MinOrderPrice = v.MinOrderPrice
                 })
                 .ToListAsync();
-            if(vouchers == null || !vouchers.Any())
+            if (vouchers == null || !vouchers.Any())
             {
                 return Error.NotFound(
                     "NO_VOUCHERS_FOUND",
@@ -197,23 +165,21 @@ namespace ShoeStore.Application.Services
 
         public async Task<ErrorOr<Success>> NotifyUserAboutNewVoucherAsync(string adminEmail, string voucherName, DateTime validTo, CancellationToken token)
         {
-            try
-            {
-                var users = await userRepository
-                    .GetAllUsers()
-                    .Where(u => u.Email != adminEmail)
-                    .ToListAsync(token);
+            var users = await userRepository
+                .GetAllUsers()
+                .Where(u => u.Email != adminEmail)
+                .ToListAsync(token);
 
-                foreach (var user in users)
+            foreach (var user in users)
+            {
+                if (user.Email != adminEmail)
                 {
-                    if (user.Email != adminEmail)
-                    {
-                        return Error.NotFound(
-                            "USER_NOT_FOUND",
-                            "The user with the specified email does not exist."
-                        );
-                    }
-                    string emailBody = $@"
+                    return Error.NotFound(
+                        "USER_NOT_FOUND",
+                        "The user with the specified email does not exist."
+                    );
+                }
+                string emailBody = $@"
                     Hi {user.UserName},
 
                     Great news! A new voucher has been added to your account:
@@ -226,25 +192,16 @@ namespace ShoeStore.Application.Services
                     Best regards,
                     Shoe Store Team";
 
-                    await emailService.SendEmailAsync(
-                        from: adminEmail,
-                        to: user.Email,
-                        subject: "🎁 New Voucher Received!",
-                        body: emailBody,
-                        token: token
-                    );
-                }
-            }
-            catch (Exception ex)
-            {
-                return Error.Failure(
-                    "EMAIL_SENDING_FAILED",
-                    $"Failed to send email notifications: {ex.Message}"
+                await emailService.SendEmailAsync(
+                    from: adminEmail,
+                    to: user.Email,
+                    subject: "🎁 New Voucher Received!",
+                    body: emailBody,
+                    token: token
                 );
             }
             return Result.Success;
         }
-
 
         public async Task<ErrorOr<Updated>> UpdateVoucherAsync(Guid voucherGuid, UpdateVoucherDto voucherUpdateDto, CancellationToken token)
         {
@@ -260,13 +217,14 @@ namespace ShoeStore.Application.Services
                 );
             }
 
-            // Update logic
             voucher.VoucherDescription = voucherUpdateDto.VoucherDescription ?? voucher.VoucherDescription;
 
-            voucher.VoucherScope = (VoucherScope)voucherUpdateDto.VoucherScope;
-            voucher.DiscountType = (DiscountType)voucherUpdateDto.DiscountType;
+            voucher.Discount = voucherUpdateDto.Discount.HasValue ? voucherUpdateDto.Discount.Value : voucher.Discount;
 
-            voucher.MaxPriceDiscount = voucherUpdateDto.MaxPriceDiscount;
+            voucher.VoucherScope = (VoucherScope)(voucherUpdateDto.VoucherScope ?? (int)voucher.VoucherScope);
+            voucher.DiscountType = (DiscountType)(voucherUpdateDto.DiscountType ?? (int)voucher.DiscountType);
+
+            voucher.MaxPriceDiscount = voucherUpdateDto.MaxPriceDiscount ?? voucher.MaxPriceDiscount;
 
             voucher.ValidFrom = voucherUpdateDto.ValidFrom ?? voucher.ValidFrom;
             voucher.ValidTo = voucherUpdateDto.ValidTo ?? voucher.ValidTo;

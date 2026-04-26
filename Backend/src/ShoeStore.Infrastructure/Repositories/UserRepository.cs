@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Infrastructure.Data;
 
@@ -27,5 +28,9 @@ public class UserRepository(AppDbContext context) : GenericRepository<User, int>
     public IQueryable<User> GetAllUsers()
     {
         return DbSet.AsNoTracking();
+    }
+    public async Task<bool> CheckUserExistsAsync(Guid publicId, CancellationToken token)
+    {
+        return await DbSet.AsNoTracking().AnyAsync(x => x.PublicId == publicId, token);
     }
 }

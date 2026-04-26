@@ -8,6 +8,7 @@ using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
 using ShoeStore.Application.Interface.ProductInterface;
+using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Services;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
@@ -222,7 +223,7 @@ public class PlaceOrderTests
 
         Assert.NotNull(addedInvoice);
         _cartItemRepository.Verify(
-            repo => repo.DeleteCartItem(It.Is<IEnumerable<CartItem>>(items => items.Count() == 1)), Times.Once);
+            repo => repo.DeleteListCartItem(It.Is<IEnumerable<CartItem>>(items => items.Count() == 1)), Times.Once);
         _invoiceRepository.Verify(repo => repo.Add(It.IsAny<Invoice>()), Times.Once);
         VerifyUnitOfWorkCalls(_mockUow, Times.Once, Times.Once, Times.Never);
     }

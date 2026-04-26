@@ -15,7 +15,7 @@ namespace ShoeStore.Api.Controllers;
 /// <param name="voucherService">Service for handling voucher logic operations.</param>
 [ApiController]
 [Route("api/admin/vouchers")]
-[Authorize(Roles = "Admin")]
+// [Authorize(Roles = "Admin")]
 public class VoucherController(IVoucherService voucherService) : ControllerBase
 {
     /// <summary>
@@ -90,7 +90,7 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPut("{voucherGuid}")]
-    public async Task<IActionResult> UpdateVoucher(Guid voucherGuid, [FromBody] UpdateVoucherDto updateVoucherDto,
+    public async Task<IActionResult> UpdateVoucher(Guid voucherGuid, [FromForm] UpdateVoucherDto updateVoucherDto,
         CancellationToken token)
     {
         var result = await voucherService.UpdateVoucherAsync(voucherGuid, updateVoucherDto, token);
@@ -213,43 +213,6 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
                 _ => BadRequest(new
                 {
                     message = "Failed to retrieve vouchers",
-                    detail = errors[0].Description
-                })
-            });
-    }
-
-    /// <summary>
-    ///     Retrieves all active and non-deleted vouchers in the system.
-    /// </summary>
-    /// <remarks>
-    ///     Requires Admin role authorization.
-    /// </remarks>
-    /// <param name="token">Cancellation token for the request.</param>
-    /// <response code="200">All vouchers retrieved successfully.</response>
-    /// <response code="401">Unauthorized; user must be authenticated with Admin role.</response>
-    /// <response code="404">Not found; no vouchers found in the system.</response>
-    /// <response code="500">Internal server error; an unexpected error occurred.</response>
-    /// <returns>An action result containing a list of vouchers on success, or an error response.</returns>
-    [ProducesResponseType(typeof(PageResult<ResponseVoucherAdminDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
-    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
-    [HttpGet("all")]
-    public async Task<IActionResult> GetAllVouchers(CancellationToken token)
-    {
-        var result = await voucherService.GetAllVouchersAsync(token);
-        return result.Match<IActionResult>(
-            vouchers => Ok(vouchers),
-            errors => errors[0].Code switch
-            {
-                "NO_VOUCHERS_FOUND" => NotFound(new
-                {
-                    message = "No vouchers found",
-                    detail = errors[0].Description
-                }),
-                _ => BadRequest(new
-                {
-                    message = "Failed to retrieve all vouchers",
                     detail = errors[0].Description
                 })
             });
