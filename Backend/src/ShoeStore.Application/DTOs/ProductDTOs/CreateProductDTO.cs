@@ -1,8 +1,7 @@
-﻿using ShoeStore.Application.DTOs.ProductVariantDTOs;
-
 namespace ShoeStore.Application.DTOs.ProductDTOs;
 
-public class CreateProductDto : ProductBaseDto
+public class CreateProductDto
 {
-    public List<CreateProductVariantDto> Variants { get; set; } = [];
+    public string ProductName { get; set; } = string.Empty;
+    public int CategoryId { get; set; }
 }

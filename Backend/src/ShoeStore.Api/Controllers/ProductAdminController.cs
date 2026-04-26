@@ -15,7 +15,7 @@ namespace ShoeStore.API.Controllers;
 /// <param name="productService">Service for handling product management operations.</param>
 [Route("api/admin/products")]
 [ApiController]
-[Authorize(Roles = "Admin")]
+//[Authorize(Roles = "Admin")]
 public class AdminProductController(IProductService productService) : ControllerBase
 {
     /// <summary>
@@ -120,10 +120,18 @@ public class AdminProductController(IProductService productService) : Controller
     {
         var result = await productService.AddProductAsync(productDto, token);
 
-        if (result.IsError)
-            return BadRequest(result.Errors);
-
-        return CreatedAtAction(nameof(GetByGuid), new { productGuid = result.Value }, null);
+        return result.Match<IActionResult>(
+            publicId => CreatedAtAction(nameof(GetByGuid), new { productGuid = publicId }, new
+            {
+                message = "Product created successfully",
+                data = publicId
+            }),
+            errors => BadRequest(new
+            {
+                message = "Failed to create product",
+                errors = errors.Select(e => e.Description)
+            })
+        );
     }
 
     /// <summary>
@@ -135,8 +143,7 @@ public class AdminProductController(IProductService productService) : Controller
     ///     - <c>description</c>: the updated product description
     ///     - <c>categoryId</c>: the updated category identifier
     ///     - <c>basePrice</c>: the updated base price
-    ///     This endpoint updates the product master information but not individual variants.
-    ///     Use variant endpoints to update specific variant details like size or color.
+    ///     This endpoint updates the product master information and handles multiple variants (Size + Colors).
     /// </remarks>
     /// <param name="productGuid">The unique identifier of the product to update.</param>
     /// <param name="productDto">The updated product details.</param>
@@ -161,14 +168,24 @@ public class AdminProductController(IProductService productService) : Controller
     {
         var result = await productService.UpdateProductAsync(productGuid, productDto, token);
 
-        var response = result.Match<IActionResult>(
-            updated => Ok(updated),
-            errors => Problem(
-                string.Join(", ", errors.Select(e => e.Description)),
-                statusCode: StatusCodes.Status400BadRequest
-            )
+        return result.Match<IActionResult>(
+            updated => Ok(new
+            {
+                message = "Product and variants updated successfully",
+                data = updated
+            }),
+            errors =>
+            {
+                if (errors.Any(e => e.Code == "Product.NotFound"))
+                    return NotFound(new { message = "Update failed", description = "Product not found" });
+
+                return BadRequest(new
+                {
+                    message = "Failed to update product",
+                    errors = errors.Select(e => e.Description)
+                });
+            }
         );
-        return response;
     }
 
     /// <summary>

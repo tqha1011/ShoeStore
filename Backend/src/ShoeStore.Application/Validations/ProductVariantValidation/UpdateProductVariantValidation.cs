@@ -11,8 +11,8 @@ public class UpdateProductVariantValidation : AbstractValidator<UpdateProductVar
         RuleFor(x => x.SizeId)
             .GreaterThan(0).WithMessage("SizeId must be a positive integer.");
 
-        // ColorId: Assuming 0 is not a valid ID
-        RuleFor(x => x.ColorId)
+        // ColorIds: Assuming 0 is not a valid ID
+        RuleForEach(x => x.ColorIds)
             .GreaterThan(0).WithMessage("ColorId is required and must be greater than 0.");
 
 

@@ -19,8 +19,7 @@ public class ProductService(
     HybridCache cache,
     ILogger<ProductService> logger) : IProductService
 {
-    public async Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsUserAsync(ProductSearchRequest request,
-        CancellationToken token)
+    public async Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsUserAsync(ProductSearchRequest request, CancellationToken token)
     {
         // Validate pagination parameters
         if (request.PageIndex <= 0)
@@ -128,36 +127,19 @@ public class ProductService(
 
     public async Task<ErrorOr<Guid>> AddProductAsync(CreateProductDto dto, CancellationToken token)
     {
-        // Create new Product entity
+        // Create new Product entity with only Name and Category
         var product = new Product
         {
             ProductName = dto.ProductName,
-            Brand = dto.Brand ?? string.Empty,
             CategoryId = dto.CategoryId,
+            Brand = string.Empty, // Default value
             ProductVariants = new List<ProductVariant>()
         };
-
-        foreach (var v in dto.Variants)
-        {
-            var newVariant = new ProductVariant
-            {
-                SizeId = v.SizeId,
-                ColorId = v.ColorId,
-                Stock = v.Stock,
-                Price = v.Price,
-                ImageUrl = v.ImageUrl,
-                IsSelling = v.IsSelling,
-                Product = product,
-                ProductId = product.Id,
-                IsDeleted = false
-            };
-
-            product.ProductVariants.Add(newVariant);
-        }
 
         // Add product to repository and save
         productRepository.Add(product);
         await uow.SaveChangesAsync(token);
+        
         try
         {
             await cache.RemoveByTagAsync(CacheTag.Product, token);
@@ -183,56 +165,67 @@ public class ProductService(
         product.Brand = dto.Brand ?? string.Empty;
         product.CategoryId = dto.CategoryId;
 
-        // Get existing variants for comparison
+        // Get all existing variants (including soft-deleted ones to reactivate if needed)
         var existingVariants = product.ProductVariants.ToList();
+        
+        // Track which variants (SizeId, ColorId) are present in the new DTO
+        var processedVariantKeys = new HashSet<(int SizeId, int ColorId)>();
 
-        // Process variants: update existing, add new, delete removed
-        foreach (var variantDto in dto.Variants)
+        // Process variants: Each DTO entry can contain multiple ColorIds for one SizeId
+        foreach (var variantGroupDto in dto.ProductVariants)
         {
-            var existingVariant = existingVariants.FirstOrDefault(v => v.PublicId == variantDto.PublicId);
+            foreach (var colorId in variantGroupDto.ColorIds)
+            {
+                var key = (variantGroupDto.SizeId, colorId);
+                processedVariantKeys.Add(key);
 
-            if (existingVariant != null)
-            {
-                // Update existing variant
-                existingVariant.SizeId = variantDto.SizeId;
-                existingVariant.ColorId = variantDto.ColorId;
-                existingVariant.Stock = variantDto.Stock;
-                existingVariant.IsSelling = variantDto.IsSelling;
-                existingVariant.ImageUrl = variantDto.ImageUrl;
-                existingVariant.Price = variantDto.Price;
-                existingVariant.UpdatedAt = DateTime.UtcNow;
-            }
-            else
-            {
-                // if existing variant is null , it means a new product variant is added, so we will add it to the product
-                var newProductVariant = new ProductVariant
+                var existingVariant = existingVariants.FirstOrDefault(v => v.SizeId == key.SizeId && v.ColorId == key.colorId);
+
+                if (existingVariant != null)
                 {
-                    SizeId = variantDto.SizeId,
-                    ColorId = variantDto.ColorId,
-                    Stock = variantDto.Stock,
-                    Price = variantDto.Price,
-                    ImageUrl = variantDto.ImageUrl,
-                    IsSelling = variantDto.IsSelling,
-                    ProductId = product.Id
-                };
-                product.ProductVariants.Add(newProductVariant);
+                    // Update existing variant (and reactivate if it was soft-deleted)
+                    existingVariant.Stock = variantGroupDto.Stock;
+                    existingVariant.Price = variantGroupDto.Price;
+                    existingVariant.ImageUrl = variantGroupDto.ImageUrl;
+                    existingVariant.IsSelling = variantGroupDto.IsSelling;
+                    existingVariant.IsDeleted = false; 
+                    existingVariant.UpdatedAt = DateTime.UtcNow;
+                }
+                else
+                {
+                    // Create new product variant if not exists
+                    var newProductVariant = new ProductVariant
+                    {
+                        SizeId = variantGroupDto.SizeId,
+                        ColorId = colorId,
+                        Stock = variantGroupDto.Stock,
+                        Price = variantGroupDto.Price,
+                        ImageUrl = variantGroupDto.ImageUrl,
+                        IsSelling = variantGroupDto.IsSelling,
+                        ProductId = product.Id,
+                        IsDeleted = false
+                    };
+                    product.ProductVariants.Add(newProductVariant);
+                }
             }
         }
 
-        var dtoPublicIds = dto.Variants
-            .Select(v => v.PublicId)
-            .ToHashSet();
-
+        // Soft delete variants that are no longer in the request
         var variantsToRemove = existingVariants
-            .Where(v => !dtoPublicIds.Contains(v.PublicId))
+            .Where(v => !processedVariantKeys.Contains((v.SizeId, v.ColorId)) && !v.IsDeleted)
             .ToList();
 
-        // soft delete
-        foreach (var variant in variantsToRemove) variant.IsDeleted = true;
+        foreach (var variant in variantsToRemove)
+        {
+            variant.IsDeleted = true;
+            variant.IsSelling = false;
+            variant.UpdatedAt = DateTime.UtcNow;
+        }
 
         // Update product in repository and save
         productRepository.Update(product);
         await uow.SaveChangesAsync(token);
+        
         try
         {
             await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
@@ -240,7 +233,7 @@ public class ProductService(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error while updating product.");
+            logger.LogError(ex, "Error while updating product cache.");
         }
 
         return Result.Updated;
