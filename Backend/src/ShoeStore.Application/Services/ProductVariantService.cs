@@ -19,11 +19,15 @@ public class ProductVariantService(
     {
         var product = await productRepository.GetForUpdateByGuidAsync(productGuid, token);
         if (product == null) return Error.NotFound("Product.NotFound", "Product not found.");
+
+        if (dto.SizeId is null || dto.ColorId is null)
+            return Error.Validation("ProductVariant.InvalidInput", "SizeId and ColorId are required.");
+
         var productVariant = new ProductVariant
         {
             ProductId = product.Id,
-            SizeId = dto.SizeId ?? 1,
-            ColorId = dto.ColorId ?? 1,
+            SizeId = dto.SizeId.Value,
+            ColorId = dto.ColorId.Value,
             Stock = dto.Stock ?? 0,
             Price = dto.Price,
             ImageUrl = dto.ImageUrl,
@@ -45,6 +49,9 @@ public class ProductVariantService(
 
         if (variant == null)
             return Error.NotFound("ProductVariant.NotFound", "Product variant not found.");
+
+        if (dto.SizeId is null || dto.ColorId is null)
+             return Error.Validation("ProductVariant.InvalidInput", "SizeId and ColorId are required.");
 
         variant.SizeId = dto.SizeId ?? variant.SizeId;
         variant.ColorId = dto.ColorId ?? variant.ColorId;

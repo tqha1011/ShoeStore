@@ -130,9 +130,9 @@ public class ProductService(
         // Create new Product entity with only Name and Category
         var product = new Product
         {
-            ProductName = dto.ProductName,
-            CategoryId = dto.CategoryId ?? -1,
-            Brand = dto.Brand,
+            ProductName = dto.ProductName ?? string.Empty,
+            CategoryId = dto.CategoryId ?? 0,
+            Brand = dto.Brand ?? string.Empty,
         };
 
         // Add product to repository and save

@@ -52,7 +52,7 @@ public class ProductVariantController(IProductVariantService variantService, IIm
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost]
     [Consumes("multipart/form-data")]
-    // [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create(Guid productGuid, [FromForm] CreateProductVariantDto dto,
         IFormFile? image, CancellationToken token)
     {
@@ -116,7 +116,7 @@ public class ProductVariantController(IProductVariantService variantService, IIm
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPut("{variantGuid:guid}")]
     [Consumes("multipart/form-data")]
-    // [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(Guid productGuid, Guid variantGuid, [FromForm] UpdateProductVariantDto dto,
         IFormFile? image, CancellationToken token)
     {

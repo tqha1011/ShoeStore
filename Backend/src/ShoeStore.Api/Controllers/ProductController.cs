@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.Interface.ProductInterface;
 
@@ -12,7 +13,7 @@ namespace ShoeStore.Api.Controllers;
 /// <param name="productService">Service for handling product operations.</param>
 [ApiController]
 [Route("api/[controller]")]
-// [Authorize(Roles = "User")]
+[Authorize(Roles = "User")]
 public class ProductsController(IProductService productService) : ControllerBase
 {
     /// <summary>
