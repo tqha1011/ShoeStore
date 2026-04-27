@@ -174,17 +174,15 @@ public class AdminProductController(IProductService productService) : Controller
                 message = "Product and variants updated successfully",
                 data = updated
             }),
-            errors =>
-            {
-                if (errors.Any(e => e.Code == "Product.NotFound"))
-                    return NotFound(new { message = "Update failed", description = "Product not found" });
-
-                return BadRequest(new
-                {
-                    message = "Failed to update product",
-                    errors = errors.Select(e => e.Description)
-                });
-            }
+           errors => errors[0].Code switch
+           {
+               "Product.NotFound" => NotFound(new { message = "Update failed", description = errors[0].Description }),
+               _ => BadRequest(new
+               {
+            message = "Failed to update product",
+            errors = errors.Select(e => e.Description)
+               })
+           }
         );
     }
 

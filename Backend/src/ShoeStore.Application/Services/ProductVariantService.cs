@@ -50,9 +50,6 @@ public class ProductVariantService(
         if (variant == null)
             return Error.NotFound("ProductVariant.NotFound", "Product variant not found.");
 
-        if (dto.SizeId is null || dto.ColorId is null)
-             return Error.Validation("ProductVariant.InvalidInput", "SizeId and ColorId are required.");
-
         variant.SizeId = dto.SizeId ?? variant.SizeId;
         variant.ColorId = dto.ColorId ?? variant.ColorId;
         variant.Stock = dto.Stock ?? variant.Stock;
