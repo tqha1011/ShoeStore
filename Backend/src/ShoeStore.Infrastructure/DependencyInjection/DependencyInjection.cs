@@ -21,6 +21,7 @@ using ShoeStore.Infrastructure.Data;
 using ShoeStore.Infrastructure.Notification;
 using ShoeStore.Infrastructure.Repositories;
 using ShoeStore.Infrastructure.RestorePassService;
+using ShoeStore.Application.Interface.VoucherInterface;
 
 namespace ShoeStore.Infrastructure.DependencyInjection;
 
@@ -63,6 +64,9 @@ public static class DependencyInjection
         services.AddScoped<IColorRepository, ColorRepository>();
         services.AddScoped<ISizeRepository, SizeRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IVoucherRepository, VoucherRepository>();
+        services.AddScoped<IVoucherService, VoucherService>();
+        services.AddScoped<IUserVoucherRepository, UserVoucherRepository>();
         services.AddScoped<IGoogleValidator, GoogleValidator>();
         return services;
     }
