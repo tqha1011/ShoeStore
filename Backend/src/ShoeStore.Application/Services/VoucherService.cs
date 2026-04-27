@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.VoucherDTOs;
+using ShoeStore.Application.Extensions;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.Notification;
 using ShoeStore.Application.Interface.UserInterface;
@@ -60,56 +61,13 @@ public class VoucherService(
 
     public async Task<ErrorOr<Deleted>> DeleteVoucherExpireAsync(CancellationToken token)
     {
-        var vouchersToDelete = voucherRepository
-            .GetAllVouchers()
+        var deletedCounts = await voucherRepository
+            .GetAllVouchers(true)
             .Where(v => v.ValidTo < DateTime.UtcNow && !v.IsDeleted)
-            .ToList();
-        if (vouchersToDelete.Count == 0)
-            return Error.NotFound(
-                "NO_EXPIRED_VOUCHERS",
-                "There are no expired vouchers to delete."
-            );
-        foreach (var voucher in vouchersToDelete)
-        {
-            voucher.IsDeleted = true;
-            voucher.UpdatedAt = DateTime.UtcNow;
-            voucherRepository.Update(voucher);
-        }
-
-        await uow.SaveChangesAsync(token);
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(v => v.IsDeleted, true)
+                .SetProperty(v => v.UpdatedAt, DateTime.UtcNow), token);
         return Result.Deleted;
-    }
-
-    public async Task<ErrorOr<PageResult<ResponseVoucherAdminDto>>> GetVoucherForAdminAsync(CancellationToken token)
-    {
-        var vouchers = await voucherRepository
-            .GetAllVouchers()
-            .Where(v => !v.IsDeleted)
-            .Select(v => new ResponseVoucherAdminDto
-            {
-                VoucherGuid = v.PublicId,
-                VoucherName = v.VoucherName,
-                Discount = v.Discount,
-                VoucherScope = (int)v.VoucherScope,
-                DiscountType = (int)v.DiscountType,
-                MaxPriceDiscount = v.MaxPriceDiscount,
-                ValidFrom = v.ValidFrom,
-                ValidTo = v.ValidTo,
-                MinOrderPrice = v.MinOrderPrice
-            })
-            .ToListAsync(token);
-        if (vouchers.Count == 0)
-            return Error.NotFound(
-                "NO_VOUCHERS_FOUND",
-                "No vouchers were found in the system."
-            );
-
-        var pageResult = new PageResult<ResponseVoucherAdminDto>
-        {
-            Items = vouchers,
-            TotalCount = vouchers.Count
-        };
-        return pageResult;
     }
 
     public async Task<ErrorOr<Success>> NotifyUserAboutNewVoucherAsync(string adminEmail, string voucherName,
@@ -187,5 +145,37 @@ public class VoucherService(
         await uow.SaveChangesAsync(token);
 
         return Result.Updated;
+    }
+
+    public async Task<ErrorOr<PageResult<ResponseVoucherAdminDto>>> GetVoucherForAdminAsync(CancellationToken token,
+        int pageIndex = 1, int pageSize = 10)
+    {
+        var query = voucherRepository.GetAllVouchers(false);
+        var filteredVouchers = query.Where(v => !v.IsDeleted);
+        var totalCount = await filteredVouchers.CountAsync(token);
+
+        var vouchers = await filteredVouchers
+            .OrderByDescending(x => x.CreatedAt)
+            .ApplyPagination(pageIndex, pageSize)
+            .Select(v => new ResponseVoucherAdminDto
+            {
+                VoucherGuid = v.PublicId,
+                VoucherName = v.VoucherName,
+                Discount = v.Discount,
+                VoucherScope = v.VoucherScope,
+                DiscountType = v.DiscountType,
+                MaxPriceDiscount = v.MaxPriceDiscount,
+                ValidFrom = v.ValidFrom,
+                ValidTo = v.ValidTo,
+                MinOrderPrice = v.MinOrderPrice
+            })
+            .ToListAsync(token);
+
+        var pageResult = new PageResult<ResponseVoucherAdminDto>
+        {
+            Items = vouchers,
+            TotalCount = totalCount
+        };
+        return pageResult;
     }
 }

@@ -7,13 +7,14 @@ namespace ShoeStore.Infrastructure.Repositories;
 
 public class VoucherRepository(AppDbContext context) : GenericRepository<Voucher, int>(context), IVoucherRepository
 {
-    public IQueryable<Voucher> GetAllVouchers()
+    public IQueryable<Voucher> GetAllVouchers(bool isTracking)
     {
+        if (isTracking) return DbSet;
         return DbSet.AsNoTracking();
     }
 
     public IQueryable<Voucher> GetVoucherByGuid(Guid voucherGuid)
     {
-        return DbSet.Where(v => v.PublicId == voucherGuid).AsNoTracking();
+        return DbSet.Where(v => v.PublicId == voucherGuid);
     }
 }

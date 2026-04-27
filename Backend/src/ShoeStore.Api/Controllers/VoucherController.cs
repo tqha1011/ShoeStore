@@ -187,7 +187,9 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     ///     Requires Admin role authorization.
     ///     Provides a list of vouchers with detailed information relevant for administrators.
     /// </remarks>
+    /// <param name="pageSize"></param>
     /// <param name="token">Cancellation token for the request.</param>
+    /// <param name="pageIndex"></param>
     /// <response code="200">Vouchers retrieved successfully.</response>
     /// <response code="401">Unauthorized; user must be authenticated with Admin role.</response>
     /// <response code="404">Not found; no vouchers found in the system.</response>
@@ -198,9 +200,10 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpGet]
-    public async Task<IActionResult> GetVouchersForAdmin(CancellationToken token)
+    public async Task<IActionResult> GetVouchersForAdmin([FromQuery] int pageIndex, [FromQuery] int pageSize,
+        CancellationToken token)
     {
-        var result = await voucherService.GetVoucherForAdminAsync(token);
+        var result = await voucherService.GetVoucherForAdminAsync(token, pageIndex, pageSize);
         return result.Match<IActionResult>(
             vouchers => Ok(vouchers),
             errors => errors[0].Code switch
