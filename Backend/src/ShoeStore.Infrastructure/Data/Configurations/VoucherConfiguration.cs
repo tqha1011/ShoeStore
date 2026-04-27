@@ -35,7 +35,7 @@ public class VoucherConfiguration : IEntityTypeConfiguration<Voucher>
             .HasColumnType("timestamp with time zone");
 
         builder.Property(c => c.Discount)
-            .HasColumnType("numeric(5,4)")
+            .HasColumnType("numeric(18,2)")
             .HasDefaultValue(0)
             .IsRequired();
 
