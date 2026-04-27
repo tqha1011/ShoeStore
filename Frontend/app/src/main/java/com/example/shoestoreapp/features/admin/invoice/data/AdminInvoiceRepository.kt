@@ -7,7 +7,7 @@ import com.example.shoestoreapp.features.invoice.model.Detail
 import com.example.shoestoreapp.features.invoice.model.Invoice
 
 class AdminInvoiceRepository ( private val api : InvoiceApi) {
-    // get all invoices
+    // Fetches admin invoice list and maps DTO to domain model.
     suspend fun getAllInvoicesAdmin(): Result<List<Invoice>> = runCatching {
         val response = api.getAllInvoicesAdmin(pageNumber = 1, pageSize = 10)
         if (response.isSuccessful) {
@@ -18,7 +18,7 @@ class AdminInvoiceRepository ( private val api : InvoiceApi) {
         }
     }
 
-    // get invoice details
+    // Fetches product lines for a specific invoice.
     suspend fun getInvoiceDetailsAdmin(invoiceGuid: String): Result<List<Detail>> = runCatching {
         val response = api.getInvoiceDetailsAdmin(invoiceGuid)
         if (response.isSuccessful) {
@@ -29,7 +29,7 @@ class AdminInvoiceRepository ( private val api : InvoiceApi) {
         }
     }
 
-    // get invoice details
+    // Sends admin status update for a specific invoice.
     suspend fun updateInvoiceStatusAdmin(invoiceGuid: String, status: String): Result<Unit> = runCatching {
         val request = UpdateStatusRequestDto(status = status)
         val response = api.updateInvoiceStatusAdmin(invoiceGuid, request)

@@ -14,14 +14,23 @@ import com.example.shoestoreapp.features.invoice.model.nextWorkflowStatus
 import kotlinx.coroutines.launch
 
 data class AdminInvoiceState(
+    // Controls first-load spinner on admin invoice screen.
     val isLoading: Boolean = false,
+    // Source invoices returned from backend.
     val invoices: List<Invoice> = emptyList(),
+    // One-shot error message for snackbar.
     val error: String? = null,
+    // One-shot success message for snackbar.
     val successMessage: String? = null,
+    // Controls detail bottom sheet loading state.
     val isDetailLoading: Boolean = false,
+    // Invoice currently opened in detail sheet.
     val selectedInvoice: Invoice? = null,
+    // Detailed product lines for selected invoice.
     val invoiceDetails: List<Detail> = emptyList(),
+    // True while status update request is running.
     val isUpdatingStatus: Boolean = false,
+    // Tracks invoice being updated for button-level loading.
     val updatingInvoicePublicId: String? = null
 )
 
@@ -35,6 +44,7 @@ class AdminInvoiceViewmodel (private val repository: AdminInvoiceRepository)
     }
     fun loadInvoices(){
         viewModelScope.launch {
+            // Refreshes admin invoice list and clears transient error.
             state = state.copy(isLoading = true, error = null)
             repository.getAllInvoicesAdmin()
                 .onSuccess { list ->
@@ -47,6 +57,7 @@ class AdminInvoiceViewmodel (private val repository: AdminInvoiceRepository)
     }
 
     fun openInvoiceDetails(invoice: Invoice) {
+        // publicId is required by the details endpoint.
         val invoiceGuid = invoice.publicId.trim()
         if (invoiceGuid.isEmpty()) {
             state = state.copy(error = "Cannot open details: missing invoice id")
@@ -54,6 +65,7 @@ class AdminInvoiceViewmodel (private val repository: AdminInvoiceRepository)
         }
 
         viewModelScope.launch {
+            // Open sheet with loading state while details are fetched.
             state = state.copy(
                 selectedInvoice = invoice,
                 invoiceDetails = emptyList(),
@@ -72,17 +84,20 @@ class AdminInvoiceViewmodel (private val repository: AdminInvoiceRepository)
     }
 
     fun updateInvoiceStatus(invoice: Invoice, targetStatus: InvoiceStatus) {
+        // publicId is required by the update endpoint.
         val invoiceGuid = invoice.publicId.trim()
         if (invoiceGuid.isEmpty()) {
             state = state.copy(error = "Cannot update status: missing invoice id")
             return
         }
 
+        // Prevent unnecessary update request.
         if (invoice.status == targetStatus) {
             state = state.copy(successMessage = "Order is already ${targetStatus.name.lowercase()}.")
             return
         }
 
+        // Enforces one-step workflow transitions.
         val nextStatus = invoice.nextWorkflowStatus()
         if (nextStatus == null || targetStatus != nextStatus) {
             val message = if (nextStatus == null) {
@@ -95,6 +110,7 @@ class AdminInvoiceViewmodel (private val repository: AdminInvoiceRepository)
         }
 
         viewModelScope.launch {
+            // Marks exactly which row is updating.
             state = state.copy(
                 isUpdatingStatus = true,
                 updatingInvoicePublicId = invoiceGuid,
@@ -103,6 +119,7 @@ class AdminInvoiceViewmodel (private val repository: AdminInvoiceRepository)
 
             repository.updateInvoiceStatusAdmin(invoiceGuid, targetStatus.displayName())
                 .onSuccess {
+                    // Sync both list and selected detail after update.
                     val updatedInvoices = state.invoices.map { current ->
                         if (current.publicId == invoiceGuid) current.copy(status = targetStatus) else current
                     }

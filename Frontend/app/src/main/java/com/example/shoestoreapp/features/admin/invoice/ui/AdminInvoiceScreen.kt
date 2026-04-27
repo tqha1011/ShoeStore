@@ -37,22 +37,20 @@ import com.example.shoestoreapp.features.admin.invoice.ui.components.formatAdmin
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminInvoiceScreen(
-    // BOMB 1 FIXED: Do not initialize "= AdminInvoiceViewModel()" here anymore.
-    // Inject it from NavGraph or MainActivity to avoid crashes.
+    // ViewModel is injected from navigation scope.
     viewModel: AdminInvoiceViewmodel,
     onTabSelected: (AdminBottomNavTab) -> Unit = {}
 ) {
     val context = LocalContext.current
 
-    // 1. GET STATE FROM API (The new data engine)
+    // Single source of UI state from ViewModel.
     val state = viewModel.state
 
-    // 2. KEEP YOUR UI STATE INTACT
-    // Note: Since the new state doesn't have a filter variable yet, manage it locally here.
+    // Local filter state for the chip row.
     var selectedStatus by remember { mutableStateOf<InvoiceStatus?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Filter the list based on UI selection (Assuming API returns all items initially)
+    // Applies current chip filter to fetched invoices.
     val visibleInvoices = if (selectedStatus == null) {
         state.invoices
     } else {
@@ -113,28 +111,26 @@ fun AdminInvoiceScreen(
                 color = Color.Black
             )
 
-            // Keep Filter Chips as is
+            // Status chip bar for quick filtering.
             AdminInvoiceFilterChips(
                 selectedStatus = selectedStatus,
                 onFilterSelected = { newStatus -> selectedStatus = newStatus }
             )
 
-            // ==========================================
-            // HANDLE 3 STATES: LOADING - ERROR - SUCCESS
-            // ==========================================
+            // Handles loading, empty-error, and success list states.
             Box(modifier = Modifier.fillMaxSize()) {
                 if (state.isLoading && state.invoices.isEmpty()) {
-                    // Initial data loading -> Show spinner
+                    // Initial data loading.
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 } else if (state.error != null && state.invoices.isEmpty()) {
-                    // API Error -> Show error message
+                    // Empty list with API error.
                     Text(
                         text = "Error: ${state.error}",
                         color = Color.Red,
                         modifier = Modifier.align(Alignment.Center).padding(16.dp)
                     )
                 } else {
-                    // Success -> Render your List Card UI
+                    // Success list rendering.
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxSize()
@@ -159,9 +155,7 @@ fun AdminInvoiceScreen(
         }
     }
 
-    // ====================================================
-    // BOTTOM SHEET FOR INVOICE DETAILS
-    // ====================================================
+    // Details sheet is shown when an invoice is selected.
     if (state.selectedInvoice != null) {
         InvoiceDetailsBottomSheet(
             state = state,
@@ -173,7 +167,8 @@ fun AdminInvoiceScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InvoiceDetailsBottomSheet(
-    state: com.example.shoestoreapp.features.admin.invoice.viewmodel.AdminInvoiceState, // Thay bằng đường dẫn tới State của sếp nếu cần
+    // Reuses the same screen state to avoid duplicate sources.
+    state: com.example.shoestoreapp.features.admin.invoice.viewmodel.AdminInvoiceState,
     onDismissRequest: () -> Unit,
     context: android.content.Context
 ) {
@@ -183,7 +178,7 @@ fun InvoiceDetailsBottomSheet(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.7f) // Chiếm 70% màn hình
+                .fillMaxHeight(0.7f) // Shows large details while keeping backdrop visible.
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             if (state.isDetailLoading) {

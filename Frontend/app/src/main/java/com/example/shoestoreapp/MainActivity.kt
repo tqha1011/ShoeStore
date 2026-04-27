@@ -7,8 +7,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavType
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -23,6 +25,7 @@ import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewModel
 import com.example.shoestoreapp.features.user.invoice.ui.UserInvoiceScreen
+import com.example.shoestoreapp.features.user.invoice.viewmodel.UserInvoiceViewModel
 import com.example.shoestoreapp.features.user.profile.ui.UserProfileScreen
 import com.example.shoestoreapp.features.admin.product.ui.AdminProductListScreen
 import com.example.shoestoreapp.features.admin.settings.ui.AdminSettingsScreen
@@ -38,6 +41,8 @@ import com.example.shoestoreapp.features.auth.presentation.welcome.WelcomeScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.CreateNewPasswordScreen
 import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.core.utils.JwtUtils
+import com.example.shoestoreapp.features.user.invoice.data.UserInvoiceRepository
+import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import kotlinx.coroutines.launch
 
 private object Routes {
@@ -48,7 +53,8 @@ private object Routes {
     const val CREATE_NEW_PASSWORD = "create_new_password/{email}/{otp}"
     const val PRODUCT_LIST = "product_list"
     const val PRODUCT_DETAIL = "product_detail/{productGuid}"
-    const val USER_INVOICE_LIST = "user_invoice_list"
+    const val USER_INVOICE_LIST_BASE = "user_invoice_list"
+    const val USER_INVOICE_LIST = "$USER_INVOICE_LIST_BASE?status={status}"
     const val USER_PROFILE = "user_profile"
     const val ADMIN_PRODUCT_LIST = "admin_product_list"
     const val ADMIN_CRUD = "admin_crud"
@@ -56,6 +62,9 @@ private object Routes {
     const val ADMIN_SETTINGS = "admin_settings"
 
     fun createNewPassword(email: String, otp: String): String = "create_new_password/$email/$otp"
+    fun userInvoiceList(status: InvoiceStatus? = null): String {
+        return if (status == null) USER_INVOICE_LIST_BASE else "$USER_INVOICE_LIST_BASE?status=${status.name}"
+    }
 }
 
 @Suppress("DEPRECATION")
@@ -171,25 +180,51 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
         )
     }
 
-    composable(Routes.USER_INVOICE_LIST) {
+    composable(
+        route = Routes.USER_INVOICE_LIST,
+        arguments = listOf(
+            navArgument("status") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            }
+        )
+    ) { backStackEntry ->
+        val statusArg = backStackEntry.arguments?.getString("status")
+        val initialStatus = statusArg?.let { raw ->
+            runCatching { InvoiceStatus.valueOf(raw) }.getOrNull()
+        }
+        val userInvoiceViewModel = remember {
+            UserInvoiceViewModel(UserInvoiceRepository(RetrofitInstance.invoiceApi))
+        }
+
         UserInvoiceScreen(
+            viewModel = userInvoiceViewModel,
+            initialStatus = initialStatus,
             onTabSelected = { tab -> handleUserInvoiceTabSelection(tab, navController) }
         )
     }
 
     composable(Routes.USER_PROFILE) {
         val scope = rememberCoroutineScope()
+        val userInvoiceViewModel = remember {
+            UserInvoiceViewModel(UserInvoiceRepository(RetrofitInstance.invoiceApi))
+        }
 
         UserProfileScreen(
             onTabSelected = { tab -> handleUserProfileTabSelection(tab, navController) },
             onViewOrdersClick = {
-                navController.navigate(Routes.USER_INVOICE_LIST)
+                navController.navigate(Routes.userInvoiceList())
             },
             onLogoutClick = {
                 scope.launch {
                     tokenManager.clearAuthInfo()
                     navController.navigateAfterLogout()
                 }
+            },
+            orderCounts = userInvoiceViewModel.state.orderCounts,
+            onStatusClick = { status ->
+                navController.navigate(Routes.userInvoiceList(status))
             }
         )
     }
@@ -288,10 +323,10 @@ private fun handleUserHomeTabSelection(tab: BottomNavTab, navController: NavHost
 private fun handleUserInvoiceTabSelection(tab: BottomNavTab, navController: NavHostController) {
     when (tab) {
         BottomNavTab.HOME, BottomNavTab.SHOP -> {
-            navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.USER_INVOICE_LIST)
+            navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.USER_INVOICE_LIST_BASE)
         }
         BottomNavTab.PROFILE -> {
-            navController.navigateAndPopTo(Routes.USER_PROFILE, Routes.USER_INVOICE_LIST)
+            navController.navigateAndPopTo(Routes.USER_PROFILE, Routes.USER_INVOICE_LIST_BASE)
         }
         BottomNavTab.BAG -> Unit
         else -> println("User Tab selected: $tab")
