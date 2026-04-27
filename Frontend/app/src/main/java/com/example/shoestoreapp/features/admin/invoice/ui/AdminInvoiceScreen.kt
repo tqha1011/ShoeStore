@@ -68,7 +68,7 @@ fun AdminInvoiceScreen(
     if (state.selectedInvoice != null) {
         SharedInvoiceDetailsBottomSheet(
             isLoading = state.isDetailLoading,
-            invoice = state.selectedInvoice!!,
+            invoice = state.selectedInvoice,
             details = state.invoiceDetails,
             onDismissRequest = { viewModel.clearDetails() },
             enablePhoneCall = true // Enable phone call button
