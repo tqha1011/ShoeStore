@@ -63,6 +63,7 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>(); // register glob
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHostedService<OrderCancellationService>();
+builder.Services.AddHostedService<NotifyNewVoucherService>();
 builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {

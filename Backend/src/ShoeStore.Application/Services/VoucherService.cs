@@ -8,6 +8,7 @@ using ShoeStore.Application.Interface.Notification;
 using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Domain.Entities;
+using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Application.Services;
 
@@ -44,17 +45,17 @@ public class VoucherService(
     {
         var voucher = await voucherRepository
             .GetVoucherByGuid(voucherGuid)
-            .Where(v => !v.IsDeleted)
             .FirstOrDefaultAsync(token);
         if (voucher == null)
             return Error.NotFound(
                 "VOUCHER_NOT_FOUND",
                 "The voucher with the specified GUID does not exist."
             );
+        if (voucher.IsDeleted) return Result.Deleted;
+
         // Soft delete logic
         voucher.IsDeleted = true;
         voucher.UpdatedAt = DateTime.UtcNow;
-        voucherRepository.Update(voucher);
         await uow.SaveChangesAsync(token);
         return Result.Deleted;
     }
@@ -75,16 +76,11 @@ public class VoucherService(
     {
         var users = await userRepository
             .GetAllUsers()
-            .Where(u => u.Email != adminEmail)
+            .Where(u => u.Role == UserRole.User)
             .ToListAsync(token);
 
         foreach (var user in users)
         {
-            if (user.Email != adminEmail)
-                return Error.NotFound(
-                    "USER_NOT_FOUND",
-                    "The user with the specified email does not exist."
-                );
             var emailBody = $@"
                     Hi {user.UserName},
 
@@ -141,9 +137,8 @@ public class VoucherService(
 
         voucher.UpdatedAt = DateTime.UtcNow;
 
-        voucherRepository.Update(voucher);
-        await uow.SaveChangesAsync(token);
 
+        await uow.SaveChangesAsync(token);
         return Result.Updated;
     }
 
