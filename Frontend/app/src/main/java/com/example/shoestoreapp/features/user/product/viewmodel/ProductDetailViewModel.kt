@@ -2,13 +2,23 @@ package com.example.shoestoreapp.features.user.product.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.shoestoreapp.features.user.cart.data.remote.CartItemResponseDto
+import com.example.shoestoreapp.features.user.cart.data.repositories.CartRepository
+import com.example.shoestoreapp.features.user.cart.data.repositories.CartRepositoryImpl
 import com.example.shoestoreapp.features.user.product.data.models.Product
+import com.example.shoestoreapp.features.user.product.data.models.ProductVariant
 import com.example.shoestoreapp.features.user.product.data.repositories.ProductRepository
-import com.example.shoestoreapp.features.cart.data.repositories.CartRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+sealed interface AddToCartUiState {
+    data object Idle : AddToCartUiState
+    data object Loading : AddToCartUiState
+    data class Success(val item: CartItemResponseDto) : AddToCartUiState
+    data class Error(val message: String) : AddToCartUiState
+}
+
 
 
 /**
@@ -23,7 +33,7 @@ import kotlinx.coroutines.launch
  */
 class ProductDetailViewModel(
     private val productRepository: ProductRepository = ProductRepository(),
-    private val cartRepository: CartRepository = CartRepository()
+    private val cartRepository: CartRepository = CartRepositoryImpl()
 ) : ViewModel() {
 
     // ============ STATE QUẢN LÝ THÔNG TIN SẢN PHẨM ============
@@ -47,10 +57,6 @@ class ProductDetailViewModel(
      */
     private val _selectedSize = MutableStateFlow<Int?>(null)
 
-    /**
-     * selectedSize: Public flow - UI observe để biết user chọn size nào
-     */
-    val selectedSize = _selectedSize.asStateFlow()
 
     // ============ STATE QUẢN LÝ TRẠNG THÁI LOADING ============
     /**
@@ -90,6 +96,9 @@ class ProductDetailViewModel(
      */
     val isDescriptionExpanded = _isDescriptionExpanded.asStateFlow()
 
+    private val _addToCartState = MutableStateFlow<AddToCartUiState>(AddToCartUiState.Idle)
+    val addToCartState = _addToCartState.asStateFlow()
+
     // ============ HÀM LOAD CHI TIẾT SẢN PHẨM ============
     /**
      * Tải thông tin chi tiết sản phẩm theo GUID
@@ -126,6 +135,32 @@ class ProductDetailViewModel(
         _selectedSize.value = size
     }
 
+    private fun isVariantAvailable(variant: ProductVariant): Boolean {
+        return variant.isSelling && !variant.isDelete && variant.stock > 0
+    }
+
+    /**
+     * Chọn variant theo màu/size đã chọn.
+     * - Nếu chưa chọn đủ màu và size: trả về null để chặn add-to-cart.
+     * - So khớp màu theo trim/lowercase để tránh lệch do dữ liệu có khoảng trắng/chữ hoa-thường.
+     */
+    fun findSelectedVariant(
+        product: Product?,
+        selectedColor: String?,
+        selectedSize: Int?
+    ): ProductVariant? {
+        if (product == null) return null
+        val normalizedSelectedColor = selectedColor?.trim()?.lowercase()
+        if (normalizedSelectedColor.isNullOrEmpty() || selectedSize == null) return null
+
+        return product.variants.firstOrNull { variant ->
+            val normalizedVariantColor = variant.colorName?.trim()?.lowercase()
+            normalizedVariantColor == normalizedSelectedColor &&
+                variant.size == selectedSize &&
+                isVariantAvailable(variant)
+        }
+    }
+
     // ============ HÀM THÊM VÀO GIỎ HÀNG ============
     /**
      * Thêm sản phẩm vào giỏ hàng
@@ -136,17 +171,27 @@ class ProductDetailViewModel(
      *
      * @param - GUID của sản phẩm cần thêm
      */
-    fun addToCart(variantId: String, quantity: Int) {
+    fun addCartItem(variantPublicId: String, quantity: Int) {
         viewModelScope.launch {
-            try {
-                _isLoading.value = true
-                cartRepository.addToCart(variantId, quantity).first()
-        } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                _isLoading.value = false
+            _addToCartState.value = AddToCartUiState.Loading
+            val result = cartRepository.addToCart(variantPublicId, quantity)
+
+            result.onSuccess { cartItem ->
+                _addToCartState.value = AddToCartUiState.Success(cartItem)
+            }.onFailure { throwable ->
+                _addToCartState.value = AddToCartUiState.Error(
+                    throwable.message ?: "Unable to add item to cart."
+                )
             }
         }
+    }
+
+    fun addToCart(variantId: String, quantity: Int) {
+        addCartItem(variantId, quantity)
+    }
+
+    fun resetAddToCartState() {
+        _addToCartState.value = AddToCartUiState.Idle
     }
 
 

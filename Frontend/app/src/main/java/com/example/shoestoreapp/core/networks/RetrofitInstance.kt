@@ -5,7 +5,7 @@ import com.example.shoestoreapp.core.utils.Constants
 import com.example.shoestoreapp.features.admin.product.data.remote.AdminProductApi
 import com.example.shoestoreapp.features.auth.data.remote.AuthApi
 import com.example.shoestoreapp.features.user.product.data.remote.ProductApi
-import com.example.shoestoreapp.features.cart.data.remote.CartApi
+import com.example.shoestoreapp.features.user.cart.data.remote.CartApi
 import com.example.shoestoreapp.features.admin.crud.data.remote.AdminProductCrudApi
 import com.example.shoestoreapp.features.admin.crud.data.remote.MasterDataApi
 import okhttp3.OkHttpClient
@@ -57,7 +57,7 @@ object RetrofitInstance {
     }
 
     // 5. Create CartApi service for cart endpoints
-    val cartApi: CartApi by lazy {
+    val cartApi: com.example.shoestoreapp.features.user.cart.data.remote.CartApi by lazy {
         retrofit.create(CartApi::class.java)
     }
 

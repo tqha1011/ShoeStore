@@ -68,6 +68,7 @@ class AdminProductRepository(
             stock < 10 -> StockStatus.LOW_STOCK
             else -> StockStatus.IN_STOCK
         }
+        val variantsCount = dto.variants?.size ?: 0
 
         return AdminProduct(
             id = dto.publicId,
@@ -75,7 +76,8 @@ class AdminProductRepository(
             imageUrl = dto.variants?.firstOrNull()?.imageUrl ?: "",
             price = dto.variants?.firstOrNull()?.price ?: 0.0,
             stockStatus = stockStatus,
-            stock = stock
+            stock = stock,
+            variantsCount = variantsCount
         )
     }
 }

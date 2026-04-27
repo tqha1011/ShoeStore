@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import coil.compose.AsyncImage
 import com.example.shoestoreapp.features.admin.product.data.models.AdminProduct
-import com.example.shoestoreapp.features.admin.product.data.models.StockStatus
 import java.util.Locale
 
 /**
@@ -75,24 +74,20 @@ fun AdminProductCard(
                 fontSize = 14.sp,
                 color = Color(0xFF999999)
             )
-            // Trạng thái stock
-            val statusText = when (product.stockStatus) {
-                StockStatus.IN_STOCK -> "IN STOCK"
-                StockStatus.LOW_STOCK -> "LOW STOCK: ${String.format(Locale.US,"%02d", product.stock)}"
-                StockStatus.OUT_OF_STOCK -> "OUT OF STOCK"
-            }
-            val statusColor = when (product.stockStatus) {
-                StockStatus.IN_STOCK -> Color.Black
-                StockStatus.LOW_STOCK -> Color(0xFFE5802C)
-                StockStatus.OUT_OF_STOCK -> Color(0xFFD32F2F)
-            }
+            // Stock
             Text(
-                text = statusText,
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 10.sp,
-                letterSpacing = 0.8.sp,
-                color = statusColor,
-                modifier = Modifier.padding(top = 8.dp)
+                text = "Stock: ${product.stock}",
+                fontWeight = FontWeight.Medium,
+                fontSize = 12.sp,
+                color = Color(0xFF666666),
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            // Variants count
+            Text(
+                text = "Variants: ${product.variantsCount}",
+                fontWeight = FontWeight.Medium,
+                fontSize = 12.sp,
+                color = Color(0xFF666666)
             )
         }
     }

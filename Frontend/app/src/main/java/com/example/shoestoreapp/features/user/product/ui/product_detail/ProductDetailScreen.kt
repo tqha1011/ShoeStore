@@ -12,21 +12,34 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.shoestoreapp.features.user.product.ui.components.ActionButtonsSection
+import com.example.shoestoreapp.features.user.product.ui.components.AddToBagBottomSheetContent
 import com.example.shoestoreapp.features.user.product.ui.components.ExpandableSection
 import com.example.shoestoreapp.features.user.product.ui.components.ProductDetailTopAppBar
 import com.example.shoestoreapp.features.user.product.ui.components.ProductHeaderInfo
 import com.example.shoestoreapp.features.user.product.ui.components.ProductHeroImage
-import com.example.shoestoreapp.features.user.product.ui.components.SizeSelector
+import com.example.shoestoreapp.features.user.product.viewmodel.AddToCartUiState
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
+import kotlinx.coroutines.launch
 
 /**
  * ProductDetailScreen: Màn hình hiển thị chi tiết sản phẩm
@@ -36,20 +49,95 @@ import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailVie
  * @param onNavigateToCart - Callback khi user thêm vào giỏ hàng
  */
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun ProductDetailScreen(
-    productGuid: String,  // Changed from Int to String (GUID)
+    productGuid: String,
     viewModel: ProductDetailViewModel = ProductDetailViewModel(),
     onBackClick: () -> Unit = {},
     onNavigateToCart: () -> Unit = {}
 ) {
     val productDetail by viewModel.productDetail.collectAsState(initial = null)
-    val selectedSize by viewModel.selectedSize.collectAsState(initial = null)
     val isLoading by viewModel.isLoading.collectAsState(initial = false)
+    val addToCartState by viewModel.addToCartState.collectAsState(initial = AddToCartUiState.Idle)
     val isShippingExpanded by viewModel.isShippingExpanded.collectAsState(initial = false)
     val isDescriptionExpanded by viewModel.isDescriptionExpanded.collectAsState(initial = false)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val isAddToCartLoading = addToCartState is AddToCartUiState.Loading
+
+    var showAddToBagSheet by rememberSaveable { mutableStateOf(false) }
+    var selectedSize by rememberSaveable(productGuid) { mutableStateOf<Int?>(null) }
+    var selectedColor by rememberSaveable(productGuid) { mutableStateOf<String?>(null) }
+    var quantity by rememberSaveable(productGuid) { mutableIntStateOf(1) }
 
     LaunchedEffect(productGuid) {
-        viewModel.loadProductDetail(productGuid)  // Pass GUID string
+        viewModel.loadProductDetail(productGuid)
+    }
+
+    LaunchedEffect(addToCartState) {
+        when (val state = addToCartState) {
+            is AddToCartUiState.Success -> {
+                snackbarHostState.showSnackbar("Added to cart successfully")
+                if (showAddToBagSheet) {
+                    sheetState.hide()
+                    showAddToBagSheet = false
+                }
+                onNavigateToCart()
+                viewModel.resetAddToCartState()
+            }
+
+            is AddToCartUiState.Error -> {
+                snackbarHostState.showSnackbar(state.message)
+                viewModel.resetAddToCartState()
+            }
+
+            else -> Unit
+        }
+    }
+
+    val selectableVariants = remember(productDetail) {
+        productDetail?.variants
+            ?.filter { variant ->
+                !variant.colorName.isNullOrBlank() &&
+                    variant.size != null &&
+                    variant.isSelling &&
+                    !variant.isDelete &&
+                    variant.stock > 0
+            }
+            .orEmpty()
+    }
+
+    val availableColors = remember(selectableVariants) {
+        selectableVariants
+            .mapNotNull { it.colorName?.trim()?.takeIf(String::isNotBlank) }
+            .distinctBy { it.lowercase() }
+    }
+
+    val availableSizes = remember(selectableVariants, selectedColor) {
+        val normalizedSelectedColor = selectedColor?.trim()?.lowercase()
+        selectableVariants
+            .asSequence()
+            .filter { variant ->
+                normalizedSelectedColor == null ||
+                    variant.colorName?.trim()?.lowercase() == normalizedSelectedColor
+            }
+            .mapNotNull { it.size }
+            .distinct()
+            .sorted()
+            .toList()
+    }
+
+    val defaultVariant = remember(selectableVariants, productDetail) {
+        selectableVariants.firstOrNull() ?: productDetail?.variants?.firstOrNull()
+    }
+
+    val selectedVariantForCart = remember(productDetail, selectedColor, selectedSize) {
+        viewModel.findSelectedVariant(
+            product = productDetail,
+            selectedColor = selectedColor,
+            selectedSize = selectedSize
+        )
     }
 
     if (isLoading || productDetail == null) {
@@ -79,11 +167,11 @@ fun ProductDetailScreen(
         ) {
             ProductDetailTopAppBar(
                 onBackClick = onBackClick,
-                onShoppingBagClick = {onNavigateToCart() }
+                onShoppingBagClick = { onNavigateToCart() }
             )
 
             ProductHeroImage(
-                imageUrl = productDetail?.variants?.firstOrNull()?.imageUrl,
+                imageUrl = defaultVariant?.imageUrl,
                 contentDescription = productDetail?.productName,
                 modifier = Modifier.padding(top = 12.dp)
             )
@@ -95,39 +183,27 @@ fun ProductDetailScreen(
             ) {
                 ProductHeaderInfo(
                     name = productDetail?.productName ?: "",
-                    price = productDetail?.variants?.firstOrNull()?.price ?: 0.0,
-                    rating = 0.0,  // Backend không cung cấp rating
-                    reviewCount = 0,  // Backend không cung cấp reviewCount
-                    productType = productDetail?.brand ?: ""  // Dùng brand thay vì productType
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                SizeSelector(
-                    selectedSize = selectedSize,
-                    onSizeSelected = { size ->
-                        viewModel.selectSize(size)
-                    },
-                    onSizeGuideClick = {
-                        // TODO: Navigate to Size Guide screen
-                    }
+                    price = defaultVariant?.price ?: 0.0,
+                    rating = 0.0,
+                    reviewCount = 0,
+                    productType = productDetail?.brand ?: ""
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 ActionButtonsSection(
                     onAddToCartClick = {
-                        productDetail?.publicId?.let { guid ->  // Use publicId instead of productGuid
-                            viewModel.addToCart(guid, 1)
-                            onNavigateToCart()
+                        if (!productDetail?.variants.isNullOrEmpty()) {
+                            showAddToBagSheet = true
+                            coroutineScope.launch { sheetState.show() }
                         }
                     },
                     onFavoriteClick = {
                         productDetail?.publicId?.let {
-                            // Favorite feature sẽ implement khi Backend có endpoint
+                            // TODO: Implement favorite when backend endpoint is available.
                         }
                     },
-                    isFavorite = false  // Backend không cung cấp favorite status
+                    isFavorite = false
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -158,6 +234,81 @@ fun ProductDetailScreen(
                 Spacer(modifier = Modifier.height(100.dp))
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 24.dp)
+        )
+
+        if (showAddToBagSheet) {
+            ModalBottomSheet(
+                onDismissRequest = {
+                    if (!isAddToCartLoading) {
+                        showAddToBagSheet = false
+                    }
+                },
+                sheetState = sheetState,
+                containerColor = Color.White
+            ) {
+                AddToBagBottomSheetContent(
+                    imageUrl = selectedVariantForCart?.imageUrl ?: defaultVariant?.imageUrl,
+                    title = productDetail?.productName.orEmpty(),
+                    category = "Men's Shoes",
+                    price = selectedVariantForCart?.price ?: defaultVariant?.price ?: 0.0,
+                    colorOptions = availableColors,
+                    selectedColor = selectedColor,
+                    onColorSelected = { color: String ->
+                        val normalizedColor = color.trim()
+                        selectedColor = normalizedColor
+
+                        // Recompute sizes for the newly selected color to avoid stale-state mismatch.
+                        val validSizesForColor = selectableVariants
+                            .asSequence()
+                            .filter { variant ->
+                                variant.colorName?.trim()?.lowercase() == normalizedColor.lowercase()
+                            }
+                            .mapNotNull { it.size }
+                            .distinct()
+                            .toList()
+
+                        if (selectedSize !in validSizesForColor) {
+                            selectedSize = null
+                        }
+                    },
+                    sizeOptions = availableSizes,
+                    selectedSize = selectedSize,
+                    onSizeSelected = { size: Int ->
+                        selectedSize = size
+                        viewModel.selectSize(size)
+                    },
+                    quantity = quantity,
+                    onDecreaseQuantity = {
+                        if (quantity > 1) quantity -= 1
+                    },
+                    onIncreaseQuantity = {
+                        quantity += 1
+                    },
+                    onSizeGuideClick = {
+                        // TODO: Navigate to Size Guide screen.
+                    },
+                    onClose = {
+                        if (!isAddToCartLoading) {
+                            coroutineScope.launch {
+                                sheetState.hide()
+                                showAddToBagSheet = false
+                            }
+                        }
+                    },
+                    onConfirm = {
+                        selectedVariantForCart?.let { variant ->
+                            viewModel.addCartItem(variant.publicId, quantity)
+                        }
+                    },
+                    isConfirmEnabled = selectedVariantForCart != null && !isAddToCartLoading
+                )
+            }
+        }
     }
 }
-

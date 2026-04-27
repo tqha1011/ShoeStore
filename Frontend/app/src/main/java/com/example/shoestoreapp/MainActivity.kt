@@ -15,6 +15,9 @@ import androidx.navigation.compose.rememberNavController
 import com.example.shoestoreapp.core.networks.RetrofitInstance
 import com.example.shoestoreapp.features.user.product.ui.product_detail.ProductDetailScreen
 import com.example.shoestoreapp.features.user.product.ui.product_list.ProductListScreen
+import com.example.shoestoreapp.features.user.cart.ui.screens.CartScreen
+import com.example.shoestoreapp.features.user.cart.viewmodel.CartViewModel
+import com.example.shoestoreapp.features.user.checkout.ui.screens.CheckoutScreen
 import com.example.shoestoreapp.features.admin.invoice.ui.AdminInvoiceScreen
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
@@ -45,6 +48,8 @@ private object Routes {
     const val CREATE_NEW_PASSWORD = "create_new_password/{email}/{otp}"
     const val PRODUCT_LIST = "product_list"
     const val PRODUCT_DETAIL = "product_detail/{productGuid}"
+    const val CART = "cart"
+    const val CHECKOUT = "checkout"
     const val USER_INVOICE_LIST = "user_invoice_list"
     const val USER_PROFILE = "user_profile"
     const val ADMIN_PRODUCT_LIST = "admin_product_list"
@@ -155,8 +160,36 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
                 navController.navigate(Routes.PRODUCT_DETAIL.replace("{productGuid}", productGuid))
             },
             onTopMenuClick = { println("Menu clicked") },
-            onNavigateToShoppingBag = { println("Shopping bag clicked") },
+            onNavigateToShoppingBag = { navController.navigate(Routes.CART) },
             onBottomTabSelected = { tab -> handleUserHomeTabSelection(tab, navController) }
+        )
+    }
+
+    composable(Routes.CART) {
+        CartScreen(
+            viewModel = remember { CartViewModel() },
+            onNavigateBack = { navController.popBackStack() },
+            onNavigateToCheckout = { navController.navigate(Routes.CHECKOUT) },
+            onNavigateToHome = {
+                navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CART)
+            },
+            onNavigateToShop = {
+                navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CART)
+            },
+            onNavigateToFavorites = { println("Favorites tab selected") },
+            onNavigateToProfile = {
+                navController.navigateAndPopTo(Routes.USER_PROFILE, Routes.CART)
+            }
+        )
+    }
+
+    composable(Routes.CHECKOUT) {
+        CheckoutScreen(
+            onBackClick = { navController.popBackStack() },
+            onShoppingBagClick = { navController.navigateAndPopTo(Routes.CART, Routes.CHECKOUT) },
+            onCompletePurchaseClick = {
+                navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CHECKOUT)
+            }
         )
     }
 
@@ -187,7 +220,7 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             productGuid = productGuid,
             viewModel = remember { ProductDetailViewModel() },
             onBackClick = { navController.popBackStack() },
-            onNavigateToCart = { println("Navigating to cart") }
+            onNavigateToCart = { navController.navigate(Routes.CART) }
         )
     }
 }
@@ -261,7 +294,7 @@ private fun NavHostController.navigateAfterLogout() {
 private fun handleUserHomeTabSelection(tab: BottomNavTab, navController: NavHostController) {
     when (tab) {
         BottomNavTab.PROFILE -> navController.navigate(Routes.USER_PROFILE)
-        BottomNavTab.BAG -> navController.navigate(Routes.USER_INVOICE_LIST)
+        BottomNavTab.BAG -> navController.navigate(Routes.CART)
         else -> Unit
     }
 }
@@ -285,7 +318,7 @@ private fun handleUserProfileTabSelection(tab: BottomNavTab, navController: NavH
             navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.USER_PROFILE)
         }
         BottomNavTab.BAG -> {
-            navController.navigateAndPopTo(Routes.USER_INVOICE_LIST, Routes.USER_PROFILE)
+            navController.navigateAndPopTo(Routes.CART, Routes.USER_PROFILE)
         }
         BottomNavTab.PROFILE -> Unit
         else -> println("User Tab selected: $tab")

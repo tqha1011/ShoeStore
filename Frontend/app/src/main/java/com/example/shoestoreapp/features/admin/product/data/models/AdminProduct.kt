@@ -20,4 +20,5 @@ data class AdminProduct(
     val price: Double,
     val stockStatus: StockStatus,
     val stock: Int,
+    val variantsCount: Int = 0,
 )
