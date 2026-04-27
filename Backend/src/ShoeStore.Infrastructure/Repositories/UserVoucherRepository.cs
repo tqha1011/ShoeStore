@@ -16,4 +16,9 @@ public class UserVoucherRepository(AppDbContext context)
     {
         return DbSet.Where(uv => uv.User!.PublicId == userGuid);
     }
+
+    public void AddListUserVoucher(List<UserVoucher> userVouchers)
+    {
+        DbSet.AddRange(userVouchers);
+    }
 }

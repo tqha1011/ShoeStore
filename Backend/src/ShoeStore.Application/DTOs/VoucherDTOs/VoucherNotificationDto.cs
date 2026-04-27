@@ -1,9 +1,7 @@
 namespace ShoeStore.Application.DTOs.VoucherDTOs;
 
 public sealed record VoucherNotificationDto(
-    string Email,
-    string UserName,
-    int UserId,
+    List<VoucherTargetUserDto> TargetUsers,
     int VoucherId,
     string VoucherName,
     DateTime ValidTo);

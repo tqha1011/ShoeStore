@@ -7,4 +7,6 @@ public interface IUserVoucherRepository : IGenericRepository<UserVoucher, int>
 {
     IQueryable<UserVoucher> GetAllVouchers();
     IQueryable<UserVoucher> GetVouchersByUserGuid(Guid userGuid);
+    
+    void AddListUserVoucher(List<UserVoucher> userVouchers);
 }
