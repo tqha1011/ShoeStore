@@ -9,4 +9,8 @@ public class ResponseVoucherUserDto
     public DateTime? ValidFrom { get; set; } = DateTime.UtcNow;
 
     public DateTime? ValidTo { get; set; }
+
+    public bool IsUsed { get; set; }
+
+    public DateTime SavedAt { get; set; }
 }

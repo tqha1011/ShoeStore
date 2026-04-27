@@ -6,5 +6,7 @@ namespace ShoeStore.Application.Interface.VoucherInterface;
 
 public interface IUserVoucherService
 {
-    Task<ErrorOr<PageResult<ResponseVoucherUserDto>>> GetAllVoucherForUserAsync(Guid userGuid, CancellationToken token);
+    Task<ErrorOr<PageResult<ResponseVoucherUserDto>>> GetAllVoucherForUserAsync(Guid userGuid,
+        CancellationToken token,
+        int pageIndex = 1, int pageSize = 10);
 }

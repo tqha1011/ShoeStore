@@ -24,8 +24,9 @@ public class UserVoucherController(IUserVoucherService userVoucherService) : Con
     ///     Requires User role authorization.
     ///     Returns a list of vouchers that are currently valid and assigned to the user.
     /// </remarks>
-    /// <param name="userGuid">The unique identifier (GUID) of the user whose vouchers are being retrieved.</param>
+    /// <param name="pageSize"></param>
     /// <param name="token">Cancellation token for the request.</param>
+    /// <param name="pageIndex"></param>
     /// <response code="200">Vouchers retrieved successfully.</response>
     /// <response code="401">Unauthorized; user must be authenticated with User role.</response>
     /// <response code="404">Not found; no vouchers found for the specified user.</response>
@@ -35,21 +36,25 @@ public class UserVoucherController(IUserVoucherService userVoucherService) : Con
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
-    [HttpGet("user")]
-    public async Task<IActionResult> GetVouchersForUser(CancellationToken token)
+    [HttpGet]
+    public async Task<IActionResult> GetVouchersForUser([FromQuery] int pageIndex,[FromQuery] int pageSize,
+        CancellationToken token)
     {
         var userGuidString = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userGuidString) || !Guid.TryParse(userGuidString, out var userGuid))
-            return Unauthorized();
+            return Unauthorized(new
+            {
+                message = "You are not authorized to access this resource. Please log in with a valid user account."
+            });
 
-        var result = await userVoucherService.GetAllVoucherForUserAsync(userGuid, token);
+        var result = await userVoucherService.GetAllVoucherForUserAsync(userGuid, token, pageIndex, pageSize);
         return result.Match<IActionResult>(
             vouchers => Ok(vouchers),
             errors => errors[0].Code switch
             {
-                "NO_VOUCHERS_FOUND" => NotFound(new
+                "User.NotFound" => NotFound(new
                 {
-                    message = "No vouchers found for this user",
+                    message = "User not found",
                     detail = errors[0].Description
                 }),
                 _ => BadRequest(new
