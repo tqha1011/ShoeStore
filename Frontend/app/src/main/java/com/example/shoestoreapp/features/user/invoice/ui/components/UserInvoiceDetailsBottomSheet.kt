@@ -88,14 +88,14 @@ fun UserInvoiceDetailsBottomSheet(
                         )
                         Text(
                             text = "Qty",
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1.5f),
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 16.sp,
                             textAlign = TextAlign.Center
                         )
                         Text(
                             text = "Unit price",
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1.5f),
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 16.sp,
                             textAlign = TextAlign.End
@@ -135,7 +135,7 @@ private fun UserInvoiceDetailRow(detail: Detail) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            modifier = Modifier.weight(2f),
+            modifier = Modifier.weight(1.9f),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (detail.imageUrl.isBlank()) {
@@ -169,12 +169,12 @@ private fun UserInvoiceDetailRow(detail: Detail) {
 
         Text(
             text = "x${detail.quantity}",
-            modifier = Modifier.weight(0.9f),
+            modifier = Modifier.weight(0.5f),
             fontSize = 16.sp
         )
         Text(
             text = formatAdminPrice(detail.unitPrice.toString()),
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1.2f),
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.End
