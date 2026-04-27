@@ -131,9 +131,8 @@ public class ProductService(
         var product = new Product
         {
             ProductName = dto.ProductName,
-            CategoryId = dto.CategoryId,
-            Brand = string.Empty, // Default value
-            ProductVariants = new List<ProductVariant>()
+            CategoryId = dto.CategoryId ?? -1,
+            Brand = dto.Brand,
         };
 
         // Add product to repository and save
@@ -152,8 +151,7 @@ public class ProductService(
         return product.PublicId;
     }
 
-    public async Task<ErrorOr<Updated>> UpdateProductAsync(Guid productGuid, UpdateProductDto dto,
-        CancellationToken token)
+    public async Task<ErrorOr<Updated>> UpdateProductAsync(Guid productGuid, UpdateProductDto dto, CancellationToken token)
     {
         var product = await productRepository.GetForUpdateByGuidAsync(productGuid, token);
 
@@ -161,71 +159,13 @@ public class ProductService(
             return Error.NotFound("Product.NotFound", $"Product with ID '{productGuid}' was not found.");
 
         // Update basic product information
-        product.ProductName = dto.ProductName;
-        product.Brand = dto.Brand ?? string.Empty;
-        product.CategoryId = dto.CategoryId;
+        product.ProductName = dto.ProductName ?? product.ProductName;
+        product.Brand = dto.Brand ?? product.Brand;
+        product.CategoryId = dto.CategoryId ?? product.CategoryId;
 
-        // Get all existing variants (including soft-deleted ones to reactivate if needed)
-        var existingVariants = product.ProductVariants.ToList();
-        
-        // Track which variants (SizeId, ColorId) are present in the new DTO
-        var processedVariantKeys = new HashSet<(int SizeId, int ColorId)>();
-
-        // Process variants: Each DTO entry can contain multiple ColorIds for one SizeId
-        foreach (var variantGroupDto in dto.ProductVariants)
-        {
-            foreach (var colorId in variantGroupDto.ColorIds)
-            {
-                var key = (variantGroupDto.SizeId, colorId);
-                processedVariantKeys.Add(key);
-
-                var existingVariant = existingVariants.FirstOrDefault(v => v.SizeId == key.SizeId && v.ColorId == key.colorId);
-
-                if (existingVariant != null)
-                {
-                    // Update existing variant (and reactivate if it was soft-deleted)
-                    existingVariant.Stock = variantGroupDto.Stock;
-                    existingVariant.Price = variantGroupDto.Price;
-                    existingVariant.ImageUrl = variantGroupDto.ImageUrl;
-                    existingVariant.IsSelling = variantGroupDto.IsSelling;
-                    existingVariant.IsDeleted = false; 
-                    existingVariant.UpdatedAt = DateTime.UtcNow;
-                }
-                else
-                {
-                    // Create new product variant if not exists
-                    var newProductVariant = new ProductVariant
-                    {
-                        SizeId = variantGroupDto.SizeId,
-                        ColorId = colorId,
-                        Stock = variantGroupDto.Stock,
-                        Price = variantGroupDto.Price,
-                        ImageUrl = variantGroupDto.ImageUrl,
-                        IsSelling = variantGroupDto.IsSelling,
-                        ProductId = product.Id,
-                        IsDeleted = false
-                    };
-                    product.ProductVariants.Add(newProductVariant);
-                }
-            }
-        }
-
-        // Soft delete variants that are no longer in the request
-        var variantsToRemove = existingVariants
-            .Where(v => !processedVariantKeys.Contains((v.SizeId, v.ColorId)) && !v.IsDeleted)
-            .ToList();
-
-        foreach (var variant in variantsToRemove)
-        {
-            variant.IsDeleted = true;
-            variant.IsSelling = false;
-            variant.UpdatedAt = DateTime.UtcNow;
-        }
-
-        // Update product in repository and save
         productRepository.Update(product);
         await uow.SaveChangesAsync(token);
-        
+
         try
         {
             await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
@@ -255,6 +195,8 @@ public class ProductService(
             variant.IsSelling = false; // Also mark as not selling to prevent it from showing up in searches
         }
         product.IsDeleted = true;
+        
+        productRepository.Update(product);
         await uow.SaveChangesAsync(token);
         try
         {
@@ -269,29 +211,30 @@ public class ProductService(
         return Result.Deleted;
     }
 
-    public async Task<ErrorOr<PageResult<ProductAdminRespone>>> GetProductsAdminAsync(ProductAdminRequestDto request,
-        CancellationToken token)
+    public async Task<ErrorOr<PageResult<ProductAdminRespone>>> GetProductsAdminAsync(ProductAdminRequestDto request, CancellationToken token)
     {
-        var query = productRepository.GetAll().ApplyStock(request).AsNoTracking().Where(p => !p.IsDeleted);
+        var query = productRepository.GetAll().ApplyStock(request).AsNoTracking();
 
         var totalCount = await query.CountAsync(token);
 
-        var products = await query.Select(p => new ProductAdminRespone
-        {
-            PublicID = p.PublicId,
-            ProductName = p.ProductName,
-            Variants = p.ProductVariants
-                .Where(v => v.IsSelling && !v.IsDeleted)
-                .Select(v => new ProductVariantAdminResponeDto
-                {
-                    imgUrl = v.ImageUrl ?? string.Empty,
-                    Price = v.Price,
-                    Stock = v.Stock,
-                    StockStatus = v.Stock <= 0 ? "Out of Stock" :
-                        v.Stock < 10 ? "Low Stock" : "In Stock"
-                })
-                .ToList()
-        }).ToListAsync(token);
+        var products = await query
+            .ApplyPaging(request.PageIndex, request.PageSize)
+            .Select(p => new ProductAdminRespone
+            {
+                PublicID = p.PublicId,
+                ProductName = p.ProductName,
+                Variants = p.ProductVariants
+                    .Where(v => v.IsSelling && !v.IsDeleted)
+                    .Select(v => new ProductVariantAdminResponeDto
+                    {
+                        imgUrl = v.ImageUrl ?? string.Empty,
+                        Price = v.Price,
+                        Stock = v.Stock,
+                        StockStatus = v.Stock <= 0 ? "Out of Stock" :
+                            v.Stock < 10 ? "Low Stock" : "In Stock"
+                    })
+                    .ToList()
+            }).ToListAsync(token);
         var pageResult = new PageResult<ProductAdminRespone>
         {
             Items = products.Count == 0 ? [] : products,

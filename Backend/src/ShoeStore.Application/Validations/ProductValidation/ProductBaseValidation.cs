@@ -3,7 +3,7 @@ using ShoeStore.Application.DTOs.ProductDTOs;
 
 namespace ShoeStore.Application.Validations.ProductValidation;
 
-public class ProductBaseValidation<T> : AbstractValidator<T> where T : ProductBaseDto
+public class ProductBaseValidation<T> : AbstractValidator<T>where T : ProductBaseDto
 {
     public ProductBaseValidation()
     {

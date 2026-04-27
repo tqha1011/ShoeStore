@@ -11,20 +11,9 @@ public class CreateProductVariantValidator : AbstractValidator<CreateProductVari
         RuleFor(x => x.SizeId)
             .GreaterThan(0).WithMessage("SizeId must be a positive integer.");
 
-        // Size: Optional, but if provided, must be within a reasonable range
-        RuleFor(x => x.Size)
-            .InclusiveBetween(1, 100).WithMessage("Size must be between 1 and 100.")
-            .When(x => x.Size.HasValue);
-
         // ColorId: Assuming 0 is not a valid ID
         RuleFor(x => x.ColorId)
             .GreaterThan(0).WithMessage("ColorId is required and must be greater than 0.");
-
-        // ColorName: Optional, but cannot be empty strings if provided
-        RuleFor(x => x.ColorName)
-            .MaximumLength(50).WithMessage("Color name cannot exceed 50 characters.")
-            .Must(name => string.IsNullOrWhiteSpace(name) || name.Trim().Length > 0)
-            .WithMessage("Color name cannot be empty or whitespace.");
 
         // Stock: Cannot be negative
         RuleFor(x => x.Stock)

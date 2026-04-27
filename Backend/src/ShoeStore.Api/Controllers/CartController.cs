@@ -58,6 +58,7 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
             {
                 "ProductVariant.NotFound" => NotFound(new
                 {
+                    code = errors[0].Code,
                     message = "Product Variant not found",
                     detail = errors[0].Description
                 }),
