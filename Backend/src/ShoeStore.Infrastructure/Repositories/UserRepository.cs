@@ -25,6 +25,10 @@ public class UserRepository(AppDbContext context) : GenericRepository<User, int>
             .FirstOrDefaultAsync(x => x.PublicId == publicId, token);
     }
 
+    public IQueryable<User> GetAllUsers()
+    {
+        return DbSet.AsNoTracking();
+    }
     public async Task<bool> CheckUserExistsAsync(Guid publicId, CancellationToken token)
     {
         return await DbSet.AsNoTracking().AnyAsync(x => x.PublicId == publicId, token);

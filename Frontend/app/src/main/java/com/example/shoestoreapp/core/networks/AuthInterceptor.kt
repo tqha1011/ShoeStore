@@ -1,5 +1,6 @@
 package com.example.shoestoreapp.core.networks
 import android.content.Context
+import com.example.shoestoreapp.core.utils.JwtUtils
 import com.example.shoestoreapp.core.utils.TokenManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -16,8 +17,10 @@ class AuthInterceptor(private val context: Context) : Interceptor {
         }
 
         val requestBuilder = chain.request().newBuilder()
-        token?.let {
-            requestBuilder.addHeader("Authorization", "Bearer $it")
+        val normalizedToken = JwtUtils.normalizeToken(token)
+
+        normalizedToken?.let {
+            requestBuilder.header("Authorization", "Bearer $it")
         }
 
         return chain.proceed(requestBuilder.build())

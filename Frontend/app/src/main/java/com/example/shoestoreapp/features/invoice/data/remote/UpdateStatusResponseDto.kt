@@ -5,6 +5,6 @@ import com.google.gson.annotations.SerializedName
 data class UpdateStatusResponseDto (
     @SerializedName("invoiceCode")
     val status: String,
-    @SerializedName ("invoiceStatus")
-    val invoiceStatus: Int
+    @SerializedName(value = "invoiceStatus", alternate = ["newStatus"])
+    val invoiceStatus: String
 )

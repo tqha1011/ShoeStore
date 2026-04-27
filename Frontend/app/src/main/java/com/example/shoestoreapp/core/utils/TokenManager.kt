@@ -22,9 +22,13 @@ class TokenManager(private val context: Context) {
      * Save auth info (token + role) after successful login
      */
     suspend fun saveAuthInfo(token: String, role: String) {
+        val normalizedToken = JwtUtils.normalizeToken(token)
+            ?: throw IllegalArgumentException("Token must not be empty")
+        val normalizedRole = role.trim().uppercase()
+
         context.dataStore.edit { preferences ->
-            preferences[TOKEN_KEY] = token
-            preferences[ROLE_KEY] = role
+            preferences[TOKEN_KEY] = normalizedToken
+            preferences[ROLE_KEY] = normalizedRole
         }
     }
 
@@ -33,7 +37,7 @@ class TokenManager(private val context: Context) {
      * Used by AuthInterceptor to attach token to API requests
      */
     val getToken: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[TOKEN_KEY]
+        JwtUtils.normalizeToken(preferences[TOKEN_KEY])
     }
 
     /**
@@ -41,7 +45,7 @@ class TokenManager(private val context: Context) {
      * Used by UI to control access (ADMIN / USER)
      */
     val getRole: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[ROLE_KEY]
+        preferences[ROLE_KEY]?.trim()?.uppercase()
     }
 
     /**
