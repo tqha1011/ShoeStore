@@ -15,14 +15,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
+import com.example.shoestoreapp.features.user.profile.ui.components.UserOrdersSection
 
 @Composable
 fun UserProfileScreen(
     onTabSelected: (BottomNavTab) -> Unit = {},
     onViewOrdersClick: () -> Unit = {},
-    onLogoutClick: () -> Unit = {}
+    onLogoutClick: () -> Unit = {},
+    orderCounts: Map<InvoiceStatus, Int> = emptyMap(),
+    onStatusClick: (InvoiceStatus) -> Unit = { onViewOrdersClick() }
 ) {
     Scaffold(
         bottomBar = {
@@ -51,16 +55,11 @@ fun UserProfileScreen(
                 color = Color(0xFF666666)
             )
 
-            Button(
-                onClick = onViewOrdersClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Black,
-                    contentColor = Color.White
-                )
-            ) {
-                Text(text = "View Orders")
-            }
+            UserOrdersSection(
+                orderCounts = orderCounts,
+                onStatusClick = onStatusClick,
+                onViewHistoryClick = onViewOrdersClick
+            )
 
             Button(
                 onClick = onLogoutClick,

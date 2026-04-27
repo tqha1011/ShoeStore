@@ -8,12 +8,14 @@ import com.example.shoestoreapp.features.user.product.data.remote.ProductApi
 import com.example.shoestoreapp.features.cart.data.remote.CartApi
 import com.example.shoestoreapp.features.admin.crud.data.remote.AdminProductCrudApi
 import com.example.shoestoreapp.features.admin.crud.data.remote.MasterDataApi
+import com.example.shoestoreapp.features.invoice.data.remote.InvoiceApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitInstance {
+
 
     private lateinit var appContext: Context
 
@@ -29,10 +31,13 @@ object RetrofitInstance {
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
-
+    val logging = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY // Yêu cầu in toàn bộ Body (JSON)
+    }
     private val client by lazy {
         OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
+            .addInterceptor(logging)
             .addInterceptor(loggingInterceptor)
             .build()
     }
@@ -45,6 +50,7 @@ object RetrofitInstance {
             .client(client)
             .build()
     }
+
 
     // 3. Create AuthApi service for authentication endpoints
     val authApi: AuthApi by lazy {
@@ -75,4 +81,10 @@ object RetrofitInstance {
     val masterDataApi: MasterDataApi by lazy {
         retrofit.create(MasterDataApi::class.java)
     }
+
+    // 9. Create InvoiceApi service for invoice endpoints
+    val invoiceApi: InvoiceApi by lazy {
+        retrofit.create(InvoiceApi::class.java)
+    }
+
 }
