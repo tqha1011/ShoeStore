@@ -4,4 +4,4 @@ public sealed record VoucherNotificationDto(
     List<VoucherTargetUserDto> TargetUsers,
     int VoucherId,
     string VoucherName,
-    DateTime ValidTo);
+    DateTime? ValidTo);

@@ -13,7 +13,7 @@ using ShoeStore.Domain.Enum;
 namespace ShoeStore.Application.Services;
 
 public class VoucherService(
-    IEmailService emailService,
+    INotificationQueue queue,
     IUnitOfWork uow,
     IUserRepository userRepository,
     IVoucherRepository voucherRepository) : IVoucherService
@@ -28,7 +28,7 @@ public class VoucherService(
             VoucherScope = voucherCreateDto.VoucherScope,
             DiscountType = voucherCreateDto.DiscountType,
             MaxPriceDiscount = voucherCreateDto.MaxPriceDiscount,
-            ValidFrom = voucherCreateDto.ValidFrom,
+            ValidFrom = voucherCreateDto.ValidFrom ?? DateTime.UtcNow,
             ValidTo = voucherCreateDto.ValidTo,
             MaxUsagePerUser = voucherCreateDto.MaxUsagePerUser,
             TotalQuantity = voucherCreateDto.TotalQuantity ?? 0,
@@ -38,6 +38,8 @@ public class VoucherService(
 
         voucherRepository.Add(voucher);
         await uow.SaveChangesAsync(token);
+        await NotifyUserAboutNewVoucherAsync(voucher.Id, voucher.VoucherName, voucher.ValidTo ?? DateTime.UtcNow,
+            token);
         return Result.Created;
     }
 
@@ -71,37 +73,17 @@ public class VoucherService(
         return Result.Deleted;
     }
 
-    public async Task<ErrorOr<Success>> NotifyUserAboutNewVoucherAsync(string adminEmail, string voucherName,
+    public async Task<ErrorOr<Success>> NotifyUserAboutNewVoucherAsync(int voucherId, string voucherName,
         DateTime validTo, CancellationToken token)
     {
         var users = await userRepository
             .GetAllUsers()
             .Where(u => u.Role == UserRole.User)
+            .Select(u => new VoucherTargetUserDto(u.Id, u.Email, u.UserName))
             .ToListAsync(token);
 
-        foreach (var user in users)
-        {
-            var emailBody = $@"
-                    Hi {user.UserName},
-
-                    Great news! A new voucher has been added to your account:
-
-                    🎁 {voucherName.ToUpper()}
-                    📅 Valid until: {validTo:MMMM dd, yyyy}
-
-                    Check your wallet and start shopping now to enjoy your discount!
-
-                    Best regards,
-                    Shoe Store Team";
-
-            await emailService.SendEmailAsync(
-                adminEmail,
-                user.Email,
-                "🎁 New Voucher Received!",
-                emailBody,
-                token
-            );
-        }
+        var newVoucherNotification = new VoucherNotificationDto(users, voucherId, voucherName, validTo);
+        await queue.EnqueueAsync(newVoucherNotification, token);
 
         return Result.Success;
     }
@@ -162,14 +144,17 @@ public class VoucherService(
                 MaxPriceDiscount = v.MaxPriceDiscount,
                 ValidFrom = v.ValidFrom,
                 ValidTo = v.ValidTo,
-                MinOrderPrice = v.MinOrderPrice
+                MinOrderPrice = v.MinOrderPrice,
+                Quantity = v.TotalQuantity
             })
             .ToListAsync(token);
 
         var pageResult = new PageResult<ResponseVoucherAdminDto>
         {
             Items = vouchers,
-            TotalCount = totalCount
+            TotalCount = totalCount,
+            PageSize = pageSize,
+            PageNumber = pageIndex
         };
         return pageResult;
     }

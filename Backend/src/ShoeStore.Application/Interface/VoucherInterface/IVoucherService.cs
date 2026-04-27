@@ -23,6 +23,6 @@ public interface IVoucherService
     Task<ErrorOr<Deleted>> DeleteVoucherExpireAsync(CancellationToken token);
 
     // NOTIFY
-    Task<ErrorOr<Success>> NotifyUserAboutNewVoucherAsync(string adminEmail, string voucherName, DateTime validTo,
+    Task<ErrorOr<Success>> NotifyUserAboutNewVoucherAsync(int voucherId, string voucherName, DateTime validTo,
         CancellationToken token);
 }

@@ -12,6 +12,8 @@ public class ResponseVoucherAdminDto
     public decimal? MaxPriceDiscount { get; set; }
     public decimal? MinOrderPrice { get; set; }
 
+    public int Quantity { get; set; } = 1;
+
     public DateTime? ValidFrom { get; set; }
 
     public DateTime? ValidTo { get; set; }

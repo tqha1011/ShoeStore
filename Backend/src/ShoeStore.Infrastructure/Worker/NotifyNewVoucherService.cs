@@ -63,7 +63,7 @@ public class NotifyNewVoucherService(
 
                                                   <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
                                                       <p style="font-size: 14px; color: #777; margin: 0;">
-                                                          📅 Valid until: <strong style="color: #333;">{{notification.ValidTo:MMMM dd, yyyy}}</strong>
+                                                          📅 Valid until: <strong style="color: #333;">{{(notification.ValidTo.HasValue ? notification.ValidTo.Value.ToString("MMMM dd, yyyy") : "Permanent")}}</strong>
                                                       </p>
                                                   </div>
                                               </div>

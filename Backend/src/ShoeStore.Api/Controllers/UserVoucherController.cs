@@ -24,9 +24,9 @@ public class UserVoucherController(IUserVoucherService userVoucherService) : Con
     ///     Requires User role authorization.
     ///     Returns a list of vouchers that are currently valid and assigned to the user.
     /// </remarks>
-    /// <param name="pageSize"></param>
     /// <param name="token">Cancellation token for the request.</param>
     /// <param name="pageIndex"></param>
+    /// <param name="pageSize"></param>
     /// <response code="200">Vouchers retrieved successfully.</response>
     /// <response code="401">Unauthorized; user must be authenticated with User role.</response>
     /// <response code="404">Not found; no vouchers found for the specified user.</response>
@@ -37,8 +37,8 @@ public class UserVoucherController(IUserVoucherService userVoucherService) : Con
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpGet]
-    public async Task<IActionResult> GetVouchersForUser([FromQuery] int pageIndex,[FromQuery] int pageSize,
-        CancellationToken token)
+    public async Task<IActionResult> GetVouchersForUser(CancellationToken token, [FromQuery] int pageIndex = 1,
+        [FromQuery] int pageSize = 10)
     {
         var userGuidString = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userGuidString) || !Guid.TryParse(userGuidString, out var userGuid))

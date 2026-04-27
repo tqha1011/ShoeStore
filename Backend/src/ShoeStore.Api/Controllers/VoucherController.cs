@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs;
@@ -8,17 +7,19 @@ using ShoeStore.Application.Interface.VoucherInterface;
 namespace ShoeStore.Api.Controllers;
 
 /// <summary>
-///     Controller for managing vouchers in the system.
-///     Provides endpoints for voucher creation, retrieval, update, and deletion (Admin only).
+///     Manages voucher administration endpoints.
 /// </summary>
-/// <param name="voucherService">Service for handling voucher logic operations.</param>
+/// <remarks>
+///     All endpoints in this controller require the <c>Admin</c> role.
+/// </remarks>
+/// <param name="voucherService">Service that handles voucher business logic.</param>
 [ApiController]
 [Route("api/admin/vouchers")]
 [Authorize(Roles = "Admin")]
 public class VoucherController(IVoucherService voucherService) : ControllerBase
 {
     /// <summary>
-    ///     Creates a new voucher for the store.
+    ///     Creates a new voucher.
     /// </summary>
     /// <remarks>
     ///     Requires Admin role authorization.
@@ -29,13 +30,13 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     ///     - <c>TotalQuantity</c>: Number of vouchers available
     ///     - <c>ValidFrom/ValidTo</c>: Expiration dates
     /// </remarks>
-    /// <param name="createVoucherDto">Data transfer object containing voucher creation details.</param>
-    /// <param name="token">Cancellation token for the request.</param>
-    /// <response code="201">Voucher created successfully.</response>
-    /// <response code="400">Bad request; invalid voucher data provided.</response>
-    /// <response code="401">Unauthorized; user must be authenticated with Admin role.</response>
-    /// <response code="500">Internal server error; an unexpected error occurred.</response>
-    /// <returns>An action result with status 201 (Created) on success, or an error response.</returns>
+    /// <param name="createVoucherDto">Voucher payload used to create a new voucher.</param>
+    /// <param name="token">Cancellation token.</param>
+    /// <response code="200">Voucher created successfully.</response>
+    /// <response code="400">Voucher creation failed due to invalid input or business validation.</response>
+    /// <response code="401">Caller is not authenticated as Admin.</response>
+    /// <response code="500">Unhandled server error.</response>
+    /// <returns>An <see cref="IActionResult" /> containing a success or error response.</returns>
     [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
@@ -46,30 +47,19 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     {
         var result = await voucherService.CreateVoucherAsync(createVoucherDto, token);
 
-        return await result.MatchAsync<IActionResult>(
-            async _ =>
-            {
-                var adminEmail = User.FindFirstValue(ClaimTypes.Email) ?? "admin@example.com";
-
-                await voucherService.NotifyUserAboutNewVoucherAsync(
-                    adminEmail,
-                    createVoucherDto.VoucherName ?? "New Discount",
-                    createVoucherDto.ValidTo ?? DateTime.UtcNow,
-                    token
-                );
-
-                return Created("", new { message = "Voucher created and users notified" });
-            },
-            errors => Task.FromResult<IActionResult>(BadRequest(new
+        var response = result.Match<IActionResult>(
+            _ => Ok(new { message = "Voucher created and users notified" }),
+            errors => BadRequest(new
             {
                 message = "Failed to create voucher",
                 detail = errors[0].Description
-            }))
+            })
         );
+        return response;
     }
 
     /// <summary>
-    ///     Updates an existing voucher's details.
+    ///     Updates an existing voucher.
     /// </summary>
     /// <remarks>
     ///     Requires Admin role authorization.
@@ -79,18 +69,18 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     /// <param name="updateVoucherDto">Data transfer object containing updated voucher details.</param>
     /// <param name="token">Cancellation token for the request.</param>
     /// <response code="200">Voucher updated successfully.</response>
-    /// <response code="400">Bad request; invalid update data provided.</response>
-    /// <response code="401">Unauthorized; user must be authenticated with Admin role.</response>
-    /// <response code="404">Not found; the voucher with the specified ID does not exist.</response>
-    /// <response code="500">Internal server error; an unexpected error occurred.</response>
-    /// <returns>An action result with status 200 (OK) on success, or an error response.</returns>
+    /// <response code="400">Update request is invalid.</response>
+    /// <response code="401">Caller is not authenticated as Admin.</response>
+    /// <response code="404">Voucher was not found.</response>
+    /// <response code="500">Unhandled server error.</response>
+    /// <returns>An <see cref="IActionResult" /> with update result details.</returns>
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPut("{voucherGuid}")]
-    public async Task<IActionResult> UpdateVoucher(Guid voucherGuid, [FromForm] UpdateVoucherDto updateVoucherDto,
+    public async Task<IActionResult> UpdateVoucher(Guid voucherGuid, UpdateVoucherDto updateVoucherDto,
         CancellationToken token)
     {
         var result = await voucherService.UpdateVoucherAsync(voucherGuid, updateVoucherDto, token);
@@ -112,19 +102,15 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     }
 
     /// <summary>
-    ///     Deletes a specific voucher from the system (soft delete).
+    ///     Soft deletes a voucher.
     /// </summary>
-    /// <remarks>
-    ///     Requires Admin role authorization.
-    ///     Performs a soft delete by marking the voucher as deleted.
-    /// </remarks>
-    /// <param name="voucherGuid">The unique identifier (GUID) of the voucher to delete.</param>
-    /// <param name="token">Cancellation token for the request.</param>
+    /// <param name="voucherGuid">Public identifier of the voucher to delete.</param>
+    /// <param name="token">Cancellation token.</param>
     /// <response code="200">Voucher deleted successfully.</response>
-    /// <response code="401">Unauthorized; user must be authenticated with Admin role.</response>
-    /// <response code="404">Not found; the voucher with the specified ID does not exist.</response>
-    /// <response code="500">Internal server error; an unexpected error occurred.</response>
-    /// <returns>An action result with status 200 (OK) on success, or an error response.</returns>
+    /// <response code="401">Caller is not authenticated as Admin.</response>
+    /// <response code="404">Voucher was not found.</response>
+    /// <response code="500">Unhandled server error.</response>
+    /// <returns>An <see cref="IActionResult" /> with delete result details.</returns>
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
@@ -142,7 +128,7 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
                     message = "Voucher not found",
                     detail = errors[0].Description
                 }),
-                _ => BadRequest(new
+                _ => StatusCode(500, new
                 {
                     message = "Failed to delete voucher",
                     detail = errors[0].Description
@@ -151,29 +137,24 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     }
 
     /// <summary>
-    ///     Deletes all expired vouchers from the system (soft delete).
+    ///     Soft deletes all expired vouchers.
     /// </summary>
-    /// <remarks>
-    ///     Requires Admin role authorization.
-    ///     Identifies and soft deletes all vouchers whose expiration date has passed.
-    /// </remarks>
-    /// <param name="token">Cancellation token for the request.</param>
+    /// <param name="token">Cancellation token.</param>
     /// <response code="200">Expired vouchers deleted successfully.</response>
-    /// <response code="400">Bad request; failed to delete expired vouchers or no expired vouchers found.</response>
-    /// <response code="401">Unauthorized; user must be authenticated with Admin role.</response>
-    /// <response code="500">Internal server error; an unexpected error occurred.</response>
-    /// <returns>An action result with status 200 (OK) on success, or an error response.</returns>
+    /// <response code="401">Caller is not authenticated as Admin.</response>
+    /// <response code="500">Failed to delete expired vouchers.</response>
+    /// <returns>An <see cref="IActionResult" /> with bulk delete result details.</returns>
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
-    [HttpDelete("expire")]
+    [HttpDelete("expired")]
     public async Task<IActionResult> DeleteExpiredVouchers(CancellationToken token)
     {
         var result = await voucherService.DeleteVoucherExpireAsync(token);
         return result.Match<IActionResult>(
             _ => Ok(new { message = "Expired vouchers deleted successfully" }),
-            errors => BadRequest(new
+            errors => StatusCode(500, new
             {
                 message = "Failed to delete expired vouchers",
                 detail = errors[0].Description
@@ -181,43 +162,30 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     }
 
     /// <summary>
-    ///     Retrieves a paginated list of vouchers for administrative purposes.
+    ///     Retrieves vouchers for the admin dashboard with pagination.
     /// </summary>
-    /// <remarks>
-    ///     Requires Admin role authorization.
-    ///     Provides a list of vouchers with detailed information relevant for administrators.
-    /// </remarks>
-    /// <param name="pageSize"></param>
-    /// <param name="token">Cancellation token for the request.</param>
-    /// <param name="pageIndex"></param>
+    /// <param name="token">Cancellation token.</param>
+    /// <param name="pageIndex">Page index (1-based).</param>
+    /// <param name="pageSize">Number of items per page.</param>
     /// <response code="200">Vouchers retrieved successfully.</response>
-    /// <response code="401">Unauthorized; user must be authenticated with Admin role.</response>
-    /// <response code="404">Not found; no vouchers found in the system.</response>
-    /// <response code="500">Internal server error; an unexpected error occurred.</response>
-    /// <returns>An action result containing a paginated list of vouchers on success, or an error response.</returns>
+    /// <response code="400">Request is invalid.</response>
+    /// <response code="401">Caller is not authenticated as Admin.</response>
+    /// <response code="500">Unhandled server error.</response>
+    /// <returns>An <see cref="IActionResult" /> containing paginated voucher data.</returns>
     [ProducesResponseType(typeof(PageResult<ResponseVoucherAdminDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpGet]
-    public async Task<IActionResult> GetVouchersForAdmin([FromQuery] int pageIndex, [FromQuery] int pageSize,
-        CancellationToken token)
+    public async Task<IActionResult> GetVouchersForAdmin(CancellationToken token, [FromQuery] int pageIndex = 1,
+        [FromQuery] int pageSize = 10)
     {
         var result = await voucherService.GetVoucherForAdminAsync(token, pageIndex, pageSize);
         return result.Match<IActionResult>(
             vouchers => Ok(vouchers),
-            errors => errors[0].Code switch
+            errors => BadRequest(new
             {
-                "NO_VOUCHERS_FOUND" => NotFound(new
-                {
-                    message = "No vouchers found",
-                    detail = errors[0].Description
-                }),
-                _ => BadRequest(new
-                {
-                    message = "Failed to retrieve vouchers",
-                    detail = errors[0].Description
-                })
-            });
+                message = "Failed to get vouchers for admin",
+                detail = errors[0].Description
+            }));
     }
 }
