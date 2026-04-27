@@ -8,6 +8,7 @@ using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.MasterDataInterface;
 using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Application.Interface.StatisticsInterface;
+using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Application.Services;
 
 namespace ShoeStore.Application.DependencyInjection;
@@ -27,6 +28,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IStatisticsService, StatisticsService>();
         services.AddScoped<IMasterDataService, MasterDataService>();
+        services.AddScoped<IUserVoucherService,UserVoucherService>();
         return services;
     }
 }

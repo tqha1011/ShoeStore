@@ -1,9 +1,8 @@
 using System.Security.Claims;
-using ErrorOr;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs;
-using ShoeStore.Application.DTOs.VoucherDtos;
+using ShoeStore.Application.DTOs.VoucherDTOs;
 using ShoeStore.Application.Interface.VoucherInterface;
 
 namespace ShoeStore.Api.Controllers;
@@ -42,29 +41,30 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost]
-    public async Task<IActionResult> CreateVoucher([FromBody] CreateVoucherDto createVoucherDto, CancellationToken token)
+    public async Task<IActionResult> CreateVoucher([FromBody] CreateVoucherDto createVoucherDto,
+        CancellationToken token)
     {
         var result = await voucherService.CreateVoucherAsync(createVoucherDto, token);
 
         return await result.MatchAsync<IActionResult>(
-        async _ =>
-        {
-            var adminEmail = User.FindFirstValue(ClaimTypes.Email) ?? "admin@example.com";
+            async _ =>
+            {
+                var adminEmail = User.FindFirstValue(ClaimTypes.Email) ?? "admin@example.com";
 
-            await voucherService.NotifyUserAboutNewVoucherAsync(
-                adminEmail: adminEmail,
-                voucherName: createVoucherDto.VoucherName ?? "New Discount",
-                validTo: createVoucherDto.ValidTo ?? DateTime.UtcNow,
-                token: token
-            );
+                await voucherService.NotifyUserAboutNewVoucherAsync(
+                    adminEmail,
+                    createVoucherDto.VoucherName ?? "New Discount",
+                    createVoucherDto.ValidTo ?? DateTime.UtcNow,
+                    token
+                );
 
-            return Created("", new { message = "Voucher created and users notified" });
-        },
-        errors => Task.FromResult<IActionResult>(BadRequest(new
-        {
-            message = "Failed to create voucher",
-            detail = errors[0].Description
-        }))
+                return Created("", new { message = "Voucher created and users notified" });
+            },
+            errors => Task.FromResult<IActionResult>(BadRequest(new
+            {
+                message = "Failed to create voucher",
+                detail = errors[0].Description
+            }))
         );
     }
 

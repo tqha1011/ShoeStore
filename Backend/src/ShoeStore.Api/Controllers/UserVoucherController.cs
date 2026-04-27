@@ -2,7 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs;
-using ShoeStore.Application.DTOs.VoucherDtos;
+using ShoeStore.Application.DTOs.VoucherDTOs;
 using ShoeStore.Application.Interface.VoucherInterface;
 
 namespace ShoeStore.Api.Controllers;

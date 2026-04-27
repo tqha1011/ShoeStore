@@ -1,10 +1,10 @@
-﻿using ShoeStore.Application.DTOs.VoucherDtos;
+﻿using ErrorOr;
 using ShoeStore.Application.DTOs;
-using ErrorOr;
-namespace ShoeStore.Application.Interface.VoucherInterface
+using ShoeStore.Application.DTOs.VoucherDTOs;
+
+namespace ShoeStore.Application.Interface.VoucherInterface;
+
+public interface IUserVoucherService
 {
-    public interface IUserVoucherService : IVoucherService
-    {
-        Task<ErrorOr<PageResult<ResponseVoucherUserDto>>> GetAllVoucherForUserAsync(Guid UserGuid, CancellationToken token);
-    }
+    Task<ErrorOr<PageResult<ResponseVoucherUserDto>>> GetAllVoucherForUserAsync(Guid userGuid, CancellationToken token);
 }
