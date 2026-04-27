@@ -15,17 +15,20 @@ public class ProductVariantService(
     HybridCache cache)
     : IProductVariantService
 {
-    public async Task<ErrorOr<ProductVariantResponseDto>> CreateAsync(Guid productGuid, CreateProductVariantDto dto,
-        CancellationToken token)
+    public async Task<ErrorOr<Created>> CreateAsync(Guid productGuid, CreateProductVariantDto dto, CancellationToken token)
     {
         var product = await productRepository.GetForUpdateByGuidAsync(productGuid, token);
         if (product == null) return Error.NotFound("Product.NotFound", "Product not found.");
+
+        if (dto.SizeId is null || dto.ColorId is null)
+            return Error.Validation("ProductVariant.InvalidInput", "SizeId and ColorId are required.");
+
         var productVariant = new ProductVariant
         {
             ProductId = product.Id,
-            SizeId = dto.SizeId,
-            ColorId = dto.ColorId,
-            Stock = dto.Stock,
+            SizeId = dto.SizeId.Value,
+            ColorId = dto.ColorId.Value,
+            Stock = dto.Stock ?? 0,
             Price = dto.Price,
             ImageUrl = dto.ImageUrl,
             IsSelling = dto.IsSelling,
@@ -37,18 +40,37 @@ public class ProductVariantService(
         await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(productGuid), token);
         await cache.RemoveByTagAsync(CacheTag.Product, token);
 
-        return new ProductVariantResponseDto
-        {
-            PublicId = productVariant.PublicId,
-            SizeId = productVariant.SizeId,
-            Size = productVariant.Size?.Size ?? 0,
-            ColorId = productVariant.ColorId,
-            ColorName = productVariant.Color?.ColorName,
-            Stock = productVariant.Stock,
-            Price = productVariant.Price,
-            ImageUrl = productVariant.ImageUrl,
-            IsSelling = productVariant.IsSelling,
-            IsDelete = productVariant.IsDeleted
-        };
+        return Result.Created;
     }
+
+    public async Task<ErrorOr<Updated>> UpdateAsync(Guid productVariantGuid, UpdateProductVariantDto dto, CancellationToken token)
+    {
+        var variant = await productVariantRepository.GetByGuidAsync(productVariantGuid, token);
+
+        if (variant == null)
+            return Error.NotFound("ProductVariant.NotFound", "Product variant not found.");
+
+        if (dto.SizeId is null || dto.ColorId is null)
+             return Error.Validation("ProductVariant.InvalidInput", "SizeId and ColorId are required.");
+
+        variant.SizeId = dto.SizeId ?? variant.SizeId;
+        variant.ColorId = dto.ColorId ?? variant.ColorId;
+        variant.Stock = dto.Stock ?? variant.Stock;
+        variant.Price = dto.Price ?? variant.Price;
+        variant.ImageUrl = dto.ImageUrl ?? variant.ImageUrl;
+        variant.IsSelling = dto.IsSelling ?? variant.IsSelling;
+
+        productVariantRepository.Update(variant);
+        await uow.SaveChangesAsync(token);
+
+        var product = await productRepository.GetByIdAsync(variant.ProductId, token);
+        if (product != null)
+        {
+            await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
+        }
+        await cache.RemoveByTagAsync(CacheTag.Product, token);
+
+        return Result.Updated;
+    }
+
 }
