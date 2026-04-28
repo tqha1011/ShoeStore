@@ -83,20 +83,19 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
     }
 
     /// <summary>
-    ///     Updates an existing item in the user's shopping cart with a new product variant and quantity.
+    ///     Updates the quantity of an existing item in the user's shopping cart.
     /// </summary>
     /// <remarks>
     ///     Requires User role authorization and a request body with:
     ///     - <c>cartItemId</c>: the cart item identifier to update
-    ///     - <c>newProductVariantId</c>: the new product variant identifier to replace the current one
     ///     - <c>quantity</c>: the updated quantity (must not exceed available stock)
-    ///     This operation validates that the cart item exists and the new product variant is available.
+    ///     This operation validates that the cart item exists.
     ///     The new quantity is verified against the product variant's stock levels.
     /// </remarks>
-    /// <param name="dto">Payload containing cartItemId, newProductVariantId, and quantity.</param>
+    /// <param name="dto">Payload containing cartItemId and quantity.</param>
     /// <param name="token">Cancellation token for the request.</param>
     /// <response code="200">Cart item was updated successfully. Returns the updated cart item details.</response>
-    /// <response code="400">Bad request; the requested quantity exceeds available stock for the new variant.</response>
+    /// <response code="400">Bad request; the requested quantity exceeds available stock.</response>
     /// <response code="404">Not found; the cart item or product variant does not exist.</response>
     /// <response code="401">Unauthorized; user must have User role authorization.</response>
     /// <response code="500">Internal server error; an unexpected server error occurred.</response>
