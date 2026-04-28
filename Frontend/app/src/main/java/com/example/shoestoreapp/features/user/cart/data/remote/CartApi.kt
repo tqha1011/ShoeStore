@@ -2,6 +2,7 @@ package com.example.shoestoreapp.features.user.cart.data.remote
 
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 
@@ -10,7 +11,7 @@ import retrofit2.http.PUT
  * 
  * Endpoints:
  * - POST /api/cart - Thêm sản phẩm vào giỏ (AddCartItemDto)
- * - PUT /api/cart - Cập nhật item trong giỏ (UpdateCartItemDto)
+ * - PUT /api/cart - Cập nhật item trong giỏ (UpdateCartItemRequest)
  * - POST /api/cart/remove-items - Xóa items khỏi giỏ (List<UUID>)
  * 
  * Note:
@@ -18,6 +19,14 @@ import retrofit2.http.PUT
  * - Token phải được gửi trong Authorization header
  */
 interface CartApi {
+
+    /**
+     * Lấy toàn bộ cart items của user hiện tại.
+     *
+     * Endpoint: GET /api/cart/user-cart-items
+     */
+    @GET("api/cart/user-cart-items")
+    suspend fun getCartItems(): Response<List<CartItemResponseDto>>
 
     /**
      * Thêm sản phẩm vào giỏ hàng
@@ -31,14 +40,14 @@ interface CartApi {
     ): Response<CartItemResponseDto>
 
     /**
-     * Cập nhật item trong giỏ hàng (variant và/hoặc quantity)
-     * 
-     * @param dto - UpdateCartItemDto chứa cartItemId, newProductVariantId, quantity
+     * Cập nhật item trong giỏ hàng (quantity)
+     *
+     * @param request - UpdateCartItemRequest chứa cartItemId, quantity
      * @return Response chứa CartItemResponseDto
      */
     @PUT("api/cart")
     suspend fun updateCartItem(
-        @Body dto: UpdateCartItemDto
+        @Body request: UpdateCartItemRequest
     ): Response<CartItemResponseDto>
 
     /**
@@ -50,7 +59,5 @@ interface CartApi {
     @POST("api/cart/remove-items")
     suspend fun removeFromCart(
         @Body cartItemList: List<String>  // Changed from List<UUID> to List<String>
-    ): Response<CartRemoveResponse>
+    ): Response<Unit>
 }
-
-

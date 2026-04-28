@@ -267,7 +267,7 @@ fun ProductDetailScreen(
                         val validSizesForColor = selectableVariants
                             .asSequence()
                             .filter { variant ->
-                                variant.colorName?.trim()?.lowercase() == normalizedColor.lowercase()
+                                variant.colorName?.trim().equals(normalizedColor, ignoreCase = true)
                             }
                             .mapNotNull { it.size }
                             .distinct()

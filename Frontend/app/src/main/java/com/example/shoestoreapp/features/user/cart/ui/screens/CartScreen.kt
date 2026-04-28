@@ -1,4 +1,3 @@
-
 package com.example.shoestoreapp.features.user.cart.ui.screens
 
 import androidx.compose.foundation.background
@@ -7,15 +6,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,6 +21,7 @@ import com.example.shoestoreapp.features.user.cart.ui.components.CartSummarySect
 import com.example.shoestoreapp.features.user.cart.ui.components.CartTopAppBar
 import com.example.shoestoreapp.features.user.cart.ui.components.CheckoutButton
 import com.example.shoestoreapp.features.user.cart.ui.components.EmptyCart
+import com.example.shoestoreapp.features.user.cart.viewmodel.CartUiState
 import com.example.shoestoreapp.features.user.cart.viewmodel.CartViewModel
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
@@ -56,35 +53,20 @@ fun CartScreen(
     onNavigateToProfile: () -> Unit = {}
 ) {
     // Collect state từ ViewModel
-    val cartItems = viewModel.cartItems.collectAsState(initial = emptyList())
-    val cartSummary = viewModel.cartSummary.collectAsState()
-    val isLoading = viewModel.isLoading.collectAsState()
-    val errorMessage = viewModel.errorMessage.collectAsState()
-    val isCartEmpty = viewModel.isCartEmpty.collectAsState()
+    val cartUiState = viewModel.cartUiState.collectAsState()
+    val updatingItemIds = viewModel.updatingItemIds.collectAsState()
 
-    // Snackbar state
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    // Hiển thị error message nếu có
-    if (errorMessage.value.isNotEmpty()) {
-        LaunchedEffect(errorMessage.value) {
-            snackbarHostState.showSnackbar(
-                message = errorMessage.value,
-                duration = SnackbarDuration.Short
-            )
-            viewModel.clearErrorMessage()
-        }
+    val itemCount = when (val state = cartUiState.value) {
+        is CartUiState.Success -> state.items.size
+        else -> 0
     }
 
     Scaffold(
         topBar = {
             CartTopAppBar(
-                itemCount = cartItems.value.size,
+                itemCount = itemCount,
                 onBackClick = onNavigateBack
             )
-        },
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState)
         },
         bottomBar = {
             BottomNavBar(
@@ -110,60 +92,66 @@ fun CartScreen(
                 .background(Color(0xFFF9F9FF))
                 .padding(paddingValues)
         ) {
-            when {
-                isLoading.value -> {
+            when (val state = cartUiState.value) {
+                CartUiState.Loading -> {
                     // Loading indicator
                     CircularProgressIndicator(
                         modifier = Modifier.align(Alignment.Center)
                     )
                 }
 
-                isCartEmpty.value -> {
-                    // Empty cart UI
-                    EmptyCart(
-                        onContinueShopping = onNavigateBack
-                    )
+                is CartUiState.Error -> {
+                    Box(modifier = Modifier.align(Alignment.Center)) {
+                        Button(onClick = viewModel::fetchCartItems) {
+                            Text(text = state.message)
+                        }
+                    }
                 }
 
-                else -> {
-                    // Cart items list with summary
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(top = 8.dp)
-                    ) {
-                        // Cart items
-                        items(cartItems.value) { item ->
-                            CartItemCard(
-                                item = item,
-                                onIncreaseQuantity = { viewModel.onIncreaseQuantity(it) },
-                                onDecreaseQuantity = { viewModel.onDecreaseQuantity(it) },
-                                onRemove = { viewModel.onRemoveItem(it) },
-                            )
-                        }
+                is CartUiState.Success -> {
+                    if (state.isEmpty) {
+                        EmptyCart(onContinueShopping = onNavigateBack)
+                    } else {
+                        // Cart items list with summary
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = 8.dp)
+                        ) {
+                            // Cart items
+                            items(state.items, key = { it.cartItemId }) { item ->
+                                CartItemCard(
+                                    item = item,
+                                    onIncreaseQuantity = { viewModel.onIncreaseQuantity(it) },
+                                    onDecreaseQuantity = { viewModel.onDecreaseQuantity(it) },
+                                    onRemove = { viewModel.onRemoveItem(it) },
+                                    isUpdating = updatingItemIds.value.contains(item.cartItemId)
+                                )
+                            }
 
-                        // Cart summary
-                        item {
-                            CartSummarySection(
-                                summary = cartSummary.value
-                            )
-                        }
+                            // Cart summary
+                            item {
+                                CartSummarySection(
+                                    summary = state.summary
+                                )
+                            }
 
-                        // Checkout button
-                        item {
-                            CheckoutButton(
-                                enabled = !isLoading.value && !isCartEmpty.value,
-                                onClick = {
-                                    if (viewModel.onCheckout()) {
-                                        onNavigateToCheckout()
+                            // Checkout button
+                            item {
+                                CheckoutButton(
+                                    enabled = state.items.isNotEmpty(),
+                                    onClick = {
+                                        if (viewModel.onCheckout()) {
+                                            onNavigateToCheckout()
+                                        }
                                     }
-                                }
-                            )
-                        }
+                                )
+                            }
 
-                        // Bottom spacing
-                        item {
-                            Box(modifier = Modifier.padding(bottom = 32.dp))
+                            // Bottom spacing
+                            item {
+                                Box(modifier = Modifier.padding(bottom = 32.dp))
+                            }
                         }
                     }
                 }
@@ -171,4 +159,3 @@ fun CartScreen(
         }
     }
 }
-

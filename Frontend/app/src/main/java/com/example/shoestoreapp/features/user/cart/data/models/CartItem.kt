@@ -4,7 +4,7 @@ package com.example.shoestoreapp.features.user.cart.data.models
  * Data class representing a cart item.
  * Extends Product with quantity and size information.
  *
- * @param id - ID giỏ hàng item (unique)
+ * @param cartItemId - ID giỏ hàng item (unique)
  * @param productId - ID sản phẩm
  * @param name - Tên sản phẩm
  * @param imageUrl - URL ảnh sản phẩm
@@ -15,7 +15,7 @@ package com.example.shoestoreapp.features.user.cart.data.models
  * @param stock - Số lượng còn lại trong kho
  */
 data class CartItem(
-    val id: Int,
+    val cartItemId: String,
     val productId: String,
     val name: String,
     val imageUrl: String,
@@ -30,4 +30,3 @@ data class CartItem(
      */
     fun getTotalPrice(): Double = price * quantity
 }
-

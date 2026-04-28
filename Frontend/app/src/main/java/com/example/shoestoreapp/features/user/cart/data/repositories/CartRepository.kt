@@ -4,10 +4,7 @@ import com.example.shoestoreapp.core.networks.RetrofitInstance
 import com.example.shoestoreapp.features.user.cart.data.remote.AddCartItemRequest
 import com.example.shoestoreapp.features.user.cart.data.remote.CartApi
 import com.example.shoestoreapp.features.user.cart.data.remote.CartItemResponseDto
-import com.example.shoestoreapp.features.user.cart.data.remote.UpdateCartItemDto
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flow
+import com.example.shoestoreapp.features.user.cart.data.remote.UpdateCartItemRequest
 import retrofit2.Response
 
 /**
@@ -16,12 +13,27 @@ import retrofit2.Response
 interface CartRepository {
 
     /**
+     * Lấy toàn bộ cart items của user hiện tại.
+     */
+    suspend fun getCartItems(): Result<List<CartItemResponseDto>>
+
+    /**
      * Thêm sản phẩm vào giỏ hàng.
      *
      * Trả về Result.success khi API 200.
      * Trả về Result.failure với CartRepositoryException khi API lỗi.
      */
     suspend fun addToCart(variantPublicId: String, quantity: Int): Result<CartItemResponseDto>
+
+    /**
+     * Cập nhật số lượng của cart item.
+     */
+    suspend fun updateCartItemQuantity(cartItemId: String, quantity: Int): Result<CartItemResponseDto>
+
+    /**
+     * Xóa một hoặc nhiều items khỏi giỏ hàng.
+     */
+    suspend fun removeCartItems(cartItemIds: List<String>): Result<Unit>
 }
 
 sealed class CartRepositoryException(message: String) : Exception(message) {
@@ -37,6 +49,11 @@ private const val ERROR_UNAUTHORIZED = "Your session has expired. Please sign in
 private const val ERROR_NOT_FOUND = "The selected product variant was not found."
 private const val ERROR_SERVER = "Server error. Please try again in a moment."
 private const val ERROR_UNKNOWN = "Something went wrong while updating cart."
+private const val FETCH_ERROR_UNAUTHORIZED = "Unauthorized. Please sign in to view your cart."
+private const val FETCH_ERROR_NOT_FOUND = "User not found. Unable to load cart items."
+private const val FETCH_ERROR_SERVER = "Server error while loading cart items. Please try again."
+private const val FETCH_ERROR_UNKNOWN = "Unable to load cart items right now."
+private const val REMOVE_ERROR_EMPTY = "No cart items provided for removal."
 
 /**
  * CartRepositoryImpl: Triển khai gọi API cho giỏ hàng.
@@ -46,6 +63,29 @@ private const val ERROR_UNKNOWN = "Something went wrong while updating cart."
 class CartRepositoryImpl(
     private val cartApi: CartApi = RetrofitInstance.cartApi
 ) : CartRepository {
+
+    override suspend fun getCartItems(): Result<List<CartItemResponseDto>> {
+        return try {
+            val response = cartApi.getCartItems()
+
+            if (response.isSuccessful) {
+                Result.success(response.body().orEmpty())
+            } else {
+                val backendMessage = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
+                val exception = when (response.code()) {
+                    401 -> CartRepositoryException.Unauthorized(backendMessage ?: FETCH_ERROR_UNAUTHORIZED)
+                    404 -> CartRepositoryException.NotFound(backendMessage ?: FETCH_ERROR_NOT_FOUND)
+                    500 -> CartRepositoryException.ServerError(backendMessage ?: FETCH_ERROR_SERVER)
+                    else -> CartRepositoryException.Unknown(
+                        backendMessage ?: "$FETCH_ERROR_UNKNOWN (HTTP ${response.code()})"
+                    )
+                }
+                Result.failure(exception)
+            }
+        } catch (e: Exception) {
+            Result.failure(CartRepositoryException.Unknown(e.message ?: FETCH_ERROR_UNKNOWN))
+        }
+    }
 
     /**
      * Thêm sản phẩm vào giỏ hàng
@@ -85,6 +125,50 @@ class CartRepositoryImpl(
         }
     }
 
+    override suspend fun updateCartItemQuantity(
+        cartItemId: String,
+        quantity: Int
+    ): Result<CartItemResponseDto> {
+        if (quantity <= 0) {
+            return Result.failure(CartRepositoryException.BadRequest("Quantity must be greater than 0."))
+        }
+
+        return try {
+            val response = cartApi.updateCartItem(
+                request = UpdateCartItemRequest(
+                    cartItemId = cartItemId,
+                    quantity = quantity
+                )
+            )
+
+            if (response.isSuccessful) {
+                response.body()?.let { Result.success(it) }
+                    ?: Result.failure(CartRepositoryException.Unknown("Empty response body."))
+            } else {
+                Result.failure(response.toRepositoryException())
+            }
+        } catch (e: Exception) {
+            Result.failure(CartRepositoryException.Unknown(e.message ?: ERROR_UNKNOWN))
+        }
+    }
+
+    override suspend fun removeCartItems(cartItemIds: List<String>): Result<Unit> {
+        if (cartItemIds.isEmpty()) {
+            return Result.failure(CartRepositoryException.BadRequest(REMOVE_ERROR_EMPTY))
+        }
+
+        return try {
+            val response = cartApi.removeFromCart(cartItemList = cartItemIds)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(response.toRepositoryException())
+            }
+        } catch (e: Exception) {
+            Result.failure(CartRepositoryException.Unknown(e.message ?: ERROR_UNKNOWN))
+        }
+    }
+
     private fun <T> Response<T>.toRepositoryException(): CartRepositoryException {
         val backendMessage = errorBody()?.string()?.takeIf { it.isNotBlank() }
 
@@ -96,87 +180,4 @@ class CartRepositoryImpl(
             else -> CartRepositoryException.Unknown(backendMessage ?: "$ERROR_UNKNOWN (HTTP ${code()})")
         }
     }
-
-    /**
-     * Cập nhật item trong giỏ hàng (variant và/hoặc quantity)
-     * 
-     * Gọi API: PUT /api/cart
-     * Request: UpdateCartItemDto { cartItemId, newProductVariantId, quantity }
-     * Response: CartItemResponseDto
-     * 
-     * @param cartItemId - GUID của cart item cần cập nhật
-     * @param newProductVariantId - GUID của product variant mới
-     * @param newQuantity - Số lượng mới
-     * @return Flow<CartItemResponseDto?> - Chi tiết item sau update hoặc null nếu thất bại
-     */
-    fun updateCartItem(
-        cartItemId: String,
-        newProductVariantId: String,
-        newQuantity: Int
-    ): Flow<CartItemResponseDto?> = flow {
-        val result = try {
-            if (newQuantity <= 0) {
-                null
-            } else {
-                val request = UpdateCartItemDto(
-                    cartItemId = cartItemId,
-                    newProductVariantId = newProductVariantId,
-                    quantity = newQuantity
-                )
-                val response = cartApi.updateCartItem(dto = request)
-
-                if (response.isSuccessful && response.body() != null) {
-                    response.body()
-                } else {
-                    null
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
-        emit(result)  // ← emit() OUTSIDE try-catch
-    }.catch { exception ->
-        exception.printStackTrace()
-    }
-
-    /**
-     * Xóa một hoặc nhiều items khỏi giỏ hàng
-     * 
-     * Gọi API: POST /api/cart/remove-items
-     * Request: List<String> (danh sách GUIDs của cart items)
-     * Response: CartRemoveResponse
-     * 
-     * @param cartItemIds - List<String> chứa GUIDs của cart items cần xóa
-     * @return Flow<Boolean> - true nếu xóa thành công, false nếu thất bại
-     */
-    fun removeFromCart(cartItemIds: List<String>): Flow<Boolean> = flow {
-        val result = try {
-            if (cartItemIds.isEmpty()) {
-                false
-            } else {
-                val response = cartApi.removeFromCart(cartItemList = cartItemIds)
-                response.isSuccessful
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
-        emit(result)  // ← emit() OUTSIDE try-catch
-    }.catch { exception ->
-        exception.printStackTrace()
-    }
-
-    /**
-     * Xóa một item khỏi giỏ hàng (helper function)
-     * 
-     * @param cartItemId - GUID của cart item cần xóa
-     * @return Flow<Boolean> - true nếu xóa thành công
-     */
-    fun removeCartItem(cartItemId: String): Flow<Boolean> = flow {
-        removeFromCart(listOf(cartItemId)).collect { result ->
-            emit(result)
-        }
-    }
 }
-

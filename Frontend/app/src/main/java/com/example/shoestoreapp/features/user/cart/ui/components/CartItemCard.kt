@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.alpha
  * @param onIncreaseQuantity - Callback tăng số lượng (nhận String GUID)
  * @param onDecreaseQuantity - Callback giảm số lượng (nhận String GUID)
  * @param onRemove - Callback xóa item (nhận String GUID)
+ * @param isUpdating - true nếu item đang update quantity
  */
 @Composable
 fun CartItemCard(
@@ -43,6 +44,7 @@ fun CartItemCard(
     onIncreaseQuantity: (String) -> Unit = {},
     onDecreaseQuantity: (String) -> Unit = {},
     onRemove: (String) -> Unit = {},
+    isUpdating: Boolean = false,
 ) {
     Column(
         modifier = Modifier
@@ -65,6 +67,7 @@ fun CartItemCard(
                 onIncreaseQuantity = onIncreaseQuantity,
                 onDecreaseQuantity = onDecreaseQuantity,
                 onRemove = onRemove,
+                isUpdating = isUpdating,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
@@ -94,6 +97,7 @@ private fun CartItemDetails(
     onIncreaseQuantity: (String) -> Unit,
     onDecreaseQuantity: (String) -> Unit,
     onRemove: (String) -> Unit,
+    isUpdating: Boolean,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -112,7 +116,8 @@ private fun CartItemDetails(
             QuantitySelector(
                 item = item,
                 onIncrease = onIncreaseQuantity,
-                onDecrease = onDecreaseQuantity
+                onDecrease = onDecreaseQuantity,
+                isUpdating = isUpdating
             )
         }
 
@@ -178,7 +183,8 @@ private fun SizeDisplay(size: String) {
 private fun QuantitySelector(
     item: CartItem,
     onIncrease: (String) -> Unit,
-    onDecrease: (String) -> Unit
+    onDecrease: (String) -> Unit,
+    isUpdating: Boolean
 ) {
     Row(
         modifier = Modifier
@@ -191,24 +197,25 @@ private fun QuantitySelector(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        DecreaseButton(item = item, onDecrease = onDecrease)
+        DecreaseButton(item = item, onDecrease = onDecrease, isUpdating = isUpdating)
         QuantityText(item.quantity)
-        IncreaseButton(item = item, onIncrease = onIncrease)
+        IncreaseButton(item = item, onIncrease = onIncrease, isUpdating = isUpdating)
     }
 }
 
 @Composable
-private fun DecreaseButton(item: CartItem, onDecrease: (String) -> Unit) {
+private fun DecreaseButton(item: CartItem, onDecrease: (String) -> Unit, isUpdating: Boolean) {
+    val canDecrease = item.stock > 0 && item.quantity > 1 && !isUpdating
     IconButton(
-        onClick = { onDecrease(item.id.toString()) },
-        enabled = item.stock > 0,
+        onClick = { onDecrease(item.cartItemId) },
+        enabled = canDecrease,
         modifier = Modifier.size(24.dp)
     ) {
         Icon(
             imageVector = Icons.Filled.Remove,
             contentDescription = "Decrease",
             modifier = Modifier.size(16.dp),
-            tint = if (item.stock > 0) Color.Gray else Color.LightGray
+            tint = if (canDecrease) Color.Gray else Color.LightGray
         )
     }
 }
@@ -223,17 +230,18 @@ private fun QuantityText(quantity: Int) {
 }
 
 @Composable
-private fun IncreaseButton(item: CartItem, onIncrease: (String) -> Unit) {
+private fun IncreaseButton(item: CartItem, onIncrease: (String) -> Unit, isUpdating: Boolean) {
+    val canIncrease = item.stock > 0 && !isUpdating
     IconButton(
-        onClick = { onIncrease(item.id.toString()) },
-        enabled = item.stock > 0,
+        onClick = { onIncrease(item.cartItemId) },
+        enabled = canIncrease,
         modifier = Modifier.size(24.dp)
     ) {
         Icon(
             imageVector = Icons.Filled.Add,
             contentDescription = "Increase",
             modifier = Modifier.size(16.dp),
-            tint = if (item.stock > 0) Color.Gray else Color.LightGray
+            tint = if (canIncrease) Color.Gray else Color.LightGray
         )
     }
 }
@@ -258,7 +266,7 @@ private fun DeleteButton(item: CartItem, onRemove: (String) -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         IconButton(
-            onClick = { onRemove(item.id.toString()) },
+            onClick = { onRemove(item.cartItemId) },
             modifier = Modifier.size(16.dp)
         ) {
             Icon(
@@ -269,5 +277,3 @@ private fun DeleteButton(item: CartItem, onRemove: (String) -> Unit) {
         }
     }
 }
-
-

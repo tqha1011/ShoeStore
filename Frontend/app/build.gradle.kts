@@ -22,6 +22,7 @@ val fbClientToken = properties.getProperty("FACEBOOK_CLIENT_TOKEN") ?: ""
 android {
     namespace = "com.example.shoestoreapp"
     compileSdk = 36
+    buildToolsVersion = "36.1.0"
 
     defaultConfig {
         applicationId = "com.example.shoestoreapp"
