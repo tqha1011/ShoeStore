@@ -171,7 +171,7 @@ public class StatisticsService(IInvoiceRepository invoiceRepository) : IStatisti
             for (var m = startMonth; m <= endMonth; m = m.AddMonths(1))
             {
                 var match = rawData.FirstOrDefault(data => data.Date.Month == m.Month && data.Date.Year == m.Year);
-                result.Add(new ChartDataDto(m.ToString("MM/yyyy"), match.Revenue));
+                result.Add(new ChartDataDto(m.ToString("MM/yy"), match.Revenue));
             }
         }
         else // groupByType == "day"

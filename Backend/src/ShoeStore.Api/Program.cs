@@ -117,7 +117,7 @@ builder.Services.AddRateLimiter(options =>
                 userId,
                 _ => new TokenBucketRateLimiterOptions
                 {
-                    TokenLimit = 10,
+                    TokenLimit = 15,
                     TokensPerPeriod = 3,
                     ReplenishmentPeriod = TimeSpan.FromMinutes(1)
                 });
@@ -126,7 +126,7 @@ builder.Services.AddRateLimiter(options =>
             httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
             _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 10,
+                PermitLimit = 15,
                 Window = TimeSpan.FromMinutes(1),
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 0
