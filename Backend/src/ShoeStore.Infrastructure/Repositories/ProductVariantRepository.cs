@@ -26,4 +26,12 @@ public class ProductVariantRepository(AppDbContext context)
             .ToListAsync(token);
         return variantLists;
     }
+
+    public async Task<ProductVariant?> GetByIdWithIncludesAsync(int id, CancellationToken token)
+    {
+        return await DbSet.Include(x => x.Size)
+            .Include(x => x.Color)
+            .Include(x => x.Product)
+            .FirstOrDefaultAsync(x => x.Id == id, token);
+    }
 }
