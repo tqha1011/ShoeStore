@@ -79,7 +79,7 @@ public class StatisticsService(IInvoiceRepository invoiceRepository) : IStatisti
         switch (type.Trim().ToLower())
         {
             default:
-                startDate = currentEndDate.AddDays(-7);
+                startDate = currentEndDate.AddDays(-6);
                 groupByType = "day";
                 break;
             case "30days":
