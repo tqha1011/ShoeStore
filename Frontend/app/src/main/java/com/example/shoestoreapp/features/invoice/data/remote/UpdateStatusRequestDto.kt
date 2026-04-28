@@ -5,5 +5,5 @@ import com.google.gson.annotations.SerializedName
 
 data class UpdateStatusRequestDto(
     @SerializedName("status")
-    val status: Int?
+    val status: String?
 )
