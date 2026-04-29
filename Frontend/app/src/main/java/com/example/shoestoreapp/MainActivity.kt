@@ -34,6 +34,9 @@ import com.example.shoestoreapp.features.admin.crud.ui.AdminProductCrudScreen
 import com.example.shoestoreapp.features.admin.crud.viewmodel.ProductCrudViewModel
 import com.example.shoestoreapp.features.admin.crud.data.repositories.ProductCrudRepository
 import com.example.shoestoreapp.features.admin.crud.data.repositories.MasterDataRepository
+import com.example.shoestoreapp.features.admin.analytics.ui.AdminAnalyticsScreen
+import com.example.shoestoreapp.features.admin.analytics.viewmodel.AdminAnalyticsViewModel
+import com.example.shoestoreapp.features.admin.analytics.data.AnalyticsRepository
 import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenContent
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
@@ -59,6 +62,7 @@ private object Routes {
     const val ADMIN_PRODUCT_LIST = "admin_product_list"
     const val ADMIN_CRUD = "admin_crud"
     const val ADMIN_INVOICE_LIST = "admin_invoice_list"
+    const val ADMIN_ANALYTICS = "admin_analytics"
     const val ADMIN_SETTINGS = "admin_settings"
 
     fun createNewPassword(email: String, otp: String): String = "create_new_password/$email/$otp"
@@ -278,6 +282,17 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
         )
     }
 
+    composable(Routes.ADMIN_ANALYTICS) {
+        AdminAnalyticsScreen(
+            viewModel = remember {
+                AdminAnalyticsViewModel(
+                    repository = AnalyticsRepository(RetrofitInstance.analyticsApi)
+                )
+            },
+            onTabSelected = { tab -> handleAdminAnalyticsTabSelection(tab, navController) }
+        )
+    }
+
     composable(Routes.ADMIN_SETTINGS) {
         val scope = rememberCoroutineScope()
 
@@ -348,8 +363,8 @@ private fun handleAdminProductTabSelection(tab: AdminBottomNavTab, navController
     when (tab) {
         AdminBottomNavTab.ADMIN -> Unit
         AdminBottomNavTab.ORDERS -> navController.navigate(Routes.ADMIN_INVOICE_LIST)
+        AdminBottomNavTab.ANALYTICS -> navController.navigate(Routes.ADMIN_ANALYTICS)
         AdminBottomNavTab.SETTINGS -> navController.navigate(Routes.ADMIN_SETTINGS)
-        else -> println("Admin Tab selected: $tab")
     }
 }
 
@@ -359,10 +374,27 @@ private fun handleAdminInvoiceTabSelection(tab: AdminBottomNavTab, navController
             navController.navigateAndPopTo(Routes.ADMIN_PRODUCT_LIST, Routes.ADMIN_INVOICE_LIST)
         }
         AdminBottomNavTab.ORDERS -> Unit
+        AdminBottomNavTab.ANALYTICS -> {
+            navController.navigate(Routes.ADMIN_ANALYTICS)
+        }
         AdminBottomNavTab.SETTINGS -> {
             navController.navigateAndPopTo(Routes.ADMIN_SETTINGS, Routes.ADMIN_INVOICE_LIST)
         }
-        else -> println("Admin Tab selected: $tab")
+    }
+}
+
+private fun handleAdminAnalyticsTabSelection(tab: AdminBottomNavTab, navController: NavHostController) {
+    when (tab) {
+        AdminBottomNavTab.ADMIN -> {
+            navController.navigateAndPopTo(Routes.ADMIN_PRODUCT_LIST, Routes.ADMIN_ANALYTICS)
+        }
+        AdminBottomNavTab.ORDERS -> {
+            navController.navigateAndPopTo(Routes.ADMIN_INVOICE_LIST, Routes.ADMIN_ANALYTICS)
+        }
+        AdminBottomNavTab.ANALYTICS -> Unit
+        AdminBottomNavTab.SETTINGS -> {
+            navController.navigateAndPopTo(Routes.ADMIN_SETTINGS, Routes.ADMIN_ANALYTICS)
+        }
     }
 }
 
@@ -374,7 +406,9 @@ private fun handleAdminSettingsTabSelection(tab: AdminBottomNavTab, navControlle
         AdminBottomNavTab.ORDERS -> {
             navController.navigateAndPopTo(Routes.ADMIN_INVOICE_LIST, Routes.ADMIN_SETTINGS)
         }
+        AdminBottomNavTab.ANALYTICS -> {
+            navController.navigateAndPopTo(Routes.ADMIN_ANALYTICS, Routes.ADMIN_SETTINGS)
+        }
         AdminBottomNavTab.SETTINGS -> Unit
-        else -> println("Admin Tab selected: $tab")
     }
 }

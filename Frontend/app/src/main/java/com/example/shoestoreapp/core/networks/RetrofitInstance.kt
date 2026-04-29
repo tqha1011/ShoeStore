@@ -9,6 +9,7 @@ import com.example.shoestoreapp.features.cart.data.remote.CartApi
 import com.example.shoestoreapp.features.admin.crud.data.remote.AdminProductCrudApi
 import com.example.shoestoreapp.features.admin.crud.data.remote.MasterDataApi
 import com.example.shoestoreapp.features.invoice.data.remote.InvoiceApi
+import com.example.shoestoreapp.features.admin.analytics.data.remote.AnalyticsApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -85,6 +86,11 @@ object RetrofitInstance {
     // 9. Create InvoiceApi service for invoice endpoints
     val invoiceApi: InvoiceApi by lazy {
         retrofit.create(InvoiceApi::class.java)
+    }
+
+    // 10. Create AnalyticsApi service for admin analytics endpoints
+    val analyticsApi: AnalyticsApi by lazy {
+        retrofit.create(AnalyticsApi::class.java)
     }
 
 }
