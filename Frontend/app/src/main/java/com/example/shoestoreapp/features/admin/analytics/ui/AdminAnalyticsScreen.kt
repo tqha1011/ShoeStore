@@ -1,22 +1,39 @@
 package com.example.shoestoreapp.features.admin.analytics.ui
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.SupportAgent
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -27,6 +44,10 @@ import com.example.shoestoreapp.features.admin.analytics.data.remote.SummaryDto
 import com.example.shoestoreapp.features.admin.analytics.data.remote.TopProductDto
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavBar
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
+import com.example.shoestoreapp.features.admin.analytics.viewmodel.AdminAnalyticsState
+import com.example.shoestoreapp.features.admin.analytics.viewmodel.AdminAnalyticsViewModel
+import java.text.NumberFormat
+import java.util.Locale
 
 /**
  * Admin Revenue Analytics Screen
@@ -34,12 +55,13 @@ import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottom
  */
 @Composable
 fun AdminAnalyticsScreen(
-    onTabSelected: (AdminBottomNavTab) -> Unit = {},
-    summary: SummaryDto = getMockSummaryData(),
-    chartData: List<ChartDataDto> = getMockChartData(),
-    topProducts: List<TopProductDto> = getMockTopProductsData()
+    viewModel: AdminAnalyticsViewModel,
+    onTabSelected: (AdminBottomNavTab) -> Unit = {}
 ) {
-    var selectedChartIndex by remember { mutableIntStateOf(2) }
+    val state: AdminAnalyticsState = viewModel.state
+    val summary = state.summary
+    val chartData = state.chartData
+    val topProducts = state.topProducts
 
     Column(
         modifier = Modifier
@@ -47,9 +69,28 @@ fun AdminAnalyticsScreen(
             .background(Color.White)
     ) {
         // Top Navigation Bar
-        AdminAnalyticsTopBar()
+        AdminAnalyticsTopBar(
+            onAiClick = {
+               // Handle AI Assistant click
+            }
+        )
 
-        // Main Content
+        if (state.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(text = "Loading analytics...", color = Color(0xFF666666), fontSize = 14.sp)
+            }
+            return
+        }
+
+        if (summary == null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(text = "No analytics data available.", color = Color(0xFF666666), fontSize = 14.sp)
+            }
+            return
+        }
+
+        val safeIndex = if (chartData.isEmpty()) 0 else state.selectedIndex.coerceIn(0, chartData.lastIndex)
+
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
@@ -58,6 +99,16 @@ fun AdminAnalyticsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(16.dp)
         ) {
+            if (!state.error.isNullOrBlank()) {
+                item {
+                    Text(
+                        text = state.error,
+                        color = Color(0xFFB00020),
+                        fontSize = 12.sp
+                    )
+                }
+            }
+
             // Header Section
             item {
                 AdminAnalyticsHeader()
@@ -72,8 +123,10 @@ fun AdminAnalyticsScreen(
             item {
                 PerformanceTrendsSection(
                     chartData = chartData,
-                    selectedIndex = selectedChartIndex,
-                    onBarSelected = { selectedChartIndex = it }
+                    selectedIndex = safeIndex,
+                    selectedPeriod = state.chartPeriod,
+                    onPeriodSelected = { viewModel.selectChartPeriod(it) },
+                    onBarSelected = { viewModel.selectBar(it) }
                 )
             }
 
@@ -84,7 +137,35 @@ fun AdminAnalyticsScreen(
 
             // Growth Opportunity Card
             item {
-                GrowthOpportunityCard()
+                summary?.let { data ->
+                    GrowthOpportunityCard(
+                        growthPercent = data.growthTotalRevenuePercent,
+                        onGenerateCampaignClick = {
+                            val topProductsText = topProducts.take(3).joinToString(separator = "\n") { product ->
+                                "- ${product.productName}: ${formatCount(product.totalInvoices)} orders (Revenue: ${formatCurrency(product.totalRevenue)}, Trend: ${formatPercent(product.growthRevenuePercentage)})"
+                            }
+
+                            val aiPrompt = """
+                                Act as an expert Chief Marketing Officer for my Shoe E-commerce App. 
+                                Analyze our exact performance metrics from last month and provide 3 highly tailored, data-driven marketing strategies for this month.
+
+                                [OVERALL PERFORMANCE]
+                                - Total Revenue: ${formatCurrency(data.totalRevenue)} (Trend: ${formatPercent(data.growthTotalRevenuePercent)})
+                                - Total Orders: ${formatCount(data.totalOrders)} (Trend: ${formatPercent(data.growthInvoicePercent)})
+                                - Average Order Value: ${formatCurrency(data.averageRevenue)} (Trend: ${formatPercent(data.growthAverageRevenuePercent)})
+
+                                [TOP 3 BEST-SELLING PRODUCTS]
+                                $topProductsText
+
+                                [YOUR TASK]
+                                Look for correlations in the data (e.g., if orders are up but average value is down, or how to leverage the top-selling shoes to boost overall sales). Give me 3 concrete, actionable campaigns to execute right now.
+                            """.trimIndent()
+
+                            // Sếp gắn logic đẩy sang màn hình AI vào đây nhé
+                            println("SEND TO AI: \n$aiPrompt")
+                        }
+                    )
+                }
             }
 
             // Bottom spacing
@@ -101,21 +182,42 @@ fun AdminAnalyticsScreen(
 /**
  * Top navigation bar with menu, title, and search
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdminAnalyticsTopBar() {
-    Row(
+fun AdminAnalyticsTopBar(
+    onAiClick: () -> Unit = {}
+) {
+    CenterAlignedTopAppBar(
+        title = {
+            Text(
+                text = "SHOE STORE",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.Black,
+                letterSpacing = 1.sp
+            )
+        },
+        actions = {
+            IconButton(onClick = onAiClick) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome, // Icon for AI Assistant
+                    contentDescription = "AI Assistant",
+                    tint = Color.Black,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        },
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = Color.White,
+            titleContentColor = Color.Black,
+            navigationIconContentColor = Color.Black,
+            actionIconContentColor = Color.Black
+        ),
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White)
-            .border(1.dp, Color(0xFFE8E8E8))
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.Black)
-        Text("SHOE STORE", color = Color.Black, fontWeight = FontWeight.Black, letterSpacing = 1.6.sp)
-        Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF666666))
-    }
+            .padding(top = 8.dp)
+    )
 }
 
 /**
@@ -151,8 +253,8 @@ fun KeyMetricsGrid(summary: SummaryDto) {
         // Top Row - Total Revenue (Full Width)
         MetricCard(
             label = "TOTAL REVENUE",
-            value = "$${summary.totalRevenue}",
-            trend = summary.growthTotalRevenuePercent,
+            value = formatCurrency(summary.totalRevenue),
+            trendValue = summary.growthTotalRevenuePercent,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -160,15 +262,15 @@ fun KeyMetricsGrid(summary: SummaryDto) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             MetricCard(
                 label = "TOTAL ORDERS",
-                value = summary.totalOrders,
-                trend = summary.growthInvoicePercent,
-                modifier = Modifier.weight(1f)
+                value = formatCount(summary.totalOrders),
+                trendValue = summary.growthInvoicePercent,
+                modifier = Modifier.weight(0.35f)
             )
             MetricCard(
                 label = "AVG TICKET",
-                value = "$${summary.averageRevenue}",
-                trend = summary.growthAverageRevenuePercent,
-                modifier = Modifier.weight(1f)
+                value = formatCurrency(summary.averageRevenue),
+                trendValue = summary.growthAverageRevenuePercent,
+                modifier = Modifier.weight(0.65f)
             )
         }
     }
@@ -182,23 +284,21 @@ fun KeyMetricsGrid(summary: SummaryDto) {
 fun MetricCard(
     label: String,
     value: String,
-    trend: String,
+    trendValue: Double,
     modifier: Modifier = Modifier
 ) {
     // Determine trend color: green if positive, red if negative
-    val trendColor = if (trend.contains("+") || trend.contains("-") && !trend.contains("-")) {
-        Color(0xFF22C55E) // Green for positive
-    } else if (trend.contains("-")) {
-        Color(0xFFEF4444) // Red for negative
-    } else {
-        Color(0xFF22C55E) // Default to green
+    val trendColor = when {
+        trendValue > 0.0 -> Color(0xFF22C55E)
+        trendValue < 0.0 -> Color(0xFFEF4444)
+        else -> Color(0xFF999999)
     }
 
     Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         modifier = modifier
-            .background(Color.White, shape = RoundedCornerShape(12.dp))
             .border(1.dp, Color(0xFFE8E8E8), shape = RoundedCornerShape(12.dp))
-            .padding(16.dp),
+            .padding(16.dp)
     ) {
         Column {
             Text(
@@ -221,7 +321,7 @@ fun MetricCard(
                     color = Color.Black
                 )
                 Text(
-                    text = trend,
+                    text = formatPercent(trendValue),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = trendColor
@@ -239,28 +339,42 @@ fun MetricCard(
 fun PerformanceTrendsSection(
     chartData: List<ChartDataDto>,
     selectedIndex: Int,
+    selectedPeriod: String,
+    onPeriodSelected: (String) -> Unit,
     onBarSelected: (Int) -> Unit
 ) {
     Column {
         // Header
-        Text(
-            text = "Performance Trends",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Performance Trends",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+
+            ChartPeriodSwitcher(
+                selectedPeriod = selectedPeriod,
+                onPeriodSelected = onPeriodSelected
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Chart Area
         Card(
+            colors = CardDefaults.cardColors(containerColor = Color.White),
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.White, shape = RoundedCornerShape(12.dp))
+                .height(380.dp)
                 .border(1.dp, Color(0xFFE8E8E8), shape = RoundedCornerShape(12.dp))
                 .padding(16.dp),
         ) {
-            Column {
+            Column(modifier = Modifier.fillMaxSize()) {
                 // Active Revenue Peak Info
                 Text(
                     text = "ACTIVE REVENUE PEAK",
@@ -271,7 +385,7 @@ fun PerformanceTrendsSection(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "$${chartData[selectedIndex].revenue}",
+                    text = formatCurrency(chartData[selectedIndex].revenue),
                     fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.Black
@@ -283,70 +397,162 @@ fun PerformanceTrendsSection(
                     color = Color(0xFF666666)
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(18.dp))
 
                 // Bar Chart
-                InteractiveBarChart(
+                SparklineChart(
                     data = chartData,
                     selectedIndex = selectedIndex,
-                    onBarSelected = onBarSelected
+                    onPointSelected = onBarSelected,
+                    modifier = Modifier.weight(1f)
                 )
             }
         }
     }
 }
 
+@Composable
+fun ChartPeriodSwitcher(
+    selectedPeriod: String,
+    onPeriodSelected: (String) -> Unit
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        ChartPeriodItem(label = "7D", value = "7days", selectedPeriod = selectedPeriod, onClick = onPeriodSelected)
+        ChartPeriodItem(label = "30D", value = "30days", selectedPeriod = selectedPeriod, onClick = onPeriodSelected)
+        ChartPeriodItem(label = "12M", value = "12months", selectedPeriod = selectedPeriod, onClick = onPeriodSelected)
+    }
+}
+
+@Composable
+fun ChartPeriodItem(
+    label: String,
+    value: String,
+    selectedPeriod: String,
+    onClick: (String) -> Unit
+) {
+    val isSelected = value == selectedPeriod
+    Text(
+        text = label,
+        fontSize = 12.sp,
+        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+        color = if (isSelected) Color.Black else Color(0xFF999999),
+        letterSpacing = 0.6.sp,
+        modifier = Modifier
+            .clickable { onClick(value) }
+            .padding(horizontal = 4.dp, vertical = 2.dp)
+    )
+}
+
 /**
- * Interactive bar chart component
- * Renders 7 bars with heights based on revenue values
- * Selected bar is black, others are light gray
+ * Sparkline chart component
+ * Renders a line chart with points for each data value
+ * Selected point is highlighted, others are light gray
  */
 @Composable
-fun InteractiveBarChart(
+fun SparklineChart(
     data: List<ChartDataDto>,
     selectedIndex: Int,
-    onBarSelected: (Int) -> Unit
+    onPointSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    // Parse revenue strings to floats for height calculation
-    val revenueValues = data.mapNotNull { it.revenue.toFloatOrNull() }
-    val maxRevenue = revenueValues.maxOrNull() ?: 1f
-    val minHeight = 30.dp
-    val maxHeight = 180.dp
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(200.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.Bottom
-    ) {
-        data.forEachIndexed { index, chartItem ->
-            val revenue = chartItem.revenue.toFloatOrNull() ?: 0f
-            val heightRatio = if (maxRevenue > 0) revenue / maxRevenue else 0f
-            val barHeight = minHeight + (maxHeight - minHeight) * heightRatio
-            val barColor = if (index == selectedIndex) Color.Black else Color(0xFFEEEEEE)
-
-            Column(
+    val revenues = data.map { it.revenue }
+    val maxRevenue = revenues.maxOrNull() ?: 1.0
+    val minRevenue = revenues.minOrNull() ?: 0.0
+    val pointSpacing =50.dp
+    val scrollState = rememberScrollState()
+    val contentWidth = pointSpacing * data.size
+    // Auto-scroll to the far right (latest date) when data updates
+    LaunchedEffect(data) {
+        if (data.isNotEmpty()) {
+            scrollState.scrollTo(scrollState.maxValue)
+        }
+    }
+    Column(modifier = modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .horizontalScroll(scrollState)
+        ) {
+            Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Bottom
+                    .width(contentWidth)
+                    .fillMaxHeight()
             ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    if (data.isEmpty()) return@Canvas
+
+                    val height = size.height
+                    val paddingTop = 16.dp.toPx()
+                    val paddingBottom = 16.dp.toPx()
+                    val usableHeight = height - paddingTop - paddingBottom
+                    val range = (maxRevenue - minRevenue).takeIf { it > 0.0 } ?: 1.0
+                    val spacingPx = pointSpacing.toPx()
+
+                    val points = data.mapIndexed { index, item ->
+                        val ratio = ((item.revenue - minRevenue) / range).toFloat()
+                        val x = (index * spacingPx) + (spacingPx / 2f)
+                        val y = (paddingTop + usableHeight) - (usableHeight * ratio)
+                        Offset(x, y)
+                    }
+
+                    val path = Path().apply {
+                        moveTo(points.first().x, points.first().y)
+                        points.drop(1).forEach { lineTo(it.x, it.y) }
+                    }
+
+                    drawPath(
+                        path = path,
+                        color = Color.Black,
+                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+                    )
+
+                    points.forEachIndexed { index, point ->
+                        val isSelected = index == selectedIndex
+                        drawCircle(
+                            color = if (isSelected) Color.Black else Color(0xFFD1D1D1),
+                            radius = (if (isSelected) 5.dp else 4.dp).toPx(),
+                            center = point
+                        )
+                    }
+                }
+
+                Row(modifier = Modifier.fillMaxSize()) {
+                    data.forEachIndexed { index, _ ->
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .clickable { onPointSelected(index) }
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(scrollState),
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            data.forEach { chartItem ->
                 Box(
                     modifier = Modifier
-                        .width(32.dp)
-                        .height(barHeight)
-                        .background(barColor, shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                        .clickable { onBarSelected(index) }
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = chartItem.dateLabel,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF666666)
-                )
+                        .width(pointSpacing),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = chartItem.dateLabel,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF666666),
+                        maxLines = 1
+                    )
+                }
             }
         }
     }
@@ -360,7 +566,7 @@ fun InteractiveBarChart(
 fun TopSalesProductsSection(topProducts: List<TopProductDto>) {
     Column {
         Text(
-            text = "Top Sales Channels",
+            text = "Top Sales Products",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black
@@ -383,12 +589,10 @@ fun TopSalesProductsSection(topProducts: List<TopProductDto>) {
 @Composable
 fun TopProductCard(product: TopProductDto) {
     // Determine growth color
-    val growthColor = if (product.growthRevenuePercentage.contains("+")) {
-        Color(0xFF22C55E) // Green for positive
-    } else if (product.growthRevenuePercentage.contains("-")) {
-        Color(0xFFEF4444) // Red for negative
-    } else {
-        Color(0xFF22C55E)
+    val growthColor = when {
+        product.growthRevenuePercentage > 0.0 -> Color(0xFF22C55E)
+        product.growthRevenuePercentage < 0.0 -> Color(0xFFEF4444)
+        else -> Color(0xFF999999)
     }
 
     Row(
@@ -408,8 +612,7 @@ fun TopProductCard(product: TopProductDto) {
                 .size(48.dp)
                 .clip(RoundedCornerShape(6.dp))
                 .background(Color(0xFFEEEEEE)),
-            contentScale = ContentScale.Crop,
-            fallback = androidx.compose.material.icons.filled.ShoppingCart // Fallback icon
+            contentScale = ContentScale.Crop
         )
 
         // Product Info (Middle)
@@ -422,7 +625,7 @@ fun TopProductCard(product: TopProductDto) {
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "${product.totalInvoices} ORDERS",
+                text = "${formatCount(product.totalInvoices)} ORDERS",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF999999),
@@ -433,14 +636,14 @@ fun TopProductCard(product: TopProductDto) {
         // Revenue Info (Right)
         Column(horizontalAlignment = Alignment.End) {
             Text(
-                text = "$${product.totalRevenue}",
+                text = formatCurrency(product.totalRevenue),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = product.growthRevenuePercentage,
+                text = formatPercent(product.growthRevenuePercentage),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = growthColor
@@ -454,11 +657,17 @@ fun TopProductCard(product: TopProductDto) {
  * Displays insights and actionable recommendations for business growth
  */
 @Composable
-fun GrowthOpportunityCard() {
+fun GrowthOpportunityCard(
+    growthPercent: Double,
+    onGenerateCampaignClick: () -> Unit
+) {
+    val isIncrease = growthPercent >= 0.0
+    val trendWord = if (isIncrease) "increased" else "decreased"
+    val color = if (isIncrease) Color(0xFF22C55E) else Color(0xFFEF4444)
     Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White, shape = RoundedCornerShape(12.dp))
             .border(1.dp, Color(0xFFE8E8E8), shape = RoundedCornerShape(12.dp))
             .padding(16.dp),
     ) {
@@ -470,7 +679,7 @@ fun GrowthOpportunityCard() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = Icons.Default.TrendingUp,
+                    imageVector = Icons.AutoMirrored.Filled.TrendingUp,
                     contentDescription = "Growth",
                     tint = Color.Black,
                     modifier = Modifier.size(20.dp)
@@ -488,7 +697,8 @@ fun GrowthOpportunityCard() {
 
             // Description
             Text(
-                text = "Your mobile app conversion rate has increased by 4.2% this month. Consider pushing an app-exclusive drop to maximize momentum.",
+                text = "Your total revenue has $trendWord by ${formatPercent(growthPercent)} compared to last month. " +
+                        if (isIncrease) "Maximize this momentum now!" else "Action required to recover your sales.",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Normal,
                 color = Color(0xFF555555),
@@ -505,69 +715,42 @@ fun GrowthOpportunityCard() {
                 color = Color.Black,
                 textDecoration = TextDecoration.Underline,
                 letterSpacing = 0.5.sp,
-                modifier = Modifier.clickable { /* Handle campaign generation */ }
+                modifier = Modifier.clickable { onGenerateCampaignClick() }
             )
         }
     }
 }
 
-/**
- * Mock data for testing - Total revenue summary
- */
-private fun getMockSummaryData(): SummaryDto = SummaryDto(
-    totalRevenue = "284910.42",
-    totalOrders = "1842",
-    averageRevenue = "154.67",
-    growthInvoicePercent = "+8%",
-    growthAverageRevenuePercent = "-2%",
-    growthTotalRevenuePercent = "+12.4%"
-)
 
 /**
- * Mock data for testing - Chart data for last 7 days
+ * Format currency value for display
  */
-private fun getMockChartData(): List<ChartDataDto> = listOf(
-    ChartDataDto("Mon", "8500.00"),
-    ChartDataDto("Tue", "12300.50"),
-    ChartDataDto("Wed", "14200.00"),
-    ChartDataDto("Thu", "9800.75"),
-    ChartDataDto("Fri", "11500.25"),
-    ChartDataDto("Sat", "13200.00"),
-    ChartDataDto("Sun", "10900.50")
-)
+private fun formatCurrency(value: Double): String {
+    val format = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
+    return format.format(value)
+}
 
 /**
- * Mock data for testing - Top 3 selling products
+ * Format count value for display
  */
-private fun getMockTopProductsData(): List<TopProductDto> = listOf(
-    TopProductDto(
-        productPublicId = "prod_001",
-        productName = "Direct Storefront",
-        imageUrl = "https://via.placeholder.com/48?text=Store",
-        totalInvoices = "642",
-        totalRevenue = "102400.00",
-        growthRevenuePercentage = "+18.5%"
-    ),
-    TopProductDto(
-        productPublicId = "prod_002",
-        productName = "Mobile App",
-        imageUrl = "https://via.placeholder.com/48?text=App",
-        totalInvoices = "512",
-        totalRevenue = "84120.50",
-        growthRevenuePercentage = "+24.1%"
-    ),
-    TopProductDto(
-        productPublicId = "prod_003",
-        productName = "Social Referral",
-        imageUrl = "https://via.placeholder.com/48?text=Social",
-        totalInvoices = "289",
-        totalRevenue = "42900.00",
-        growthRevenuePercentage = "-2.4%"
-    )
-)
+private fun formatCount(value: Int): String {
+    return NumberFormat.getIntegerInstance(Locale.US).format(value)
+}
 
-// Import for content scale
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.Card
-import androidx.compose.foundation.layout.ContentScale
-
+/**
+ * Format percentage value for display
+ */
+private fun formatPercent(value: Double): String {
+    val sign = when {
+        value > 0.0 -> "+"
+        value < 0.0 -> "-"
+        else -> ""
+    }
+    val absValue = kotlin.math.abs(value)
+    val formatted = if (absValue % 1.0 == 0.0) {
+        String.format(Locale.US, "%.0f", absValue)
+    } else {
+        String.format(Locale.US, "%.1f", absValue)
+    }
+    return "$sign$formatted%"
+}
