@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package com.example.shoestoreapp.features.admin.analytics.ui
 
 import androidx.compose.foundation.Canvas
@@ -137,7 +139,7 @@ fun AdminAnalyticsScreen(
 
             // Growth Opportunity Card
             item {
-                summary?.let { data ->
+                summary.let { data ->
                     GrowthOpportunityCard(
                         growthPercent = data.growthTotalRevenuePercent,
                         onGenerateCampaignClick = {
@@ -455,104 +457,149 @@ fun SparklineChart(
     onPointSelected: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val revenues = data.map { it.revenue }
-    val maxRevenue = revenues.maxOrNull() ?: 1.0
-    val minRevenue = revenues.minOrNull() ?: 0.0
-    val pointSpacing =50.dp
+    // EARLY RETURN: Exit immediately if data is empty to reduce cognitive complexity.
+    if (data.isEmpty()) return
+
+    val pointSpacing = 50.dp
     val scrollState = rememberScrollState()
     val contentWidth = pointSpacing * data.size
-    // Auto-scroll to the far right (latest date) when data updates
+
+    // Auto-scroll to the latest date.
     LaunchedEffect(data) {
-        if (data.isNotEmpty()) {
-            scrollState.scrollTo(scrollState.maxValue)
-        }
+        scrollState.scrollTo(scrollState.maxValue)
     }
+
     Column(modifier = modifier.fillMaxWidth()) {
-        Box(
+        ChartCanvasArea(
+            data = data,
+            selectedIndex = selectedIndex,
+            onPointSelected = onPointSelected,
+            contentWidth = contentWidth,
+            pointSpacing = pointSpacing,
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
                 .horizontalScroll(scrollState)
-        ) {
-            Box(
-                modifier = Modifier
-                    .width(contentWidth)
-                    .fillMaxHeight()
-            ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    if (data.isEmpty()) return@Canvas
-
-                    val height = size.height
-                    val paddingTop = 16.dp.toPx()
-                    val paddingBottom = 16.dp.toPx()
-                    val usableHeight = height - paddingTop - paddingBottom
-                    val range = (maxRevenue - minRevenue).takeIf { it > 0.0 } ?: 1.0
-                    val spacingPx = pointSpacing.toPx()
-
-                    val points = data.mapIndexed { index, item ->
-                        val ratio = ((item.revenue - minRevenue) / range).toFloat()
-                        val x = (index * spacingPx) + (spacingPx / 2f)
-                        val y = (paddingTop + usableHeight) - (usableHeight * ratio)
-                        Offset(x, y)
-                    }
-
-                    val path = Path().apply {
-                        moveTo(points.first().x, points.first().y)
-                        points.drop(1).forEach { lineTo(it.x, it.y) }
-                    }
-
-                    drawPath(
-                        path = path,
-                        color = Color.Black,
-                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
-                    )
-
-                    points.forEachIndexed { index, point ->
-                        val isSelected = index == selectedIndex
-                        drawCircle(
-                            color = if (isSelected) Color.Black else Color(0xFFD1D1D1),
-                            radius = (if (isSelected) 5.dp else 4.dp).toPx(),
-                            center = point
-                        )
-                    }
-                }
-
-                Row(modifier = Modifier.fillMaxSize()) {
-                    data.forEachIndexed { index, _ ->
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .clickable { onPointSelected(index) }
-                        )
-                    }
-                }
-            }
-        }
+        )
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Row(
+        ChartXAxisLabels(
+            data = data,
+            pointSpacing = pointSpacing,
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(scrollState),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
+                .horizontalScroll(scrollState)
+        )
+    }
+}
+
+/**
+ * Draws the line chart, data points, and invisible click areas.
+ */
+@Composable
+private fun ChartCanvasArea(
+    data: List<ChartDataDto>,
+    selectedIndex: Int,
+    onPointSelected: (Int) -> Unit,
+    contentWidth: androidx.compose.ui.unit.Dp,
+    pointSpacing: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier
+) {
+    val revenues = data.map { it.revenue }
+    val maxRevenue = revenues.maxOrNull() ?: 1.0
+    val minRevenue = revenues.minOrNull() ?: 0.0
+
+    Box(modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .width(contentWidth)
+                .fillMaxHeight()
         ) {
-            data.forEach { chartItem ->
-                Box(
-                    modifier = Modifier
-                        .width(pointSpacing),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = chartItem.dateLabel,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF666666),
-                        maxLines = 1
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val height = size.height
+                val paddingTop = 16.dp.toPx()
+                val paddingBottom = 16.dp.toPx()
+                val usableHeight = height - paddingTop - paddingBottom
+                val range = (maxRevenue - minRevenue).takeIf { it > 0.0 } ?: 1.0
+                val spacingPx = pointSpacing.toPx()
+
+                // Calculate X and Y coordinates for each data point
+                val points = data.mapIndexed { index, item ->
+                    val ratio = ((item.revenue - minRevenue) / range).toFloat()
+                    val x = (index * spacingPx) + (spacingPx / 2f)
+                    val y = (paddingTop + usableHeight) - (usableHeight * ratio)
+                    Offset(x, y)
+                }
+
+                // Draw the connecting line
+                val path = Path().apply {
+                    moveTo(points.first().x, points.first().y)
+                    points.drop(1).forEach { lineTo(it.x, it.y) }
+                }
+
+                drawPath(
+                    path = path,
+                    color = Color.Black,
+                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
+                )
+
+                // Pre-calculate radius sizes
+                val selectedRadius = 5.dp.toPx()
+                val defaultRadius = 4.dp.toPx()
+
+                // Draw individual data points
+                points.forEachIndexed { index, point ->
+                    val isSelected = index == selectedIndex
+                    drawCircle(
+                        color = if (isSelected) Color.Black else Color(0xFFD1D1D1),
+                        radius = if (isSelected) selectedRadius else defaultRadius,
+                        center = point
                     )
                 }
+            }
+
+            // Invisible overlay (Hitboxes) for click events
+            Row(modifier = Modifier.fillMaxSize()) {
+                data.forEachIndexed { index, _ ->
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .clickable { onPointSelected(index) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Renders the date labels for the X-axis.
+ */
+@Composable
+private fun ChartXAxisLabels(
+    data: List<ChartDataDto>,
+    pointSpacing: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        data.forEach { chartItem ->
+            Box(
+                modifier = Modifier.width(pointSpacing),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = chartItem.dateLabel,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF666666),
+                    maxLines = 1
+                )
             }
         }
     }
@@ -663,7 +710,6 @@ fun GrowthOpportunityCard(
 ) {
     val isIncrease = growthPercent >= 0.0
     val trendWord = if (isIncrease) "increased" else "decreased"
-    val color = if (isIncrease) Color(0xFF22C55E) else Color(0xFFEF4444)
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
         modifier = Modifier
