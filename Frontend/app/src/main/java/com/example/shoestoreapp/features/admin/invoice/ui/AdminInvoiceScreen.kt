@@ -49,8 +49,6 @@ fun AdminInvoiceScreen(
         bottomBar = { AdminBottomNavBar(selectedTab = AdminBottomNavTab.ORDERS, onTabSelected = onTabSelected) }
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).background(Color.White)) {
-            Text("Order Management", modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp), fontSize = 30.sp, fontWeight = FontWeight.Black, color = Color.Black)
-
             AdminInvoiceFilterChips(selectedStatus = selectedStatus, onFilterSelected = { selectedStatus = it })
 
 
@@ -76,13 +74,30 @@ fun AdminInvoiceScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminTopBar() {
-    Row(modifier = Modifier.fillMaxWidth().background(Color.White).border(1.dp, Color(0xFFE8E8E8)).padding(horizontal = 16.dp, vertical = 14.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.Black)
-        Text("SHOE STORE", color = Color.Black, fontWeight = FontWeight.Black, letterSpacing = 1.6.sp)
-        Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF666666))
-    }
+    CenterAlignedTopAppBar(
+        title = {
+            Text(
+                text = "SHOE STORE",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.Black,
+                letterSpacing = 2.sp
+            )
+        },
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = Color.White,
+            titleContentColor = Color.Black,
+            navigationIconContentColor = Color.Black,
+            actionIconContentColor = Color.Black
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(top = 12.dp)
+    )
 }
 
 
