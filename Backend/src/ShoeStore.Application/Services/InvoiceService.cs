@@ -47,6 +47,9 @@ public class InvoiceService(
             FinalPrice = i.FinalPrice
         }).ToListAsync(token);
 
+        if(currentUser.IsAdmin)
+            invoices = invoices.Where(i => i.Status != InvoiceStatus.Cancelled).ToList();
+
         var pageResult = new PageResult<InvoiceResponseDto>
         {
             Items = invoices.Count == 0 ? [] : invoices,
@@ -54,6 +57,7 @@ public class InvoiceService(
             PageNumber = request.PageNumber,
             PageSize = request.PageSize
         };
+
         return pageResult;
     }
 
