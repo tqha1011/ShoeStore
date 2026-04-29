@@ -145,6 +145,8 @@ builder.Services.AddHybridCache(options =>
         Expiration = TimeSpan.FromMinutes(10)
     };
 });
+
+builder.Services.AddChatBotInfrastructure(builder.Configuration);
 builder.Services.AddDistributedMemoryCache();
 /*
 var redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection") ??

@@ -20,6 +20,9 @@
       - Cloudinary__UploadPreset=${CLOUDINARY_UPLOADPRESET}
       - Sepay__ApiKey=${SEPAY_APIKEY}
       - ConnectionStrings__RedisConnection=${REDIS_CONNECTION}
+      - Chatbot__ApiKey=${CHATBOT_APIKEY}
+      - Chatbot__Url=${CHATBOT_URL}
+      - Chatbot__Model=${CHATBOT_MODEL}
     
     ports:
       - "8080:8080"
