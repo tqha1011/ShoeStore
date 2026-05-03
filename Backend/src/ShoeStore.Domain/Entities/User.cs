@@ -30,4 +30,9 @@ public class User : Entity<int>
     ///     Gets the collection of voucher associated with user
     /// </summary>
     public ICollection<UserVoucher> UserVouchers { get; set; } = new List<UserVoucher>();
+
+    /// <summary>
+    ///     Gets the collection of sessions created by user
+    /// </summary>
+    public ICollection<ChatSession> ChatSessions { get; set; } = new List<ChatSession>();
 }

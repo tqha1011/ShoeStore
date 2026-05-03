@@ -31,7 +31,7 @@ public class InvoiceService(
 
         var totalCount = await query.CountAsync(token);
 
-        query = query.ApplyPagination(request.PageNumber, request.PageSize);
+        query = query.OrderByDescending(iv => iv.CreatedAt).ApplyPagination(request.PageNumber, request.PageSize);
 
         var invoices = await query.Select(i => new InvoiceResponseDto
         {
@@ -52,7 +52,7 @@ public class InvoiceService(
 
         var pageResult = new PageResult<InvoiceResponseDto>
         {
-            Items = invoices.Count == 0 ? [] : invoices,
+            Items = invoices,
             TotalCount = totalCount,
             PageNumber = request.PageNumber,
             PageSize = request.PageSize
@@ -68,7 +68,7 @@ public class InvoiceService(
 
         var result = await details.Select(d => new InvoiceDetailResponseDto
         {
-            ProductName = d.ProductVariant!.Product.ProductName,
+            ProductName = d.ProductVariant!.Product!.ProductName,
             Size = d.ProductVariant.Size!.Size,
             Color = d.ProductVariant.Color!.ColorName,
             Quantity = d.Quantity,
