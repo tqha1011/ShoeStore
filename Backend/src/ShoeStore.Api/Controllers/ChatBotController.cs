@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using ShoeStore.Application.Interface;
@@ -15,6 +16,7 @@ namespace ShoeStore.Api.Controllers;
 [Route("api/chatbot")]
 [ApiController]
 [EnableRateLimiting("limit-per-user")]
+[Authorize]
 public class ChatBotController(IChatBotService chatBotService) : ControllerBase
 {
     /// <summary>
