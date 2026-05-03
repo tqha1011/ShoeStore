@@ -1,7 +1,9 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using ShoeStore.Application.Interface;
+using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Api.Controllers;
 
@@ -23,7 +25,7 @@ public class ChatBotController(IChatBotService chatBotService) : ControllerBase
     ///     Streams a generated campaign proposal.
     /// </summary>
     /// <remarks>
-    ///     The response is streamed as server-sent events (text/event-stream).
+    ///     The response is streamed as server-sent events (text/plain).
     ///     The request requires an authenticated user.
     /// </remarks>
     /// <param name="cancellationToken">Request cancellation token.</param>
@@ -37,10 +39,25 @@ public class ChatBotController(IChatBotService chatBotService) : ControllerBase
     [HttpPost("generate-campaign")]
     public async Task GenerateCampaign(CancellationToken cancellationToken)
     {
-        Response.Headers.Append("Content-Type", "text/event-stream");
+        var response = await chatBotService.GenerateCampaignAsync(cancellationToken);
 
-        var stream = chatBotService.GenerateCampaignAsync(cancellationToken);
-        await foreach (var chunk in stream)
+        if (response.IsError)
+        {
+            Response.StatusCode = StatusCodes.Status500InternalServerError;
+            Response.ContentType = "application/json";
+            await Response.WriteAsJsonAsync(new
+            {
+                message = "Generation failed",
+                detail = response.FirstError.Description
+            }, cancellationToken);
+            return;
+        }
+        
+        Response.ContentType = "text/plain";
+        Response.Headers.Append("Cache-Control", "no-cache");
+        Response.Headers.Append("Connection", "keep-alive");
+        
+        await foreach (var chunk in response.Value.WithCancellation(cancellationToken))
         {
             await Response.WriteAsync(chunk, cancellationToken);
             await Response.Body.FlushAsync(cancellationToken);

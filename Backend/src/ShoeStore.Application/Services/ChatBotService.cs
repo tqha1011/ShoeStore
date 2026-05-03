@@ -1,6 +1,8 @@
-using System.Runtime.CompilerServices;
+using ErrorOr;
+using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+using ShoeStore.Application.DTOs.StatisticsDto;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.StatisticsInterface;
 
@@ -9,23 +11,25 @@ namespace ShoeStore.Application.Services;
 public class ChatBotService(IStatisticsService statisticsService, IChatCompletionService chatCompletionService)
     : IChatBotService
 {
-    public async IAsyncEnumerable<string> GenerateCampaignAsync([EnumeratorCancellation] CancellationToken token)
+    public async Task<ErrorOr<IAsyncEnumerable<string>>> GenerateCampaignAsync(CancellationToken token)
     {
-        var summaryData = await statisticsService.GetStatisticsSummaryAsync(token);
-        var top3Products = await statisticsService.GetProductsHighestStatisticsAsync(token);
+        var summaryData = await GetSummaryData(token);
+        if (summaryData.IsError) return summaryData.Errors;
+        var top3Products = await GetTopProductsData(token);
+        if (top3Products.IsError) return top3Products.Errors;
 
         var totalRevenue = summaryData.Value.TotalRevenue;
         var totalOrders = summaryData.Value.TotalOrders;
 
         var top1 = top3Products.Value.Count > 0
-            ? $"{top3Products.Value[0].ProductName} - Doanh thu: {top3Products.Value[0].TotalRevenue} VND - Tổng hóa đơn của sản phẩm: {top3Products.Value[0].TotalInvoices}"
-            : "Đang cập nhật ";
+            ? $"{top3Products.Value[0].ProductName} - Revenue: {top3Products.Value[0].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[0].TotalInvoices}"
+            : "Updating";
         var top2 = top3Products.Value.Count > 1
-            ? $"{top3Products.Value[1].ProductName} - Doanh thu: {top3Products.Value[1].TotalRevenue} VND - Tổng hóa đơn của sản phẩm: {top3Products.Value[1].TotalInvoices}"
-            : "Đang cập nhật";
+            ? $"{top3Products.Value[1].ProductName} - Revenue: {top3Products.Value[1].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[1].TotalInvoices}"
+            : "Updating";
         var top3 = top3Products.Value.Count > 2
-            ? $"{top3Products.Value[2].ProductName} - Doanh thu: {top3Products.Value[2].TotalRevenue} VND - Tổng hóa đơn của sản phẩm   : {top3Products.Value[2].TotalInvoices}"
-            : "Đang cập nhật";
+            ? $"{top3Products.Value[2].ProductName} - Revenue: {top3Products.Value[2].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[2].TotalInvoices}"
+            : "Updating";
 
         var systemPrompt = $"""
                             You are the Chief Marketing Officer (CMO) for the store system. You excel at reading data and crafting practical, high-conversion campaigns.
@@ -70,8 +74,26 @@ public class ChatBotService(IStatisticsService statisticsService, IChatCompletio
                 executionSetting,
                 cancellationToken: token);
 
+        return ErrorOrFactory.From(GenerateAnswerAsync(response));
+    }
+
+    private async Task<ErrorOr<StatisticsSummaryResponseDto>> GetSummaryData(CancellationToken token)
+    {
+        return await statisticsService.GetStatisticsSummaryAsync(token);
+    }
+
+    private async Task<ErrorOr<List<ProductHighestStatisticsResponseDto>>> GetTopProductsData(CancellationToken token)
+    {
+        return await statisticsService.GetProductsHighestStatisticsAsync(token);
+    }
+
+    private static async IAsyncEnumerable<string> GenerateAnswerAsync(
+        IAsyncEnumerable<StreamingChatMessageContent> response)
+    {
         await foreach (var chunk in response)
             if (!string.IsNullOrEmpty(chunk.Content))
                 yield return chunk.Content;
+        
+        yield return "\n";
     }
 }
