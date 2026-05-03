@@ -29,6 +29,9 @@
     networks:
       - frontend
       - backend
+    
+    extra_hosts:
+        - "host.docker.internal:host-gateway"
   
   cache:
     image: redis:8.6.1-alpine

@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\ShoeStore.Domain\ShoeStore.Domain.csproj" />
+        <ProjectReference Include="..\ShoeStore.Domain\ShoeStore.Domain.csproj"/>
     </ItemGroup>
 
 
@@ -20,7 +20,9 @@
         <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" Version="10.4.0"/>
         <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.7"/>
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.6"/>
-        <PackageReference Include="Microsoft.SemanticKernel.Abstractions" Version="1.75.0" />
+        <PackageReference Include="Microsoft.SemanticKernel.Abstractions" Version="1.75.0"/>
+        <PackageReference Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.75.0-alpha"/>
+        <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.75.0"/>
         <PackageReference Include="TimeZoneConverter" Version="7.2.0"/>
     </ItemGroup>
 

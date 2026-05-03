@@ -13,16 +13,13 @@ public static class AiServiceCollection
         var url = configuration["Chatbot:Url"] ??  throw new InvalidOperationException("Chatbot url is missing");
         
         var endpoint = new Uri(url);
-        var builder = Kernel.CreateBuilder();
 
-        builder.AddOpenAIChatCompletion(
+        services.AddOpenAIChatCompletion(
             modelId: model,
             apiKey: apiKey,
             endpoint: endpoint
         );
-        
-        // register Singleton because kernel is thread-safe
-        services.AddSingleton(builder.Build());
+        services.AddKernel();
         return services;
     }
 }

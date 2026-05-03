@@ -1,5 +1,6 @@
+using System.Runtime.CompilerServices;
 using Microsoft.SemanticKernel.ChatCompletion;
-using ShoeStore.Application.DTOs.ChatBotDTOs;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.StatisticsInterface;
 
@@ -8,7 +9,7 @@ namespace ShoeStore.Application.Services;
 public class ChatBotService(IStatisticsService statisticsService, IChatCompletionService chatCompletionService)
     : IChatBotService
 {
-    public async Task<string> GenerateCampaignAsync(StatisticsDataDto data, CancellationToken token)
+    public async IAsyncEnumerable<string> GenerateCampaignAsync([EnumeratorCancellation] CancellationToken token)
     {
         var summaryData = await statisticsService.GetStatisticsSummaryAsync(token);
         var top3Products = await statisticsService.GetProductsHighestStatisticsAsync(token);
@@ -27,30 +28,50 @@ public class ChatBotService(IStatisticsService statisticsService, IChatCompletio
             : "Đang cập nhật";
 
         var systemPrompt = $"""
-                            Bạn là Giám đốc Marketing và Hoạch định chiến lược (CMO) xuất chúng của hệ thống cửa hàng. Bạn có khả năng đọc vị dữ liệu tuyệt vời và luôn tạo ra những chiến dịch thực chiến, mang lại tỷ lệ chuyển đổi cao.
+                            You are the Chief Marketing Officer (CMO) for the store system. You excel at reading data and crafting practical, high-conversion campaigns.
 
-                            Dưới đây là BÁO CÁO KINH DOANH HIỆN TẠI do hệ thống cung cấp:
-                            - Tổng doanh thu đạt được: {totalRevenue} VND
-                            - Tổng số đơn hàng đã chốt: {totalOrders} đơn hàng
-                            - Top 3 sản phẩm bán chạy nhất: 
+                            Below is the CURRENT BUSINESS REPORT:
+                            - Total revenue: {totalRevenue} VND
+                            - Total orders: {totalOrders}
+                            - Top 3 best-selling products:
                               1. {top1}
                               2. {top2}
                               3. {top3}
 
-                            Nhiệm vụ của bạn:
-                            Dựa vào các số liệu trên, hãy phân tích nhanh tình hình và đề xuất MỘT (01) chiến dịch kinh doanh/marketing phù hợp nhất cho tháng tới để tiếp tục tăng trưởng hoặc bùng nổ doanh số.
+                            Task:
+                            Based on the numbers above, analyze briefly and propose ONE (01) business/marketing campaign for next month to sustain growth or boost sales.
 
-                            Yêu cầu định dạng đầu ra (Trình bày rõ ràng, không giải thích dài dòng):
-                            1. TÊN CHIẾN DỊCH: [Đặt một cái tên thật giật tít, bắt tai]
-                            2. THÔNG ĐIỆP CỐT LÕI (Slogan): [1 câu duy nhất]
-                            3. PHÂN TÍCH NHANH: [Giải thích trong 2 dòng vì sao chiến dịch này lại hợp với số liệu trên]
-                            4. HÀNH ĐỘNG THỰC THI:
-                               - [Gạch đầu dòng 1: Làm gì với Top 3 sản phẩm hot?]
-                               - [Gạch đầu dòng 2: Có chương trình khuyến mãi/combo gì để tăng tổng đơn hàng không?]
+                            Output format (clear, no extra text):
+                            1. CAMPAIGN NAME: [Catchy, attention-grabbing name]
+                            2. CORE MESSAGE (Slogan): [Exactly 1 sentence]
+                            3. QUICK ANALYSIS: [2 lines on why this fits the data]
+                            4. EXECUTION ACTIONS:
+                               - [Bullet 1: What to do with Top 3 hot products]
+                               - [Bullet 2: Any promotion/combo to increase total orders]
+
+                            Output constraints:
+                            - Output only the format above; do not add any other lines.
+                            - No greetings, no thanks, no prefaces like "here is my opinion".
+                            - No personal opinions or phrases like "I think", "in my view", "my opinion".
+                            - No explanation of process or commentary outside the required content.
+                            - English only.
                             """;
         var chat = new ChatHistory(systemPrompt);
 
-        var response = await chatCompletionService.GetChatMessageContentAsync(chat, cancellationToken: token);
-        return response.Content ?? "Không thể lên campaign ngay bây giờ";
+        var executionSetting = new OpenAIPromptExecutionSettings
+        {
+            MaxTokens = 500, // Limit response length
+            Temperature = 0.6 // Adjust creativity
+        };
+
+        var response =
+            chatCompletionService.GetStreamingChatMessageContentsAsync(
+                chat,
+                executionSetting,
+                cancellationToken: token);
+
+        await foreach (var chunk in response)
+            if (!string.IsNullOrEmpty(chunk.Content))
+                yield return chunk.Content;
     }
 }
