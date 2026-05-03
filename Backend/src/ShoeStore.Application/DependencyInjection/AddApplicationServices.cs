@@ -2,9 +2,9 @@ using System.Reflection;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Interface.CartItemInterface;
+using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.MasterDataInterface;
 using ShoeStore.Application.Interface.ProductInterface;
@@ -29,8 +29,9 @@ public static class DependencyInjection
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IStatisticsService, StatisticsService>();
         services.AddScoped<IMasterDataService, MasterDataService>();
-        services.AddScoped<IUserVoucherService,UserVoucherService>();
-        services.AddScoped<IChatBotService,ChatBotService>();
+        services.AddScoped<IUserVoucherService, UserVoucherService>();
+        services.AddScoped<IChatBotService, ChatBotService>();
+        services.AddScoped<IChatSessionService, ChatSessionService>();
         return services;
     }
 }

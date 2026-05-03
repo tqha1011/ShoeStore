@@ -17,11 +17,13 @@ public class UserRepository(AppDbContext context) : GenericRepository<User, int>
         return await DbSet.FirstOrDefaultAsync(x => x.Email == email, token);
     }
 
-    public async Task<User?> GetUserByPublicIdAsync(Guid publicId, CancellationToken token)
+    public async Task<User?> GetUserByPublicIdAsync(Guid publicId, CancellationToken token, bool isTracking = true)
     {
-        return await DbSet.Include(u => u.CartItems)
-            .Include(u => u.UserVouchers)
-            .FirstOrDefaultAsync(x => x.PublicId == publicId, token);
+        if (isTracking)
+            return await DbSet.Include(u => u.CartItems)
+                .Include(u => u.UserVouchers)
+                .FirstOrDefaultAsync(x => x.PublicId == publicId, token);
+        return await DbSet.FirstOrDefaultAsync(x => x.PublicId == publicId, token);
     }
 
     public IQueryable<User> GetAllUsers()

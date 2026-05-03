@@ -1,9 +1,7 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using ShoeStore.Application.Interface;
-using ShoeStore.Domain.Enum;
+using ShoeStore.Application.Interface.ChatBotInterface;
 
 namespace ShoeStore.Api.Controllers;
 
@@ -52,11 +50,11 @@ public class ChatBotController(IChatBotService chatBotService) : ControllerBase
             }, cancellationToken);
             return;
         }
-        
+
         Response.ContentType = "text/plain";
         Response.Headers.Append("Cache-Control", "no-cache");
         Response.Headers.Append("Connection", "keep-alive");
-        
+
         await foreach (var chunk in response.Value.WithCancellation(cancellationToken))
         {
             await Response.WriteAsync(chunk, cancellationToken);

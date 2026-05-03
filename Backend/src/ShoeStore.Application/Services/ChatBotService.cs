@@ -3,7 +3,7 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 using ShoeStore.Application.DTOs.StatisticsDto;
-using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.StatisticsInterface;
 
 namespace ShoeStore.Application.Services;
@@ -93,7 +93,7 @@ public class ChatBotService(IStatisticsService statisticsService, IChatCompletio
         await foreach (var chunk in response)
             if (!string.IsNullOrEmpty(chunk.Content))
                 yield return chunk.Content;
-        
+
         yield return "\n";
     }
 }

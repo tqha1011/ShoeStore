@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Interface.CartItemInterface;
+using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
@@ -69,6 +70,7 @@ public static class DependencyInjection
         services.AddScoped<IUserVoucherRepository, UserVoucherRepository>();
         services.AddScoped<IGoogleValidator, GoogleValidator>();
         services.AddSingleton<INotificationQueue, NotificationQueue>();
+        services.AddScoped<IChatSessionRepository, ChatSessionRepository>();
         return services;
     }
 }
