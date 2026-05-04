@@ -1,8 +1,9 @@
 using ErrorOr;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
+using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
 using ShoeStore.Application.Extensions;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.Common;
@@ -20,7 +21,8 @@ public class CheckOutService(
     IUnitOfWork unitOfWork,
     ICartItemRepository cartItemRepository,
     IInvoiceRepository invoiceRepository,
-    IUserRepository userRepository) : ICheckOutService
+    IUserRepository userRepository,
+    HybridCache cache) : ICheckOutService
 {
     public async Task<ErrorOr<CheckOutResponseDto>> PrepareCheckOutAsync(List<CheckOutRequestDto> checkOutList,
         CancellationToken token)
@@ -123,6 +125,8 @@ public class CheckOutService(
                 // If all stages execute successfully, commit the transaction, otherwise rollback the transaction
                 await unitOfWork.SaveChangesAsync(token);
                 await unitOfWork.CommitTransactionAsync(token);
+                await cache.RemoveByTagAsync(CacheTag.Statistic,
+                    token); // remove statistics cache to make sure the cache is updated after user place order
                 return invoice.MapToInvoiceDto(vouchersApplied, invoice.InvoiceDetails.ToList());
             }
             catch (DbUpdateConcurrencyException)

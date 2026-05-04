@@ -1,6 +1,7 @@
+using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
@@ -26,8 +27,12 @@ public class PrepareCheckOutTests
 
     public PrepareCheckOutTests()
     {
+        var services = new ServiceCollection();
+        services.AddHybridCache();
+        var serviceProvider = services.BuildServiceProvider();
+        var cache = serviceProvider.GetRequiredService<HybridCache>();
         _checkOutService = new CheckOutService(_productVariantRepository.Object, _mockUow.Object,
-            _cartItemRepository.Object, _invoiceRepository.Object, _userRepository.Object);
+            _cartItemRepository.Object, _invoiceRepository.Object, _userRepository.Object,cache);
     }
 
     [Fact]
