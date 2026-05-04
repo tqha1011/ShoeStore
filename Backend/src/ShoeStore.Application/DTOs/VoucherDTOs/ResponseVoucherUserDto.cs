@@ -2,6 +2,7 @@
 
 public class ResponseVoucherUserDto
 {
+    public int VoucherId { get; set; }
     public Guid VoucherGuid { get; set; }
     public string VoucherName { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;

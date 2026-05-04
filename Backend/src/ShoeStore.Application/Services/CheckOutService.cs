@@ -2,7 +2,6 @@ using ErrorOr;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
 using ShoeStore.Application.Extensions;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.Common;

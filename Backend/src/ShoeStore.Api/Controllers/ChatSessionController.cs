@@ -42,10 +42,7 @@ public class ChatSessionController(IChatSessionService chatSessionService) : Con
         [FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (validUser == null || !Guid.TryParse(validUser, out var publicUserId))
-        {
-            return Unauthorized();
-        }
+        if (validUser == null || !Guid.TryParse(validUser, out var publicUserId)) return Unauthorized();
         var result = await chatSessionService.GetChatSessionsAsync(publicUserId, token, pageNumber, pageSize);
         var response = result.Match<IActionResult>(
             pageResult => Ok(pageResult),
@@ -59,6 +56,47 @@ public class ChatSessionController(IChatSessionService chatSessionService) : Con
                 _ => StatusCode(StatusCodes.Status500InternalServerError, new
                 {
                     message = "An error occurred while retrieving chat sessions.",
+                    description = errors[0].Description
+                })
+            });
+        return response;
+    }
+
+
+    /// <summary>
+    ///     Creates a new chat session for the current authenticated user.
+    /// </summary>
+    /// <remarks>
+    ///     Reads the user identifier from the authenticated principal and creates a session.
+    /// </remarks>
+    /// <param name="token">Cancellation token for the request.</param>
+    /// <response code="200">Chat session created successfully.</response>
+    /// <response code="401">Unauthorized; user is not authenticated.</response>
+    /// <response code="404">Not found; user does not exist.</response>
+    /// <response code="500">Internal server error; failed to create the session.</response>
+    /// <returns>The created chat session.</returns>
+    [ProducesResponseType(typeof(CreateSessionResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
+    [HttpPost]
+    public async Task<IActionResult> CreateSession(CancellationToken token)
+    {
+        var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (validUser == null || !Guid.TryParse(validUser, out var publicUserId)) return Unauthorized();
+        var result = await chatSessionService.CreateSessionAsync(publicUserId, token);
+        var response = result.Match<IActionResult>(
+            session => Ok(session),
+            errors => errors[0].Code switch
+            {
+                "User.NotFound" => NotFound(new
+                {
+                    message = "User not found.",
+                    description = "The specified user does not exist."
+                }),
+                _ => StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "An error occurred while creating the chat session.",
                     description = errors[0].Description
                 })
             });

@@ -4,4 +4,5 @@ public static class CacheTag
 {
     public const string Product = "product_tags";
     public const string Category = "category_tags";
+    public const string Statistic = "statistic_tags";
 }

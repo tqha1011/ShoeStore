@@ -1,4 +1,6 @@
 using ErrorOr;
+using Microsoft.Extensions.Caching.Hybrid;
+using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs.StatisticsDto;
 using ShoeStore.Application.Extensions;
 using ShoeStore.Application.Interface.InvoiceInterface;
@@ -10,7 +12,7 @@ namespace ShoeStore.Application.Services;
 ///     Provides statistics data for dashboard summary, chart, and top products.
 /// </summary>
 /// <param name="invoiceRepository">Repository used to read invoice-based statistics data.</param>
-public class StatisticsService(IInvoiceRepository invoiceRepository) : IStatisticsService
+public class StatisticsService(IInvoiceRepository invoiceRepository, HybridCache cache) : IStatisticsService
 {
     /// <summary>
     ///     Gets summary metrics for the current month and growth compared to the previous month.
@@ -22,37 +24,52 @@ public class StatisticsService(IInvoiceRepository invoiceRepository) : IStatisti
     public async Task<ErrorOr<StatisticsSummaryResponseDto>> GetStatisticsSummaryAsync(
         CancellationToken cancellationToken)
     {
-        var currentEndDate = DateTime.UtcNow.ToVnTime();
-        var currentStartDate = currentEndDate.ToFirstDayOfMonth();
-        var previousStartDate = currentStartDate.AddMonths(-1);
-        var previousEndDate = currentEndDate.AddMonths(-1);
+        var options = new HybridCacheEntryOptions
+        {
+            Expiration = TimeSpan.FromMinutes(10),
+            LocalCacheExpiration = TimeSpan.FromMinutes(8)
+        };
+        var cachedSummaryData = await cache.GetOrCreateAsync(
+            CacheKey.GenerateStatisticsCacheKey(DateTime.UtcNow.ToVnTime(), "statistics-summary"),
+            async cancel =>
+            {
+                var currentEndDate = DateTime.UtcNow.ToVnTime();
+                var currentStartDate = currentEndDate.ToFirstDayOfMonth();
+                var previousStartDate = currentStartDate.AddMonths(-1);
+                var previousEndDate = currentEndDate.AddMonths(-1);
 
-        var currentMetrics =
-            await invoiceRepository.GetSummaryMetricsAsync(currentStartDate, currentEndDate, cancellationToken);
+                var currentMetrics =
+                    await invoiceRepository.GetSummaryMetricsAsync(currentStartDate, currentEndDate, cancel);
 
-        var previousMetrics =
-            await invoiceRepository.GetSummaryMetricsAsync(previousStartDate, previousEndDate, cancellationToken);
+                var previousMetrics =
+                    await invoiceRepository.GetSummaryMetricsAsync(previousStartDate, previousEndDate, cancel);
 
-        var previousAverageRevenue = previousMetrics.TotalInvoices > 0
-            ? previousMetrics.TotalRevenue / previousMetrics.TotalInvoices
-            : 0;
-        var currentAverageRevenue = currentMetrics.TotalInvoices > 0
-            ? currentMetrics.TotalRevenue / currentMetrics.TotalInvoices
-            : 0;
+                var previousAverageRevenue = previousMetrics.TotalInvoices > 0
+                    ? previousMetrics.TotalRevenue / previousMetrics.TotalInvoices
+                    : 0;
+                var currentAverageRevenue = currentMetrics.TotalInvoices > 0
+                    ? currentMetrics.TotalRevenue / currentMetrics.TotalInvoices
+                    : 0;
 
-        var growthTotalRevenue = CalculateGrowthTotalRevenue(previousMetrics.TotalRevenue, currentMetrics.TotalRevenue);
-        var growthTotalInvoice =
-            CalculateGrowthTotalInvoice(previousMetrics.TotalInvoices, currentMetrics.TotalInvoices);
-        var growthAverageRevenue = CalculateGrowthAverageRevenue(previousAverageRevenue, currentAverageRevenue);
+                var growthTotalRevenue =
+                    CalculateGrowthTotalRevenue(previousMetrics.TotalRevenue, currentMetrics.TotalRevenue);
+                var growthTotalInvoice =
+                    CalculateGrowthTotalInvoice(previousMetrics.TotalInvoices, currentMetrics.TotalInvoices);
+                var growthAverageRevenue = CalculateGrowthAverageRevenue(previousAverageRevenue, currentAverageRevenue);
 
-        return new StatisticsSummaryResponseDto(
-            currentMetrics.TotalRevenue,
-            currentMetrics.TotalInvoices,
-            currentAverageRevenue,
-            growthTotalInvoice,
-            growthTotalRevenue,
-            growthAverageRevenue
-        );
+                return new StatisticsSummaryResponseDto(
+                    currentMetrics.TotalRevenue,
+                    currentMetrics.TotalInvoices,
+                    currentAverageRevenue,
+                    growthTotalInvoice,
+                    growthTotalRevenue,
+                    growthAverageRevenue
+                );
+            },
+            options,
+            [CacheTag.Statistic],
+            cancellationToken);
+        return cachedSummaryData;
     }
 
     /// <summary>
@@ -73,29 +90,39 @@ public class StatisticsService(IInvoiceRepository invoiceRepository) : IStatisti
     public async Task<ErrorOr<StatisticsChartResponseDto>> GetStatisticsChartAsync(string type,
         CancellationToken token)
     {
-        var currentEndDate = DateTime.UtcNow.ToVnTime();
-        DateTime startDate;
-        string groupByType;
-        switch (type.Trim().ToLower())
-        {
-            default:
-                startDate = currentEndDate.AddDays(-6);
-                groupByType = "day";
-                break;
-            case "30days":
-                startDate = currentEndDate.AddMonths(-1);
-                groupByType = "day";
-                break;
-            case "12months":
-                startDate = currentEndDate.AddYears(-1);
-                groupByType = "month";
-                break;
-        }
+        var cachedChartData = await cache.GetOrCreateAsync(
+            CacheKey.GenerateStatisticsCacheKey(DateTime.UtcNow.ToVnTime(), $"statistics-chart-{type}"),
+            async cancel =>
+            {
+                var currentEndDate = DateTime.UtcNow.ToVnTime();
+                DateTime startDate;
+                string groupByType;
+                switch (type.Trim().ToLower())
+                {
+                    default:
+                        startDate = currentEndDate.AddDays(-6);
+                        groupByType = "day";
+                        break;
+                    case "30days":
+                        startDate = currentEndDate.AddMonths(-1);
+                        groupByType = "day";
+                        break;
+                    case "12months":
+                        startDate = currentEndDate.AddYears(-1);
+                        groupByType = "month";
+                        break;
+                }
 
-        var rawData = await invoiceRepository.GetChartDataAsync(startDate, currentEndDate, groupByType, token);
+                var rawData = await invoiceRepository.GetChartDataAsync(startDate, currentEndDate, groupByType, cancel);
 
-        var chartData = GetDataChartByType(rawData, startDate, currentEndDate, groupByType);
-        return new StatisticsChartResponseDto(chartData);
+                var chartData = GetDataChartByType(rawData, startDate, currentEndDate, groupByType);
+                return new StatisticsChartResponseDto(chartData);
+            }, new HybridCacheEntryOptions
+            {
+                Expiration = TimeSpan.FromMinutes(10),
+                LocalCacheExpiration = TimeSpan.FromMinutes(8)
+            }, [CacheTag.Statistic], token);
+        return cachedChartData;
     }
 
     /// <summary>
@@ -106,38 +133,53 @@ public class StatisticsService(IInvoiceRepository invoiceRepository) : IStatisti
     public async Task<ErrorOr<List<ProductHighestStatisticsResponseDto>>> GetProductsHighestStatisticsAsync(
         CancellationToken cancellationToken)
     {
-        var currentEndDate = DateTime.UtcNow.ToVnTime();
-        var currentStartDate = currentEndDate.ToFirstDayOfMonth();
-        var previousStartDate = currentStartDate.AddMonths(-1);
-        var previousEndDate = currentEndDate.AddMonths(-1);
-        var currentTop3Product =
-            await invoiceRepository.GetTop3ProductsAsync(currentStartDate, currentEndDate, [], cancellationToken);
-
-        var productIds = currentTop3Product.Select(product => product.ProductPublicId).ToList();
-
-        var previousTop3Product =
-            await invoiceRepository.GetTop3ProductsAsync(previousStartDate, previousEndDate, productIds,
-                cancellationToken);
-
-        var result = new List<ProductHighestStatisticsResponseDto>();
-        foreach (var product in currentTop3Product)
+        var options = new HybridCacheEntryOptions
         {
-            var matchVariant = previousTop3Product.FirstOrDefault(p => p.ProductPublicId == product.ProductPublicId);
-            var previousRevenue = matchVariant?.TotalRevenue ?? 0;
-            var growthRevenue = previousRevenue > 0
-                ? CalculateGrowthTotalRevenue(previousRevenue, product.TotalRevenue)
-                : 100;
-            var response = new ProductHighestStatisticsResponseDto(
-                product.ProductPublicId,
-                product.ProductName,
-                product.ImageUrl ?? string.Empty,
-                product.TotalInvoices,
-                product.TotalRevenue,
-                growthRevenue);
-            result.Add(response);
-        }
+            Expiration = TimeSpan.FromMinutes(10),
+            LocalCacheExpiration = TimeSpan.FromMinutes(8)
+        };
 
-        return result;
+        var cachedTop3Products = await cache.GetOrCreateAsync(
+            CacheKey.GenerateStatisticsCacheKey(DateTime.UtcNow.ToVnTime(), "top3-products"),
+            async cancel =>
+            {
+                var currentEndDate = DateTime.UtcNow.ToVnTime();
+                var currentStartDate = currentEndDate.ToFirstDayOfMonth();
+                var previousStartDate = currentStartDate.AddMonths(-1);
+                var previousEndDate = currentEndDate.AddMonths(-1);
+                var currentTop3Product =
+                    await invoiceRepository.GetTop3ProductsAsync(currentStartDate, currentEndDate, [], cancel);
+
+                var productIds = currentTop3Product.Select(product => product.ProductPublicId).ToList();
+
+                var previousTop3Product =
+                    await invoiceRepository.GetTop3ProductsAsync(previousStartDate, previousEndDate, productIds,
+                        cancel);
+
+                var result = new List<ProductHighestStatisticsResponseDto>();
+                foreach (var product in currentTop3Product)
+                {
+                    var matchVariant =
+                        previousTop3Product.FirstOrDefault(p => p.ProductPublicId == product.ProductPublicId);
+                    var previousRevenue = matchVariant?.TotalRevenue ?? 0;
+                    var growthRevenue = previousRevenue > 0
+                        ? CalculateGrowthTotalRevenue(previousRevenue, product.TotalRevenue)
+                        : 100;
+                    var response = new ProductHighestStatisticsResponseDto(
+                        product.ProductPublicId,
+                        product.ProductName,
+                        product.ImageUrl ?? string.Empty,
+                        product.TotalInvoices,
+                        product.TotalRevenue,
+                        growthRevenue);
+                    result.Add(response);
+                }
+
+                return result;
+            }, options,
+            [CacheTag.Statistic],
+            cancellationToken);
+        return cachedTop3Products;
     }
 
     private static decimal CalculateGrowthTotalRevenue(decimal previousRevenue, decimal currentRevenue)
