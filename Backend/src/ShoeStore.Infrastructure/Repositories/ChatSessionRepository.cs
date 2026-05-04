@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Infrastructure.Data;
@@ -10,5 +11,12 @@ public class ChatSessionRepository(AppDbContext context)
     public IQueryable<ChatSession> GetChatSessionsByUserId(int userId)
     {
         return DbSet.Where(s => s.UserId == userId && s.IsActive);
+    }
+
+    public async Task<int?> GetChatSessionIdByPublicIdAsync(Guid publicSessionId, CancellationToken token)
+    {
+        return await DbSet.AsNoTracking()
+            .Where(s => s.PublicId == publicSessionId && s.IsActive).Select(c => c.Id)
+            .FirstOrDefaultAsync(token);
     }
 }

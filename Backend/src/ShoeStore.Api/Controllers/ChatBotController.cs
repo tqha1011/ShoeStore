@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using ShoeStore.Application.DTOs.ChatBotDTOs;
 using ShoeStore.Application.Interface.ChatBotInterface;
 
 namespace ShoeStore.Api.Controllers;
@@ -26,6 +27,7 @@ public class ChatBotController(IChatBotService chatBotService) : ControllerBase
     ///     The response is streamed as server-sent events (text/plain).
     ///     The request requires an authenticated user.
     /// </remarks>
+    /// <param name="requestDto"></param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     /// <response code="200">Campaign text stream started successfully.</response>
     /// <response code="401">Unauthorized; user is not authenticated.</response>
@@ -35,9 +37,9 @@ public class ChatBotController(IChatBotService chatBotService) : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost("generate-campaign")]
-    public async Task GenerateCampaign(CancellationToken cancellationToken)
+    public async Task GenerateCampaign(CreateCampaignRequestDto requestDto,CancellationToken cancellationToken)
     {
-        var response = await chatBotService.GenerateCampaignAsync(cancellationToken);
+        var response = await chatBotService.GenerateCampaignAsync(requestDto,cancellationToken);
 
         if (response.IsError)
         {

@@ -71,6 +71,7 @@ public static class DependencyInjection
         services.AddScoped<IGoogleValidator, GoogleValidator>();
         services.AddSingleton<INotificationQueue, NotificationQueue>();
         services.AddScoped<IChatSessionRepository, ChatSessionRepository>();
+        services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
         return services;
     }
 }
