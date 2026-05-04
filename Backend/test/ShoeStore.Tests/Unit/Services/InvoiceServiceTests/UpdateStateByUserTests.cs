@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using ShoeStore.Application.DTOs.InvoiceDTOs;
 using ShoeStore.Application.Interface;
@@ -21,7 +23,11 @@ public class UpdateStateByUserTests
 
     public UpdateStateByUserTests()
     {
-        _updateStateByUser = new InvoiceService(_mockRepo.Object, _mockUow.Object, _currentUser.Object);
+        var services = new ServiceCollection();
+        services.AddHybridCache();
+        var serviceProvider = services.BuildServiceProvider();
+        var cache = serviceProvider.GetRequiredService<HybridCache>();
+        _updateStateByUser = new InvoiceService(_mockRepo.Object, _mockUow.Object, _currentUser.Object, cache);
     }
 
 

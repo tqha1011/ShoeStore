@@ -1,8 +1,6 @@
 using System.Data;
 using ErrorOr;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Hybrid;
-using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
 using ShoeStore.Application.Interface.CartItemInterface;
@@ -32,13 +30,8 @@ public class PlaceOrderTests
 
     public PlaceOrderTests()
     {
-        var services = new ServiceCollection();
-        services.AddHybridCache();
-        var serviceProvider = services.BuildServiceProvider();
-        var cache = serviceProvider.GetRequiredService<HybridCache>();
-
         _checkOutService = new CheckOutService(_productVariantRepository.Object, _mockUow.Object,
-            _cartItemRepository.Object, _invoiceRepository.Object, _userRepository.Object, cache);
+            _cartItemRepository.Object, _invoiceRepository.Object, _userRepository.Object);
     }
 
     [Fact]

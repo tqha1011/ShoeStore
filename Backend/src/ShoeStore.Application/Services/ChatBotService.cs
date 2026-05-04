@@ -101,7 +101,8 @@ public class ChatBotService(
 
         return ErrorOrFactory.From(GenerateAnswerAsync(response,sessionId.Value, token));
     }
-
+    
+    // TODO: configure systemPrompt of this method like GenerateCampaignAsync, make it more suitable for asking about statistics, not generating campaign
     public async Task<ErrorOr<IAsyncEnumerable<string>>> ChatAskAboutStatisticsAsync(Guid publicSessionId,
         ChatMessageRequestDto messageRequestDto, CancellationToken token)
     {

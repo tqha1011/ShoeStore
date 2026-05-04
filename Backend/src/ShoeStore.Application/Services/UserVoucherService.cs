@@ -29,6 +29,7 @@ public class UserVoucherService(IUserVoucherRepository userVoucherRepository, IU
             .ApplyPagination(pageIndex, pageSize)
             .Select(v => new ResponseVoucherUserDto
             {
+                VoucherId = v.VoucherId,
                 VoucherGuid = v.Voucher!.PublicId,
                 VoucherName = v.Voucher.VoucherName,
                 Description = v.Voucher.VoucherDescription ?? string.Empty,
@@ -43,7 +44,9 @@ public class UserVoucherService(IUserVoucherRepository userVoucherRepository, IU
         var result = new PageResult<ResponseVoucherUserDto>
         {
             Items = vouchers,
-            TotalCount = totalCount
+            TotalCount = totalCount,
+            PageSize = pageSize,
+            PageNumber = pageIndex
         };
         return result;
     }

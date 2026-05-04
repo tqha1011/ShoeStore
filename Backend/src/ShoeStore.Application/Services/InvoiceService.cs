@@ -1,5 +1,7 @@
 ﻿using ErrorOr;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
+using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.InvoiceDetailDTOs;
 using ShoeStore.Application.DTOs.InvoiceDTOs;
@@ -16,7 +18,8 @@ namespace ShoeStore.Application.Services;
 public class InvoiceService(
     IInvoiceRepository invoiceRepository,
     IUnitOfWork uow,
-    ICurrentUser currentUser) : IInvoiceService
+    ICurrentUser currentUser,
+    HybridCache cache) : IInvoiceService
 {
     public async Task<ErrorOr<PageResult<InvoiceResponseDto>>> GetInvoiceAsync(InvoiceRequestDto request,
         CancellationToken token)
@@ -47,7 +50,7 @@ public class InvoiceService(
             FinalPrice = i.FinalPrice
         }).ToListAsync(token);
 
-        if(currentUser.IsAdmin)
+        if (currentUser.IsAdmin)
             invoices = invoices.Where(i => i.Status != InvoiceStatus.Cancelled).ToList();
 
         var pageResult = new PageResult<InvoiceResponseDto>
@@ -119,6 +122,7 @@ public class InvoiceService(
         invoice.UpdatedAt = DateTime.UtcNow;
         invoiceRepository.Update(invoice);
         await uow.SaveChangesAsync(token);
+        if (request.Status == InvoiceStatus.Paid) await cache.RemoveByTagAsync(CacheTag.Statistic, token);
         return new UpdateStateAdminResponseDto(invoice.OrderCode, invoice.Status, invoice.User!.PublicId);
     }
 
