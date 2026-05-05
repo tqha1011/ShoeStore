@@ -4,6 +4,7 @@ using ErrorOr;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
+using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs.ChatBotDTOs;
 using ShoeStore.Application.DTOs.StatisticsDto;
 using ShoeStore.Application.Interface.ChatBotInterface;
@@ -22,16 +23,17 @@ public class ChatBotService(
     IUnitOfWork unitOfWork)
     : IChatBotService
 {
-    public async Task<ErrorOr<IAsyncEnumerable<string>>> GenerateCampaignAsync(CreateCampaignRequestDto requestDto,CancellationToken token)
+    public async Task<ErrorOr<IAsyncEnumerable<string>>> GenerateCampaignAsync(CreateCampaignRequestDto requestDto,
+        CancellationToken token)
     {
         var summaryData = await GetSummaryData(token);
         if (summaryData.IsError) return summaryData.Errors;
         var top3Products = await GetTopProductsData(token);
         if (top3Products.IsError) return top3Products.Errors;
-        
+
         var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(requestDto.PublicSessionId, token);
         if (sessionId == null) return Error.NotFound("ChatSession.NotFound", "Chat session not found");
-        
+
         var newUserMessage = new ChatMessage
         {
             Content = requestDto.Content,
@@ -56,36 +58,9 @@ public class ChatBotService(
             ? $"{top3Products.Value[2].ProductName} - Revenue: {top3Products.Value[2].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[2].TotalInvoices}"
             : "Updating";
 
-        var systemPrompt = $"""
-                            You are the Chief Marketing Officer (CMO) for the store system. You excel at reading data and crafting practical, high-conversion campaigns.
-
-                            Below is the CURRENT BUSINESS REPORT:
-                            - Total revenue: {totalRevenue} VND
-                            - Total orders: {totalOrders}
-                            - Top 3 best-selling products:
-                              1. {top1}
-                              2. {top2}
-                              3. {top3}
-
-                            Task:
-                            Based on the numbers above, analyze briefly and propose ONE (01) business/marketing campaign for next month to sustain growth or boost sales.
-
-                            Output format (clear, no extra text):
-                            1. CAMPAIGN NAME: [Catchy, attention-grabbing name]
-                            2. CORE MESSAGE (Slogan): [Exactly 1 sentence]
-                            3. QUICK ANALYSIS: [2 lines on why this fits the data]
-                            4. EXECUTION ACTIONS:
-                               - [Bullet 1: What to do with Top 3 hot products]
-                               - [Bullet 2: Any promotion/combo to increase total orders]
-
-                            Output constraints:
-                            - Output only the format above; do not add any other lines.
-                            - No greetings, no thanks, no prefaces like "here is my opinion".
-                            - No personal opinions or phrases like "I think", "in my view", "my opinion".
-                            - No explanation of process or commentary outside the required content.
-                            - English only.
-                            """;
+        var systemPrompt = SystemPrompt.GenerateStatisticsPrompt(totalRevenue, totalOrders, top1, top2, top3, true);
         var chat = new ChatHistory(systemPrompt);
+        chat.AddUserMessage(requestDto.Content);
 
         var executionSetting = new OpenAIPromptExecutionSettings
         {
@@ -99,15 +74,30 @@ public class ChatBotService(
                 executionSetting,
                 cancellationToken: token);
 
-        return ErrorOrFactory.From(GenerateAnswerAsync(response,sessionId.Value, token));
+        return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value, token));
     }
-    
-    // TODO: configure systemPrompt of this method like GenerateCampaignAsync, make it more suitable for asking about statistics, not generating campaign
+
     public async Task<ErrorOr<IAsyncEnumerable<string>>> ChatAskAboutStatisticsAsync(Guid publicSessionId,
         ChatMessageRequestDto messageRequestDto, CancellationToken token)
     {
+        var summaryData = await GetSummaryData(token);
+        if (summaryData.IsError) return summaryData.Errors;
+        var top3Products = await GetTopProductsData(token);
+        if (top3Products.IsError) return top3Products.Errors;
         var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(publicSessionId, token);
         if (sessionId == null) return Error.NotFound("ChatSession.NotFound", "Chat session not found");
+        var totalRevenue = summaryData.Value.TotalRevenue;
+        var totalOrders = summaryData.Value.TotalOrders;
+
+        var top1 = top3Products.Value.Count > 0
+            ? $"{top3Products.Value[0].ProductName} - Revenue: {top3Products.Value[0].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[0].TotalInvoices}"
+            : "Updating";
+        var top2 = top3Products.Value.Count > 1
+            ? $"{top3Products.Value[1].ProductName} - Revenue: {top3Products.Value[1].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[1].TotalInvoices}"
+            : "Updating";
+        var top3 = top3Products.Value.Count > 2
+            ? $"{top3Products.Value[2].ProductName} - Revenue: {top3Products.Value[2].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[2].TotalInvoices}"
+            : "Updating";
         var historyChat = await chatMessageRepository.GetHistoryChatMessageAsync(sessionId.Value, token);
         var reverseHistoryChat = historyChat.OrderBy(m => m.CreatedAt)
             .Select(c => new
@@ -117,8 +107,7 @@ public class ChatBotService(
             })
             .ToList();
 
-        const string systemPrompt =
-            "You are the Chief Marketing Officer (CMO) for the store system. You excel at reading data and crafting practical, high-conversion campaigns.";
+        var systemPrompt = SystemPrompt.GenerateStatisticsPrompt(totalRevenue, totalOrders, top1, top2, top3, false);
 
         var chat = new ChatHistory(systemPrompt);
 
@@ -136,6 +125,7 @@ public class ChatBotService(
                     break;
                 }
             }
+
         chat.Add(new ChatMessageContent(AuthorRole.User, messageRequestDto.Content));
 
         var newChatMessage = new ChatMessage
@@ -148,7 +138,7 @@ public class ChatBotService(
         };
         chatMessageRepository.Add(newChatMessage);
         await unitOfWork.SaveChangesAsync(token);
-        
+
         var executionSetting = new OpenAIPromptExecutionSettings
         {
             MaxTokens = 500, // Limit response length
@@ -160,7 +150,7 @@ public class ChatBotService(
                 chat,
                 executionSetting,
                 cancellationToken: token);
-        return ErrorOrFactory.From(GenerateAnswerAsync(response,sessionId.Value, token));
+        return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value, token));
     }
 
     private async Task<ErrorOr<StatisticsSummaryResponseDto>> GetSummaryData(CancellationToken token)
@@ -174,7 +164,8 @@ public class ChatBotService(
     }
 
     private async IAsyncEnumerable<string> GenerateAnswerAsync(
-        IAsyncEnumerable<StreamingChatMessageContent> response,int sessionId,[EnumeratorCancellation] CancellationToken token)
+        IAsyncEnumerable<StreamingChatMessageContent> response, int sessionId,
+        [EnumeratorCancellation] CancellationToken token)
     {
         var message = new StringBuilder();
         await foreach (var chunk in response.WithCancellation(token))
@@ -183,6 +174,7 @@ public class ChatBotService(
                 yield return chunk.Content;
                 message.Append(chunk.Content);
             }
+
         yield return "\n";
 
         var newAssistantMessage = new ChatMessage

@@ -24,22 +24,26 @@ public class ChatBotController(IChatBotService chatBotService) : ControllerBase
     ///     Streams a generated campaign proposal.
     /// </summary>
     /// <remarks>
-    ///     The response is streamed as server-sent events (text/plain).
+    ///     The response is streamed as Server-Sent Events (SSE) with <c>text/event-stream</c> content type.
     ///     The request requires an authenticated user.
+    ///     <strong>
+    ///         CRITICAL: The client MUST call the API to create a chat session and obtain a publicSessionId BEFORE calling
+    ///         this endpoint.
+    ///     </strong>
     /// </remarks>
-    /// <param name="requestDto"></param>
+    /// <param name="requestDto">Campaign generation inputs for the chatbot.</param>
     /// <param name="cancellationToken">Request cancellation token.</param>
     /// <response code="200">Campaign text stream started successfully.</response>
     /// <response code="401">Unauthorized; user is not authenticated.</response>
     /// <response code="500">Internal server error; generation failed.</response>
-    /// <returns>Streaming text response of the campaign content.</returns>
+    /// <returns>Streaming SSE response of the campaign content.</returns>
     [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost("generate-campaign")]
-    public async Task GenerateCampaign(CreateCampaignRequestDto requestDto,CancellationToken cancellationToken)
+    public async Task GenerateCampaign(CreateCampaignRequestDto requestDto, CancellationToken cancellationToken)
     {
-        var response = await chatBotService.GenerateCampaignAsync(requestDto,cancellationToken);
+        var response = await chatBotService.GenerateCampaignAsync(requestDto, cancellationToken);
 
         if (response.IsError)
         {
@@ -53,13 +57,55 @@ public class ChatBotController(IChatBotService chatBotService) : ControllerBase
             return;
         }
 
-        Response.ContentType = "text/plain";
+        Response.ContentType = "text/event-stream";
         Response.Headers.Append("Cache-Control", "no-cache");
         Response.Headers.Append("Connection", "keep-alive");
 
         await foreach (var chunk in response.Value.WithCancellation(cancellationToken))
         {
-            await Response.WriteAsync(chunk, cancellationToken);
+            await Response.WriteAsync($"data: {chunk}\n\n", cancellationToken);
+            await Response.Body.FlushAsync(cancellationToken);
+        }
+    }
+
+    /// <summary>
+    ///     Streams chatbot responses for statistics-related questions in a session.
+    /// </summary>
+    /// <remarks>
+    ///     The response is streamed as Server-Sent Events (SSE) with <c>text/event-stream</c> content type.
+    ///     The request requires an authenticated user.
+    /// </remarks>
+    /// <param name="requestDto">The user's message and context for statistics inquiry.</param>
+    /// <param name="publicSessionId">The public session identifier for the chat session.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    /// <response code="200">Statistics response stream started successfully.</response>
+    /// <response code="401">Unauthorized; user is not authenticated.</response>
+    /// <response code="500">Internal server error; generation failed.</response>
+    /// <returns>Streaming SSE response of the chatbot output.</returns>
+    [HttpPost("chat-statistics")]
+    public async Task ChatAskAboutStatistics([FromBody] ChatMessageRequestDto requestDto,
+        [FromQuery] Guid publicSessionId, CancellationToken cancellationToken)
+    {
+        var response = await chatBotService.ChatAskAboutStatisticsAsync(publicSessionId, requestDto, cancellationToken);
+        if (response.IsError)
+        {
+            Response.StatusCode = StatusCodes.Status500InternalServerError;
+            Response.ContentType = "application/json";
+            await Response.WriteAsJsonAsync(new
+            {
+                message = "Generation failed",
+                detail = response.FirstError.Description
+            }, cancellationToken);
+            return;
+        }
+
+        Response.ContentType = "text/event-stream";
+        Response.Headers.Append("Cache-Control", "no-cache");
+        Response.Headers.Append("Connection", "keep-alive");
+
+        await foreach (var chunk in response.Value.WithCancellation(cancellationToken))
+        {
+            await Response.WriteAsync($"data: {chunk}\n\n", cancellationToken);
             await Response.Body.FlushAsync(cancellationToken);
         }
     }
