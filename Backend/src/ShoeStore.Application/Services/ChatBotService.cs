@@ -30,6 +30,20 @@ public class ChatBotService(
         if (summaryData.IsError) return summaryData.Errors;
         var top3Products = await GetTopProductsData(token);
         if (top3Products.IsError) return top3Products.Errors;
+        
+        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(requestDto.PublicSessionId, token);
+        if (sessionId == null) return Error.NotFound("ChatSession.NotFound", "Chat session not found");
+        
+        var newUserMessage = new ChatMessage
+        {
+            Content = requestDto.Content,
+            Role = ChatBotRole.User,
+            SessionId = sessionId.Value,
+            CreatedAt = DateTime.UtcNow,
+            TokenCount = requestDto.Content.Length / 4 // Rough token estimation
+        };
+        chatMessageRepository.Add(newUserMessage);
+        await unitOfWork.SaveChangesAsync(token);
 
         var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(requestDto.PublicSessionId, token);
         if (sessionId == null) return Error.NotFound("ChatSession.NotFound", "Chat session not found");
