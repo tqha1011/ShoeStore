@@ -57,15 +57,15 @@ public class ChatBotController(IChatBotService chatBotService) : ControllerBase
             return;
         }
 
-        Response.ContentType = "text/event-stream";
-        Response.Headers.Append("Cache-Control", "no-cache");
-        Response.Headers.Append("Connection", "keep-alive");
+        SetSseHeaders();
 
         await foreach (var chunk in response.Value.WithCancellation(cancellationToken))
         {
-            await Response.WriteAsync($"data: {chunk}\n\n", cancellationToken);
-            await Response.Body.FlushAsync(cancellationToken);
+            await SendSseChunkAsync(chunk, cancellationToken);
         }
+        
+        // send [DONE] event to indicate completion of the stream to the client
+        await SendSseChunkAsync("[DONE]", cancellationToken);
     }
 
     /// <summary>
@@ -99,14 +99,28 @@ public class ChatBotController(IChatBotService chatBotService) : ControllerBase
             return;
         }
 
-        Response.ContentType = "text/event-stream";
-        Response.Headers.Append("Cache-Control", "no-cache");
-        Response.Headers.Append("Connection", "keep-alive");
+        SetSseHeaders();
 
         await foreach (var chunk in response.Value.WithCancellation(cancellationToken))
         {
-            await Response.WriteAsync($"data: {chunk}\n\n", cancellationToken);
-            await Response.Body.FlushAsync(cancellationToken);
+            await SendSseChunkAsync(chunk, cancellationToken);
         }
+        await SendSseChunkAsync("[DONE]", cancellationToken);
+    }
+
+    private void SetSseHeaders()
+    {
+        Response.ContentType = "text/event-stream";
+        Response.Headers.Append("Cache-Control", "no-cache");
+        Response.Headers.Append("Connection", "keep-alive");
+    }
+
+    private async Task SendSseChunkAsync(string chunk, CancellationToken cancellationToken)
+    {
+        if(string.IsNullOrEmpty(chunk)) return;
+
+        var sanitizedChunk = chunk.Replace("\n", "\ndata: ");
+        await Response.WriteAsync($"data: {sanitizedChunk}\n\n", cancellationToken);
+        await Response.Body.FlushAsync(cancellationToken);
     }
 }
