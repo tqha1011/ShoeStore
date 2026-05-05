@@ -35,4 +35,9 @@ public class User : Entity<int>
     ///     Gets the collection of sessions created by user
     /// </summary>
     public ICollection<ChatSession> ChatSessions { get; set; } = new List<ChatSession>();
+
+    /// <summary>
+    ///     Gets the collection of user's address created by user
+    /// </summary>
+    public ICollection<UserAddress> UserAddresses { get; set; } = new List<UserAddress>();
 }
