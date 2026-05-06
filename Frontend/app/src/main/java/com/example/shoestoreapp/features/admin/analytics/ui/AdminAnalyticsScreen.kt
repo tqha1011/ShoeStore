@@ -58,6 +58,7 @@ import java.util.Locale
 @Composable
 fun AdminAnalyticsScreen(
     viewModel: AdminAnalyticsViewModel,
+    onAiClick: () -> Unit = {},
     onTabSelected: (AdminBottomNavTab) -> Unit = {}
 ) {
     val state: AdminAnalyticsState = viewModel.state
@@ -73,7 +74,7 @@ fun AdminAnalyticsScreen(
         // Top Navigation Bar
         AdminAnalyticsTopBar(
             onAiClick = {
-               // Handle AI Assistant click
+               onAiClick()
             }
         )
 
