@@ -110,8 +110,10 @@ public class ChatBotService(
         var systemPrompt = SystemPrompt.GenerateStatisticsPrompt(totalRevenue, totalOrders, top1, top2, top3, false);
 
         var chat = new ChatHistory(systemPrompt);
+        var reducer = new ChatHistoryTruncationReducer(20, 35);
 
         foreach (var message in reverseHistoryChat)
+        {
             switch (message.Role)
             {
                 case ChatBotRole.Assistant:
@@ -125,6 +127,11 @@ public class ChatBotService(
                     break;
                 }
             }
+
+            var reducedMessage = await reducer.ReduceAsync(chat, token);
+            if (reducedMessage != null) chat = new ChatHistory(reducedMessage);
+        }
+
 
         chat.Add(new ChatMessageContent(AuthorRole.User, messageRequestDto.Content));
 
