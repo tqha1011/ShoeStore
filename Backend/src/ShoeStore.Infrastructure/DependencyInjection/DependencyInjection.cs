@@ -37,10 +37,11 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString,
                 opt
-                    => opt.EnableRetryOnFailure(
-                        5,
-                        TimeSpan.FromSeconds(30),
-                        null)).UseSnakeCaseNamingConvention());
+                    => opt.UseVector()
+                        .EnableRetryOnFailure(
+                            5,
+                            TimeSpan.FromSeconds(30),
+                            null)).UseSnakeCaseNamingConvention());
 
         services.AddHealthChecks().AddDbContextCheck<AppDbContext>("/api/health");
         services.AddScoped<IPasswordHash, PasswordHasher>();
