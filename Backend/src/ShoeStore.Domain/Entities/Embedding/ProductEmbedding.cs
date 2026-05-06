@@ -10,5 +10,5 @@ public class ProductEmbedding : Entity<int>
 
     public required string TextChunk { get; set; }
 
-    public float[] Embedding { get; set; } = [];  // vector database
+    public ReadOnlyMemory<float> Embedding { get; set; }  // vector database
 }
