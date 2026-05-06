@@ -20,6 +20,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<UserRefreshToken> UserRefreshTokens { get; set; }
     public DbSet<UserRestorePassword> UserRestorePasswords { get; set; }
     public DbSet<PaymentTransaction> PaymentTransactions { get; set; }
+    public DbSet<ChatSession> ChatSessions { get; set; }
+    public DbSet<ChatMessage> ChatMessages { get; set; }
+    public DbSet<UserAddress> UserAddresses { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

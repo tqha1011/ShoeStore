@@ -7,28 +7,33 @@ public class UpdateProductVariantValidation : AbstractValidator<UpdateProductVar
 {
     public UpdateProductVariantValidation()
     {
-        // SizeId: Must be a valid positive ID
         RuleFor(x => x.SizeId)
-            .GreaterThan(0).WithMessage("SizeId must be a positive integer.");
+            .GreaterThan(0).WithMessage("Size ID must be a positive integer.")
+            .When(x => x.SizeId.HasValue);
 
-        // ColorId: Assuming 0 is not a valid ID
         RuleFor(x => x.ColorId)
-            .GreaterThan(0).WithMessage("ColorId is required and must be greater than 0.");
+            .GreaterThan(0).WithMessage("Color ID must be a positive integer.")
+            .When(x => x.ColorId.HasValue);
 
-
-        // Stock: Cannot be negative
         RuleFor(x => x.Stock)
-            .GreaterThanOrEqualTo(0).WithMessage("Stock quantity cannot be less than zero.");
+            .GreaterThanOrEqualTo(0).WithMessage("Stock quantity cannot be negative.")
+            .When(x => x.Stock.HasValue);
 
-        // Price: Must be a positive decimal
         RuleFor(x => x.Price)
             .GreaterThan(0).WithMessage("Price must be greater than 0.")
-            .PrecisionScale(18, 2, false).WithMessage("Price cannot have more than 2 decimal places.");
+            .LessThanOrEqualTo(999999.99m).WithMessage("Price cannot exceed 999,999.99.")
+            .Must(x => x.Value.ToString().Split('.').Length == 1 || x.Value.ToString().Split('.')[1].Length <= 2)
+            .WithMessage("Price cannot have more than 2 decimal places.")
+            .When(x => x.Price.HasValue);
 
-        // ImageUrl: Basic URL validation if it's not null
         RuleFor(x => x.ImageUrl)
             .Must(uri => string.IsNullOrEmpty(uri) || Uri.TryCreate(uri, UriKind.Absolute, out _))
             .WithMessage("Invalid Image URL format.")
-            .MaximumLength(255).WithMessage("URL is too long.");
+            .MaximumLength(500).WithMessage("Image URL is too long (max 500 characters).")
+            .When(x => !string.IsNullOrEmpty(x.ImageUrl));
+
+        RuleFor(x => x.IsSelling)
+            .NotNull().WithMessage("IsSelling status must be a valid boolean value.")
+            .When(x => x.IsSelling.HasValue);
     }
 }

@@ -20,12 +20,21 @@
       - Cloudinary__UploadPreset=${CLOUDINARY_UPLOADPRESET}
       - Sepay__ApiKey=${SEPAY_APIKEY}
       - ConnectionStrings__RedisConnection=${REDIS_CONNECTION}
+      - Chatbot__Ollama__ApiKey=${CHATBOT_OLLAMA_APIKEY}
+      - Chatbot__Ollama__Url=${CHATBOT_OLLAMA_URL}
+      - Chatbot__Ollama__Model=${CHATBOT_OLLAMA_MODEL}
+      - Chatbot__Gemini__ApiKey=${CHATBOT_GEMINI_APIKEY}
+      - Chatbot__Gemini__Model=${CHATBOT_GEMINI_MODEL}
+      - Chatbot__ActiveProvider=${CHATBOT_PROVIDER}
     
     ports:
       - "8080:8080"
     networks:
       - frontend
       - backend
+    
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
   
   cache:
     image: redis:8.6.1-alpine

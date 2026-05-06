@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.DependencyInjection;
 using MockQueryable;
 using Moq;
 using ShoeStore.Application.DTOs.InvoiceDTOs;
@@ -22,7 +24,11 @@ public class UpdateStateByAdminTests
 
     public UpdateStateByAdminTests()
     {
-        _invoiceService = new InvoiceService(_mockRepo.Object, _mockUow.Object, _currentUser.Object);
+        var services = new ServiceCollection();
+        services.AddHybridCache();
+        var serviceProvider = services.BuildServiceProvider();
+        var cache = serviceProvider.GetRequiredService<HybridCache>();
+        _invoiceService = new InvoiceService(_mockRepo.Object, _mockUow.Object, _currentUser.Object, cache);
     }
 
     [Fact]
@@ -48,7 +54,7 @@ public class UpdateStateByAdminTests
         // stage 3: Assert
         Assert.True(adminResult.IsError);
         Assert.Equal("Invoice.NotFound", adminResult.FirstError.Code);
-        
+
         VerifySafeDatabase(Times.Never);
     }
 
@@ -113,7 +119,7 @@ public class UpdateStateByAdminTests
         // step 3: Assert
         Assert.True(result.IsError);
         Assert.Equal("Invoice.Forbidden", result.FirstError.Code);
-        
+
         VerifySafeDatabase(Times.Never);
     }
 
@@ -163,7 +169,7 @@ public class UpdateStateByAdminTests
 
         Assert.True(result.IsError);
         Assert.Equal("Invoice.InvalidStatus", result.FirstError.Code);
-        
+
         VerifySafeDatabase(Times.Never);
     }
 
@@ -232,7 +238,7 @@ public class UpdateStateByAdminTests
 
         Assert.True(result.IsError);
         Assert.Equal("Invoice.InvalidStatus", result.FirstError.Code);
-        
+
         VerifySafeDatabase(Times.Never);
     }
 
@@ -295,7 +301,7 @@ public class UpdateStateByAdminTests
 
         Assert.True(result.IsError);
         Assert.Equal("Invoice.Forbidden", result.FirstError.Code);
-        
+
         VerifySafeDatabase(Times.Never);
     }
 
@@ -322,7 +328,7 @@ public class UpdateStateByAdminTests
         // stage 3: Assert
         Assert.True(adminResult.IsError);
         Assert.Equal("Invoice.NotFound", adminResult.FirstError.Code);
-        
+
         VerifySafeDatabase(Times.Never);
     }
 
@@ -368,7 +374,7 @@ public class UpdateStateByAdminTests
 
         Assert.True(result.IsError);
         Assert.Equal("User.Unauthorized", result.FirstError.Code);
-        
+
         VerifySafeDatabase(Times.Never);
     }
 
@@ -465,7 +471,7 @@ public class UpdateStateByAdminTests
         Assert.Equal(fakeInvoice.Status, dto.Status);
         Assert.Equal(fakeInvoice.OrderCode, dto.OrderCode);
         Assert.Equal(fakeInvoice.User.PublicId, dto.PublicUserId);
-        
+
         // check if database saved the data
         VerifySafeDatabase(Times.Once);
     }

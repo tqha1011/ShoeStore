@@ -24,45 +24,10 @@ public class CartItemService(
 
         if (cartItem == null) return Error.NotFound("CartItem.NotFound", "Cart item not found.");
 
-        var productVariant = await productVariantRepository.GetByGuidAsync(dto.NewProductVariantId, token);
+        var productVariant = await productVariantRepository.GetByIdWithIncludesAsync(cartItem.ProductVariantId, token);
 
         if (productVariant == null)
             return Error.NotFound("ProductVariant.NotFound", "Product Variant not found.");
-
-        if (cartItem.ProductVariantId != productVariant.Id)
-        {
-            var existingItem =
-                await cartItemRepository.GetExistCartItemAsync(cartItem.UserId, productVariant.Id, token);
-            if (existingItem != null)
-            {
-                existingItem.Quantity += dto.Quantity;
-                if (existingItem.Quantity > productVariant.Stock)
-                    return Error.Validation("CartItem.QuantityExceedsStock",
-                        "The quantity exceeds the available stock.");
-
-                cartItemRepository.Update(existingItem);
-                cartItemRepository.Delete(cartItem);
-                await unitOfWork.SaveChangesAsync(token);
-                return new UserCartItemResponseDto
-                {
-                    CartItemId = existingItem.PublicId,
-                    Quantity = existingItem.Quantity,
-                    ColorId = productVariant.ColorId,
-                    ColorName = productVariant.Color?.ColorName ?? string.Empty,
-                    SizeId = productVariant.SizeId,
-                    Size = productVariant.Size?.Size ?? 0,
-                    Price = productVariant.Price,
-                    Stock = productVariant.Stock,
-                    ImageUrl = productVariant.ImageUrl,
-                    ProductVariantId = productVariant.PublicId,
-                    ProductName = productVariant.Product?.ProductName ?? string.Empty,
-                    Brand = productVariant.Product?.Brand ?? string.Empty,
-                    IsSelling = productVariant.IsSelling
-                };
-            }
-
-            cartItem.ProductVariantId = productVariant.Id;
-        }
 
         cartItem.Quantity = finalQuantity;
         if (cartItem.Quantity > productVariant.Stock)

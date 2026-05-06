@@ -3,42 +3,36 @@ using ShoeStore.Application.DTOs.ProductVariantDTOs;
 
 namespace ShoeStore.Application.Validations.ProductVariantValidation;
 
-public class CreateProductVariantValidator : AbstractValidator<CreateProductVariantDto>
+public class CreateProductVariantValidation : AbstractValidator<CreateProductVariantDto>
 {
-    public CreateProductVariantValidator()
+    public CreateProductVariantValidation()
     {
-        // SizeId: Must be a valid positive ID
         RuleFor(x => x.SizeId)
-            .GreaterThan(0).WithMessage("SizeId must be a positive integer.");
+            .NotEmpty().WithMessage("Size ID is required.")
+            .GreaterThan(0).WithMessage("Size ID must be a positive integer.");
 
-        // Size: Optional, but if provided, must be within a reasonable range
-        RuleFor(x => x.Size)
-            .InclusiveBetween(1, 100).WithMessage("Size must be between 1 and 100.")
-            .When(x => x.Size.HasValue);
-
-        // ColorId: Assuming 0 is not a valid ID
         RuleFor(x => x.ColorId)
-            .GreaterThan(0).WithMessage("ColorId is required and must be greater than 0.");
+            .NotEmpty().WithMessage("Color ID is required.")
+            .GreaterThan(0).WithMessage("Color ID must be a positive integer.");
 
-        // ColorName: Optional, but cannot be empty strings if provided
-        RuleFor(x => x.ColorName)
-            .MaximumLength(50).WithMessage("Color name cannot exceed 50 characters.")
-            .Must(name => string.IsNullOrWhiteSpace(name) || name.Trim().Length > 0)
-            .WithMessage("Color name cannot be empty or whitespace.");
-
-        // Stock: Cannot be negative
         RuleFor(x => x.Stock)
-            .GreaterThanOrEqualTo(0).WithMessage("Stock quantity cannot be less than zero.");
+            .NotEmpty().WithMessage("Stock quantity is required.")
+            .GreaterThanOrEqualTo(0).WithMessage("Stock quantity cannot be negative.");
 
-        // Price: Must be a positive decimal
         RuleFor(x => x.Price)
+            .NotEmpty().WithMessage("Price is required.")
             .GreaterThan(0).WithMessage("Price must be greater than 0.")
-            .PrecisionScale(18, 2, false).WithMessage("Price cannot have more than 2 decimal places.");
+            .LessThanOrEqualTo(999999.99m).WithMessage("Price cannot exceed 999,999.99.")
+            .Must(x => x.ToString().Split('.').Length == 1 || x.ToString().Split('.')[1].Length <= 2)
+            .WithMessage("Price cannot have more than 2 decimal places.");
 
-        // ImageUrl: Basic URL validation if it's not null
         RuleFor(x => x.ImageUrl)
             .Must(uri => string.IsNullOrEmpty(uri) || Uri.TryCreate(uri, UriKind.Absolute, out _))
             .WithMessage("Invalid Image URL format.")
-            .MaximumLength(255).WithMessage("URL is too long.");
+            .MaximumLength(500).WithMessage("Image URL is too long (max 500 characters).")
+            .When(x => !string.IsNullOrEmpty(x.ImageUrl));
+
+        RuleFor(x => x.IsSelling)
+            .NotNull().WithMessage("IsSelling status is required.");
     }
 }

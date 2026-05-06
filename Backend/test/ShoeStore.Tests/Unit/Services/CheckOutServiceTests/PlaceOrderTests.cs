@@ -3,7 +3,6 @@ using ErrorOr;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;

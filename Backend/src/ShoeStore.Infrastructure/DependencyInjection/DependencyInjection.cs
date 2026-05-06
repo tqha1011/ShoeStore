@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Interface.CartItemInterface;
+using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
@@ -13,6 +14,7 @@ using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Application.Interface.Strategies;
 using ShoeStore.Application.Interface.UploadImage;
 using ShoeStore.Application.Interface.UserInterface;
+using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Application.Services;
 using ShoeStore.Infrastructure.Authentication;
 using ShoeStore.Infrastructure.Authentication.Strategies;
@@ -21,7 +23,6 @@ using ShoeStore.Infrastructure.Data;
 using ShoeStore.Infrastructure.Notification;
 using ShoeStore.Infrastructure.Repositories;
 using ShoeStore.Infrastructure.RestorePassService;
-using ShoeStore.Application.Interface.VoucherInterface;
 
 namespace ShoeStore.Infrastructure.DependencyInjection;
 
@@ -68,6 +69,9 @@ public static class DependencyInjection
         services.AddScoped<IVoucherService, VoucherService>();
         services.AddScoped<IUserVoucherRepository, UserVoucherRepository>();
         services.AddScoped<IGoogleValidator, GoogleValidator>();
+        services.AddSingleton<INotificationQueue, NotificationQueue>();
+        services.AddScoped<IChatSessionRepository, ChatSessionRepository>();
+        services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
         return services;
     }
 }

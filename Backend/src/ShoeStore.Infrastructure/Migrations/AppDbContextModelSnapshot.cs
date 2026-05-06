@@ -92,6 +92,96 @@ namespace ShoeStore.Infrastructure.Migrations
                     b.ToTable("category", (string)null);
                 });
 
+            modelBuilder.Entity("ShoeStore.Domain.Entities.ChatMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("PublicId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("public_id");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("role");
+
+                    b.Property<int>("SessionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("session_id");
+
+                    b.Property<int>("TokenCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("token_count");
+
+                    b.HasKey("Id")
+                        .HasName("pk_chat_messages");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_chat_messages_public_id");
+
+                    b.HasIndex("SessionId", "CreatedAt")
+                        .HasDatabaseName("ix_chat_messages_session_id_created_at");
+
+                    b.ToTable("chat_messages", (string)null);
+                });
+
+            modelBuilder.Entity("ShoeStore.Domain.Entities.ChatSession", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<Guid>("PublicId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("public_id");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("text")
+                        .HasColumnName("title");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_chat_sessions");
+
+                    b.HasIndex("PublicId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_chat_sessions_public_id");
+
+                    b.HasIndex("UserId", "IsActive")
+                        .HasDatabaseName("ix_chat_sessions_user_id_is_active");
+
+                    b.ToTable("chat_sessions", (string)null);
+                });
+
             modelBuilder.Entity("ShoeStore.Domain.Entities.Color", b =>
                 {
                     b.Property<int>("Id")
@@ -581,6 +671,48 @@ namespace ShoeStore.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ShoeStore.Domain.Entities.UserAddress", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("address");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_default");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_user_addresses");
+
+                    b.HasIndex("UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_addresses_user_id")
+                        .HasFilter("is_default = true");
+
+                    b.HasIndex("UserId", "Address")
+                        .IsUnique()
+                        .HasDatabaseName("ix_user_addresses_user_id_address");
+
+                    b.ToTable("user_addresses", (string)null);
+                });
+
             modelBuilder.Entity("ShoeStore.Domain.Entities.UserRefreshToken", b =>
                 {
                     b.Property<int>("Id")
@@ -746,7 +878,7 @@ namespace ShoeStore.Infrastructure.Migrations
 
                     b.Property<decimal>("Discount")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("numeric(5,4)")
+                        .HasColumnType("numeric(18,2)")
                         .HasDefaultValue(0m)
                         .HasColumnName("discount");
 
@@ -895,6 +1027,30 @@ namespace ShoeStore.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ShoeStore.Domain.Entities.ChatMessage", b =>
+                {
+                    b.HasOne("ShoeStore.Domain.Entities.ChatSession", "Session")
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_chat_messages_chat_sessions_session_id");
+
+                    b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("ShoeStore.Domain.Entities.ChatSession", b =>
+                {
+                    b.HasOne("ShoeStore.Domain.Entities.User", "User")
+                        .WithMany("ChatSessions")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_chat_sessions_users_user_id");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ShoeStore.Domain.Entities.Invoice", b =>
                 {
                     b.HasOne("ShoeStore.Domain.Entities.Payment", "Payment")
@@ -1000,6 +1156,18 @@ namespace ShoeStore.Infrastructure.Migrations
                     b.Navigation("Size");
                 });
 
+            modelBuilder.Entity("ShoeStore.Domain.Entities.UserAddress", b =>
+                {
+                    b.HasOne("ShoeStore.Domain.Entities.User", "User")
+                        .WithMany("UserAddresses")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_user_addresses_users_user_id");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ShoeStore.Domain.Entities.UserRefreshToken", b =>
                 {
                     b.HasOne("ShoeStore.Domain.Entities.User", "User")
@@ -1088,7 +1256,11 @@ namespace ShoeStore.Infrastructure.Migrations
                 {
                     b.Navigation("CartItems");
 
+                    b.Navigation("ChatSessions");
+
                     b.Navigation("Invoices");
+
+                    b.Navigation("UserAddresses");
 
                     b.Navigation("UserVouchers");
                 });

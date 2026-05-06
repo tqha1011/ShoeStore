@@ -5,6 +5,6 @@ namespace ShoeStore.Application.Interface.ProductInterface;
 
 public interface IProductVariantService
 {
-    Task<ErrorOr<ProductVariantResponseDto>> CreateAsync(Guid productGuid, CreateProductVariantDto dto,
-        CancellationToken token);
+    Task<ErrorOr<Created>> CreateAsync(Guid productGuid, CreateProductVariantDto dto, CancellationToken token);
+    Task<ErrorOr<Updated>> UpdateAsync(Guid productVariantGuid, UpdateProductVariantDto dto, CancellationToken token);
 }

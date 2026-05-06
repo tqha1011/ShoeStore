@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Infrastructure.Data;
@@ -18,17 +17,20 @@ public class UserRepository(AppDbContext context) : GenericRepository<User, int>
         return await DbSet.FirstOrDefaultAsync(x => x.Email == email, token);
     }
 
-    public async Task<User?> GetUserByPublicIdAsync(Guid publicId, CancellationToken token)
+    public async Task<User?> GetUserByPublicIdAsync(Guid publicId, CancellationToken token, bool isTracking = true)
     {
-        return await DbSet.Include(u => u.CartItems)
-            .Include(u => u.UserVouchers)
-            .FirstOrDefaultAsync(x => x.PublicId == publicId, token);
+        if (isTracking)
+            return await DbSet.Include(u => u.CartItems)
+                .Include(u => u.UserVouchers)
+                .FirstOrDefaultAsync(x => x.PublicId == publicId, token);
+        return await DbSet.FirstOrDefaultAsync(x => x.PublicId == publicId, token);
     }
 
     public IQueryable<User> GetAllUsers()
     {
         return DbSet.AsNoTracking();
     }
+
     public async Task<bool> CheckUserExistsAsync(Guid publicId, CancellationToken token)
     {
         return await DbSet.AsNoTracking().AnyAsync(x => x.PublicId == publicId, token);

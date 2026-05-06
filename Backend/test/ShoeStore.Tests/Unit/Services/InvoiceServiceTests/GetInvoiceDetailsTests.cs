@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.DependencyInjection;
 using MockQueryable;
 using Moq;
 using ShoeStore.Application.Interface;
@@ -20,7 +22,11 @@ public class GetInvoiceDetailsTests
 
     public GetInvoiceDetailsTests()
     {
-        _getInvoiceDetails = new InvoiceService(_mockRepo.Object, _mockUow.Object, _currentUser.Object);
+        var services = new ServiceCollection();
+        services.AddHybridCache();
+        var serviceProvider = services.BuildServiceProvider();
+        var cache = serviceProvider.GetRequiredService<HybridCache>();
+        _getInvoiceDetails = new InvoiceService(_mockRepo.Object, _mockUow.Object, _currentUser.Object, cache);
     }
 
     [Fact]

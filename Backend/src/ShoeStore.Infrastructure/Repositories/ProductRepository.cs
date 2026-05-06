@@ -23,7 +23,8 @@ public class ProductRepository(AppDbContext context) : GenericRepository<Product
 
     public IQueryable<Product> SearchProduct(ProductSearchRequest request)
     {
-        return DbSet.ApplySearch(request.Keyword)
+        return DbSet.Where(p => !p.IsDeleted)
+            .ApplySearch(request.Keyword)
             .ApplyBrand(request.Brand)
             .ApplyColorId(request.ListColorId)
             .ApplySizeId(request.ListSizeId)
@@ -35,13 +36,14 @@ public class ProductRepository(AppDbContext context) : GenericRepository<Product
 
     public async Task<Product?> GetForUpdateByGuidAsync(Guid productGuid, CancellationToken token)
     {
-        return await DbSet.Include(x => x.ProductVariants)
+        return await DbSet.Where(p => !p.IsDeleted)
+            .Include(x => x.ProductVariants)
             .Include(x => x.Category)
             .FirstOrDefaultAsync(x => x.PublicId == productGuid, token);
     }
 
     public IQueryable<Product> GetAll()
     {
-        return DbSet;
+        return DbSet.Where(p => !p.IsDeleted);
     }
 }
