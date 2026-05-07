@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Pgvector;
 using ShoeStore.Domain.Entities;
+using ShoeStore.Domain.Entities.Embedding;
 
 namespace ShoeStore.Infrastructure.Data;
 
@@ -23,11 +25,48 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ChatSession> ChatSessions { get; set; }
     public DbSet<ChatMessage> ChatMessages { get; set; }
     public DbSet<UserAddress> UserAddresses { get; set; }
+    public DbSet<ProductEmbedding> ProductEmbeddings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.HasPostgresExtension("vector");
+
+        var providerName = Database.ProviderName ?? string.Empty;
+        var isNpgsql = providerName.Contains("Npgsql", StringComparison.OrdinalIgnoreCase);
+        var isSqlite = providerName.Contains("Sqlite", StringComparison.OrdinalIgnoreCase);
+
+        if (isNpgsql)
+        {
+            modelBuilder.HasPostgresExtension("vector");
+        }
+
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+        if (isNpgsql)
+        {
+            modelBuilder.Entity<ProductEmbedding>(builder =>
+            {
+                builder.Property(e => e.Embedding)
+                    .HasColumnType("vector(768)")
+                    .HasConversion(
+                        v => new Vector(v.ToArray()),
+                        v => new ReadOnlyMemory<float>(v.ToArray()))
+                    .IsRequired();
+
+                builder.HasIndex(e => e.Embedding)
+                    .HasMethod("hnsw")
+                    .HasOperators("vector_cosine_ops");
+            });
+
+            modelBuilder.Entity<UserAddress>()
+                .HasIndex(addr => addr.UserId)
+                .IsUnique()
+                .HasFilter("is_default = true");
+        }
+        else if (isSqlite)
+        {
+            // SQLite doesn't support pgvector; ignore for in-memory/testing provider.
+            modelBuilder.Entity<ProductEmbedding>().Ignore(e => e.Embedding);
+        }
     }
 }
