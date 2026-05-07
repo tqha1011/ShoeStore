@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Pgvector.EntityFrameworkCore;
-using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Domain.Entities.Embedding;
 using ShoeStore.Infrastructure.Data;
 
