@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.Interface;
@@ -10,10 +11,13 @@ namespace ShoeStore.Api.Controllers;
 ///     Requires admin authentication to access all endpoints.
 /// </summary>
 /// <param name="productEmbeddingService">Service responsible for generating and storing product embeddings.</param>
-[Route("api/product-embedding")]
+[Route("api/v{version:apiVersion}/product-embedding")]
+[ApiVersion(1)]
 [ApiController]
 [Authorize(Roles = "Admin")]
-public class ProductEmbeddingController(IProductEmbeddingService productEmbeddingService) : ControllerBase
+public class ProductEmbeddingController(
+    IProductEmbeddingService productEmbeddingService,
+    IServiceScopeFactory scopeFactory) : ControllerBase
 {
     /// <summary>
     ///     Generates and stores a vector embedding for a single product.
@@ -27,11 +31,11 @@ public class ProductEmbeddingController(IProductEmbeddingService productEmbeddin
     /// </remarks>
     /// <param name="productPublicId">The public GUID identifier of the product to embed.</param>
     /// <param name="token">Cancellation token for the request.</param>
-    /// <response code="201">Embedding generated and stored successfully.</response>
+    /// <response code="202">Embedding generated and stored request accepted.</response>
     /// <response code="404">Product not found with the provided ID.</response>
     /// <response code="500">Internal server error; failed to generate or store the embedding.</response>
     /// <returns>An action result indicating success (201 Created) or detailing the error.</returns>
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost("generate-single")]
@@ -48,7 +52,7 @@ public class ProductEmbeddingController(IProductEmbeddingService productEmbeddin
                     message = "Product not found",
                     description = errors[0].Description
                 }),
-                _ => StatusCode(StatusCodes.Status500InternalServerError,new
+                _ => StatusCode(StatusCodes.Status500InternalServerError, new
                 {
                     message = "Something went wrong",
                     description = errors[0].Description
@@ -56,7 +60,7 @@ public class ProductEmbeddingController(IProductEmbeddingService productEmbeddin
             });
         return response;
     }
-    
+
     /// <summary>
     ///     Generates and stores vector embeddings for all existing products in batches.
     /// </summary>
@@ -66,7 +70,7 @@ public class ProductEmbeddingController(IProductEmbeddingService productEmbeddin
     ///     </para>
     ///     <para>
     ///         This endpoint MUST be called <strong>EXACTLY ONE TIME ONLY</strong> after the initial product database setup.
-    ///         <br/>
+    ///         <br />
     ///         Do NOT call this endpoint multiple times or in regular workflows, as it will create duplicate embeddings.
     ///     </para>
     ///     <para>
@@ -104,17 +108,26 @@ public class ProductEmbeddingController(IProductEmbeddingService productEmbeddin
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost("generate-all")]
-    public async Task<IActionResult> GenerateProductVectorWithExistData(CancellationToken token)
+    public IActionResult GenerateProductVectorWithExistData(CancellationToken token)
     {
-        var result = await productEmbeddingService.GenerateVectorEmbeddingWithExistDataAsync(token);
-        var response = result.Match<IActionResult>(
-            _ => Created(),
-            errors => StatusCode(StatusCodes.Status500InternalServerError,new
+        _ = Task.Run(async () =>
+        {
+            using var scope = scopeFactory.CreateScope();
+            var embeddingService = scope.ServiceProvider.GetRequiredService<IProductEmbeddingService>();
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<ProductEmbeddingController>>();
+            try
             {
-                message = "Something went wrong",
-                description = errors[0].Description
-            })
-        );
-        return response;
+                await embeddingService.GenerateVectorEmbeddingWithExistDataAsync(CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, ex.Message);
+            }
+        }, CancellationToken.None);
+
+        return Accepted(new
+        {
+            message = "Product vector generated request is accepted"
+        });
     }
 }

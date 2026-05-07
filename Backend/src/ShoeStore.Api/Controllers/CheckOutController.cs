@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -14,6 +15,7 @@ namespace ShoeStore.Api.Controllers;
 /// </summary>
 /// <param name="checkOutService">Service for handling checkout and order operations.</param>
 [Route("api/checkout")]
+[ApiVersion(1)]
 [ApiController]
 [Authorize]
 public class CheckOutController(ICheckOutService checkOutService) : ControllerBase

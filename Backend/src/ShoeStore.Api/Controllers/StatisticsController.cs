@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -14,6 +15,7 @@ namespace ShoeStore.Api.Controllers;
 [ApiController]
 [Authorize(Roles = "Admin")]
 [EnableRateLimiting("limit-per-user")]
+[ApiVersion(1)]
 public class StatisticsController(IStatisticsService statisticsService) : ControllerBase
 {
     /// <summary>

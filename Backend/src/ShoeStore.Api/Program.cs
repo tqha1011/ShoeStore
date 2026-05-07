@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using Asp.Versioning;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
@@ -22,7 +23,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi("v1", options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Info.Title = "Shoe Store API v1";
+        return Task.CompletedTask;
+    });
+});
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -146,6 +154,19 @@ builder.Services.AddHybridCache(options =>
     };
 });
 
+builder.Services.AddApiVersioning(opt =>
+    {
+        opt.AssumeDefaultVersionWhenUnspecified = true;
+        opt.DefaultApiVersion = new ApiVersion(1);
+        opt.ReportApiVersions = true;
+    })
+    .AddApiExplorer(opt =>
+    {
+        opt.GroupNameFormat = "'v'VVV";
+        opt.SubstituteApiVersionInUrl = true;
+    });
+
+
 builder.Services.AddChatBotInfrastructure(builder.Configuration);
 builder.Services.AddDistributedMemoryCache();
 /*
@@ -158,7 +179,14 @@ var app = builder.Build();
 app.UseExceptionHandler(); // use GlobalExceptionHandler middleware to handle exceptions globally
 app.UseCors("AllowAll");
 app.MapOpenApi();
-app.MapScalarApiReference();
+app.MapScalarApiReference(options =>
+{
+    options.WithTitle("Shoe Store Enterprise API");
+    
+    options.WithTheme(ScalarTheme.BluePlanet); 
+    
+    options.WithDefaultHttpClient(ScalarTarget.Kotlin, ScalarClient.OkHttp);
+});
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
