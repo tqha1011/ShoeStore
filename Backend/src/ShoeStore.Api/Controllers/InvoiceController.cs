@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using ShoeStore.Api.Hubs;
@@ -19,6 +20,7 @@ namespace ShoeStore.Api.Controllers;
 /// <param name="invoiceService">Service used to query and update invoice data.</param>
 [ApiController]
 [Route("api/invoice/user")]
+[ApiVersion(1)]
 [Authorize(Roles = "User")]
 public class InvoiceController(
     IInvoiceService invoiceService,
@@ -192,12 +194,12 @@ public class InvoiceController(
 
         // Notify clients about the invoice status update
         await hubContext.Clients.Group("Admin")
-            .ReceiveNotification(result.Value,request.Status);
+            .ReceiveNotification(result.Value, request.Status);
 
         return Ok(new
         {
             invoiceCode = result.Value,
-            newStatus = request.Status,
+            newStatus = request.Status
         });
     }
 }

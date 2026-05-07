@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using ErrorOr;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +12,7 @@ namespace ShoeStore.Api.Controllers;
 /// </summary>
 /// <param name="masterDataService">Service used to load sizes, colors, and categories.</param>
 [Route("api/master-data")]
+[ApiVersion(1)]
 [Authorize]
 [ApiController]
 public class MasterDataController(IMasterDataService masterDataService) : ControllerBase

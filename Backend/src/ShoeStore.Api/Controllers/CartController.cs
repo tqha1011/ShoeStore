@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.CartItemDTOs;
@@ -13,6 +14,7 @@ namespace ShoeStore.Api.Controllers;
 /// </summary>
 /// <param name="cartItemService">Service for handling cart item operations.</param>
 [Route("api/cart")]
+[ApiVersion(1)]
 [ApiController]
 [Authorize(Roles = "User")]
 public class CartController(ICartItemService cartItemService) : ControllerBase
@@ -203,7 +205,7 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
         );
         return response;
     }
-    
+
     /// <summary>
     ///     Retrieves all cart items belonging to the currently authenticated user.
     /// </summary>
@@ -228,13 +230,13 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
     public async Task<IActionResult> GetUserCartItem(CancellationToken token)
     {
         var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if(validUser == null || !Guid.TryParse(validUser, out var publicUserId))
+        if (validUser == null || !Guid.TryParse(validUser, out var publicUserId))
             return Unauthorized(new
             {
                 message = "You are not authorized to perform this action.",
                 description = "Please login to your account and try again."
             });
-        
+
         var result = await cartItemService.GetCartItemsByUserIdAsync(publicUserId, token);
 
         var response = result.Match<IActionResult>(

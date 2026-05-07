@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -14,7 +15,8 @@ namespace ShoeStore.Api.Controllers;
 ///     generated from current business statistics.
 /// </remarks>
 /// <param name="chatBotService">Application service that builds campaign output.</param>
-[Route("api/chatbot")]
+[Route("api/v{version:apiVersion}/chatbot")]
+[ApiVersion(1)]
 [ApiController]
 [EnableRateLimiting("limit-per-user")]
 [Authorize]
@@ -60,10 +62,8 @@ public class ChatBotController(IChatBotService chatBotService) : ControllerBase
         SetSseHeaders();
 
         await foreach (var chunk in response.Value.WithCancellation(cancellationToken))
-        {
             await SendSseChunkAsync(chunk, cancellationToken);
-        }
-        
+
         // send [DONE] event to indicate completion of the stream to the client
         await SendSseChunkAsync("[DONE]", cancellationToken);
     }
@@ -102,9 +102,7 @@ public class ChatBotController(IChatBotService chatBotService) : ControllerBase
         SetSseHeaders();
 
         await foreach (var chunk in response.Value.WithCancellation(cancellationToken))
-        {
             await SendSseChunkAsync(chunk, cancellationToken);
-        }
         await SendSseChunkAsync("[DONE]", cancellationToken);
     }
 
@@ -117,7 +115,7 @@ public class ChatBotController(IChatBotService chatBotService) : ControllerBase
 
     private async Task SendSseChunkAsync(string chunk, CancellationToken cancellationToken)
     {
-        if(string.IsNullOrEmpty(chunk)) return;
+        if (string.IsNullOrEmpty(chunk)) return;
 
         var sanitizedChunk = chunk.Replace("\n", "\ndata: ");
         await Response.WriteAsync($"data: {sanitizedChunk}\n\n", cancellationToken);

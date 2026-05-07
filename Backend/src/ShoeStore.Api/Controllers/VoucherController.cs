@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs;
@@ -16,6 +17,7 @@ namespace ShoeStore.Api.Controllers;
 [ApiController]
 [Route("api/admin/vouchers")]
 [Authorize(Roles = "Admin")]
+[ApiVersion(1)]
 public class VoucherController(IVoucherService voucherService) : ControllerBase
 {
     /// <summary>

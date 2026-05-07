@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs;
@@ -14,7 +15,8 @@ namespace ShoeStore.Api.Controllers;
 ///     Provides endpoints to fetch user chat sessions with pagination.
 /// </remarks>
 /// <param name="chatSessionService">Service for querying chat session data.</param>
-[Route("api/session")]
+[Route("api/v{version:apiVersion}/session")]
+[ApiVersion(1)]
 [ApiController]
 [Authorize]
 public class ChatSessionController(IChatSessionService chatSessionService) : ControllerBase
