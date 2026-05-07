@@ -46,4 +46,16 @@ public class ProductRepository(AppDbContext context) : GenericRepository<Product
     {
         return DbSet.Where(p => !p.IsDeleted);
     }
+
+    public IQueryable<Product> GetProductsInformation()
+    {
+        return DbSet.AsNoTracking()
+            .AsSplitQuery()
+            .Where(p => !p.IsDeleted)
+            .Include(x => x.ProductVariants)
+            .ThenInclude(x => x.Size)
+            .Include(x => x.ProductVariants)
+            .ThenInclude(x => x.Color)
+            .Include(x => x.Category);
+    }
 }

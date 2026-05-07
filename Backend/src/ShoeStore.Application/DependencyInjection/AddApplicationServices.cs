@@ -2,6 +2,7 @@ using System.Reflection;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.ChatBotInterface;
@@ -32,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<IUserVoucherService, UserVoucherService>();
         services.AddScoped<IChatBotService, ChatBotService>();
         services.AddScoped<IChatSessionService, ChatSessionService>();
+        services.AddScoped<IProductEmbeddingService, ProductEmbeddingService>();
         return services;
     }
 }
