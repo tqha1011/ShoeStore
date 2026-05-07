@@ -73,6 +73,7 @@ public static class DependencyInjection
         services.AddSingleton<INotificationQueue, NotificationQueue>();
         services.AddScoped<IChatSessionRepository, ChatSessionRepository>();
         services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
+        services.AddScoped<IProductEmbeddingRepository, ProductEmbeddingRepository>();
         return services;
     }
 }
