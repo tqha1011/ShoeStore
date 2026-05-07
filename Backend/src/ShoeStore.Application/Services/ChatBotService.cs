@@ -8,7 +8,6 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs.ChatBotDTOs;
 using ShoeStore.Application.DTOs.StatisticsDto;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.StatisticsInterface;
