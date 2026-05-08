@@ -1,5 +1,4 @@
 using System.ClientModel;
-using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
@@ -26,15 +25,17 @@ public static class AiServiceCollection
                       throw new InvalidOperationException("Chatbot url is missing");
 
             var endpoint = new Uri(url);
-            
-            var openAiConfig = new OpenAIClient(new ApiKeyCredential(apiKey), new OpenAIClientOptions
+
+            var openAiClient = new OpenAIClient(new ApiKeyCredential(apiKey), new OpenAIClientOptions
             {
-                Endpoint = endpoint,
+                Endpoint = endpoint
             });
-            
-           services.AddChatClient(openAiConfig.GetChatClient(model).AsIChatClient());
-           services.AddEmbeddingGenerator(openAiConfig.GetEmbeddingClient(embeddingModel).AsIEmbeddingGenerator());
-           
+
+            services.AddOpenAIChatCompletion(
+                model,
+                openAiClient);
+
+            services.AddOpenAIEmbeddingGenerator(embeddingModel, openAiClient);
         }
         else
         {
@@ -42,7 +43,7 @@ public static class AiServiceCollection
                 model,
                 apiKey
             );
-            
+
             services.AddGoogleAIEmbeddingGenerator(
                 embeddingModel,
                 apiKey

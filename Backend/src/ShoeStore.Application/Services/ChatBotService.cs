@@ -177,35 +177,6 @@ public class ChatBotService(
             .ToList();
         var queryVector = await GenerateQueryVectorAsync(messageRequestDto.Content, token);
         var top5Products = await productEmbeddingRepository.GetTop5ProductByVectorAsync(queryVector, token);
-        var context = new StringBuilder();
-        foreach (var product in top5Products)
-        {
-            context.Append($"{product.TextChunk} \n");
-        }
-        var systemPrompt = SystemPrompt.GenerateProductPrompt(context.ToString());
-        var chat = new ChatHistory(systemPrompt);
-        var reducer = new ChatHistoryTruncationReducer(20, 35);
-
-        foreach (var message in reverseHistoryChat)
-        {
-            switch (message.Role)
-            {
-                case ChatBotRole.Assistant:
-                {
-                    chat.AddAssistantMessage(message.Content);
-                    break;
-                }
-                case ChatBotRole.User:
-                {
-                    chat.AddUserMessage(message.Content);
-                    break;
-                }
-            }
-        }
-        var reducedMessage = await reducer.ReduceAsync(chat, token);
-        if (reducedMessage != null) chat = new ChatHistory(reducedMessage);
-
-        chat.Add(new ChatMessageContent(AuthorRole.User, messageRequestDto.Content));
         var newChatMessage = new ChatMessage
         {
             Content = messageRequestDto.Content,
@@ -220,12 +191,55 @@ public class ChatBotService(
             MaxTokens = 500, // Limit response length
             Temperature = 0.6 // Adjust creativity
         };
+        IAsyncEnumerable<StreamingChatMessageContent> response;
+        if (top5Products.Count == 0)
+        {
+            var systemEmptyInventoryPrompt = SystemPrompt.GenerateEmptyInventoryPrompt();
+            var emptyInventoryChat = new ChatHistory(systemEmptyInventoryPrompt);
+            emptyInventoryChat.AddUserMessage(messageRequestDto.Content);
+            response =
+                chatCompletionService.GetStreamingChatMessageContentsAsync(
+                    emptyInventoryChat,
+                    executionSetting,
+                    cancellationToken: token);
+        }
+        else
+        {
+            var context = new StringBuilder();
+            foreach (var product in top5Products)
+            {
+                context.Append($"{product.TextChunk} \n");
+            }
+            var systemPrompt = SystemPrompt.GenerateProductPrompt(context.ToString());
+            var chat = new ChatHistory(systemPrompt);
+            var reducer = new ChatHistoryTruncationReducer(20, 35);
 
-        var response =
-            chatCompletionService.GetStreamingChatMessageContentsAsync(
-                chat,
-                executionSetting,
-                cancellationToken: token);
+            foreach (var message in reverseHistoryChat)
+            {
+                switch (message.Role)
+                {
+                    case ChatBotRole.Assistant:
+                    {
+                        chat.AddAssistantMessage(message.Content);
+                        break;
+                    }
+                    case ChatBotRole.User:
+                    {
+                        chat.AddUserMessage(message.Content);
+                        break;
+                    }
+                }
+            }
+            var reducedMessage = await reducer.ReduceAsync(chat, token);
+            if (reducedMessage != null) chat = new ChatHistory(reducedMessage);
+
+            chat.AddUserMessage(messageRequestDto.Content);
+            response =
+                chatCompletionService.GetStreamingChatMessageContentsAsync(
+                    chat,
+                    executionSetting,
+                    cancellationToken: token);
+        }
         return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value, token));
     }
 
