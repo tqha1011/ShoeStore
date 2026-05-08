@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Pgvector;
 using Pgvector.EntityFrameworkCore;
 using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Domain.Entities.Embedding;
@@ -19,7 +20,7 @@ public class ProductEmbeddingRepository(AppDbContext context)
     {
         return await DbSet
             .AsNoTracking()
-            .OrderBy(x => x.Embedding.CosineDistance(queryVector))
+            .OrderBy(x => x.Embedding.CosineDistance(new Vector(queryVector.ToArray())))
             .Take(5)
             .ToListAsync(token);
     }

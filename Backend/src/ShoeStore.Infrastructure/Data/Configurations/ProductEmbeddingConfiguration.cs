@@ -11,10 +11,8 @@ public class ProductEmbeddingConfiguration : IEntityTypeConfiguration<ProductEmb
         builder.HasKey(e => e.Id);
 
         builder.HasOne(e => e.Product)
-            .WithMany()
+            .WithMany(p => p.ProductEmbeddings)
             .HasForeignKey(e => e.ProductId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        // pgvector-specific configuration is applied conditionally in AppDbContext.
     }
 }

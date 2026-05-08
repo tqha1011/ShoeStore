@@ -51,11 +51,18 @@ public class ProductRepository(AppDbContext context) : GenericRepository<Product
     {
         return DbSet.AsNoTracking()
             .AsSplitQuery()
-            .Where(p => !p.IsDeleted)
-            .Include(x => x.ProductVariants)
+            .Where(p => !p.IsDeleted && !p.ProductEmbeddings.Any() &&
+                        p.ProductVariants.Any(v => v.IsSelling && !v.IsDeleted))
+            .Include(x => x.ProductVariants.Where(v => v.IsSelling && !v.IsDeleted))
             .ThenInclude(x => x.Size)
-            .Include(x => x.ProductVariants)
+            .Include(x => x.ProductVariants.Where(v => v.IsSelling && !v.IsDeleted))
             .ThenInclude(x => x.Color)
             .Include(x => x.Category);
+    }
+
+    public async Task<int> CountActiveProductAsync(CancellationToken token)
+    {
+        return await DbSet.Where(p => !p.IsDeleted && p.ProductVariants.Any(v => v.IsSelling && !v.IsDeleted))
+            .CountAsync(token);
     }
 }

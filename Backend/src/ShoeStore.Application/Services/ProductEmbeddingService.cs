@@ -28,12 +28,11 @@ public class ProductEmbeddingService(
         const int pageSize = 10;
         var query = productRepository.GetProductsInformation();
         query = query.OrderBy(x => x.Id);
-        var totalCount = await query.CountAsync(cancellationToken);
-        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-        for (var pageIndex = 1; pageIndex <= totalPages; pageIndex++)
+        while (true)
         {
             var productList =
-                await query.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+                await query.Take(pageSize).ToListAsync(cancellationToken);
+            if (productList.Count == 0) break;
             var productEmbeddingList = new List<ProductEmbedding>();
             var textChunks = new List<string>();
             foreach (var product in productList)

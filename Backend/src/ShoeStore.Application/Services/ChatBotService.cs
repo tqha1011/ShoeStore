@@ -215,8 +215,6 @@ public class ChatBotService(
             TokenCount = messageRequestDto.Content.Length / 4 // Rough token estimation
         };
         chatMessageRepository.Add(newChatMessage);
-        await unitOfWork.SaveChangesAsync(token);
-
         var executionSetting = new OpenAIPromptExecutionSettings
         {
             MaxTokens = 500, // Limit response length
@@ -246,25 +244,30 @@ public class ChatBotService(
         [EnumeratorCancellation] CancellationToken token)
     {
         var message = new StringBuilder();
-        await foreach (var chunk in response.WithCancellation(token))
-            if (!string.IsNullOrEmpty(chunk.Content))
-            {
-                yield return chunk.Content;
-                message.Append(chunk.Content);
-            }
-
-        yield return "\n";
-
-        var newAssistantMessage = new ChatMessage
+        try
         {
-            Content = message.ToString(),
-            SessionId = sessionId,
-            CreatedAt = DateTime.UtcNow,
-            TokenCount = 0,
-            Role = ChatBotRole.Assistant
-        };
-        chatMessageRepository.Add(newAssistantMessage);
-        await unitOfWork.SaveChangesAsync(token);
+            await foreach (var chunk in response.WithCancellation(token))
+                if (!string.IsNullOrEmpty(chunk.Content))
+                {
+                    yield return chunk.Content;
+                    message.Append(chunk.Content);
+                }
+
+            yield return "\n";
+        }
+        finally
+        {
+            var newAssistantMessage = new ChatMessage
+            {
+                Content = message.ToString(),
+                SessionId = sessionId,
+                CreatedAt = DateTime.UtcNow,
+                TokenCount = 0,
+                Role = ChatBotRole.Assistant
+            };
+            chatMessageRepository.Add(newAssistantMessage);
+            await unitOfWork.SaveChangesAsync(token);   
+        }
     }
 
     private async Task<ReadOnlyMemory<float>> GenerateQueryVectorAsync(string content, CancellationToken token)
