@@ -37,7 +37,7 @@ import com.example.shoestoreapp.features.admin.crud.data.repositories.MasterData
 import com.example.shoestoreapp.features.admin.analytics.ui.AdminAnalyticsScreen
 import com.example.shoestoreapp.features.admin.analytics.viewmodel.AdminAnalyticsViewModel
 import com.example.shoestoreapp.features.admin.analytics.data.AnalyticsRepository
-import com.example.shoestoreapp.features.ai_assistant.ui.AiStrategyAssistantScreen
+import com.example.shoestoreapp.features.admin.ai_assistant.ui.AiStrategyAssistantScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenContent
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent

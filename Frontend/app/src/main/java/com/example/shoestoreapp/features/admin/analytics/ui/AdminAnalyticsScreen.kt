@@ -149,19 +149,7 @@ fun AdminAnalyticsScreen(
                             }
 
                             val aiPrompt = """
-                                Act as an expert Chief Marketing Officer for my Shoe E-commerce App. 
-                                Analyze our exact performance metrics from last month and provide 3 highly tailored, data-driven marketing strategies for this month.
-
-                                [OVERALL PERFORMANCE]
-                                - Total Revenue: ${formatCurrency(data.totalRevenue)} (Trend: ${formatPercent(data.growthTotalRevenuePercent)})
-                                - Total Orders: ${formatCount(data.totalOrders)} (Trend: ${formatPercent(data.growthInvoicePercent)})
-                                - Average Order Value: ${formatCurrency(data.averageRevenue)} (Trend: ${formatPercent(data.growthAverageRevenuePercent)})
-
-                                [TOP 3 BEST-SELLING PRODUCTS]
-                                $topProductsText
-
-                                [YOUR TASK]
-                                Look for correlations in the data (e.g., if orders are up but average value is down, or how to leverage the top-selling shoes to boost overall sales). Give me 3 concrete, actionable campaigns to execute right now.
+                                Run a Revenue Optimization analysis for the last 14 days focused on mobile users
                             """.trimIndent()
 
                             // Sếp gắn logic đẩy sang màn hình AI vào đây nhé
