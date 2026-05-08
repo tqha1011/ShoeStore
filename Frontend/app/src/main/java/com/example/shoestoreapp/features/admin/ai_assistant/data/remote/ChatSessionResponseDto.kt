@@ -4,11 +4,11 @@ import com.google.gson.annotations.SerializedName
 
 data class ChatSessionResponseDto (
     @SerializedName("PublicId")
-    val PublicId : String,
+    val publicId : String,
     @SerializedName("PublicUserId")
-    val PublicUserId : String,
+    val publicUserId : String,
     @SerializedName("Title")
-    val Title : String?,
+    val title : String?,
     @SerializedName("CreateAt")
-    val CreateAt : String,
+    val createAt : String,
 )

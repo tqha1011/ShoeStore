@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 data class CreateCampaignRequestDto (
     @SerializedName("PublicSessionId")
-    val PublicSessionId : String,
+    val publicSessionId : String,
     @SerializedName("Content")
-    val Content : String,
+    val content : String,
 )

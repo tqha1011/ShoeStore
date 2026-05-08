@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 data class CreateSessionResponseDto(
     @SerializedName("PublicSessionId")
-    val PublicSessionId : String,
+    val publicSessionId : String,
     @SerializedName("Title")
-    val Title : String,
+    val title : String,
 )
