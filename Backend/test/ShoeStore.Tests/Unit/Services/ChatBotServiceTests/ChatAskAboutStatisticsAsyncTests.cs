@@ -1,15 +1,17 @@
 using ErrorOr;
+using Microsoft.Extensions.AI;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Moq;
 using ShoeStore.Application.DTOs.ChatBotDTOs;
 using ShoeStore.Application.DTOs.StatisticsDto;
+using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.StatisticsInterface;
 using ShoeStore.Application.Services;
-using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
+using ChatMessage = ShoeStore.Domain.Entities.ChatMessage;
 
 namespace ShoeStore.Tests.Unit.Services.ChatBotServiceTests;
 
@@ -18,9 +20,11 @@ public class ChatAskAboutStatisticsAsyncTests
     private readonly Mock<IChatCompletionService> _chatCompletionService = new();
     private readonly Mock<IChatMessageRepository> _chatMessageRepository = new();
     private readonly Mock<IChatSessionRepository> _chatSessionRepository = new();
+    private readonly Mock<IEmbeddingGenerator<string, Embedding<float>>> _embeddingGenerator = new();
     private readonly ChatBotService _service;
     private readonly Mock<IStatisticsService> _statisticsService = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
+    private readonly Mock<IProductEmbeddingRepository> _productEmbeddingRepository = new();
 
     public ChatAskAboutStatisticsAsyncTests()
     {
@@ -29,7 +33,9 @@ public class ChatAskAboutStatisticsAsyncTests
             _chatCompletionService.Object,
             _chatMessageRepository.Object,
             _chatSessionRepository.Object,
-            _unitOfWork.Object);
+            _unitOfWork.Object,
+            _embeddingGenerator.Object,
+            _productEmbeddingRepository.Object);
     }
 
     [Fact]

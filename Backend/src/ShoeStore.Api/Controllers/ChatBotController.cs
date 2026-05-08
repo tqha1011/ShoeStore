@@ -19,8 +19,7 @@ namespace ShoeStore.Api.Controllers;
 [ApiVersion(1)]
 [ApiController]
 [EnableRateLimiting("limit-per-user")]
-[Authorize]
-public class ChatBotController(IChatBotService chatBotService) : ControllerBase
+public class ChatBotController(IChatBotService chatBotService, ILogger<ChatBotController> logger) : ControllerBase
 {
     /// <summary>
     ///     Streams a generated campaign proposal.
@@ -43,29 +42,35 @@ public class ChatBotController(IChatBotService chatBotService) : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost("generate-campaign")]
-    public async Task GenerateCampaign(CreateCampaignRequestDto requestDto, CancellationToken cancellationToken)
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GenerateCampaign(CreateCampaignRequestDto requestDto,
+        CancellationToken cancellationToken)
     {
         var response = await chatBotService.GenerateCampaignAsync(requestDto, cancellationToken);
 
-        if (response.IsError)
-        {
-            Response.StatusCode = StatusCodes.Status500InternalServerError;
-            Response.ContentType = "application/json";
-            await Response.WriteAsJsonAsync(new
-            {
-                message = "Generation failed",
-                detail = response.FirstError.Description
-            }, cancellationToken);
-            return;
-        }
+        if (response.IsError) return HandleError(response.FirstError.Description);
 
         SetSseHeaders();
 
-        await foreach (var chunk in response.Value.WithCancellation(cancellationToken))
-            await SendSseChunkAsync(chunk, cancellationToken);
+        try
+        {
+            await foreach (var chunk in response.Value.WithCancellation(cancellationToken))
+            {
+                var success = await SafeSendChunkAsync(chunk, cancellationToken);
+                if (!success)
+                    break; // Stop processing further chunks if sending failed
+            }
+        }
+        catch (Exception ex)
+        {
+            await SendSseChunkAsync("[ERROR] The LLM can not support for now", CancellationToken.None);
+            logger.LogError(ex, ex.Message);
+        }
+
 
         // send [DONE] event to indicate completion of the stream to the client
-        await SendSseChunkAsync("[DONE]", cancellationToken);
+        if (!cancellationToken.IsCancellationRequested) await SendSseChunkAsync("[DONE]", cancellationToken);
+        return new EmptyResult();
     }
 
     /// <summary>
@@ -82,28 +87,83 @@ public class ChatBotController(IChatBotService chatBotService) : ControllerBase
     /// <response code="401">Unauthorized; user is not authenticated.</response>
     /// <response code="500">Internal server error; generation failed.</response>
     /// <returns>Streaming SSE response of the chatbot output.</returns>
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost("chat-statistics")]
-    public async Task ChatAskAboutStatistics([FromBody] ChatMessageRequestDto requestDto,
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ChatAskAboutStatistics([FromBody] ChatMessageRequestDto requestDto,
         [FromQuery] Guid publicSessionId, CancellationToken cancellationToken)
     {
         var response = await chatBotService.ChatAskAboutStatisticsAsync(publicSessionId, requestDto, cancellationToken);
-        if (response.IsError)
-        {
-            Response.StatusCode = StatusCodes.Status500InternalServerError;
-            Response.ContentType = "application/json";
-            await Response.WriteAsJsonAsync(new
-            {
-                message = "Generation failed",
-                detail = response.FirstError.Description
-            }, cancellationToken);
-            return;
-        }
+        if (response.IsError) return HandleError(response.FirstError.Description);
 
         SetSseHeaders();
 
-        await foreach (var chunk in response.Value.WithCancellation(cancellationToken))
-            await SendSseChunkAsync(chunk, cancellationToken);
-        await SendSseChunkAsync("[DONE]", cancellationToken);
+        try
+        {
+            await foreach (var chunk in response.Value.WithCancellation(cancellationToken))
+            {
+                var success = await SafeSendChunkAsync(chunk, cancellationToken);
+                if (!success)
+                    break; // Stop processing further chunks if sending failed
+            }
+        }
+        catch (Exception ex)
+        {
+            await SendSseChunkAsync("[ERROR] The LLM can not support for now", CancellationToken.None);
+            logger.LogError(ex, ex.Message);
+        }
+
+        if (!cancellationToken.IsCancellationRequested) await SendSseChunkAsync("[DONE]", cancellationToken);
+
+        return new EmptyResult();
+    }
+
+    /// <summary>
+    ///     Streams chatbot responses for product-related questions in a session.
+    /// </summary>
+    /// <remarks>
+    ///     The response is streamed as Server-Sent Events (SSE) with <c>text/event-stream</c> content type.
+    ///     The request requires an authenticated user.
+    /// </remarks>
+    /// <param name="requestDto">The user's message and context for product inquiry.</param>
+    /// <param name="publicSessionId">The public session identifier for the chat session.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
+    /// <response code="200">Product response stream started successfully.</response>
+    /// <response code="401">Unauthorized; user is not authenticated.</response>
+    /// <response code="500">Internal server error; generation failed.</response>
+    /// <returns>Streaming SSE response of the chatbot output.</returns>
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
+    [HttpPost("chat-product")]
+    [Authorize]
+    public async Task<IActionResult> ChatAskAboutProduct([FromBody] ChatMessageRequestDto requestDto,
+        [FromQuery] Guid publicSessionId,
+        CancellationToken cancellationToken)
+    {
+        var response = await chatBotService.ChatAskAboutProductsAsync(publicSessionId, requestDto, cancellationToken);
+        if (response.IsError) return HandleError(response.FirstError.Description);
+
+        SetSseHeaders();
+        try
+        {
+            await foreach (var chunk in response.Value.WithCancellation(cancellationToken))
+            {
+                var success = await SafeSendChunkAsync(chunk, cancellationToken);
+                if (!success)
+                    break; // Stop processing further chunks if sending failed
+            }
+        }
+        catch (Exception ex)
+        {
+            await SendSseChunkAsync("[ERROR] The LLM can not support for now", CancellationToken.None);
+            logger.LogError(ex, ex.Message);
+        }
+
+        if (!cancellationToken.IsCancellationRequested) await SendSseChunkAsync("[DONE]", cancellationToken);
+        return new EmptyResult();
     }
 
     private void SetSseHeaders()
@@ -111,6 +171,7 @@ public class ChatBotController(IChatBotService chatBotService) : ControllerBase
         Response.ContentType = "text/event-stream";
         Response.Headers.Append("Cache-Control", "no-cache");
         Response.Headers.Append("Connection", "keep-alive");
+        Response.Headers.Append("X-Accel-Buffering", "no");
     }
 
     private async Task SendSseChunkAsync(string chunk, CancellationToken cancellationToken)
@@ -120,5 +181,34 @@ public class ChatBotController(IChatBotService chatBotService) : ControllerBase
         var sanitizedChunk = chunk.Replace("\n", "\ndata: ");
         await Response.WriteAsync($"data: {sanitizedChunk}\n\n", cancellationToken);
         await Response.Body.FlushAsync(cancellationToken);
+    }
+
+    private IActionResult HandleError(string error)
+    {
+        return StatusCode(StatusCodes.Status500InternalServerError, new
+        {
+            message = "Generation failed",
+            detail = error
+        });
+    }
+
+    private async Task<bool> SafeSendChunkAsync(string chunk, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await SendSseChunkAsync(chunk, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return false;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, ex.Message);
+            await SendSseChunkAsync("[ERROR] The LLM can not support for now", CancellationToken.None);
+            return false;
+        }
+
+        return true;
     }
 }

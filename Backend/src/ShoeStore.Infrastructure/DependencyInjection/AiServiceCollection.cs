@@ -1,6 +1,8 @@
+using System.ClientModel;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
+using OpenAI;
 
 namespace ShoeStore.Infrastructure.DependencyInjection;
 
@@ -14,6 +16,9 @@ public static class AiServiceCollection
                      throw new InvalidOperationException("Chatbot API key is missing");
         var model = configuration[$"Chatbot:{provider}:Model"] ??
                     throw new InvalidOperationException("Chatbot model is missing");
+
+        var embeddingModel = configuration[$"Chatbot:{provider}:EmbeddingModel"] ??
+                             throw new InvalidOperationException("Chatbot embedding model is missing");
         if (provider == "Ollama")
         {
             var url = configuration[$"Chatbot:{provider}:Url"] ??
@@ -21,16 +26,26 @@ public static class AiServiceCollection
 
             var endpoint = new Uri(url);
 
+            var openAiClient = new OpenAIClient(new ApiKeyCredential(apiKey), new OpenAIClientOptions
+            {
+                Endpoint = endpoint
+            });
+
             services.AddOpenAIChatCompletion(
                 model,
-                apiKey: apiKey,
-                endpoint: endpoint
-            );
+                openAiClient);
+
+            services.AddOpenAIEmbeddingGenerator(embeddingModel, openAiClient);
         }
         else
         {
             services.AddGoogleAIGeminiChatCompletion(
                 model,
+                apiKey
+            );
+
+            services.AddGoogleAIEmbeddingGenerator(
+                embeddingModel,
                 apiKey
             );
         }

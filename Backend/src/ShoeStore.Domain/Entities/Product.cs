@@ -1,4 +1,5 @@
 using ShoeStore.Domain.Common;
+using ShoeStore.Domain.Entities.Embedding;
 
 namespace ShoeStore.Domain.Entities;
 
@@ -17,4 +18,6 @@ public class Product : Entity<int>
     public bool IsDeleted { get; set; } = false;
 
     public ICollection<ProductVariant> ProductVariants { get; set; } = new List<ProductVariant>();
+
+    public ICollection<ProductEmbedding> ProductEmbeddings { get; set; } = new List<ProductEmbedding>();
 }

@@ -20,8 +20,5 @@ public class UserAddressConfiguration : IEntityTypeConfiguration<UserAddress>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(addr => new { addr.UserId, addr.Address }).IsUnique();
-        builder.HasIndex(addr => addr.UserId)
-            .IsUnique()
-            .HasFilter("is_default = true");
     }
 }

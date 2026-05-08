@@ -182,9 +182,9 @@ app.MapOpenApi();
 app.MapScalarApiReference(options =>
 {
     options.WithTitle("Shoe Store Enterprise API");
-    
-    options.WithTheme(ScalarTheme.BluePlanet); 
-    
+
+    options.WithTheme(ScalarTheme.BluePlanet);
+
     options.WithDefaultHttpClient(ScalarTarget.Kotlin, ScalarClient.OkHttp);
 });
 app.UseAuthentication();

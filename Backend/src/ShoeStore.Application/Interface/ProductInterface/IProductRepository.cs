@@ -14,4 +14,6 @@ public interface IProductRepository : IGenericRepository<Product, int>
     IQueryable<Product> GetAll();
 
     IQueryable<Product> GetProductsInformation();
+
+    Task<int> CountActiveProductAsync(CancellationToken token);
 }
