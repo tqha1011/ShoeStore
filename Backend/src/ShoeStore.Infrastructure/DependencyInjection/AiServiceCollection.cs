@@ -16,13 +16,13 @@ public static class AiServiceCollection
                      throw new InvalidOperationException("Chatbot API key is missing");
         var model = configuration[$"Chatbot:{provider}:Model"] ??
                     throw new InvalidOperationException("Chatbot model is missing");
-
-        var embeddingModel = configuration[$"Chatbot:{provider}:EmbeddingModel"] ??
-                             throw new InvalidOperationException("Chatbot embedding model is missing");
         if (provider == "Ollama")
         {
             var url = configuration[$"Chatbot:{provider}:Url"] ??
                       throw new InvalidOperationException("Chatbot url is missing");
+            
+            var embeddingModel = configuration[$"Chatbot:{provider}:EmbeddingModel"] ??
+                                 throw new InvalidOperationException("Chatbot embedding model is missing");
 
             var endpoint = new Uri(url);
 
@@ -39,6 +39,9 @@ public static class AiServiceCollection
         }
         else
         {
+            var embeddingModel = configuration[$"Chatbot:{provider}:EmbeddingModel"] ??
+                                 throw new InvalidOperationException("Chatbot embedding model is missing");
+            
             services.AddGoogleAIGeminiChatCompletion(
                 model,
                 apiKey
