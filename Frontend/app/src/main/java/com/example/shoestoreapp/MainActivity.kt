@@ -37,6 +37,7 @@ import com.example.shoestoreapp.features.admin.crud.data.repositories.MasterData
 import com.example.shoestoreapp.features.admin.analytics.ui.AdminAnalyticsScreen
 import com.example.shoestoreapp.features.admin.analytics.viewmodel.AdminAnalyticsViewModel
 import com.example.shoestoreapp.features.admin.analytics.data.AnalyticsRepository
+import com.example.shoestoreapp.features.admin.ai_assistant.ui.AiStrategyAssistantScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenContent
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
@@ -63,6 +64,7 @@ private object Routes {
     const val ADMIN_CRUD = "admin_crud"
     const val ADMIN_INVOICE_LIST = "admin_invoice_list"
     const val ADMIN_ANALYTICS = "admin_analytics"
+    const val ADMIN_AI_ASSISTANT = "admin_ai_assistant"
     const val ADMIN_SETTINGS = "admin_settings"
 
     fun createNewPassword(email: String, otp: String): String = "create_new_password/$email/$otp"
@@ -289,7 +291,14 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
                     repository = AnalyticsRepository(RetrofitInstance.analyticsApi)
                 )
             },
+            onAiClick = { navController.navigate(Routes.ADMIN_AI_ASSISTANT) },
             onTabSelected = { tab -> handleAdminAnalyticsTabSelection(tab, navController) }
+        )
+    }
+
+    composable(Routes.ADMIN_AI_ASSISTANT) {
+        AiStrategyAssistantScreen(
+            onBackClick = { navController.popBackStack() }
         )
     }
 
