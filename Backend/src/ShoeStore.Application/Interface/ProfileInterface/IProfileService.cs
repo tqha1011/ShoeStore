@@ -6,7 +6,9 @@ namespace ShoeStore.Application.Interface.ProfileInterface
     public interface IProfileService
     {
         // PROFILE
-        Task<ErrorOr<Updated>> UpdateProfile(Guid userGuid, UpdateProfileDto update, CancellationToken token);
-        Task<ErrorOr<ResponseProfileDto>> GetProfile(Guid userGuid, CancellationToken token);
+        Task<ErrorOr<Updated>> UpdateProfileAsync(Guid userGuid, UpdateProfileDto update, CancellationToken token);
+        Task<ErrorOr<ResponseProfileDto>> GetProfileAsync(Guid userGuid, CancellationToken token);
+        // PASSWORD
+        Task<ErrorOr<Updated>> ChangePass
     }
 }
