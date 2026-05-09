@@ -146,7 +146,7 @@ public class GenerateCampaignAsyncTests
         Assert.Equal("Buy 1 Get 1", output);
         _chatMessageRepository.Verify(r => r.Add(It.Is<ChatMessage>(m =>
             m.Role == ChatBotRole.User && m.Content == request.Content && m.SessionId == sessionId)), Times.Once);
-        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
     private static StatisticsSummaryResponseDto BuildSummary()

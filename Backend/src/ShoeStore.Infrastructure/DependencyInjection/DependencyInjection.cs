@@ -58,16 +58,13 @@ public static class DependencyInjection
         services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
         services.AddScoped<ICartItemRepository, CartItemRepository>();
         services.AddHttpContextAccessor();
-        services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
-        services.AddScoped<IInvoiceService, InvoiceService>();
         services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<IColorRepository, ColorRepository>();
         services.AddScoped<ISizeRepository, SizeRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IVoucherRepository, VoucherRepository>();
-        services.AddScoped<IVoucherService, VoucherService>();
         services.AddScoped<IUserVoucherRepository, UserVoucherRepository>();
         services.AddScoped<IGoogleValidator, GoogleValidator>();
         services.AddSingleton<INotificationQueue, NotificationQueue>();

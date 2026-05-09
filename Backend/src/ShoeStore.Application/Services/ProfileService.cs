@@ -21,7 +21,7 @@ namespace ShoeStore.Application.Services
         public async Task<ErrorOr<Updated>> ChangePasswordAsync(Guid userGuid, ChangePasswordDto changePassword, CancellationToken token)
         {
             var user = await _userRepository.GetUserByPublicIdAsync(userGuid, token);
-            if(user == null)
+            if (user == null)
                 return Error.NotFound("User.NotFound", $"User with ID {userGuid} was not found.");
 
             var isCorrectPassword = BCrypt.Net.BCrypt.Verify(
@@ -42,7 +42,7 @@ namespace ShoeStore.Application.Services
                     "Confirm password does not match");
             }
 
-            user.Password = changePassword.NewPassword;
+            user.Password = BCrypt.Net.BCrypt.HashPassword(changePassword.NewPassword);
 
             _userRepository.Update(user);
             await _uow.SaveChangesAsync(token);
@@ -52,19 +52,20 @@ namespace ShoeStore.Application.Services
 
         public async Task<ErrorOr<ResponseProfileDto>> GetProfileAsync(Guid userGuid, CancellationToken token)
         {
+
             var profile = await _userRepository.GetUserByPublicIdAsync(userGuid, token);
 
-            if(profile == null)
+            if (profile == null)
                 return Error.NotFound("User.NotFound", $"User with ID {userGuid} was not found.");
 
             return new ResponseProfileDto
             {
                 UserGuid = userGuid,
                 UserName = profile.UserName,
-                Password = profile.Password,
                 Email = profile.Email,
                 DateOfBirth = profile.DateOfBirth,
             };
+           
         }
 
         public async Task<ErrorOr<Updated>> UpdateProfileAsync(Guid userGuid, UpdateProfileDto update, CancellationToken token)
@@ -73,10 +74,10 @@ namespace ShoeStore.Application.Services
             if (profile == null)
                 return Error.NotFound("User.NotFound", $"User with ID {userGuid} was not found.");
 
-            profile.UserName = update.UserName;
-            profile.DateOfBirth = update.DateOfBirth;
+            profile.UserName = update.UserName ?? profile.UserName;
+            profile.DateOfBirth = update.DateOfBirth ?? profile.DateOfBirth;
             // Avata Url
-            profile.UpdatedAt = DateTime.Now;
+            profile.UpdatedAt = DateTime.UtcNow;
 
             _userRepository.Update(profile);
             await _uow.SaveChangesAsync(token);

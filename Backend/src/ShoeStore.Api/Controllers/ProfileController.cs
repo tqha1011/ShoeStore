@@ -10,9 +10,8 @@ namespace ShoeStore.Api.Controllers;
 /// Controller for managing user profile information.
 /// </summary>
 /// <param name="profileService">The profile service instance.</param>
-[Authorize]
+//[Authorize]
 [Route("api/profile")]
-[ApiVersion(1)]
 [ApiController]
 public class ProfileController(IProfileService profileService) : ControllerBase
 {
