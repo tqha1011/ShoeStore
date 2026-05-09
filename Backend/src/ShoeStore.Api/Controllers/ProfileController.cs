@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.ProfileDTOs;
 using ShoeStore.Application.Interface;
-using ShoeStore.Application.Interface.IProfileInterface;
+using ShoeStore.Application.Interface.ProfileInterface;
 
 namespace ShoeStore.Api.Controllers;
 

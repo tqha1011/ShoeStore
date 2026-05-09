@@ -1,7 +1,7 @@
 ﻿using ErrorOr;
 using ShoeStore.Application.DTOs.ProfileDTOs;
 
-namespace ShoeStore.Application.Interface.IProfileInterface
+namespace ShoeStore.Application.Interface.ProfileInterface
 {
     public interface IProfileService
     {
