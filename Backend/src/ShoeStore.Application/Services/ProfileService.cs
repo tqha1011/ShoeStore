@@ -34,6 +34,20 @@ namespace ShoeStore.Application.Services
                     "Password.InvalidCurrentPassword",
                     "Current password is incorrect");
             }
+
+            if (changePassword.NewPassword != changePassword.ConfirmPassword)
+            {
+                return Error.Validation(
+                    "Password.ConfirmMismatch",
+                    "Confirm password does not match");
+            }
+
+            user.Password = changePassword.NewPassword;
+
+            _userRepository.Update(user);
+            await _uow.SaveChangesAsync(token);
+
+            return Result.Updated;
         }
 
         public async Task<ErrorOr<ResponseProfileDto>> GetProfileAsync(Guid userGuid, CancellationToken token)
