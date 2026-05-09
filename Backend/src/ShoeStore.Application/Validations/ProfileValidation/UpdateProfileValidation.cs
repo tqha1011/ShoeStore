@@ -11,8 +11,9 @@ public class UpdateProfileDtoValidator : AbstractValidator<UpdateProfileDto>
     public UpdateProfileDtoValidator()
     {
         RuleFor(x => x.UserName)
-            .NotEmpty().WithMessage("Username is required")
-            .MaximumLength(50).WithMessage("Username must not exceed 50 characters");
+            .MaximumLength(50)
+            .WithMessage("Username must not exceed 50 characters")
+            .When(x => !string.IsNullOrEmpty(x.UserName));
 
         RuleFor(x => x.DateOfBirth)
             .LessThan(DateTime.UtcNow).WithMessage("Date of birth must be in the past")
