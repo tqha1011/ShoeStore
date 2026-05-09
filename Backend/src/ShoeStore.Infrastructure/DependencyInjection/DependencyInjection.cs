@@ -23,7 +23,7 @@ using ShoeStore.Infrastructure.Data;
 using ShoeStore.Infrastructure.Notification;
 using ShoeStore.Infrastructure.Repositories;
 using ShoeStore.Infrastructure.RestorePassService;
-
+using ShoeStore.Application.Interface.AddressInterface;
 namespace ShoeStore.Infrastructure.DependencyInjection;
 
 public static class DependencyInjection
@@ -71,6 +71,8 @@ public static class DependencyInjection
         services.AddScoped<IChatSessionRepository, ChatSessionRepository>();
         services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
         services.AddScoped<IProductEmbeddingRepository, ProductEmbeddingRepository>();
+        services.AddScoped<IAddressRepository, AddressRepository>();
+        services.AddScoped<IAddressService, AddressService>();
         return services;
     }
 }
