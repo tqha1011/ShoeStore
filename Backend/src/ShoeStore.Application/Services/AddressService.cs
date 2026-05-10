@@ -77,6 +77,11 @@ namespace ShoeStore.Application.Services
             return address.Address;
         }
 
+        public async Task<ErrorOr<IEnumerable<string>>> GetAllAddressAsync(Guid userGuid, CancellationToken token)
+        {
+            return null;
+        }
+
         public async Task<ErrorOr<Updated>> UpdateAddressAsync(Guid userGuid, int addressId, UpdateAddressDto updateAddress, CancellationToken token)
         {
             if (addressId <= 0)
