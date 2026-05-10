@@ -25,5 +25,13 @@ namespace ShoeStore.Api.Controllers
 
             return Ok(result);
         }
+
+        [HttpDelete("{userGuid}, {addressId}")]
+        public async Task<IActionResult> DeleteAddress(Guid userGuid, int addressId, CancellationToken token)
+        {
+            var result = await addressService.DeleteAddressAsync(userGuid, addressId, token);
+
+            return Ok(result);
+        }
     }
 }

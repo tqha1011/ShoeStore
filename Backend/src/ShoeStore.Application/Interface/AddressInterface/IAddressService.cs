@@ -9,5 +9,7 @@ namespace ShoeStore.Application.Interface.AddressInterface
         Task<ErrorOr<Created>> CreateAddressAsync(Guid userGuid, CreateAddressDto createAddress, CancellationToken token);
         // UPDATE
         Task<ErrorOr<Updated>> UpdateAddressAsync(Guid userGuid, int addressId, UpdateAddressDto updateAddress, CancellationToken token); 
+        // DELETE
+        Task<ErrorOr<Deleted>> DeleteAddressAsync(Guid userGuid, int addressId, CancellationToken token);
     }
 }
