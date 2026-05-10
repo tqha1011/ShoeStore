@@ -25,19 +25,20 @@ import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailVie
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewModel
 import com.example.shoestoreapp.features.user.invoice.ui.UserInvoiceScreen
 import com.example.shoestoreapp.features.user.profile.ui.UserProfileScreen
-import com.example.shoestoreapp.features.admin.product.ui.AdminProductListScreen
+import com.example.shoestoreapp.features.admin.product.ui.screens.AdminProductListScreen
 import com.example.shoestoreapp.features.admin.settings.ui.AdminSettingsScreen
 import com.example.shoestoreapp.features.admin.product.viewmodel.AdminProductListViewModel
-import com.example.shoestoreapp.features.admin.crud.ui.AdminProductCrudScreen
-import com.example.shoestoreapp.features.admin.crud.viewmodel.ProductCrudViewModel
-import com.example.shoestoreapp.features.admin.crud.data.repositories.ProductCrudRepository
-import com.example.shoestoreapp.features.admin.crud.data.repositories.MasterDataRepository
+import com.example.shoestoreapp.features.admin.addproduct.ui.AdminProductCrudScreen
+import com.example.shoestoreapp.features.admin.addproduct.data.repositories.MasterDataRepository
 import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenContent
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
 import com.example.shoestoreapp.features.auth.presentation.welcome.WelcomeScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.CreateNewPasswordScreen
 import com.example.shoestoreapp.core.utils.TokenManager
+import com.example.shoestoreapp.features.admin.addproduct.viewmodel.AdminAddProductViewModel
+import com.example.shoestoreapp.features.admin.addproduct.viewmodel.FetchMasterDataViewModel
+import com.example.shoestoreapp.features.admin.product.viewmodel.AdminEditProductViewModel
 import kotlinx.coroutines.launch
 
 private object Routes {
@@ -54,10 +55,12 @@ private object Routes {
     const val USER_PROFILE = "user_profile"
     const val ADMIN_PRODUCT_LIST = "admin_product_list"
     const val ADMIN_CRUD = "admin_crud"
+    const val ADMIN_EDIT_PRODUCT = "admin_edit_product/{productId}"
     const val ADMIN_INVOICE_LIST = "admin_invoice_list"
     const val ADMIN_SETTINGS = "admin_settings"
 
     fun createNewPassword(email: String, otp: String): String = "create_new_password/$email/$otp"
+    fun adminEditProduct(productId: String): String = "admin_edit_product/$productId"
 }
 
 @Suppress("DEPRECATION")
@@ -234,6 +237,9 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
                 navController.navigate(Routes.ADMIN_CRUD)
             },
             onTabSelected = { tab -> handleAdminProductTabSelection(tab, navController) },
+            onEditProductClick = { productId ->
+                navController.navigate(Routes.ADMIN_EDIT_PRODUCT.replace("{productId}", productId))
+            },
             navController = navController
         )
     }
@@ -241,13 +247,22 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
     composable(Routes.ADMIN_CRUD) {
         AdminProductCrudScreen(
             viewModel = remember {
-                ProductCrudViewModel(
-                    repository = ProductCrudRepository(),
+                FetchMasterDataViewModel(
                     masterDataRepo = MasterDataRepository()
                 )
             },
+            addProductViewModel = remember { AdminAddProductViewModel() },
             onBackClick = { navController.popBackStack() },
             navController = navController
+        )
+    }
+
+    composable(Routes.ADMIN_EDIT_PRODUCT) { backStackEntry ->
+        val productId = backStackEntry.arguments?.getString("productId") ?: ""
+        com.example.shoestoreapp.features.admin.product.ui.screens.AdminEditProductScreen(
+            productId = productId,
+            viewModel = remember { AdminEditProductViewModel() },
+            onBackClick = { navController.popBackStack() }
         )
     }
 

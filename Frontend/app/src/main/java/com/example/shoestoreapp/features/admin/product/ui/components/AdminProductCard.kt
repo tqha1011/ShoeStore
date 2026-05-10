@@ -1,10 +1,8 @@
 ﻿package com.example.shoestoreapp.features.admin.product.ui.components
+
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -12,11 +10,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import coil.compose.AsyncImage
 import com.example.shoestoreapp.features.admin.product.data.models.AdminProduct
+import java.text.NumberFormat
 import java.util.Locale
 
 /**
@@ -34,11 +34,12 @@ import java.util.Locale
 @Composable
 fun AdminProductCard(
     product: AdminProduct,
-    onProductClick: (Int) -> Unit = {}
+    onProductClick: (String) -> Unit = {}
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onProductClick(product.id) }
     ) {
         // Ảnh sản phẩm
         AsyncImage(
@@ -56,38 +57,37 @@ fun AdminProductCard(
             modifier = Modifier.padding(top = 12.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            // Tên sản phẩm
-            product.name?.let {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 Text(
-                    text = it,
+                    text = product.name,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     color = Color.Black,
                     maxLines = 1,
-                    modifier = Modifier.fillMaxWidth()
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+                        .format(product.price.toLong()) + " ₫",
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 13.sp,
+                    color = Color(0xFF6B7280),
+                    maxLines = 1
                 )
             }
-            // Giá tiền
-            Text(
-                text = String.format(Locale.US, "$%.0f", product.price),
-                fontWeight = FontWeight.Medium,
-                fontSize = 14.sp,
-                color = Color(0xFF999999)
-            )
-            // Stock
-            Text(
-                text = "Stock: ${product.stock}",
-                fontWeight = FontWeight.Medium,
-                fontSize = 12.sp,
-                color = Color(0xFF666666),
-                modifier = Modifier.padding(top = 4.dp)
-            )
-            // Variants count
             Text(
                 text = "Variants: ${product.variantsCount}",
-                fontWeight = FontWeight.Medium,
                 fontSize = 12.sp,
-                color = Color(0xFF666666)
+                color = Color(0xFF6B7280)
+            )
+            Text(
+                text = "Total stock: ${product.stock}",
+                fontSize = 12.sp,
+                color = Color(0xFF6B7280)
             )
         }
     }

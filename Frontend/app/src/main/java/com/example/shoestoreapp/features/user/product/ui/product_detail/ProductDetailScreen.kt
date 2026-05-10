@@ -1,5 +1,6 @@
 package com.example.shoestoreapp.features.user.product.ui.product_detail
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.shoestoreapp.features.user.product.ui.components.ActionButtonsSection
 import com.example.shoestoreapp.features.user.product.ui.components.AddToBagBottomSheetContent
@@ -71,6 +73,8 @@ fun ProductDetailScreen(
     var selectedColor by rememberSaveable(productGuid) { mutableStateOf<String?>(null) }
     var quantity by rememberSaveable(productGuid) { mutableIntStateOf(1) }
 
+    val context = LocalContext.current
+
     LaunchedEffect(productGuid) {
         viewModel.loadProductDetail(productGuid)
     }
@@ -78,17 +82,24 @@ fun ProductDetailScreen(
     LaunchedEffect(addToCartState) {
         when (val state = addToCartState) {
             is AddToCartUiState.Success -> {
-                snackbarHostState.showSnackbar("Added to cart successfully")
+                // 1. Ẩn Bottom Sheet NGAY LẬP TỨC
                 if (showAddToBagSheet) {
                     sheetState.hide()
                     showAddToBagSheet = false
                 }
+                // 2. Bắn Toast thông báo (hiển thị xuyên màn hình)
+                Toast.makeText(context, "Added to cart successfully", Toast.LENGTH_SHORT).show()
+
+                // 3. Chuyển trang sang Cart
                 onNavigateToCart()
+
+                // 4. Reset state
                 viewModel.resetAddToCartState()
             }
 
             is AddToCartUiState.Error -> {
-                snackbarHostState.showSnackbar(state.message)
+                // Lỗi thì khoan đóng Sheet, báo Toast cho user biết bị gì
+                Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
                 viewModel.resetAddToCartState()
             }
 
@@ -301,6 +312,7 @@ fun ProductDetailScreen(
                             }
                         }
                     },
+                    isLoading = isAddToCartLoading,
                     onConfirm = {
                         selectedVariantForCart?.let { variant ->
                             viewModel.addCartItem(variant.publicId, quantity)

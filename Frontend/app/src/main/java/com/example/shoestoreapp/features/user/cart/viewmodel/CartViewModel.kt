@@ -7,6 +7,8 @@ import com.example.shoestoreapp.features.user.cart.data.models.CartSummary
 import com.example.shoestoreapp.features.user.cart.data.remote.CartItemResponseDto
 import com.example.shoestoreapp.features.user.cart.data.repositories.CartRepository
 import com.example.shoestoreapp.features.user.cart.data.repositories.CartRepositoryImpl
+import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutRequestDto
+import com.example.shoestoreapp.features.user.checkout.data.repositories.CheckoutSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -55,6 +57,7 @@ class CartViewModel(
     val updatingItemIds: StateFlow<Set<String>> = _updatingItemIds.asStateFlow()
 
     private val _cartDtos = MutableStateFlow<List<CartItemResponseDto>>(emptyList())
+
 
     // ============ INIT ============
     init {
@@ -202,8 +205,17 @@ class CartViewModel(
      * Xử lý checkout (chuẩn bị dữ liệu để chuyển sang checkout screen)
      * Logic checkout thực tế sẽ ở CheckoutViewModel
      */
-    fun onCheckout(): Boolean {
-        return _cartDtos.value.isNotEmpty()
+    fun onCheckout() {
+        // 1. Map danh sách CartItemResponseDto sang CheckOutRequestDto
+        val checkoutItems = _cartDtos.value.map { dto ->
+            CheckOutRequestDto(
+                variantId = dto.productVariantId ?: "",
+                quantity = dto.quantity
+            )
+        }
+
+        // 2. Cất vào kho chứa (Repository)
+        CheckoutSession.pendingItems = checkoutItems
     }
 
     /**

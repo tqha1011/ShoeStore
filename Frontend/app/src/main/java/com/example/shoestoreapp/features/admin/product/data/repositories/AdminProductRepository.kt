@@ -1,20 +1,18 @@
 ﻿package com.example.shoestoreapp.features.admin.product.data.repositories
-import com.example.shoestoreapp.core.networks.RetrofitInstance
-import com.example.shoestoreapp.features.admin.product.data.models.AdminProduct
-import com.example.shoestoreapp.features.admin.product.data.models.StockStatus
-import com.example.shoestoreapp.features.admin.product.data.remote.AdminProductApi
-import com.example.shoestoreapp.features.admin.product.data.remote.ProductSearchDto
-import com.example.shoestoreapp.features.admin.product.data.remote.ProductVariantDto
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 
-class AdminProductRepository(
-    private val adminApi: AdminProductApi = RetrofitInstance.adminApi
-) {
-    // 1. Search products with filters and pagination
+import com.example.shoestoreapp.features.admin.product.data.models.AdminProduct
+import com.example.shoestoreapp.features.admin.product.data.remote.ProductResponseDto
+import kotlinx.coroutines.flow.Flow
+import retrofit2.Response
+
+data class AdminProductPage(
+    val items: List<AdminProduct>,
+    val pageNumber: Int,
+    val totalPages: Int,
+    val hasNext: Boolean
+)
+
+interface AdminProductRepository {
     fun searchProducts(
         keyword: String?,
         inStock: Boolean?,
@@ -22,62 +20,32 @@ class AdminProductRepository(
         lowStock: Boolean?,
         pageIndex: Int?,
         pageSize: Int?
-    ): Flow<List<AdminProduct>?> = flow {
-        val response = adminApi.adminSearchProducts(
-            keyword,
-            inStock,
-            outOfStock,
-            lowStock,
-            pageIndex,
-            pageSize
-        )
+    ): Flow<AdminProductPage>
 
-        if (response.isSuccessful && response.body() != null) {
-            val body = response.body()
+    suspend fun getProductById(productId: String): Result<ProductResponseDto>
+}
 
-            val dtoList = body?.items ?: emptyList()
-            val productsList = dtoList.map { dto -> mapDtoToAdminProduct(dto) }
+sealed class AdminProductRepositoryException(message: String) : Exception(message) {
+    class Unauthorized(message: String = ERROR_UNAUTHORIZED) : AdminProductRepositoryException(message)
+    class NotFound(message: String = ERROR_NOT_FOUND) : AdminProductRepositoryException(message)
+    class ServerError(message: String = ERROR_SERVER) : AdminProductRepositoryException(message)
+    class Unknown(message: String = ERROR_UNKNOWN) : AdminProductRepositoryException(message)
+}
 
-            emit(productsList)
-        } else {
-            emit(emptyList())
-        }
-    }.catch { _ ->
-        emit(emptyList())
+private const val ERROR_UNAUTHORIZED = "Unauthorized. Please sign in again."
+private const val ERROR_NOT_FOUND = "Product not found."
+private const val ERROR_SERVER = "Server error. Please try again later."
+private const val ERROR_UNKNOWN = "Unable to load product details right now."
 
-    }.flowOn(Dispatchers.IO)
+internal fun <T> Response<T>.toRepositoryException(): AdminProductRepositoryException {
+    val backendMessage = errorBody()?.string()?.takeIf { it.isNotBlank() }
 
-    // 2. Get product detail by productGuid
-    fun adminGetProductDetail(productGuid: String): Flow<AdminProduct?> = flow {
-        val response = adminApi.adminSearchDetail(productGuid)
-        if (response.isSuccessful && response.body() != null) {
-            val body = response.body()
-            val product = body?.let { mapDtoToAdminProduct(it) }
-            emit(product)
-        } else {
-            emit(null)
-        }
-    }.catch { _ ->
-        emit(null)
-    }.flowOn(Dispatchers.IO)
-
-    private fun mapDtoToAdminProduct(dto: ProductSearchDto): AdminProduct {
-        val stock = dto.variants?.firstOrNull()?.stock ?: 0
-        val stockStatus = when {
-            stock == 0 -> StockStatus.OUT_OF_STOCK
-            stock < 10 -> StockStatus.LOW_STOCK
-            else -> StockStatus.IN_STOCK
-        }
-        val variantsCount = dto.variants?.size ?: 0
-
-        return AdminProduct(
-            id = dto.publicId,
-            name = dto.productName,
-            imageUrl = dto.variants?.firstOrNull()?.imageUrl ?: "",
-            price = dto.variants?.firstOrNull()?.price ?: 0.0,
-            stockStatus = stockStatus,
-            stock = stock,
-            variantsCount = variantsCount
+    return when (code()) {
+        401 -> AdminProductRepositoryException.Unauthorized(backendMessage ?: ERROR_UNAUTHORIZED)
+        404 -> AdminProductRepositoryException.NotFound(backendMessage ?: ERROR_NOT_FOUND)
+        500 -> AdminProductRepositoryException.ServerError(backendMessage ?: ERROR_SERVER)
+        else -> AdminProductRepositoryException.Unknown(
+            backendMessage ?: "$ERROR_UNKNOWN (HTTP ${code()})"
         )
     }
 }

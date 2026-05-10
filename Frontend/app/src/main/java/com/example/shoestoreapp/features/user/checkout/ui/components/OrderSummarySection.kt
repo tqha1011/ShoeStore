@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.user.checkout.data.models.CurrencyType
 import com.example.shoestoreapp.features.user.checkout.data.models.OrderSummary
+import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutItemDto
 
 /**
  * Component hiển thị tóm tắt đơn hàng với phí vận chuyển, thuế và tổng tiền.
@@ -32,8 +33,9 @@ import com.example.shoestoreapp.features.user.checkout.data.models.OrderSummary
  */
 @Composable
 fun OrderSummarySection(
-    orderSummary: com.example.shoestoreapp.features.user.checkout.data.models.OrderSummary,
-    selectedCurrency: com.example.shoestoreapp.features.user.checkout.data.models.CurrencyType,
+    orderSummary: OrderSummary,
+    selectedCurrency: CurrencyType,
+    cartItems: List<CheckOutItemDto>,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -61,13 +63,15 @@ fun OrderSummarySection(
                 .padding(24.dp)
         ) {
             // Product Item
-            _root_ide_package_.com.example.shoestoreapp.features.user.checkout.ui.components.ProductItemRow(
-                productName = "Nike Air Max Dn",
-                productType = "Men's Shoes | Black/White",
-                quantity = 1,
-                price = orderSummary.subtotal,
-                currency = selectedCurrency
-            )
+            cartItems.forEach { item ->
+                ProductItemRow(
+                    productName = item.productName,
+                    colorName = item.colorName,
+                    quantity = item.quantity,
+                    price = item.unitPrice,
+                    currency = selectedCurrency
+                )
+            }
 
             HorizontalDivider(
                 color = Color(0xFFE0E0E0),
@@ -78,8 +82,8 @@ fun OrderSummarySection(
             )
 
             // Pricing Breakdown
-            _root_ide_package_.com.example.shoestoreapp.features.user.checkout.ui.components.PricingBreakdown(
-                pricingInfo = _root_ide_package_.com.example.shoestoreapp.features.user.checkout.ui.components.PricingInfo(
+            PricingBreakdown(
+                pricingInfo = PricingInfo(
                     subtotal = orderSummary.subtotal,
                     shipping = orderSummary.shipping,
                     tax = orderSummary.tax,
@@ -99,10 +103,10 @@ fun OrderSummarySection(
 @Composable
 fun ProductItemRow(
     productName: String,
-    productType: String,
+    colorName: String?,
     quantity: Int,
     price: Double,
-    currency: com.example.shoestoreapp.features.user.checkout.data.models.CurrencyType,
+    currency: CurrencyType,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -116,7 +120,7 @@ fun ProductItemRow(
 
         // Product Type
         Text(
-            text = productType,
+            text = colorName ?: "Unknown Color",
             fontSize = 12.sp,
             fontWeight = FontWeight.Normal,
             color = Color(0xFF999999),
@@ -139,7 +143,7 @@ fun ProductItemRow(
             )
 
             Text(
-                text = _root_ide_package_.com.example.shoestoreapp.features.user.checkout.ui.components.formatPrice(
+                text = formatPrice(
                     price,
                     currency
                 ),
@@ -169,17 +173,17 @@ data class PricingInfo(
 @Composable
 fun PricingBreakdown(
     modifier: Modifier = Modifier,
-    pricingInfo: com.example.shoestoreapp.features.user.checkout.ui.components.PricingInfo,
-    currency: com.example.shoestoreapp.features.user.checkout.data.models.CurrencyType
+    pricingInfo: PricingInfo,
+    currency: CurrencyType
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // Subtotal
-        _root_ide_package_.com.example.shoestoreapp.features.user.checkout.ui.components.PricingRow(
+        PricingRow(
             label = "Subtotal",
-            value = _root_ide_package_.com.example.shoestoreapp.features.user.checkout.ui.components.formatPrice(
+            value = formatPrice(
                 pricingInfo.subtotal,
                 currency
             ),
@@ -187,9 +191,9 @@ fun PricingBreakdown(
         )
 
         // Shipping
-        _root_ide_package_.com.example.shoestoreapp.features.user.checkout.ui.components.PricingRow(
+        PricingRow(
             label = "Estimated Shipping",
-            value = if (pricingInfo.shipping == 0.0) "Free" else _root_ide_package_.com.example.shoestoreapp.features.user.checkout.ui.components.formatPrice(
+            value = if (pricingInfo.shipping == 0.0) "Free" else formatPrice(
                 pricingInfo.shipping,
                 currency
             ),
@@ -197,9 +201,9 @@ fun PricingBreakdown(
         )
 
         // Tax
-        _root_ide_package_.com.example.shoestoreapp.features.user.checkout.ui.components.PricingRow(
+        PricingRow(
             label = "Tax",
-            value = _root_ide_package_.com.example.shoestoreapp.features.user.checkout.ui.components.formatPrice(
+            value = formatPrice(
                 pricingInfo.tax,
                 currency
             ),
@@ -208,10 +212,10 @@ fun PricingBreakdown(
 
         // Discount (if any)
         if (pricingInfo.promoCode.isNotEmpty() && pricingInfo.discountAmount > 0) {
-            _root_ide_package_.com.example.shoestoreapp.features.user.checkout.ui.components.PricingRow(
+            PricingRow(
                 label = "Discount (${pricingInfo.promoCode})",
                 value = "- ${
-                    _root_ide_package_.com.example.shoestoreapp.features.user.checkout.ui.components.formatPrice(
+                    formatPrice(
                         pricingInfo.discountAmount,
                         currency
                     )
@@ -238,7 +242,7 @@ fun PricingBreakdown(
             )
 
             Text(
-                text = _root_ide_package_.com.example.shoestoreapp.features.user.checkout.ui.components.formatPrice(
+                text = formatPrice(
                     pricingInfo.total,
                     currency
                 ),
@@ -286,7 +290,7 @@ fun PricingRow(
 /**
  * Định dạng giá theo loại tiền tệ.
  */
-fun formatPrice(price: Double, currency: com.example.shoestoreapp.features.user.checkout.data.models.CurrencyType): String {
+fun formatPrice(price: Double, currency: CurrencyType): String {
     return when (currency.decimalPlaces) {
         0 -> "${price.toLong()}${currency.symbol}"
         else -> "${currency.symbol}${String.format("%.${currency.decimalPlaces}f", price)}"

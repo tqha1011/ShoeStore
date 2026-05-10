@@ -6,8 +6,9 @@ import com.example.shoestoreapp.features.admin.product.data.remote.AdminProductA
 import com.example.shoestoreapp.features.auth.data.remote.AuthApi
 import com.example.shoestoreapp.features.user.product.data.remote.ProductApi
 import com.example.shoestoreapp.features.user.cart.data.remote.CartApi
-import com.example.shoestoreapp.features.admin.crud.data.remote.AdminProductCrudApi
-import com.example.shoestoreapp.features.admin.crud.data.remote.MasterDataApi
+import com.example.shoestoreapp.features.admin.addproduct.data.remote.MasterDataApi
+import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutApi
+import com.example.shoestoreapp.features.admin.product.data.remote.ImageApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -66,13 +67,18 @@ object RetrofitInstance {
         retrofit.create(AdminProductApi::class.java)
     }
 
-    // 7. Create AdminProductCrudApi service for admin CRUD endpoints
-    val adminCrudApi: AdminProductCrudApi by lazy {
-        retrofit.create(AdminProductCrudApi::class.java)
+    // 7. Create ImageApi service for image upload endpoints
+    val imageApi: ImageApi by lazy {
+        retrofit.create(ImageApi::class.java)
     }
 
     // 8. Create MasterDataApi service for fetching master data (size, color, category)
     val masterDataApi: MasterDataApi by lazy {
         retrofit.create(MasterDataApi::class.java)
+    }
+
+    // 9. Create CheckOutApi service for checkout endpoints
+    val checkOutApi: CheckOutApi by lazy {
+        retrofit.create(CheckOutApi::class.java)
     }
 }

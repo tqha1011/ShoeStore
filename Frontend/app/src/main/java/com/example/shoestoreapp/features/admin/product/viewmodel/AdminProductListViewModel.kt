@@ -1,8 +1,11 @@
 ﻿package com.example.shoestoreapp.features.admin.product.viewmodel
+
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.features.admin.product.data.models.AdminProduct
 import com.example.shoestoreapp.features.admin.product.data.repositories.AdminProductRepository
+import com.example.shoestoreapp.features.admin.product.data.repositories.AdminProductRepositoryImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,11 +20,11 @@ import kotlinx.coroutines.launch
  * - Kết nối giữa UI và Repository
  */
 class AdminProductListViewModel(
-    private val repository: AdminProductRepository = AdminProductRepository()
+    private val repository: AdminProductRepository = AdminProductRepositoryImpl()
 ) : ViewModel() {
     // ============ STATE ============
-    private val _products = MutableStateFlow<List<AdminProduct>?>(emptyList())
-    val products: StateFlow<List<AdminProduct>?> = _products.asStateFlow()
+    private val _products = MutableStateFlow<List<AdminProduct>>(emptyList())
+    val products: StateFlow<List<AdminProduct>> = _products.asStateFlow()
     private val _selectedFilter = MutableStateFlow("ALL PRODUCTS")
     val selectedFilter: StateFlow<String> = _selectedFilter.asStateFlow()
     private val _searchText = MutableStateFlow("")
@@ -30,6 +33,9 @@ class AdminProductListViewModel(
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _currentPage = MutableStateFlow(1)
+
+    private val _hasNext = MutableStateFlow(false)
+    val hasNext: StateFlow<Boolean> = _hasNext.asStateFlow()
 
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
@@ -41,16 +47,21 @@ class AdminProductListViewModel(
     fun loadProducts() {
         viewModelScope.launch {
             _isLoading.value = true
+            _currentPage.value = 1
+            _hasNext.value = false
+            _products.value = emptyList()
             try {
                 repository.searchProducts(
                     keyword = null,
-                    inStock = false,
-                    outOfStock = false,
-                    lowStock = false,
+                    inStock = null,
+                    outOfStock = null,
+                    lowStock = null,
                     pageIndex = 1,
-                    pageSize = 4
-                ).collect { products ->
-                    _products.value = products ?: emptyList()
+                    pageSize = 6
+                ).collect { page ->
+                    _products.value = page.items
+                    _currentPage.value = page.pageNumber
+                    _hasNext.value = page.hasNext
                 }
             } finally {
                 _isLoading.value = false
@@ -59,8 +70,7 @@ class AdminProductListViewModel(
     }
 
     fun loadNextPage() {
-        // Prevent duplicate requests - if already loading more, ignore
-        if (_isLoadingMore.value) {
+        if (_isLoadingMore.value || !_hasNext.value) {
             return
         }
 
@@ -73,19 +83,23 @@ class AdminProductListViewModel(
                 val inStock = (_selectedFilter.value == "IN STOCK").takeIf { it }
                 val outOfStock = (_selectedFilter.value == "OUT OF STOCK").takeIf { it }
                 val lowStock = (_selectedFilter.value == "LOW STOCK").takeIf { it }
-                val pageIndex = nextPage + 1
-                val pageSize = 4
+                val pageIndex = nextPage
+                val pageSize = 6
 
+                val page = repository.searchProducts(
+                    keyword,
+                    inStock,
+                    outOfStock,
+                    lowStock,
+                    pageIndex,
+                    pageSize
+                ).first()
 
-
-                val products = repository.searchProducts(keyword,inStock,outOfStock,lowStock,
-                    pageIndex, pageSize).first()
-
-                // Thêm sản phẩm mới vào danh sách hiện tại (append, không replace)
-                if (products?.isNotEmpty() ?: false) {
-                    _products.value = _products.value?.plus(products)
-                    _currentPage.value = nextPage
+                if (page.items.isNotEmpty()) {
+                    _products.value = _products.value + page.items
+                    _currentPage.value = page.pageNumber
                 }
+                _hasNext.value = page.hasNext
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
@@ -117,19 +131,24 @@ class AdminProductListViewModel(
      * Áp dụng filter và search, cập nhật danh sách hiển thị
      */
     private fun applyFiltersAndSearch() {
-        viewModelScope.launch{
-            val keyword = _searchText.value.ifEmpty {null}
+        viewModelScope.launch {
+            _isLoading.value = true
+            _currentPage.value = 1
+            _hasNext.value = false
+            _products.value = emptyList()
+            val keyword = _searchText.value.ifEmpty { null }
             val inStock = (_selectedFilter.value == "IN STOCK").takeIf { it }
             val outOfStock = (_selectedFilter.value == "OUT OF STOCK").takeIf { it }
             val lowStock = (_selectedFilter.value == "LOW STOCK").takeIf { it }
             val pageIndex = 1
-            val pageSize = 4
-            repository.searchProducts(keyword, inStock, outOfStock,lowStock,pageIndex, pageSize).collect {
-                products ->
-                _products.value = products ?: emptyList()
-                _currentPage.value = 1
-                _isLoading.value = false
-            }
+            val pageSize = 6
+            repository.searchProducts(keyword, inStock, outOfStock, lowStock, pageIndex, pageSize)
+                .collect { page ->
+                    _products.value = page.items
+                    _currentPage.value = page.pageNumber
+                    _hasNext.value = page.hasNext
+                    _isLoading.value = false
+                }
         }
     }
 

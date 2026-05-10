@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator // Thêm thư viện này
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +46,7 @@ import coil.compose.AsyncImage
 
 @Composable
 fun AddToBagBottomSheetContent(
+    modifier: Modifier = Modifier,
     imageUrl: String?,
     title: String,
     category: String,
@@ -62,7 +64,7 @@ fun AddToBagBottomSheetContent(
     onClose: () -> Unit,
     onConfirm: () -> Unit,
     isConfirmEnabled: Boolean,
-    modifier: Modifier = Modifier
+    isLoading: Boolean = false
 ) {
     Column(
         modifier = modifier
@@ -247,9 +249,10 @@ fun AddToBagBottomSheetContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+
         Button(
             onClick = onConfirm,
-            enabled = isConfirmEnabled,
+            enabled = isConfirmEnabled && !isLoading,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -260,10 +263,24 @@ fun AddToBagBottomSheetContent(
                 disabledContainerColor = Color(0xFFBDBDBD)
             )
         ) {
-            Text(
-                text = "CONFIRM ADD TO BAG",
-                fontWeight = FontWeight.Black
-            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color.DarkGray,
+                    strokeWidth = 2.dp
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "PROCESSING...",
+                    fontWeight = FontWeight.Black,
+                    color = Color.DarkGray
+                )
+            } else {
+                Text(
+                    text = "CONFIRM ADD TO BAG",
+                    fontWeight = FontWeight.Black
+                )
+            }
         }
     }
 }
@@ -279,7 +296,6 @@ private fun colorNameToSwatch(colorName: String): Color {
         "gray", "grey" -> Color(0xFF9E9E9E)
         "brown" -> Color(0xFF6D4C41)
         else -> {
-            // Fallback color generated from the name to keep swatches deterministic.
             val hash = colorName.hashCode()
             val r = 80 + (hash and 0x7F)
             val g = 80 + ((hash shr 8) and 0x7F)
@@ -288,4 +304,3 @@ private fun colorNameToSwatch(colorName: String): Color {
         }
     }
 }
-

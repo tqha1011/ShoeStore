@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.user.checkout.data.models.PaymentMethod
@@ -40,9 +41,9 @@ import com.example.shoestoreapp.features.user.checkout.data.models.PaymentType
  */
 @Composable
 fun PaymentMethodSection(
-    selectedPaymentMethod: com.example.shoestoreapp.features.user.checkout.data.models.PaymentMethod,
-    availablePaymentMethods: List<com.example.shoestoreapp.features.user.checkout.data.models.PaymentMethod>,
-    onPaymentMethodSelected: (com.example.shoestoreapp.features.user.checkout.data.models.PaymentMethod) -> Unit,
+    selectedPaymentMethod: PaymentMethod,
+    availablePaymentMethods: List<PaymentMethod>,
+    onPaymentMethodSelected: (PaymentMethod) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -142,7 +143,7 @@ private fun PaymentIconBadge(
         modifier = modifier
             .size(40.dp, 24.dp)
             .background(
-                color = if (paymentType == PaymentType.APPLE_PAY) Color.Black else Color(0xFFF5F5F5),
+                color = Color.Black,
                 shape = RoundedCornerShape(4.dp)
             ),
         contentAlignment = Alignment.Center
@@ -159,11 +160,11 @@ private fun PaymentIconBadge(
 
 private fun getPaymentBadgeStyle(
     paymentType: PaymentType
-): Tuple4<String, androidx.compose.ui.unit.TextUnit, FontWeight, Color> {
-    return if (paymentType == PaymentType.APPLE_PAY) {
-        Tuple4("iOS", 14.sp, FontWeight.Bold, Color.White)
+): Tuple4<String, TextUnit, FontWeight, Color> {
+    return if (paymentType == PaymentType.SePay) {
+        Tuple4("SePay", 8.sp, FontWeight.Bold, Color.White)
     } else {
-        Tuple4(paymentType.name.take(4), 10.sp, FontWeight.Black, Color.Black)
+        Tuple4("COD", 8.sp, FontWeight.Bold, Color.White)
     }
 }
 

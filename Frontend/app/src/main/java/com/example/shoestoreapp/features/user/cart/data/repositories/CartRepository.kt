@@ -5,6 +5,7 @@ import com.example.shoestoreapp.features.user.cart.data.remote.AddCartItemReques
 import com.example.shoestoreapp.features.user.cart.data.remote.CartApi
 import com.example.shoestoreapp.features.user.cart.data.remote.CartItemResponseDto
 import com.example.shoestoreapp.features.user.cart.data.remote.UpdateCartItemRequest
+import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutRequestDto
 import retrofit2.Response
 
 /**
@@ -34,6 +35,8 @@ interface CartRepository {
      * Xóa một hoặc nhiều items khỏi giỏ hàng.
      */
     suspend fun removeCartItems(cartItemIds: List<String>): Result<Unit>
+    fun setPendingCheckout(items: List<CheckOutRequestDto>)
+    fun getPendingCheckout(): List<CheckOutRequestDto>
 }
 
 sealed class CartRepositoryException(message: String) : Exception(message) {
@@ -63,6 +66,16 @@ private const val REMOVE_ERROR_EMPTY = "No cart items provided for removal."
 class CartRepositoryImpl(
     private val cartApi: CartApi = RetrofitInstance.cartApi
 ) : CartRepository {
+
+    private var pendingCheckoutItems: List<CheckOutRequestDto> = emptyList()
+
+    override fun setPendingCheckout(items: List<CheckOutRequestDto>) {
+        pendingCheckoutItems = items
+    }
+
+    override fun getPendingCheckout(): List<CheckOutRequestDto> {
+        return pendingCheckoutItems
+    }
 
     override suspend fun getCartItems(): Result<List<CartItemResponseDto>> {
         return try {

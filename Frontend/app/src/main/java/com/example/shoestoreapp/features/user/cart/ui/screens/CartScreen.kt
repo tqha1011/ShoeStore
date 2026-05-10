@@ -141,9 +141,9 @@ fun CartScreen(
                                 CheckoutButton(
                                     enabled = state.items.isNotEmpty(),
                                     onClick = {
-                                        if (viewModel.onCheckout()) {
-                                            onNavigateToCheckout()
-                                        }
+                                        viewModel.onCheckout()
+                                        // Chuyển sang màn hình Thanh toán
+                                        onNavigateToCheckout()
                                     }
                                 )
                             }
