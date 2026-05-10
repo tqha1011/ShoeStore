@@ -41,6 +41,21 @@ namespace ShoeStore.Application.Services
 
         public async Task<ErrorOr<Deleted>> DeleteAddressAsync(Guid userGuid, int addressId, CancellationToken token)
         {
+            if (addressId <= 0)
+                return Error.Validation("Address.InvalidId", "Address id must be greater than 0.");
+
+            var user = await _userRepository.GetUserByPublicIdAsync(userGuid, token);
+
+            if (user == null)
+                return Error.NotFound("User.NotFound", $"User with id '{userGuid}' was not found.");
+
+            var address = await _addressRepository.GetByIdAsync(addressId, token);
+
+            if (address == null)
+                return Error.NotFound("UserAddress.NotFound", $"Address with id '{addressId}' was not found");
+
+            _addressRepository.Delete(address);
+            await _uow.SaveChangesAsync(token);
             return Result.Deleted;
         }
 
