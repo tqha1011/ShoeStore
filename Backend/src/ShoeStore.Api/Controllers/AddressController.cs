@@ -41,5 +41,13 @@ namespace ShoeStore.Api.Controllers
 
             return Ok(result);
         }
+
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllAddressForUser(Guid userGuid, CancellationToken token)
+        {
+            var result = await addressService.GetAllAddressAsync(userGuid, token);
+
+            return Ok(result);
+        }
     }
 }
