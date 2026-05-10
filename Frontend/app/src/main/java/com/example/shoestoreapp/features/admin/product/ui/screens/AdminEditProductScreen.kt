@@ -20,6 +20,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddAPhoto
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +28,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -42,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
+import com.example.shoestoreapp.features.admin.product.viewmodel.AdminEditProductUiEvent
 import com.example.shoestoreapp.features.admin.product.viewmodel.AdminEditProductViewModel
 import com.example.shoestoreapp.features.admin.product.ui.components.EditProductTopBar
 import com.example.shoestoreapp.features.admin.product.ui.components.PhotoActionBottomSheet
@@ -57,11 +60,13 @@ fun AdminEditProductScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val localImageUri by viewModel.localImageUri.collectAsState()
+    val categories by viewModel.categories.collectAsState()
     val scrollState = rememberScrollState()
     val context = LocalContext.current
 
     var showBottomSheet by remember { mutableStateOf(false) }
     var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
+    val showDeleteConfirmation by viewModel.showDeleteConfirmation.collectAsState()
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -85,6 +90,24 @@ fun AdminEditProductScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.uiEvent.collect { event ->
+            when (event) {
+                is AdminEditProductUiEvent.ShowError -> {
+                    android.widget.Toast.makeText(context, event.message, android.widget.Toast.LENGTH_SHORT).show()
+                }
+                AdminEditProductUiEvent.UpdateSuccess -> {
+                    android.widget.Toast.makeText(context, "Update product success", android.widget.Toast.LENGTH_SHORT).show()
+                    onBackClick()
+                }
+                AdminEditProductUiEvent.DeleteSuccess -> {
+                    android.widget.Toast.makeText(context, "Delete product success", android.widget.Toast.LENGTH_SHORT).show()
+                    onBackClick()
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             EditProductTopBar(onBackClick = onBackClick)
@@ -100,7 +123,7 @@ fun AdminEditProductScreen(
                         .padding(16.dp)
                 ) {
                     Button(
-                        onClick = viewModel::onSaveClick,
+                        onClick = { viewModel.onSaveClick(productId) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
                         shape = MaterialTheme.shapes.medium
@@ -113,7 +136,7 @@ fun AdminEditProductScreen(
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     OutlinedButton(
-                        onClick = viewModel::onDeleteClick,
+                        onClick = viewModel::onDeleteClicked,
                         modifier = Modifier.fillMaxWidth(),
                         border = BorderStroke(1.dp, Color(0xFFB00020)),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFB00020))
@@ -163,7 +186,8 @@ fun AdminEditProductScreen(
             ProductFormSection(
                 name = uiState.productName,
                 brand = uiState.brand,
-                category = uiState.category,
+                selectedCategory = uiState.selectedCategory,
+                categories = categories,
                 onNameChange = viewModel::onNameChange,
                 onBrandChange = viewModel::onBrandChange,
                 onCategoryChange = viewModel::onCategoryChange
@@ -192,6 +216,26 @@ fun AdminEditProductScreen(
                 galleryLauncher.launch(
                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                 )
+            }
+        )
+    }
+
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = viewModel::onDismissDeleteDialog,
+            title = { Text(text = "Delete product") },
+            text = {
+                Text(text = "Are you sure you want to delete this product? This action cannot be undone.")
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.confirmDelete(productId) }) {
+                    Text(text = "Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::onDismissDeleteDialog) {
+                    Text(text = "Cancel")
+                }
             }
         )
     }

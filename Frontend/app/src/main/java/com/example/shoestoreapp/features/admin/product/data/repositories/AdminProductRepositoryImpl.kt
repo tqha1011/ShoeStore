@@ -6,6 +6,7 @@ import com.example.shoestoreapp.features.admin.product.data.models.StockStatus
 import com.example.shoestoreapp.features.admin.product.data.remote.AdminProductApi
 import com.example.shoestoreapp.features.admin.product.data.remote.ProductResponseDto
 import com.example.shoestoreapp.features.admin.product.data.remote.ProductSearchDto
+import com.example.shoestoreapp.features.admin.product.data.remote.UpdateProductDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -73,6 +74,35 @@ class AdminProductRepositoryImpl(
             val response = adminApi.getProductById(productId)
             if (response.isSuccessful) {
                 Result.success(response.body()!!)
+            } else {
+                Result.failure(response.toRepositoryException())
+            }
+        } catch (e: Exception) {
+            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: "Unknown error"))
+        }
+    }
+
+    override suspend fun updateProduct(
+        productId: String,
+        data: UpdateProductDto
+    ): Result<ProductResponseDto> {
+        return try {
+            val response = adminApi.updateProduct(productId, data)
+            if (response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(response.toRepositoryException())
+            }
+        } catch (e: Exception) {
+            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: "Unknown error"))
+        }
+    }
+
+    override suspend fun deleteProduct(productId: String): Result<Unit> {
+        return try {
+            val response = adminApi.deleteProduct(productId)
+            if (response.isSuccessful) {
+                Result.success(Unit)
             } else {
                 Result.failure(response.toRepositoryException())
             }

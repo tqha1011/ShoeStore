@@ -2,6 +2,7 @@
 
 import com.example.shoestoreapp.features.admin.product.data.models.AdminProduct
 import com.example.shoestoreapp.features.admin.product.data.remote.ProductResponseDto
+import com.example.shoestoreapp.features.admin.product.data.remote.UpdateProductDto
 import kotlinx.coroutines.flow.Flow
 import retrofit2.Response
 
@@ -23,6 +24,10 @@ interface AdminProductRepository {
     ): Flow<AdminProductPage>
 
     suspend fun getProductById(productId: String): Result<ProductResponseDto>
+
+    suspend fun updateProduct(productId: String, data: UpdateProductDto): Result<ProductResponseDto>
+
+    suspend fun deleteProduct(productId: String): Result<Unit>
 }
 
 sealed class AdminProductRepositoryException(message: String) : Exception(message) {

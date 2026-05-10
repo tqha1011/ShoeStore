@@ -24,3 +24,8 @@ data class ProductVariantResponseDto(
     @SerializedName("stock") val stock: Int
 )
 
+data class UpdateProductDto(
+    @SerializedName("brand") val brand: String?,
+    @SerializedName("categoryId") val categoryId: Int,
+    @SerializedName("productName") val productName: String?
+)

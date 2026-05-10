@@ -2,8 +2,10 @@ package com.example.shoestoreapp.features.admin.product.data.remote
 
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -28,4 +30,14 @@ interface AdminProductApi {
         @Path("productGuid") productId: String
     ): Response<ProductResponseDto>
 
+    @PUT("/api/admin/products/{productGuid}")
+    suspend fun updateProduct(
+        @Path("productGuid") productId: String,
+        @Body body: UpdateProductDto
+    ): Response<ProductResponseDto>
+
+    @DELETE("/api/admin/products/{productGuid}")
+    suspend fun deleteProduct(
+        @Path("productGuid") productId: String
+    ): Response<Unit>
 }

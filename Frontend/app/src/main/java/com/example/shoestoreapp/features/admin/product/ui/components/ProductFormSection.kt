@@ -22,18 +22,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.shoestoreapp.features.admin.product.Category
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductFormSection(
     name: String,
     brand: String,
-    category: String,
+    selectedCategory: Category?,
+    categories: List<Category>,
     onNameChange: (String) -> Unit,
     onBrandChange: (String) -> Unit,
-    onCategoryChange: (String) -> Unit
+    onCategoryChange: (Category) -> Unit
 ) {
-    val categoryOptions = listOf("Sneakers", "Running Shoes", "Basketball")
     var expanded by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -64,7 +65,7 @@ fun ProductFormSection(
             onExpandedChange = { expanded = !expanded }
         ) {
             TextField(
-                value = category,
+                value = selectedCategory?.name.orEmpty(),
                 onValueChange = {},
                 readOnly = true,
                 trailingIcon = {
@@ -84,11 +85,11 @@ fun ProductFormSection(
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
             ) {
-                categoryOptions.forEach { option ->
+                categories.forEach { category ->
                     DropdownMenuItem(
-                        text = { Text(text = option) },
+                        text = { Text(text = category.name) },
                         onClick = {
-                            onCategoryChange(option)
+                            onCategoryChange(category)
                             expanded = false
                         }
                     )
