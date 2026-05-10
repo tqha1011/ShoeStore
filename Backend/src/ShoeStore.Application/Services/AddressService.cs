@@ -59,9 +59,22 @@ namespace ShoeStore.Application.Services
             return Result.Deleted;
         }
 
-        public async Task<ErrorOr<string>> GetAddressbyIdAsync(Guid userGuid, int addAddressId, CancellationToken token)
+        public async Task<ErrorOr<string>> GetAddressbyIdAsync(Guid userGuid, int addressId, CancellationToken token)
         {
-            return "";
+            if (addressId <= 0)
+                return Error.Validation("Address.InvalidId", "Address id must be greater than 0.");
+
+            var user = await _userRepository.GetUserByPublicIdAsync(userGuid, token);
+
+            if (user == null)
+                return Error.NotFound("User.NotFound", $"User with id '{userGuid}' was not found.");
+
+            var address = await _addressRepository.GetByIdAsync(addressId, token);
+
+            if (address == null)
+                return Error.NotFound("UserAddress.NotFound", $"Address with id '{addressId}' was not found");
+
+            return address.Address;
         }
 
         public async Task<ErrorOr<Updated>> UpdateAddressAsync(Guid userGuid, int addressId, UpdateAddressDto updateAddress, CancellationToken token)

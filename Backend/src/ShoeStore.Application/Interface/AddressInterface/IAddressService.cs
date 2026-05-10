@@ -12,6 +12,6 @@ namespace ShoeStore.Application.Interface.AddressInterface
         // DELETE
         Task<ErrorOr<Deleted>> DeleteAddressAsync(Guid userGuid, int addressId, CancellationToken token);
         // GET
-        Task<ErrorOr<string>> GetAddressbyIdAsync(Guid userGuid, int addAddressId, CancellationToken token);
+        Task<ErrorOr<string>> GetAddressbyIdAsync(Guid userGuid, int addressId, CancellationToken token);
     }
 }
