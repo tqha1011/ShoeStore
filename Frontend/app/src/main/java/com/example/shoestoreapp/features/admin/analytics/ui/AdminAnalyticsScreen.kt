@@ -14,9 +14,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -31,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -59,7 +55,8 @@ import java.util.Locale
 fun AdminAnalyticsScreen(
     viewModel: AdminAnalyticsViewModel,
     onAiClick: () -> Unit = {},
-    onTabSelected: (AdminBottomNavTab) -> Unit = {}
+    onTabSelected: (AdminBottomNavTab) -> Unit = {},
+    onGenerateCampaignClick: () -> Unit
 ) {
     val state: AdminAnalyticsState = viewModel.state
     val summary = state.summary
@@ -144,16 +141,7 @@ fun AdminAnalyticsScreen(
                     GrowthOpportunityCard(
                         growthPercent = data.growthTotalRevenuePercent,
                         onGenerateCampaignClick = {
-                            val topProductsText = topProducts.take(3).joinToString(separator = "\n") { product ->
-                                "- ${product.productName}: ${formatCount(product.totalInvoices)} orders (Revenue: ${formatCurrency(product.totalRevenue)}, Trend: ${formatPercent(product.growthRevenuePercentage)})"
-                            }
-
-                            val aiPrompt = """
-                                Run a Revenue Optimization analysis for the last 14 days focused on mobile users
-                            """.trimIndent()
-
-                            // Sếp gắn logic đẩy sang màn hình AI vào đây nhé
-                            println("SEND TO AI: \n$aiPrompt")
+                            onGenerateCampaignClick()
                         }
                     )
                 }

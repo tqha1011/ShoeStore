@@ -2,6 +2,7 @@ package com.example.shoestoreapp.core.networks
 
 import android.content.Context
 import com.example.shoestoreapp.core.utils.Constants
+import com.example.shoestoreapp.features.admin.ai_assistant.data.remote.ChatSessionApi
 import com.example.shoestoreapp.features.admin.product.data.remote.AdminProductApi
 import com.example.shoestoreapp.features.auth.data.remote.AuthApi
 import com.example.shoestoreapp.features.user.product.data.remote.ProductApi
@@ -35,7 +36,7 @@ object RetrofitInstance {
     val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY // Yêu cầu in toàn bộ Body (JSON)
     }
-    private val client by lazy {
+    val client by lazy {
         OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .addInterceptor(logging)
@@ -93,4 +94,12 @@ object RetrofitInstance {
         retrofit.create(AnalyticsApi::class.java)
     }
 
+    // 11. Create ChatSessionApi service for admin AI assistant endpoints
+    val chatSessionApi: ChatSessionApi by lazy {
+        retrofit.create(ChatSessionApi::class.java)
+    }
+    // 12. Create stream messages for admin AI assistant
+    val okHttpClient by lazy {
+        client
+    }
 }

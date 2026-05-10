@@ -2,14 +2,18 @@ package com.example.shoestoreapp.features.admin.ai_assistant.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material3.*
@@ -20,34 +24,53 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.shoestoreapp.features.admin.ai_assistant.data.remote.ChatSessionResponseDto
+import com.example.shoestoreapp.features.admin.ai_assistant.viewmodel.AiAssistantViewmodel
 
 /**
  * AI Strategy Assistant Screen
- * Optimized UI for AI interactions and campaign generation
+ * UI Rendered purely from ViewModel's State with Typing Effect & Auto-Scroll
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AiStrategyAssistantScreen(
+    viewModel: AiAssistantViewmodel,
+    initialPrompt: String? = null,
     onBackClick: () -> Unit = {}
 ) {
+    // 1. Rút "Khay dữ liệu" (State) từ ViewModel ra
+    val state = viewModel.state
+
+    // Biến lưu chữ sếp đang gõ ở dưới thanh chat
     var inputText by remember { mutableStateOf("") }
+
+    // Quản lý trạng thái cuộn của danh sách
+    val listState = rememberLazyListState()
+
+    // 2. Kích hoạt logic khi màn hình vừa mở lên (Chạy đúng 1 lần)
+    LaunchedEffect(key1 = true) {
+        viewModel.initialize(initialPrompt)
+    }
+
+    // 3. Phép thuật Auto-Scroll: Cứ mỗi khi AI nhả thêm 1 chữ (độ dài text thay đổi), tự động cuộn xuống dòng cuối cùng
+    val messages = state.messages
+    LaunchedEffect(messages.size, messages.lastOrNull()?.text?.length) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
+    }
 
     Scaffold(
         topBar = {
-            // Clean Top Bar following the minimalist aesthetic
             CenterAlignedTopAppBar(
-                title = {
-                    Text("Strategy Assistant", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                },
+                title = { Text("Strategy Assistant", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
+                    IconButton(onClick = onBackClick) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
                 },
                 actions = {
-                    // Placeholder for additional options (e.g., Clear Chat)
-                    TextButton(onClick = { /* Clear logic */ }) {
-                        Text("Reset", color = Color.Gray, fontSize = 12.sp)
+                    // Nút xem lại lịch sử
+                    IconButton(onClick = { viewModel.loadSessions() }) {
+                        Icon(Icons.Default.History, contentDescription = "History", tint = Color.Gray)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
@@ -60,50 +83,51 @@ fun AiStrategyAssistantScreen(
                 .padding(paddingValues)
                 .background(Color.White)
         ) {
-            // Chat Content Area
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
-                // 1. Initial AI Analysis Message
-                item {
-                    AiMessageBubble(
-                        text = "Analyzing Q3 performance markers. I've identified a strong correlation between desktop ad spend and mobile conversion attrition."
-                    )
-                }
+            // --- LOGIC HIỂN THỊ CHÍNH ---
 
-                // 2. User Message (Example Request)
-                item {
-                    UserMessageBubble(
-                        text = "Run a Revenue Optimization analysis for the last 14 days focused on mobile users."
-                    )
-                }
-
-                // 3. Rich Strategy Card (The "Hero" component)
-                item {
-                    StrategyInsightCard(
-                        growthPercent = 12.4,
-                        estConversion = "+18.5%",
-                        roiProjection = "4.2x",
-                        onExecute = { /* Handle execution */ }
-                    )
+            // Trường hợp 1: Nếu chưa có tin nhắn nào + Có danh sách lịch sử -> Hiện Lịch sử
+            if (state.messages.isEmpty() && state.sessions.isNotEmpty()) {
+                SessionListArea(
+                    sessions = state.sessions,
+                    isLoading = state.isLoadingSesions,
+                    onSessionClick = { /* Xử lý nếu sếp muốn click vào lịch sử để load lại */ }
+                )
+            }
+            // Trường hợp 2: Hiện khung Chat
+            else {
+                LazyColumn(
+                    state = listState, // Gắn state cuộn tự động vào đây
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    items(state.messages) { message ->
+                        if (message.isUser) {
+                            UserMessageBubble(text = message.text)
+                        } else {
+                            // Truyền cờ isStreaming để quyết định có nhấp nháy con trỏ không
+                            AiMessageBubble(text = message.text, isStreaming = message.isStreaming)
+                        }
+                    }
                 }
             }
 
-            // Floating Input Bar at the bottom
+            // --- THANH NHẬP CHAT Ở ĐÁY MÀN HÌNH ---
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .imePadding() // Adjusts height when keyboard appears
+                    .imePadding() // Tự đẩy lên khi bàn phím ảo xuất hiện
                     .padding(16.dp)
             ) {
                 ChatInputBar(
                     value = inputText,
                     onValueChange = { inputText = it },
-                    onSend = { /* Handle send */ }
+                    onSend = {
+                        viewModel.SendMessage(inputText) // Gọi hàm gửi bên ViewModel
+                        inputText = "" // Xóa trắng ô nhập
+                    }
                 )
             }
         }
@@ -111,10 +135,53 @@ fun AiStrategyAssistantScreen(
 }
 
 /**
- * Standard AI response bubble
+ * Khu vực hiển thị danh sách Session cũ
  */
 @Composable
-fun AiMessageBubble(text: String) {
+fun SessionListArea(
+    sessions: List<ChatSessionResponseDto>,
+    isLoading: Boolean,
+    onSessionClick: (String) -> Unit
+) {
+    if (isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = Color.Black)
+        }
+        return
+    }
+
+    LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        item {
+            Text("Recent Strategies", fontSize = 14.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(bottom = 16.dp))
+        }
+        items(sessions) { session ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 12.dp)
+                    .clickable { onSessionClick(session.publicId) },
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF4F4F5))
+            ) {
+                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Insights, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        // Nếu Title rỗng thì lấy ID cắt ngắn cho đỡ trống
+                        text = session.title ?: "Session: ${session.publicId.take(8)}...",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Bong bóng chat của AI (Có hiệu ứng Typing █)
+ */
+@Composable
+fun AiMessageBubble(text: String, isStreaming: Boolean = false) {
     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(
             modifier = Modifier
@@ -130,7 +197,9 @@ fun AiMessageBubble(text: String) {
                     .background(Color(0xFFF4F4F5), RoundedCornerShape(16.dp, 16.dp, 16.dp, 0.dp))
                     .padding(12.dp)
             ) {
-                Text(text = text, fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFF27272A))
+                // ĐẮP THÊM CON TRỎ NẾU ĐANG CHẠY STREAM
+                val displayText = if (isStreaming) "$text █" else text
+                Text(text = displayText, fontSize = 14.sp, lineHeight = 20.sp, color = Color(0xFF27272A))
             }
             Text(
                 "AI STRATEGIST • NOW",
@@ -140,12 +209,12 @@ fun AiMessageBubble(text: String) {
                 modifier = Modifier.padding(top = 4.dp, start = 4.dp)
             )
         }
-        Spacer(modifier = Modifier.width(40.dp)) // Offset for user alignment
+        Spacer(modifier = Modifier.width(40.dp))
     }
 }
 
 /**
- * Standard User message bubble aligned to the right
+ * Bong bóng chat của Admin (User)
  */
 @Composable
 fun UserMessageBubble(text: String) {
@@ -171,68 +240,7 @@ fun UserMessageBubble(text: String) {
 }
 
 /**
- * Advanced Insight Card with Metrics and Actions
- */
-@Composable
-fun StrategyInsightCard(
-    growthPercent: Double,
-    estConversion: String,
-    roiProjection: String,
-    onExecute: () -> Unit
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Icon(
-            Icons.Default.Insights,
-            contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            tint = Color.Black
-        )
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .border(1.dp, Color(0xFFE4E4E7), RoundedCornerShape(16.dp))
-                .padding(16.dp)
-        ) {
-            Text("PROPOSED GROWTH CAMPAIGN", fontSize = 11.sp, fontWeight = FontWeight.Black, letterSpacing = 1.sp)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                "Based on the $growthPercent% mobile growth, I recommend a 48-hour app-exclusive sale.",
-                fontSize = 14.sp, lineHeight = 20.sp
-            )
-
-            // Metrics Row
-            Row(modifier = Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MetricSmallBox("EST. CONVERSION", estConversion, Modifier.weight(1f))
-                MetricSmallBox("ROI PROJECTION", roiProjection, Modifier.weight(1f))
-            }
-
-            // Buttons
-            Button(
-                onClick = onExecute,
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text("EXECUTE CAMPAIGN", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
-        }
-    }
-}
-
-@Composable
-fun MetricSmallBox(label: String, value: String, modifier: Modifier) {
-    Column(
-        modifier = modifier
-            .border(1.dp, Color(0xFFF4F4F5), RoundedCornerShape(8.dp))
-            .padding(8.dp)
-    ) {
-        Text(label, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
-        Text(value, fontSize = 16.sp, fontWeight = FontWeight.Black)
-    }
-}
-
-/**
- * Floating input field with blur-like effect (White background with shadow)
+ * Thanh nhập chat nổi dưới cùng màn hình
  */
 @Composable
 fun ChatInputBar(value: String, onValueChange: (String) -> Unit, onSend: () -> Unit) {

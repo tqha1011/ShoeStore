@@ -45,7 +45,7 @@ class AiChatRepository (
             var line : String?
             while (reader.readLine().also { line = it } != null) {
                if ( line!!.startsWith("data: ")){
-                   val chunk = line!!.substring(6)
+                   val chunk = line.substring(6)
                    if (chunk.trim() == "[DONE]") break
                    emit(chunk)
                }

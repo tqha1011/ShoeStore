@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -45,6 +46,8 @@ import com.example.shoestoreapp.features.auth.presentation.welcome.WelcomeScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.CreateNewPasswordScreen
 import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.core.utils.JwtUtils
+import com.example.shoestoreapp.features.admin.ai_assistant.data.repository.AiChatRepository
+import com.example.shoestoreapp.features.admin.ai_assistant.viewmodel.AiAssistantViewmodel
 import com.example.shoestoreapp.features.user.invoice.data.UserInvoiceRepository
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import kotlinx.coroutines.launch
@@ -64,12 +67,18 @@ private object Routes {
     const val ADMIN_CRUD = "admin_crud"
     const val ADMIN_INVOICE_LIST = "admin_invoice_list"
     const val ADMIN_ANALYTICS = "admin_analytics"
-    const val ADMIN_AI_ASSISTANT = "admin_ai_assistant"
+    const val ADMIN_AI_ASSISTANT_BASE = "admin_ai_assistant"
+    const val ADMIN_AI_ASSISTANT = "$ADMIN_AI_ASSISTANT_BASE?isGeneratingCampaign={isGeneratingCampaign}"
     const val ADMIN_SETTINGS = "admin_settings"
 
     fun createNewPassword(email: String, otp: String): String = "create_new_password/$email/$otp"
     fun userInvoiceList(status: InvoiceStatus? = null): String {
         return if (status == null) USER_INVOICE_LIST_BASE else "$USER_INVOICE_LIST_BASE?status=${status.name}"
+    }
+
+    // Admin AI Assistant
+    fun adminAiAssistant(isGeneratingCampaign: Boolean = false): String {
+        return "$ADMIN_AI_ASSISTANT_BASE?isGeneratingCampaign=$isGeneratingCampaign"
     }
 }
 
@@ -291,13 +300,44 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
                     repository = AnalyticsRepository(RetrofitInstance.analyticsApi)
                 )
             },
-            onAiClick = { navController.navigate(Routes.ADMIN_AI_ASSISTANT) },
+            // click AI icon in top right screen
+            onAiClick = { navController.navigate(Routes.adminAiAssistant(isGeneratingCampaign = false)) },
+            // click generate campaign
+            onGenerateCampaignClick = {navController.navigate(Routes.adminAiAssistant(isGeneratingCampaign = true)) },
             onTabSelected = { tab -> handleAdminAnalyticsTabSelection(tab, navController) }
         )
     }
 
-    composable(Routes.ADMIN_AI_ASSISTANT) {
-        AiStrategyAssistantScreen(
+    composable(
+        route = Routes.ADMIN_AI_ASSISTANT ,
+        arguments = listOf(
+            navArgument("isGeneratingCampaign") {
+                type = NavType.BoolType
+                defaultValue = false
+                }
+        )
+    ) {
+        backStackEntry ->
+        val isGeneratingCampaign = backStackEntry.arguments?.getBoolean("isGeneratingCampaign") ?: false
+        val initialPrompt = if (isGeneratingCampaign) {
+            """
+            Run a Revenue Optimization analysis for the last 14 days focused on mobile users
+            """.trimIndent()
+        } else {
+            null
+        }
+
+        val aiViewmodel = remember {
+            AiAssistantViewmodel(
+                repository = AiChatRepository(
+                    sessionApi = RetrofitInstance.chatSessionApi, // Reuse authApi for session management
+                    okHttpClient = RetrofitInstance.okHttpClient // Use the same OkHttpClient for streaming
+                )
+            )
+        }
+        AiStrategyAssistantScreen (
+            viewModel = aiViewmodel,
+            initialPrompt = initialPrompt,
             onBackClick = { navController.popBackStack() }
         )
     }
