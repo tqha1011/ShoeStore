@@ -59,6 +59,11 @@ namespace ShoeStore.Application.Services
             return Result.Deleted;
         }
 
+        public async Task<ErrorOr<string>> GetAddressbyIdAsync(Guid userGuid, int addAddressId, CancellationToken token)
+        {
+            return "";
+        }
+
         public async Task<ErrorOr<Updated>> UpdateAddressAsync(Guid userGuid, int addressId, UpdateAddressDto updateAddress, CancellationToken token)
         {
             if (addressId <= 0)

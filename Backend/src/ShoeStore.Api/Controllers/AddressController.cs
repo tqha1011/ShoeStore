@@ -33,5 +33,13 @@ namespace ShoeStore.Api.Controllers
 
             return Ok(result);
         }
+
+        [HttpGet("{userGuid}, {addressId}")]
+        public async Task<IActionResult> GetAddressId(Guid userGuid, int addressId, CancellationToken token)
+        {
+            var result = await addressService.GetAddressbyIdAsync(userGuid, addressId, token);
+
+            return Ok(result);
+        }
     }
 }
