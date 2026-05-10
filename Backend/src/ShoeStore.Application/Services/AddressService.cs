@@ -41,6 +41,9 @@ namespace ShoeStore.Application.Services
 
         public async Task<ErrorOr<Updated>> UpdateAddressAsync(Guid userGuid, int addressId, UpdateAddressDto updateAddress, CancellationToken token)
         {
+            if (addressId <= 0)
+                return Error.Validation("Address.InvalidId", "Address id must be greater than 0.");
+
             var user = await _userRepository.GetUserByPublicIdAsync(userGuid, token);
 
             if(user == null)
