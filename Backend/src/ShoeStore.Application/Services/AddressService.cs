@@ -39,8 +39,21 @@ namespace ShoeStore.Application.Services
             return Result.Created;
         }
 
-        public async Task<ErrorOr<Updated>> UpdateAddressAsync(Guid userGuid, UpdateAddressDto updateAddress, CancellationToken token)
+        public async Task<ErrorOr<Updated>> UpdateAddressAsync(Guid userGuid, int addressId, UpdateAddressDto updateAddress, CancellationToken token)
         {
+            var user = await _userRepository.GetUserByPublicIdAsync(userGuid, token);
+
+            if(user == null)
+                return Error.NotFound("User.NotFound", $"User with id '{userGuid}' was not found.");
+
+            var address = await _addressRepository.GetByIdAsync(addressId, token);
+
+            if (address == null)
+                return Error.NotFound("UserAddress.NotFound", $"Address with id '{addressId}' was not found");
+
+            address.Address = $"{updateAddress.DetailAddress}, {updateAddress.District}, {updateAddress.Province}" ?? address.Address;
+            _addressRepository.Update(address);
+            await _uow.SaveChangesAsync(token);
             return Result.Updated;
         }
     }

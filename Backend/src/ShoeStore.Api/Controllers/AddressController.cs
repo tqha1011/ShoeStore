@@ -18,10 +18,10 @@ namespace ShoeStore.Api.Controllers
             return Ok(result);
         }
 
-        [HttpPut("{userGuid}")]
-        public async Task<IActionResult> UpdateAddress(Guid userGuid, [FromBody] UpdateAddressDto dto, CancellationToken token)
+        [HttpPut("{userGuid}, {addressId}")]
+        public async Task<IActionResult> UpdateAddress(Guid userGuid, int addressId, [FromBody] UpdateAddressDto dto, CancellationToken token)
         {
-            var result = await addressService.UpdateAddressAsync(userGuid, dto, token);
+            var result = await addressService.UpdateAddressAsync(userGuid, addressId, dto, token);
 
             return Ok(result);
         }
