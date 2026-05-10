@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using ShoeStore.Api.Hubs;
@@ -21,6 +22,7 @@ namespace ShoeStore.Api.Controllers;
 [ApiController]
 [Route("api/invoice/admin")]
 [Authorize(Roles = "Admin")]
+[ApiVersion(1)]
 public class InvoiceAdminController(
     IInvoiceService invoiceService,
     IHubContext<NotifyHub, INotifyHubClient> hubContext) : ControllerBase
@@ -186,12 +188,12 @@ public class InvoiceAdminController(
         }
 
         await hubContext.Clients.Group($"User-{result.Value.PublicUserId}")
-            .ReceiveNotification(result.Value.OrderCode,result.Value.Status);
+            .ReceiveNotification(result.Value.OrderCode, result.Value.Status);
 
         return Ok(new
         {
-            invoiceCode =  result.Value.OrderCode,
-            invoiceStatus = result.Value.Status,
+            invoiceCode = result.Value.OrderCode,
+            invoiceStatus = result.Value.Status
         });
     }
 }

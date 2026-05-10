@@ -18,8 +18,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(p => p.Password)
             .HasMaxLength(255)
             .IsRequired();
-        builder.Property(p => p.Address)
-            .HasMaxLength(255);
         builder.Property(p => p.DateOfBirth)
             .HasColumnType("date");
         builder.HasIndex(p => p.Email)

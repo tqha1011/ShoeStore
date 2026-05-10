@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
 using ShoeStore.Application.Interface.ProductInterface;
@@ -15,6 +16,7 @@ namespace ShoeStore.Api.Controllers;
 /// <param name="imageService">Service for handling image uploads to cloud storage.</param>
 [ApiController]
 [Route("api/products/{productGuid}/variants")]
+[ApiVersion(1)]
 public class ProductVariantController(IProductVariantService variantService, IImageService imageService)
     : ControllerBase
 {

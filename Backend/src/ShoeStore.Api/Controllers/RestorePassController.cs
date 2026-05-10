@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using ShoeStore.Application.DTOs.RestorePasswordDto;
@@ -13,6 +14,7 @@ namespace ShoeStore.Api.Controllers;
 /// <param name="restorePasswordService">Service for handling password reset operations.</param>
 [Route("api/[controller]")]
 [ApiController]
+[ApiVersion(1)]
 public class RestorePassController(IRestorePasswordService restorePasswordService) : ControllerBase
 {
     /// <summary>

@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 using ErrorOr;
+using Microsoft.Extensions.AI;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
@@ -10,8 +11,8 @@ using ShoeStore.Application.DTOs.StatisticsDto;
 using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.StatisticsInterface;
-using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
+using ChatMessage = ShoeStore.Domain.Entities.ChatMessage;
 
 namespace ShoeStore.Application.Services;
 
@@ -20,7 +21,9 @@ public class ChatBotService(
     IChatCompletionService chatCompletionService,
     IChatMessageRepository chatMessageRepository,
     IChatSessionRepository chatSessionRepository,
-    IUnitOfWork unitOfWork)
+    IUnitOfWork unitOfWork,
+    IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
+    IProductEmbeddingRepository productEmbeddingRepository)
     : IChatBotService
 {
     public async Task<ErrorOr<IAsyncEnumerable<string>>> GenerateCampaignAsync(CreateCampaignRequestDto requestDto,
@@ -127,12 +130,10 @@ public class ChatBotService(
                     break;
                 }
             }
-
-            var reducedMessage = await reducer.ReduceAsync(chat, token);
-            if (reducedMessage != null) chat = new ChatHistory(reducedMessage);
         }
-
-
+        var reducedMessage = await reducer.ReduceAsync(chat, token);
+        if (reducedMessage != null) chat = new ChatHistory(reducedMessage);
+        
         chat.Add(new ChatMessageContent(AuthorRole.User, messageRequestDto.Content));
 
         var newChatMessage = new ChatMessage
@@ -160,6 +161,88 @@ public class ChatBotService(
         return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value, token));
     }
 
+    public async Task<ErrorOr<IAsyncEnumerable<string>>> ChatAskAboutProductsAsync(Guid publicSessionId,
+        ChatMessageRequestDto messageRequestDto, CancellationToken token)
+    {
+        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(publicSessionId, token);
+        if (sessionId == null) return Error.NotFound("ChatSession.NotFound", "Chat session not found");
+
+        var historyChat = await chatMessageRepository.GetHistoryChatMessageAsync(sessionId.Value, token);
+        var reverseHistoryChat = historyChat.OrderBy(m => m.CreatedAt)
+            .Select(c => new
+            {
+                c.Content,
+                c.Role
+            })
+            .ToList();
+        var queryVector = await GenerateQueryVectorAsync(messageRequestDto.Content, token);
+        var top5Products = await productEmbeddingRepository.GetTop5ProductByVectorAsync(queryVector, token);
+        var newChatMessage = new ChatMessage
+        {
+            Content = messageRequestDto.Content,
+            Role = ChatBotRole.User,
+            SessionId = sessionId.Value,
+            CreatedAt = DateTime.UtcNow,
+            TokenCount = messageRequestDto.Content.Length / 4 // Rough token estimation
+        };
+        chatMessageRepository.Add(newChatMessage);
+        var executionSetting = new OpenAIPromptExecutionSettings
+        {
+            MaxTokens = 500, // Limit response length
+            Temperature = 0.6 // Adjust creativity
+        };
+        IAsyncEnumerable<StreamingChatMessageContent> response;
+        if (top5Products.Count == 0)
+        {
+            var systemEmptyInventoryPrompt = SystemPrompt.GenerateEmptyInventoryPrompt();
+            var emptyInventoryChat = new ChatHistory(systemEmptyInventoryPrompt);
+            emptyInventoryChat.AddUserMessage(messageRequestDto.Content);
+            response =
+                chatCompletionService.GetStreamingChatMessageContentsAsync(
+                    emptyInventoryChat,
+                    executionSetting,
+                    cancellationToken: token);
+        }
+        else
+        {
+            var context = new StringBuilder();
+            foreach (var product in top5Products)
+            {
+                context.Append($"{product.TextChunk} \n");
+            }
+            var systemPrompt = SystemPrompt.GenerateProductPrompt(context.ToString());
+            var chat = new ChatHistory(systemPrompt);
+            var reducer = new ChatHistoryTruncationReducer(20, 35);
+
+            foreach (var message in reverseHistoryChat)
+            {
+                switch (message.Role)
+                {
+                    case ChatBotRole.Assistant:
+                    {
+                        chat.AddAssistantMessage(message.Content);
+                        break;
+                    }
+                    case ChatBotRole.User:
+                    {
+                        chat.AddUserMessage(message.Content);
+                        break;
+                    }
+                }
+            }
+            var reducedMessage = await reducer.ReduceAsync(chat, token);
+            if (reducedMessage != null) chat = new ChatHistory(reducedMessage);
+
+            chat.AddUserMessage(messageRequestDto.Content);
+            response =
+                chatCompletionService.GetStreamingChatMessageContentsAsync(
+                    chat,
+                    executionSetting,
+                    cancellationToken: token);
+        }
+        return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value, token));
+    }
+
     private async Task<ErrorOr<StatisticsSummaryResponseDto>> GetSummaryData(CancellationToken token)
     {
         return await statisticsService.GetStatisticsSummaryAsync(token);
@@ -175,24 +258,35 @@ public class ChatBotService(
         [EnumeratorCancellation] CancellationToken token)
     {
         var message = new StringBuilder();
-        await foreach (var chunk in response.WithCancellation(token))
-            if (!string.IsNullOrEmpty(chunk.Content))
-            {
-                yield return chunk.Content;
-                message.Append(chunk.Content);
-            }
-
-        yield return "\n";
-
-        var newAssistantMessage = new ChatMessage
+        try
         {
-            Content = message.ToString(),
-            SessionId = sessionId,
-            CreatedAt = DateTime.UtcNow,
-            TokenCount = 0,
-            Role = ChatBotRole.Assistant
-        };
-        chatMessageRepository.Add(newAssistantMessage);
-        await unitOfWork.SaveChangesAsync(token);
+            await foreach (var chunk in response.WithCancellation(token))
+                if (!string.IsNullOrEmpty(chunk.Content))
+                {
+                    yield return chunk.Content;
+                    message.Append(chunk.Content);
+                }
+
+            yield return "\n";
+        }
+        finally
+        {
+            var newAssistantMessage = new ChatMessage
+            {
+                Content = message.ToString(),
+                SessionId = sessionId,
+                CreatedAt = DateTime.UtcNow,
+                TokenCount = 0,
+                Role = ChatBotRole.Assistant
+            };
+            chatMessageRepository.Add(newAssistantMessage);
+            await unitOfWork.SaveChangesAsync(token);   
+        }
+    }
+
+    private async Task<ReadOnlyMemory<float>> GenerateQueryVectorAsync(string content, CancellationToken token)
+    {
+        var vector = await embeddingGenerator.GenerateAsync(content, cancellationToken: token);
+        return vector.Vector;
     }
 }

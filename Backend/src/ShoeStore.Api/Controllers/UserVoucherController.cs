@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs;
@@ -15,6 +16,7 @@ namespace ShoeStore.Api.Controllers;
 [ApiController]
 [Route("api/user/vouchers")]
 [Authorize(Roles = "User")]
+[ApiVersion(1)]
 public class UserVoucherController(IUserVoucherService userVoucherService) : ControllerBase
 {
     /// <summary>

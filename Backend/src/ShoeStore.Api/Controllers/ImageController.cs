@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Asp.Versioning;
+using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.Interface.UploadImage;
 
 namespace ShoeStore.Api.Controllers;
@@ -11,6 +12,7 @@ namespace ShoeStore.Api.Controllers;
 /// <param name="imageService">Service for handling image uploads and processing.</param>
 [ApiController]
 [Route("api/[controller]")]
+[ApiVersion(1)]
 public class ImageController(IImageService imageService) : ControllerBase
 {
     /// <summary>
