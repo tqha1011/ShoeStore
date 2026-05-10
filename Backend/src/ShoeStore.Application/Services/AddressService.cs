@@ -4,6 +4,7 @@ using ShoeStore.Application.Interface.AddressInterface;
 using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace ShoeStore.Application.Services
 {
@@ -59,7 +60,7 @@ namespace ShoeStore.Application.Services
             return Result.Deleted;
         }
 
-        public async Task<ErrorOr<string>> GetAddressbyIdAsync(Guid userGuid, int addressId, CancellationToken token)
+        public async Task<ErrorOr<AddressResponseDto>> GetAddressbyIdAsync(Guid userGuid, int addressId, CancellationToken token)
         {
             if (addressId <= 0)
                 return Error.Validation("Address.InvalidId", "Address id must be greater than 0.");
@@ -74,12 +75,25 @@ namespace ShoeStore.Application.Services
             if (address == null)
                 return Error.NotFound("UserAddress.NotFound", $"Address with id '{addressId}' was not found");
 
-            return address.Address;
+            return new AddressResponseDto { Address = address.Address};
         }
 
-        public async Task<ErrorOr<IEnumerable<string>>> GetAllAddressAsync(Guid userGuid, CancellationToken token)
+        public async Task<ErrorOr<IEnumerable<AddressResponseDto>>> GetAllAddressAsync(Guid userGuid, CancellationToken token)
         {
-            return null;
+            var user = await _userRepository.GetUserByPublicIdAsync(userGuid, token);
+
+            if (user == null)
+                return Error.NotFound("User.NotFound", $"User with id '{userGuid}' was not found.");
+
+            var addresses = await _addressRepository.GetAll(userGuid).Select(v => new AddressResponseDto
+            {
+                Address = v.Address
+            }).ToListAsync(token);
+
+            if (!addresses.Any())
+                return Error.NotFound("Address.NotFound", "No addresses were found for this user.");
+
+            return addresses;
         }
 
         public async Task<ErrorOr<Updated>> UpdateAddressAsync(Guid userGuid, int addressId, UpdateAddressDto updateAddress, CancellationToken token)
