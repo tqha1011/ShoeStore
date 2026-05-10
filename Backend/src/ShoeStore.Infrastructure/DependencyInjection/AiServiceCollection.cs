@@ -33,7 +33,7 @@ public static class AiServiceCollection
             });
 
             services.AddOpenAIChatCompletion(
-                model,
+                model.Trim(),
                 openAiClient);
 
             services.AddOpenAIEmbeddingGenerator(embeddingModel, openAiClient);
@@ -41,12 +41,12 @@ public static class AiServiceCollection
         else
         {
             services.AddGoogleAIGeminiChatCompletion(
-                model,
+                model.Trim(),
                 apiKey
             );
 
             services.AddGoogleAIEmbeddingGenerator(
-                embeddingModel,
+                embeddingModel.Trim(),
                 apiKey
             );
         }
