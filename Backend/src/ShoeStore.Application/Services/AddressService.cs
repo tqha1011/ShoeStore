@@ -38,5 +38,10 @@ namespace ShoeStore.Application.Services
             await _uow.SaveChangesAsync(token);
             return Result.Created;
         }
+
+        public async Task<ErrorOr<Updated>> UpdateAddressAsync(Guid userGuid, UpdateAddressDto updateAddress, CancellationToken token)
+        {
+            return Result.Updated;
+        }
     }
 }
