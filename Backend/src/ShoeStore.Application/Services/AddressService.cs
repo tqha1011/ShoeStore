@@ -3,6 +3,7 @@ using ShoeStore.Application.DTOs.AddressDTOs;
 using ShoeStore.Application.Interface.AddressInterface;
 using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Interface.Common;
+using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Services
 {
@@ -19,9 +20,23 @@ namespace ShoeStore.Application.Services
             _uow = uow;
         }
 
-        public async Task<Created> CreateAddressAsync(Guid userGuid, CreateAddressDto createAddress, CancellationToken token)
+        public async Task<ErrorOr<Created>> CreateAddressAsync(Guid userGuid, CreateAddressDto createAddress, CancellationToken token)
         {
-            throw new NotImplementedException();
+            var user = await _userRepository.GetUserByPublicIdAsync(userGuid, token);
+
+            if (user == null)
+                return Error.NotFound("User.NotFound", $"User with id '{userGuid}' was not found.");
+
+            var address = new UserAddress
+            {
+                UserId = user.Id,
+                Address = $"{createAddress.DetailAddress}, {createAddress.District}, {createAddress.Province}",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _addressRepository.Add(address);
+            await _uow.SaveChangesAsync(token);
+            return Result.Created;
         }
     }
 }

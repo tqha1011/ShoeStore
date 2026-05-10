@@ -7,7 +7,7 @@ namespace ShoeStore.Api.Controllers
 {
     [ApiController]
     [Route("api/address")]
-    [Authorize]
+    //[Authorize]
     public class AddressController(IAddressService addressService) : ControllerBase
     {
         [HttpPost("{userGuid}")]
