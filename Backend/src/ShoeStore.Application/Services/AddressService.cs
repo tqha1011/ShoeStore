@@ -79,6 +79,10 @@ namespace ShoeStore.Application.Services
             if (address == null)
                 return Error.NotFound("UserAddress.NotFound", $"Address with id '{addressId}' was not found");
 
+
+            if (address.UserId != user.Id)
+                return Error.Forbidden("Address.Forbidden", "You do not have permission to delete this address.");
+
             return new AddressResponseDto { Id = address.Id, Address = address.Address};
         }
 
@@ -115,6 +119,9 @@ namespace ShoeStore.Application.Services
 
             if (address == null)
                 return Error.NotFound("UserAddress.NotFound", $"Address with id '{addressId}' was not found");
+
+            if (address.UserId != user.Id)
+                return Error.Forbidden("Address.Forbidden", "You do not have permission to delete this address.");
 
             address.Address = $"{updateAddress.DetailAddress}, {updateAddress.District}, {updateAddress.Province}" ?? address.Address;
             address.IsDefault = updateAddress.IsDefault;
