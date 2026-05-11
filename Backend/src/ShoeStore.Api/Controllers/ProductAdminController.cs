@@ -1,4 +1,5 @@
-﻿using ErrorOr;
+﻿using Asp.Versioning;
+using ErrorOr;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs;
@@ -14,6 +15,7 @@ namespace ShoeStore.API.Controllers;
 /// </summary>
 /// <param name="productService">Service for handling product management operations.</param>
 [Route("api/admin/products")]
+[ApiVersion(1)]
 [ApiController]
 [Authorize(Roles = "Admin")]
 public class AdminProductController(IProductService productService) : ControllerBase
@@ -174,15 +176,15 @@ public class AdminProductController(IProductService productService) : Controller
                 message = "Product and variants updated successfully",
                 data = updated
             }),
-           errors => errors[0].Code switch
-           {
-               "Product.NotFound" => NotFound(new { message = "Update failed", description = errors[0].Description }),
-               _ => BadRequest(new
-               {
-            message = "Failed to update product",
-            errors = errors.Select(e => e.Description)
-               })
-           }
+            errors => errors[0].Code switch
+            {
+                "Product.NotFound" => NotFound(new { message = "Update failed", description = errors[0].Description }),
+                _ => BadRequest(new
+                {
+                    message = "Failed to update product",
+                    errors = errors.Select(e => e.Description)
+                })
+            }
         );
     }
 

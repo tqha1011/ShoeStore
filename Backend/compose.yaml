@@ -26,6 +26,9 @@
       - Chatbot__Gemini__ApiKey=${CHATBOT_GEMINI_APIKEY}
       - Chatbot__Gemini__Model=${CHATBOT_GEMINI_MODEL}
       - Chatbot__ActiveProvider=${CHATBOT_PROVIDER}
+      - Chatbot__Ollama__EmbeddingModel=${CHATBOT_OLLAMA_EMBEDDINGMODEL}
+      - Chatbot__Gemini__EmbeddingModel=${CHATBOT_GEMINI_EMBEDDINGMODEL}
+
     
     ports:
       - "8080:8080"

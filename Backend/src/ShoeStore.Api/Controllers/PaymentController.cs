@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
@@ -27,6 +28,7 @@ namespace ShoeStore.Api.Controllers;
 [Route("api/payment")]
 [ApiController]
 [EnableRateLimiting("limit-per-user")]
+[ApiVersion(1)]
 public class PaymentController(
     IConfiguration configuration,
     IPaymentService paymentService,

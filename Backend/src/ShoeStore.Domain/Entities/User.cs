@@ -9,8 +9,9 @@ public class User : Entity<int>
     public required string UserName { get; set; }
     public required string Password { get; set; }
     public required string Email { get; set; }
+    
+    public string? AvatarUrl { get; set; }
     public DateTime? DateOfBirth { get; set; }
-    public string? Address { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 
@@ -35,4 +36,9 @@ public class User : Entity<int>
     ///     Gets the collection of sessions created by user
     /// </summary>
     public ICollection<ChatSession> ChatSessions { get; set; } = new List<ChatSession>();
+
+    /// <summary>
+    ///     Gets the collection of user's address created by user
+    /// </summary>
+    public ICollection<UserAddress> UserAddresses { get; set; } = new List<UserAddress>();
 }
