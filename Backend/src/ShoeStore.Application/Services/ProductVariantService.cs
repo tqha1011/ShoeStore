@@ -43,6 +43,11 @@ public class ProductVariantService(
         return Result.Created;
     }
 
+    public async Task<ErrorOr<Deleted>> DeleteAsync(Guid productVariantGuid, CancellationToken token)
+    {
+        return Result.Deleted;
+    }
+
     public async Task<ErrorOr<Updated>> UpdateAsync(Guid productVariantGuid, UpdateProductVariantDto dto, CancellationToken token)
     {
         var variant = await productVariantRepository.GetByGuidAsync(productVariantGuid, token);

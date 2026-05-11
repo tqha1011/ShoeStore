@@ -7,4 +7,5 @@ public interface IProductVariantService
 {
     Task<ErrorOr<Created>> CreateAsync(Guid productGuid, CreateProductVariantDto dto, CancellationToken token);
     Task<ErrorOr<Updated>> UpdateAsync(Guid productVariantGuid, UpdateProductVariantDto dto, CancellationToken token);
+    Task<ErrorOr<Deleted>> DeleteAsync(Guid productVariantGuid, CancellationToken token);
 }
