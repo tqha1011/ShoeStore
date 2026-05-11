@@ -16,7 +16,7 @@ namespace ShoeStore.Api.Controllers;
 [ApiController]
 [Route("api/address")]
 [ApiVersion(1)]
-//[Authorize]
+[Authorize]
 [EnableRateLimiting("limit-per-user")]
 public class AddressController(IAddressService addressService) : ControllerBase
 {
