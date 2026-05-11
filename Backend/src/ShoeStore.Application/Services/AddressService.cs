@@ -95,9 +95,6 @@ namespace ShoeStore.Application.Services
                 Address = v.Address
             }).ToListAsync(token);
 
-            if (!addresses.Any())
-                return Error.NotFound("Address.NotFound", "No addresses were found for this user.");
-
             return addresses;
         }
 
@@ -115,6 +112,9 @@ namespace ShoeStore.Application.Services
 
             if (address == null)
                 return Error.NotFound("UserAddress.NotFound", $"Address with id '{addressId}' was not found");
+
+            if (address.UserId != user.Id)
+                return Error.Forbidden("Address.Forbidden", "You do not have permission to delete this address.");
 
             address.Address = $"{updateAddress.DetailAddress}, {updateAddress.District}, {updateAddress.Province}" ?? address.Address;
             address.IsDefault = updateAddress.IsDefault;
