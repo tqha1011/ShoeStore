@@ -7,23 +7,24 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\ShoeStore.Domain\ShoeStore.Domain.csproj"/>
+        <ProjectReference Include="..\ShoeStore.Domain\ShoeStore.Domain.csproj" />
     </ItemGroup>
 
 
     <ItemGroup>
-        <PackageReference Include="Cloudinary" Version="0.0.5"/>
-        <PackageReference Include="CloudinaryDotNet" Version="1.29.0"/>
-        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1"/>
-        <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5"/>
-        <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" Version="10.4.0"/>
-        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.7"/>
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.6"/>
-        <PackageReference Include="Microsoft.SemanticKernel.Abstractions" Version="1.75.0"/>
-        <PackageReference Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.75.0-alpha"/>
-        <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.75.0"/>
-        <PackageReference Include="TimeZoneConverter" Version="7.2.0"/>
+        <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
+        <PackageReference Include="Cloudinary" Version="0.0.5" />
+        <PackageReference Include="CloudinaryDotNet" Version="1.29.0" />
+        <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+        <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
+        <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" Version="10.4.0" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.7" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.6" />
+        <PackageReference Include="Microsoft.SemanticKernel.Abstractions" Version="1.75.0" />
+        <PackageReference Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.75.0-alpha" />
+        <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.75.0" />
+        <PackageReference Include="TimeZoneConverter" Version="7.2.0" />
     </ItemGroup>
 
 </Project>
