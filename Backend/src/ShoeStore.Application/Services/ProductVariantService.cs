@@ -45,6 +45,13 @@ public class ProductVariantService(
 
     public async Task<ErrorOr<Deleted>> DeleteAsync(Guid productVariantGuid, CancellationToken token)
     {
+        var variant = await productVariantRepository.GetByGuidAsync(productVariantGuid, token);
+
+        if (variant == null || variant.IsDeleted == true)
+            return Error.NotFound("ProductVariant.NotFound", "Product variant not found.");
+
+        variant.IsDeleted = true;
+        await uow.SaveChangesAsync(token);
         return Result.Deleted;
     }
 
