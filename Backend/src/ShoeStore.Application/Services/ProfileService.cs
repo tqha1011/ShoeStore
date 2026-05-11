@@ -76,7 +76,7 @@ namespace ShoeStore.Application.Services
 
             profile.UserName = update.UserName ?? profile.UserName;
             profile.DateOfBirth = update.DateOfBirth ?? profile.DateOfBirth;
-            // Avata Url
+            profile.AvatarUrl = update.AvatarUrl ?? profile.AvatarUrl;
             profile.UpdatedAt = DateTime.UtcNow;
 
             _userRepository.Update(profile);

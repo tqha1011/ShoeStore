@@ -7,7 +7,7 @@ namespace ShoeStore.Api.Controllers
 {
     [ApiController]
     [Route("api/address")]
-    //[Authorize]
+    [Authorize]
     public class AddressController(IAddressService addressService) : ControllerBase
     {
         [HttpPost("{userGuid}")]
@@ -18,7 +18,7 @@ namespace ShoeStore.Api.Controllers
             return Ok(result);
         }
 
-        [HttpPut("{userGuid}, {addressId}")]
+        [HttpPut("{userGuid}/{addressId}")]
         public async Task<IActionResult> UpdateAddress(Guid userGuid, int addressId, [FromBody] UpdateAddressDto dto, CancellationToken token)
         {
             var result = await addressService.UpdateAddressAsync(userGuid, addressId, dto, token);
@@ -26,7 +26,7 @@ namespace ShoeStore.Api.Controllers
             return Ok(result);
         }
 
-        [HttpDelete("{userGuid}, {addressId}")]
+        [HttpDelete("{userGuid}/{addressId}")]
         public async Task<IActionResult> DeleteAddress(Guid userGuid, int addressId, CancellationToken token)
         {
             var result = await addressService.DeleteAddressAsync(userGuid, addressId, token);
@@ -34,7 +34,7 @@ namespace ShoeStore.Api.Controllers
             return Ok(result);
         }
 
-        [HttpGet("{userGuid}, {addressId}")]
+        [HttpGet("{userGuid}/{addressId}")]
         public async Task<IActionResult> GetAddressId(Guid userGuid, int addressId, CancellationToken token)
         {
             var result = await addressService.GetAddressbyIdAsync(userGuid, addressId, token);

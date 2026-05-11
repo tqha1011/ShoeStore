@@ -32,7 +32,8 @@ namespace ShoeStore.Application.Services
             {
                 UserId = user.Id,
                 Address = $"{createAddress.DetailAddress}, {createAddress.District}, {createAddress.Province}",
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                IsDefault = createAddress.IsDefault
             };
 
             _addressRepository.Add(address);
@@ -55,6 +56,9 @@ namespace ShoeStore.Application.Services
             if (address == null)
                 return Error.NotFound("UserAddress.NotFound", $"Address with id '{addressId}' was not found");
 
+            if (address.UserId != user.Id)
+                return Error.Forbidden("Address.Forbidden", "You do not have permission to delete this address.");
+
             _addressRepository.Delete(address);
             await _uow.SaveChangesAsync(token);
             return Result.Deleted;
@@ -75,7 +79,7 @@ namespace ShoeStore.Application.Services
             if (address == null)
                 return Error.NotFound("UserAddress.NotFound", $"Address with id '{addressId}' was not found");
 
-            return new AddressResponseDto { Address = address.Address};
+            return new AddressResponseDto { Id = address.Id, Address = address.Address};
         }
 
         public async Task<ErrorOr<IEnumerable<AddressResponseDto>>> GetAllAddressAsync(Guid userGuid, CancellationToken token)
@@ -87,6 +91,7 @@ namespace ShoeStore.Application.Services
 
             var addresses = await _addressRepository.GetAll(userGuid).Select(v => new AddressResponseDto
             {
+                Id = v.Id,
                 Address = v.Address
             }).ToListAsync(token);
 
@@ -112,6 +117,7 @@ namespace ShoeStore.Application.Services
                 return Error.NotFound("UserAddress.NotFound", $"Address with id '{addressId}' was not found");
 
             address.Address = $"{updateAddress.DetailAddress}, {updateAddress.District}, {updateAddress.Province}" ?? address.Address;
+            address.IsDefault = updateAddress.IsDefault;
             _addressRepository.Update(address);
             await _uow.SaveChangesAsync(token);
             return Result.Updated;
