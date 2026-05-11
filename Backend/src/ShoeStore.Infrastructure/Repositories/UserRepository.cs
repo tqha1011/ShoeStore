@@ -35,4 +35,12 @@ public class UserRepository(AppDbContext context) : GenericRepository<User, int>
     {
         return await DbSet.AsNoTracking().AnyAsync(x => x.PublicId == publicId, token);
     }
+
+    public async Task<int?> GetUserIdByPublicIdAsync(Guid publicId, CancellationToken token)
+    {
+        return await DbSet.AsNoTracking()
+            .Where(x => x.PublicId == publicId)
+            .Select(x => x.Id)
+            .FirstOrDefaultAsync(token);
+    }
 }

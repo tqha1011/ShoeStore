@@ -12,4 +12,6 @@ public interface IUserRepository : IGenericRepository<User, int>
     Task<User?> GetUserByPublicIdAsync(Guid publicId, CancellationToken token, bool isTracking = true);
     IQueryable<User> GetAllUsers();
     Task<bool> CheckUserExistsAsync(Guid publicId, CancellationToken token);
+    
+    Task<int?> GetUserIdByPublicIdAsync(Guid publicId, CancellationToken token);
 }

@@ -44,11 +44,11 @@ public class ChatMessageController(IChatMessageService chatMessageService) : Con
         CancellationToken token)
     {
         var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (validUser == null || !Guid.TryParse(validUser, out _))
+        if (validUser == null || !Guid.TryParse(validUser, out var publicUserId))
         {
             return Unauthorized();
         }
-        var result = await chatMessageService.GetMessagesInSessionAsync(publicSessionId, cursor, token);
+        var result = await chatMessageService.GetMessagesInSessionAsync(publicSessionId,publicUserId, cursor, token);
 
         var response = result.Match<IActionResult>(
             messages => Ok(messages),
@@ -58,6 +58,11 @@ public class ChatMessageController(IChatMessageService chatMessageService) : Con
                 {
                     message = "Chat session not found.",
                     description = "The specified chat session does not exist."
+                }),
+                "User.NotFound" => NotFound(new
+                {
+                    message = "User not found.",
+                    description = "Please login or create an account"
                 }),
                 _ => StatusCode(StatusCodes.Status500InternalServerError, new
                 {

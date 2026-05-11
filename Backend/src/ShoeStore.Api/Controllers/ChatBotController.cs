@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -46,7 +47,12 @@ public class ChatBotController(IChatBotService chatBotService, ILogger<ChatBotCo
     public async Task<IActionResult> GenerateCampaign(CreateCampaignRequestDto requestDto,
         CancellationToken cancellationToken)
     {
-        var response = await chatBotService.GenerateCampaignAsync(requestDto, cancellationToken);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null || !Guid.TryParse(userId, out var publicUserId))
+        {
+            return Unauthorized();
+        }
+        var response = await chatBotService.GenerateCampaignAsync(requestDto,publicUserId ,cancellationToken);
 
         if (response.IsError) return HandleError(response.FirstError.Description);
 
@@ -95,7 +101,12 @@ public class ChatBotController(IChatBotService chatBotService, ILogger<ChatBotCo
     public async Task<IActionResult> ChatAskAboutStatistics([FromBody] ChatMessageRequestDto requestDto,
         [FromQuery] Guid publicSessionId, CancellationToken cancellationToken)
     {
-        var response = await chatBotService.ChatAskAboutStatisticsAsync(publicSessionId, requestDto, cancellationToken);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null || !Guid.TryParse(userId, out var publicUserId))
+        {
+            return Unauthorized();
+        }
+        var response = await chatBotService.ChatAskAboutStatisticsAsync(publicSessionId, requestDto,publicUserId ,cancellationToken);
         if (response.IsError) return HandleError(response.FirstError.Description);
 
         SetSseHeaders();
@@ -143,7 +154,12 @@ public class ChatBotController(IChatBotService chatBotService, ILogger<ChatBotCo
         [FromQuery] Guid publicSessionId,
         CancellationToken cancellationToken)
     {
-        var response = await chatBotService.ChatAskAboutProductsAsync(publicSessionId, requestDto, cancellationToken);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null || !Guid.TryParse(userId, out var publicUserId))
+        {
+            return Unauthorized();
+        }
+        var response = await chatBotService.ChatAskAboutProductsAsync(publicSessionId, requestDto,publicUserId ,cancellationToken);
         if (response.IsError) return HandleError(response.FirstError.Description);
 
         SetSseHeaders();
