@@ -8,6 +8,6 @@ public interface IChatMessageRepository : IGenericRepository<ChatMessage, int>
 {
     Task<List<ChatMessage>> GetHistoryChatMessageAsync(int sessionId, CancellationToken token);
 
-    Task<List<MessageResponseDto>> GetMessagesInSessionAsync(int sessionPublicId, DateTime? cursor,
+    Task<List<MessageResponseDto>> GetMessagesInSessionAsync(int sessionPublicId, DateTime? cursor, Guid? messageId,
         CancellationToken token);
 }
