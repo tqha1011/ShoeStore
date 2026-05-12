@@ -12,7 +12,7 @@
 
 
     <ItemGroup>
-        <PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
+        <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
         <PackageReference Include="Cloudinary" Version="0.0.5" />
         <PackageReference Include="CloudinaryDotNet" Version="1.29.0" />
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
