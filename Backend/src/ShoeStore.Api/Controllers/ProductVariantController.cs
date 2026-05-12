@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
 using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Application.Interface.UploadImage;
+using ShoeStore.Application.Services;
 
 namespace ShoeStore.Api.Controllers;
 
@@ -144,6 +145,48 @@ public class ProductVariantController(IProductVariantService variantService, IIm
                     code = errors[0].Code,
                     message = errors[0].Description
                 }),
+                _ => StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    code = errors[0].Code,
+                    message = errors[0].Description
+                })
+            }
+        );
+    }
+    /// <summary>
+    /// Deletes a product variant by its public identifier.
+    /// </summary>
+    /// <param name="productVariantGuid">
+    /// The public identifier of the product variant.
+    /// </param>
+    /// <param name="token">
+    /// Cancellation token.
+    /// </param>
+    /// <returns>
+    /// Returns 204 if deleted successfully,
+    /// 404 if the product variant is not found,
+    /// or 500 if an unexpected error occurs.
+    /// </returns>
+    [HttpDelete("{productVariantGuid:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> Delete(
+        Guid productVariantGuid,
+        CancellationToken token)
+    {
+        var result = await variantService.DeleteAsync(productVariantGuid, token);
+
+        return result.Match<IActionResult>(
+            _ => NoContent(),
+            errors => errors[0].Code switch
+            {
+                "ProductVariant.NotFound" => NotFound(new
+                {
+                    code = errors[0].Code,
+                    message = errors[0].Description
+                }),
+
                 _ => StatusCode(StatusCodes.Status500InternalServerError, new
                 {
                     code = errors[0].Code,

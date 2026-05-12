@@ -11,6 +11,7 @@ using ShoeStore.Application.DTOs.StatisticsDto;
 using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.StatisticsInterface;
+using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Domain.Enum;
 using ChatMessage = ShoeStore.Domain.Entities.ChatMessage;
 
@@ -23,20 +24,25 @@ public class ChatBotService(
     IChatSessionRepository chatSessionRepository,
     IUnitOfWork unitOfWork,
     IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
-    IProductEmbeddingRepository productEmbeddingRepository)
+    IProductEmbeddingRepository productEmbeddingRepository,
+    IUserRepository userRepository)
     : IChatBotService
 {
     public async Task<ErrorOr<IAsyncEnumerable<string>>> GenerateCampaignAsync(CreateCampaignRequestDto requestDto,
-        CancellationToken token)
+        Guid publicUserId,CancellationToken token)
     {
         var summaryData = await GetSummaryData(token);
         if (summaryData.IsError) return summaryData.Errors;
         var top3Products = await GetTopProductsData(token);
         if (top3Products.IsError) return top3Products.Errors;
+        
+        var userId = await userRepository.GetUserIdByPublicIdAsync(publicUserId, token);
+        if(userId == null) return Error.NotFound("User.NotFound", "User not found");
 
-        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(requestDto.PublicSessionId, token);
+        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(requestDto.PublicSessionId,userId.Value,token);
         if (sessionId == null) return Error.NotFound("ChatSession.NotFound", "Chat session not found");
-
+        var executionSetting = BuildExecutionSettings();
+        IAsyncEnumerable<StreamingChatMessageContent> response;
         var newUserMessage = new ChatMessage
         {
             Content = requestDto.Content,
@@ -46,96 +52,59 @@ public class ChatBotService(
             TokenCount = requestDto.Content.Length / 4 // Rough token estimation
         };
         chatMessageRepository.Add(newUserMessage);
-        await unitOfWork.SaveChangesAsync(token);
-
         var totalRevenue = summaryData.Value.TotalRevenue;
         var totalOrders = summaryData.Value.TotalOrders;
-
-        var top1 = top3Products.Value.Count > 0
-            ? $"{top3Products.Value[0].ProductName} - Revenue: {top3Products.Value[0].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[0].TotalInvoices}"
-            : "Updating";
-        var top2 = top3Products.Value.Count > 1
-            ? $"{top3Products.Value[1].ProductName} - Revenue: {top3Products.Value[1].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[1].TotalInvoices}"
-            : "Updating";
-        var top3 = top3Products.Value.Count > 2
-            ? $"{top3Products.Value[2].ProductName} - Revenue: {top3Products.Value[2].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[2].TotalInvoices}"
-            : "Updating";
-
-        var systemPrompt = SystemPrompt.GenerateStatisticsPrompt(totalRevenue, totalOrders, top1, top2, top3, true);
-        var chat = new ChatHistory(systemPrompt);
-        chat.AddUserMessage(requestDto.Content);
-
-        var executionSetting = new OpenAIPromptExecutionSettings
+        if (totalRevenue <= 0 && totalOrders == 0 && top3Products.Value.Count == 0)
         {
-            MaxTokens = 500, // Limit response length
-            Temperature = 0.6 // Adjust creativity
-        };
-
-        var response =
-            chatCompletionService.GetStreamingChatMessageContentsAsync(
-                chat,
+            var emptyStatisticsPrompt = SystemPrompt.GenerateEmptyStatisticsPrompt(true);
+            var emptyStatisticsChat = new ChatHistory(emptyStatisticsPrompt);
+            emptyStatisticsChat.AddUserMessage(requestDto.Content);
+            response = chatCompletionService.GetStreamingChatMessageContentsAsync(
+                emptyStatisticsChat,
                 executionSetting,
                 cancellationToken: token);
+        }
+        else
+        {
+            var top1 = top3Products.Value.Count > 0
+                ? $"{top3Products.Value[0].ProductName} - Revenue: {top3Products.Value[0].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[0].TotalInvoices}"
+                : "Updating";
+            var top2 = top3Products.Value.Count > 1
+                ? $"{top3Products.Value[1].ProductName} - Revenue: {top3Products.Value[1].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[1].TotalInvoices}"
+                : "Updating";
+            var top3 = top3Products.Value.Count > 2
+                ? $"{top3Products.Value[2].ProductName} - Revenue: {top3Products.Value[2].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[2].TotalInvoices}"
+                : "Updating";
+
+            var systemPrompt = SystemPrompt.GenerateStatisticsPrompt(totalRevenue, totalOrders, top1, top2, top3, true);
+            var chat = new ChatHistory(systemPrompt);
+            chat.AddUserMessage(requestDto.Content);
+
+            response =
+                chatCompletionService.GetStreamingChatMessageContentsAsync(
+                    chat,
+                    executionSetting,
+                    cancellationToken: token);
+        }
 
         return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value, token));
     }
 
     public async Task<ErrorOr<IAsyncEnumerable<string>>> ChatAskAboutStatisticsAsync(Guid publicSessionId,
-        ChatMessageRequestDto messageRequestDto, CancellationToken token)
+        ChatMessageRequestDto messageRequestDto,Guid publicUserId ,CancellationToken token)
     {
         var summaryData = await GetSummaryData(token);
         if (summaryData.IsError) return summaryData.Errors;
         var top3Products = await GetTopProductsData(token);
         if (top3Products.IsError) return top3Products.Errors;
-        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(publicSessionId, token);
+        var userId = await userRepository.GetUserIdByPublicIdAsync(publicUserId, token);
+        if(userId == null) return Error.NotFound("User.NotFound", "User not found");
+        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(publicSessionId,userId.Value ,token);
         if (sessionId == null) return Error.NotFound("ChatSession.NotFound", "Chat session not found");
         var totalRevenue = summaryData.Value.TotalRevenue;
         var totalOrders = summaryData.Value.TotalOrders;
-
-        var top1 = top3Products.Value.Count > 0
-            ? $"{top3Products.Value[0].ProductName} - Revenue: {top3Products.Value[0].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[0].TotalInvoices}"
-            : "Updating";
-        var top2 = top3Products.Value.Count > 1
-            ? $"{top3Products.Value[1].ProductName} - Revenue: {top3Products.Value[1].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[1].TotalInvoices}"
-            : "Updating";
-        var top3 = top3Products.Value.Count > 2
-            ? $"{top3Products.Value[2].ProductName} - Revenue: {top3Products.Value[2].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[2].TotalInvoices}"
-            : "Updating";
-        var historyChat = await chatMessageRepository.GetHistoryChatMessageAsync(sessionId.Value, token);
-        var reverseHistoryChat = historyChat.OrderBy(m => m.CreatedAt)
-            .Select(c => new
-            {
-                c.Content,
-                c.Role
-            })
-            .ToList();
-
-        var systemPrompt = SystemPrompt.GenerateStatisticsPrompt(totalRevenue, totalOrders, top1, top2, top3, false);
-
-        var chat = new ChatHistory(systemPrompt);
-        var reducer = new ChatHistoryTruncationReducer(20, 35);
-
-        foreach (var message in reverseHistoryChat)
-        {
-            switch (message.Role)
-            {
-                case ChatBotRole.Assistant:
-                {
-                    chat.AddAssistantMessage(message.Content);
-                    break;
-                }
-                case ChatBotRole.User:
-                {
-                    chat.AddUserMessage(message.Content);
-                    break;
-                }
-            }
-        }
-        var reducedMessage = await reducer.ReduceAsync(chat, token);
-        if (reducedMessage != null) chat = new ChatHistory(reducedMessage);
-        
-        chat.Add(new ChatMessageContent(AuthorRole.User, messageRequestDto.Content));
-
+        var executionSetting = BuildExecutionSettings();
+        IAsyncEnumerable<StreamingChatMessageContent> response;
         var newChatMessage = new ChatMessage
         {
             Content = messageRequestDto.Content,
@@ -145,26 +114,78 @@ public class ChatBotService(
             TokenCount = messageRequestDto.Content.Length / 4 // Rough token estimation
         };
         chatMessageRepository.Add(newChatMessage);
-        await unitOfWork.SaveChangesAsync(token);
-
-        var executionSetting = new OpenAIPromptExecutionSettings
+        if (totalRevenue <= 0 && totalOrders == 0 && top3Products.Value.Count == 0)
         {
-            MaxTokens = 500, // Limit response length
-            Temperature = 0.6 // Adjust creativity
-        };
-
-        var response =
-            chatCompletionService.GetStreamingChatMessageContentsAsync(
-                chat,
+            var emptyStatisticsPrompt = SystemPrompt.GenerateEmptyStatisticsPrompt(false);
+            var emptyStatisticsChat = new ChatHistory(emptyStatisticsPrompt);
+            emptyStatisticsChat.AddUserMessage(messageRequestDto.Content);
+            response = chatCompletionService.GetStreamingChatMessageContentsAsync(
+                emptyStatisticsChat,
                 executionSetting,
                 cancellationToken: token);
+        }
+        else
+        {
+            var top1 = top3Products.Value.Count > 0
+                ? $"{top3Products.Value[0].ProductName} - Revenue: {top3Products.Value[0].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[0].TotalInvoices}"
+                : "Updating";
+            var top2 = top3Products.Value.Count > 1
+                ? $"{top3Products.Value[1].ProductName} - Revenue: {top3Products.Value[1].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[1].TotalInvoices}"
+                : "Updating";
+            var top3 = top3Products.Value.Count > 2
+                ? $"{top3Products.Value[2].ProductName} - Revenue: {top3Products.Value[2].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[2].TotalInvoices}"
+                : "Updating";
+            var historyChat = await chatMessageRepository.GetHistoryChatMessageAsync(sessionId.Value, token);
+            var reverseHistoryChat = historyChat.OrderBy(m => m.CreatedAt)
+                .Select(c => new
+                {
+                    c.Content,
+                    c.Role
+                })
+                .ToList();
+
+            var systemPrompt =
+                SystemPrompt.GenerateStatisticsPrompt(totalRevenue, totalOrders, top1, top2, top3, false);
+
+            var chat = new ChatHistory(systemPrompt);
+            var reducer = new ChatHistoryTruncationReducer(20, 35);
+
+            foreach (var message in reverseHistoryChat)
+                switch (message.Role)
+                {
+                    case ChatBotRole.Assistant:
+                    {
+                        chat.AddAssistantMessage(message.Content);
+                        break;
+                    }
+                    case ChatBotRole.User:
+                    {
+                        chat.AddUserMessage(message.Content);
+                        break;
+                    }
+                }
+
+            var reducedMessage = await reducer.ReduceAsync(chat, token);
+            if (reducedMessage != null) chat = new ChatHistory(reducedMessage);
+
+            chat.AddUserMessage(messageRequestDto.Content);
+
+            response =
+                chatCompletionService.GetStreamingChatMessageContentsAsync(
+                    chat,
+                    executionSetting,
+                    cancellationToken: token);
+        }
+
         return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value, token));
     }
 
     public async Task<ErrorOr<IAsyncEnumerable<string>>> ChatAskAboutProductsAsync(Guid publicSessionId,
-        ChatMessageRequestDto messageRequestDto, CancellationToken token)
+        ChatMessageRequestDto messageRequestDto,Guid publicUserId ,CancellationToken token)
     {
-        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(publicSessionId, token);
+        var userId = await userRepository.GetUserIdByPublicIdAsync(publicUserId, token);
+        if(userId == null) return Error.NotFound("User.NotFound", "User not found");
+        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(publicSessionId,userId.Value ,token);
         if (sessionId == null) return Error.NotFound("ChatSession.NotFound", "Chat session not found");
 
         var historyChat = await chatMessageRepository.GetHistoryChatMessageAsync(sessionId.Value, token);
@@ -186,11 +207,7 @@ public class ChatBotService(
             TokenCount = messageRequestDto.Content.Length / 4 // Rough token estimation
         };
         chatMessageRepository.Add(newChatMessage);
-        var executionSetting = new OpenAIPromptExecutionSettings
-        {
-            MaxTokens = 500, // Limit response length
-            Temperature = 0.6 // Adjust creativity
-        };
+        var executionSetting = BuildExecutionSettings();
         IAsyncEnumerable<StreamingChatMessageContent> response;
         if (top5Products.Count == 0)
         {
@@ -206,16 +223,12 @@ public class ChatBotService(
         else
         {
             var context = new StringBuilder();
-            foreach (var product in top5Products)
-            {
-                context.Append($"{product.TextChunk} \n");
-            }
+            foreach (var product in top5Products) context.Append($"{product.TextChunk} \n");
             var systemPrompt = SystemPrompt.GenerateProductPrompt(context.ToString());
             var chat = new ChatHistory(systemPrompt);
             var reducer = new ChatHistoryTruncationReducer(20, 35);
 
             foreach (var message in reverseHistoryChat)
-            {
                 switch (message.Role)
                 {
                     case ChatBotRole.Assistant:
@@ -229,7 +242,7 @@ public class ChatBotService(
                         break;
                     }
                 }
-            }
+
             var reducedMessage = await reducer.ReduceAsync(chat, token);
             if (reducedMessage != null) chat = new ChatHistory(reducedMessage);
 
@@ -240,6 +253,7 @@ public class ChatBotService(
                     executionSetting,
                     cancellationToken: token);
         }
+
         return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value, token));
     }
 
@@ -276,11 +290,11 @@ public class ChatBotService(
                 Content = message.ToString(),
                 SessionId = sessionId,
                 CreatedAt = DateTime.UtcNow,
-                TokenCount = 0,
+                TokenCount = message.Length / 4, // Rough token estimation
                 Role = ChatBotRole.Assistant
             };
             chatMessageRepository.Add(newAssistantMessage);
-            await unitOfWork.SaveChangesAsync(token);   
+            await unitOfWork.SaveChangesAsync(token);
         }
     }
 
@@ -288,5 +302,14 @@ public class ChatBotService(
     {
         var vector = await embeddingGenerator.GenerateAsync(content, cancellationToken: token);
         return vector.Vector;
+    }
+
+    private static OpenAIPromptExecutionSettings BuildExecutionSettings()
+    {
+        return new OpenAIPromptExecutionSettings
+        {
+            MaxTokens = 500, // Limit response length
+            Temperature = 0.6 // Adjust creativity
+        };
     }
 }

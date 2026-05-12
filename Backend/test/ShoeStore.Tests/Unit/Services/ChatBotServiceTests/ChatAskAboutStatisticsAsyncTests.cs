@@ -5,10 +5,10 @@ using Microsoft.SemanticKernel.ChatCompletion;
 using Moq;
 using ShoeStore.Application.DTOs.ChatBotDTOs;
 using ShoeStore.Application.DTOs.StatisticsDto;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.StatisticsInterface;
+using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Services;
 using ShoeStore.Domain.Enum;
 using ChatMessage = ShoeStore.Domain.Entities.ChatMessage;
@@ -25,6 +25,7 @@ public class ChatAskAboutStatisticsAsyncTests
     private readonly Mock<IStatisticsService> _statisticsService = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IProductEmbeddingRepository> _productEmbeddingRepository = new();
+    private readonly Mock<IUserRepository> _userRepository = new();
 
     public ChatAskAboutStatisticsAsyncTests()
     {
@@ -35,7 +36,8 @@ public class ChatAskAboutStatisticsAsyncTests
             _chatSessionRepository.Object,
             _unitOfWork.Object,
             _embeddingGenerator.Object,
-            _productEmbeddingRepository.Object);
+            _productEmbeddingRepository.Object,
+            _userRepository.Object);
     }
 
     [Fact]
@@ -43,12 +45,13 @@ public class ChatAskAboutStatisticsAsyncTests
     {
         // Arrange
         var request = new ChatMessageRequestDto("How is revenue?");
+        var publicUserId = Guid.NewGuid();
         var error = Error.Unexpected("Summary.Failed", "Summary failed");
         _statisticsService.Setup(s => s.GetStatisticsSummaryAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(error);
 
         // Act
-        var result = await _service.ChatAskAboutStatisticsAsync(Guid.NewGuid(), request, CancellationToken.None);
+        var result = await _service.ChatAskAboutStatisticsAsync(Guid.NewGuid(), request, publicUserId, CancellationToken.None);
 
         // Assert
         Assert.True(result.IsError);
@@ -62,6 +65,7 @@ public class ChatAskAboutStatisticsAsyncTests
     {
         // Arrange
         var request = new ChatMessageRequestDto("How is revenue?");
+        var publicUserId = Guid.NewGuid();
         var summary = BuildSummary();
         var error = Error.Unexpected("TopProducts.Failed", "Top products failed");
         _statisticsService.Setup(s => s.GetStatisticsSummaryAsync(It.IsAny<CancellationToken>()))
@@ -70,7 +74,7 @@ public class ChatAskAboutStatisticsAsyncTests
             .ReturnsAsync(error);
 
         // Act
-        var result = await _service.ChatAskAboutStatisticsAsync(Guid.NewGuid(), request, CancellationToken.None);
+        var result = await _service.ChatAskAboutStatisticsAsync(Guid.NewGuid(), request, publicUserId, CancellationToken.None);
 
         // Assert
         Assert.True(result.IsError);
@@ -84,6 +88,7 @@ public class ChatAskAboutStatisticsAsyncTests
     {
         // Arrange
         var request = new ChatMessageRequestDto("How is revenue?");
+        var publicUserId = Guid.NewGuid();
         var summary = BuildSummary();
         var topProducts = BuildTopProducts();
 
@@ -91,12 +96,15 @@ public class ChatAskAboutStatisticsAsyncTests
             .ReturnsAsync(summary);
         _statisticsService.Setup(s => s.GetProductsHighestStatisticsAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(topProducts);
+        _userRepository
+            .Setup(r => r.GetUserIdByPublicIdAsync(publicUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
         _chatSessionRepository
-            .Setup(r => r.GetChatSessionIdByPublicIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetChatSessionIdByPublicIdAsync(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((int?)null);
 
         // Act
-        var result = await _service.ChatAskAboutStatisticsAsync(Guid.NewGuid(), request, CancellationToken.None);
+        var result = await _service.ChatAskAboutStatisticsAsync(Guid.NewGuid(), request, publicUserId, CancellationToken.None);
 
         // Assert
         Assert.True(result.IsError);
@@ -113,6 +121,7 @@ public class ChatAskAboutStatisticsAsyncTests
         var summary = BuildSummary();
         var topProducts = BuildTopProducts();
         var sessionPublicId = Guid.NewGuid();
+        var publicUserId = Guid.NewGuid();
         const int sessionId = 22;
 
         var history = new List<ChatMessage>
@@ -139,8 +148,11 @@ public class ChatAskAboutStatisticsAsyncTests
             .ReturnsAsync(summary);
         _statisticsService.Setup(s => s.GetProductsHighestStatisticsAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(topProducts);
+        _userRepository
+            .Setup(r => r.GetUserIdByPublicIdAsync(publicUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
         _chatSessionRepository
-            .Setup(r => r.GetChatSessionIdByPublicIdAsync(sessionPublicId, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetChatSessionIdByPublicIdAsync(sessionPublicId, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(sessionId);
         _chatMessageRepository
             .Setup(r => r.GetHistoryChatMessageAsync(sessionId, It.IsAny<CancellationToken>()))
@@ -154,12 +166,11 @@ public class ChatAskAboutStatisticsAsyncTests
             .Returns(BuildStreamingResponse("Revenue ", "is ", "up"));
 
         // Act
-        var result = await _service.ChatAskAboutStatisticsAsync(sessionPublicId, request, CancellationToken.None);
+        var result = await _service.ChatAskAboutStatisticsAsync(sessionPublicId, request, publicUserId, CancellationToken.None);
 
         // Assert
         Assert.False(result.IsError);
 
-        // Read only streaming chunks (avoid completing the iterator to keep SaveChangesAsync at one call).
         var output = string.Empty;
         await foreach (var chunk in result.Value)
         {
@@ -170,7 +181,7 @@ public class ChatAskAboutStatisticsAsyncTests
         Assert.Equal("Revenue is up", output);
         _chatMessageRepository.Verify(r => r.Add(It.Is<ChatMessage>(m =>
             m.Role == ChatBotRole.User && m.Content == request.Content && m.SessionId == sessionId)), Times.Once);
-        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private static StatisticsSummaryResponseDto BuildSummary()

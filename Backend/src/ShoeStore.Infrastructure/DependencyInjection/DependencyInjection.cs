@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.AddressInterface;
 using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.ChatBotInterface;
@@ -15,7 +15,6 @@ using ShoeStore.Application.Interface.Strategies;
 using ShoeStore.Application.Interface.UploadImage;
 using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Interface.VoucherInterface;
-using ShoeStore.Application.Services;
 using ShoeStore.Infrastructure.Authentication;
 using ShoeStore.Infrastructure.Authentication.Strategies;
 using ShoeStore.Infrastructure.Cloudinary;
@@ -58,22 +57,20 @@ public static class DependencyInjection
         services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
         services.AddScoped<ICartItemRepository, CartItemRepository>();
         services.AddHttpContextAccessor();
-        services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
-        services.AddScoped<IInvoiceService, InvoiceService>();
         services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<IColorRepository, ColorRepository>();
         services.AddScoped<ISizeRepository, SizeRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IVoucherRepository, VoucherRepository>();
-        services.AddScoped<IVoucherService, VoucherService>();
         services.AddScoped<IUserVoucherRepository, UserVoucherRepository>();
         services.AddScoped<IGoogleValidator, GoogleValidator>();
         services.AddSingleton<INotificationQueue, NotificationQueue>();
         services.AddScoped<IChatSessionRepository, ChatSessionRepository>();
         services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
         services.AddScoped<IProductEmbeddingRepository, ProductEmbeddingRepository>();
+        services.AddScoped<IAddressRepository, AddressRepository>();
         return services;
     }
 }
