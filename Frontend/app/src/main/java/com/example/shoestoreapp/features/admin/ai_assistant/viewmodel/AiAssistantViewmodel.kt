@@ -1,5 +1,6 @@
 package com.example.shoestoreapp.features.admin.ai_assistant.viewmodel
 
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -9,6 +10,7 @@ import com.example.shoestoreapp.features.admin.ai_assistant.data.remote.ChatSess
 import com.example.shoestoreapp.features.admin.ai_assistant.data.repository.AiChatRepository
 import com.example.shoestoreapp.features.admin.ai_assistant.viewmodel.ChatMessage
 import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.ErrorDisplay
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
@@ -24,7 +26,8 @@ data class AiAssistantState(
 )
 
 class AiAssistantViewmodel(
-    private val repository : AiChatRepository
+    private val repository : AiChatRepository,
+    private val ioDispatcher : CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     var state by mutableStateOf(AiAssistantState())
         private set
@@ -37,7 +40,7 @@ class AiAssistantViewmodel(
     }
 
     fun loadSessions() {
-        viewModelScope.launch(Dispatchers.IO){
+        viewModelScope.launch(ioDispatcher){
             state = state.copy(isLoadingSesions = true, error = null)
 
             // Get Api Session History
@@ -55,7 +58,7 @@ class AiAssistantViewmodel(
         }
     }
     private fun startNewSessionAndGenerateCampaign(initialPrompt: String) {
-        viewModelScope.launch(Dispatchers.IO){
+        viewModelScope.launch(ioDispatcher){
             runCatching {
                 // Create new session
                 val response = repository.createSession()
@@ -94,7 +97,7 @@ class AiAssistantViewmodel(
     }
 
     private fun startNewSessionAndSendMessage(userText: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             runCatching {
                 val response = repository.createSession()
                 if (!response.isSuccessful) {
@@ -130,7 +133,7 @@ class AiAssistantViewmodel(
 
         state = state.copy(messages = state.messages + userMsg + aiMsgPlaceHolder, error = null)
 
-        viewModelScope.launch(Dispatchers.IO){
+        viewModelScope.launch(ioDispatcher){
 
             val streamFlow = if (isCampaign) {
                 repository.streamGenerateCampaign(sessionId, prompt)

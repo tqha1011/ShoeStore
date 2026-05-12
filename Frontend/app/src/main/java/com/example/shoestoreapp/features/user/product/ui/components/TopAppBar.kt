@@ -22,7 +22,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 
 /**
  * TopAppBar: Thanh ứng dụng phía trên cùng (sử dụng CenterAlignedTopAppBar)
- * @param onAiClick - Callback when click Ai Assistant
+ * @param onAiClick - Callback when click Ai Icon
  * @param onShoppingBagClick - Callback khi click shopping bag
  */
 @OptIn(ExperimentalMaterial3Api::class)
