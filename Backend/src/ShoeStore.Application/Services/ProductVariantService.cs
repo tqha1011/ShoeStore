@@ -51,6 +51,7 @@ public class ProductVariantService(
             return Error.NotFound("ProductVariant.NotFound", "Product variant not found.");
 
         variant.IsDeleted = true;
+        productVariantRepository.Update(variant);
         await uow.SaveChangesAsync(token);
         return Result.Deleted;
     }
