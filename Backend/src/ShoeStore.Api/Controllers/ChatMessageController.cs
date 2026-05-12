@@ -35,20 +35,17 @@ public class ChatMessageController(IChatMessageService chatMessageService) : Con
     /// <response code="404">Not found; chat session does not exist.</response>
     /// <response code="500">Internal server error; failed to retrieve messages.</response>
     /// <returns>A list of chat messages for the session.</returns>
-    [ProducesResponseType(typeof(List<MessageResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ChatMessageResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpGet]
-    public async Task<IActionResult> GetMessageInSession([FromQuery] Guid publicSessionId, [FromQuery] DateTime? cursor,
+    public async Task<IActionResult> GetMessageInSession([FromQuery] Guid publicSessionId, [FromQuery] string? cursor,
         CancellationToken token)
     {
         var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (validUser == null || !Guid.TryParse(validUser, out var publicUserId))
-        {
-            return Unauthorized();
-        }
-        var result = await chatMessageService.GetMessagesInSessionAsync(publicSessionId,publicUserId, cursor, token);
+        if (validUser == null || !Guid.TryParse(validUser, out var publicUserId)) return Unauthorized();
+        var result = await chatMessageService.GetMessagesInSessionAsync(publicSessionId, publicUserId, cursor, token);
 
         var response = result.Match<IActionResult>(
             messages => Ok(messages),

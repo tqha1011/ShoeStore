@@ -18,16 +18,23 @@ public class ChatMessageRepository(AppDbContext context)
             .ToListAsync(token);
     }
 
+    // Apply pagination
+    // If cursor is null, get the latest messages. Otherwise, get messages before the cursor.
+    // If message created_at is equal to cursor then compare the publicId
     public async Task<List<MessageResponseDto>> GetMessagesInSessionAsync(int sessionPublicId, DateTime? cursor,
+        Guid? messageId,
         CancellationToken token)
     {
         var query = DbSet.AsQueryable().AsNoTracking();
         query = cursor == null
             ? query.Where(x => x.SessionId == sessionPublicId)
-            : query.Where(x => x.SessionId == sessionPublicId && x.CreatedAt < cursor);
+            : query.Where(x =>
+                x.SessionId == sessionPublicId && (x.CreatedAt < cursor ||
+                                                   (x.CreatedAt == cursor && x.PublicId < messageId)));
 
         var response = await query
             .OrderByDescending(c => c.CreatedAt)
+            .ThenByDescending(c => c.PublicId)
             .Select(m => new MessageResponseDto(
                 m.PublicId,
                 m.Content,
