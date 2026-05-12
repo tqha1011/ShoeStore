@@ -1,5 +1,3 @@
-@file:Suppress("DEPRECATION")
-
 package com.example.shoestoreapp.features.admin.ai_assistant.ui
 
 import androidx.compose.animation.core.LinearEasing
@@ -210,8 +208,8 @@ fun SessionListArea(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 12.dp)
-                    .clickable(enabled = sessionId.isNotBlank()) {
-                        if (sessionId.isNotBlank()) {
+                    .clickable(enabled = !sessionId.isNullOrBlank()) {
+                        if (!sessionId.isNullOrBlank()) {
                             onSessionClick(sessionId)
                         }
                     },
