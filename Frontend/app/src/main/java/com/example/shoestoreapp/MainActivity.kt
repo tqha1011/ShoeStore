@@ -14,6 +14,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navigation
 import com.example.shoestoreapp.core.networks.RetrofitInstance
 import com.example.shoestoreapp.features.user.product.ui.product_detail.ProductDetailScreen
 import com.example.shoestoreapp.features.user.product.ui.product_list.ProductListScreen
@@ -68,6 +69,8 @@ private object Routes {
     const val ADMIN_ANALYTICS = "admin_analytics"
     const val ADMIN_AI_ASSISTANT_BASE = "admin_ai_assistant"
     const val ADMIN_AI_ASSISTANT = "$ADMIN_AI_ASSISTANT_BASE?isGeneratingCampaign={isGeneratingCampaign}"
+    const val USER_AI_ASSISTANT_BASE = "user_ai_assistant"
+    const val USER_AI_ASSISTANT = "$USER_AI_ASSISTANT_BASE?isGenerateProduct={isGeneratingProduct}"
     const val ADMIN_SETTINGS = "admin_settings"
 
     fun createNewPassword(email: String, otp: String): String = "create_new_password/$email/$otp"
@@ -78,6 +81,10 @@ private object Routes {
     // Admin AI Assistant
     fun adminAiAssistant(isGeneratingCampaign: Boolean = false): String {
         return "$ADMIN_AI_ASSISTANT_BASE?isGeneratingCampaign=$isGeneratingCampaign"
+    }
+    // User AI Assistant
+    fun userAiAssistant(isGeneratingProduct: Boolean = false): String {
+        return "$USER_AI_ASSISTANT_BASE?isGenerateProduct=$isGeneratingProduct"
     }
 }
 
@@ -189,7 +196,7 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
                 navController.navigate(Routes.PRODUCT_DETAIL.replace("{productGuid}", productGuid))
             },
             onAiAssistantClick = {
-                // TODO
+                navController.navigate(Routes.userAiAssistant(isGeneratingProduct = false))
             },
             onNavigateToShoppingBag = { println("Shopping bag clicked") },
             onBottomTabSelected = { tab -> handleUserHomeTabSelection(tab, navController) }

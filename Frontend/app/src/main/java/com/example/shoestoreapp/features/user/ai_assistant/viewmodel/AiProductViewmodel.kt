@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.admin.ai_assistant.viewmodel
+package com.example.shoestoreapp.features.user.ai_assistant.viewmodel
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,8 +14,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.UUID
 
-data class AiStrategyState(
+data class AiProductState(
     val messages: List<ChatMessage> = emptyList(),
     val sessions: List<ChatSessionResponseDto> = emptyList(),
     val isLoadingSesions : Boolean = false,
@@ -23,11 +24,11 @@ data class AiStrategyState(
     val error : String? = null
 )
 
-class AiStrategyViewmodel(
+class AiProductViewmodel(
     private val repository : AiChatRepository,
     private val ioDispatcher : CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
-    var state by mutableStateOf(AiStrategyState())
+    var state by mutableStateOf(AiProductState())
         private set
 
     fun initialize(initialPrompt: String?) {
@@ -128,7 +129,7 @@ class AiStrategyViewmodel(
         val userMsg = ChatMessage(text = prompt, isUser = true)
 
         // Create Bubble Chat for AI messages
-        val aiMessageId = java.util.UUID.randomUUID().toString()
+        val aiMessageId = UUID.randomUUID().toString()
         val aiMsgPlaceHolder =
             ChatMessage(id = aiMessageId, text = "", isUser = false, isStreaming = true)
 

@@ -1,7 +1,9 @@
-package com.example.shoestoreapp.features.admin.ai_assistant.viewmodel
+package com.example.shoestoreapp.features.agent_intelligent.viewmodel
+
+import java.util.UUID
 
 data class ChatMessage(
-    val id: String = java.util.UUID.randomUUID().toString(),
+    val id: String = UUID.randomUUID().toString(),
     val text: String,
     val isUser: Boolean,
     val isStreaming: Boolean = false // Determines if the typing cursor '█'
