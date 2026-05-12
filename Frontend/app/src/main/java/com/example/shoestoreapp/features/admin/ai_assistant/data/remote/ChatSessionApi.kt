@@ -6,10 +6,10 @@ import retrofit2.http.POST
 import retrofit2.http.Query
 
 interface ChatSessionApi {
-    @POST("api/session")
+    @POST("api/v1/session")
     suspend fun createSession(): Response<CreateSessionResponseDto>
 
-    @GET("api/session")
+    @GET("api/v1/session")
     suspend fun getSession(
         @Query("pageNumber") pageNumber: Int = 1,
         @Query("pageSize") pageSize : Int = 10,
