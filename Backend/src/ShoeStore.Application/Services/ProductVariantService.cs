@@ -51,7 +51,14 @@ public class ProductVariantService(
             return Error.NotFound("ProductVariant.NotFound", "Product variant not found.");
 
         variant.IsDeleted = true;
+        productVariantRepository.Update(variant);
         await uow.SaveChangesAsync(token);
+        var product = await productRepository.GetByIdAsync(variant.ProductId, token);
+        if (product != null)
+        {
+            await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
+        }
+        await cache.RemoveByTagAsync(CacheTag.Product, token);
         return Result.Deleted;
     }
 
@@ -80,6 +87,7 @@ public class ProductVariantService(
         await cache.RemoveByTagAsync(CacheTag.Product, token);
 
         return Result.Updated;
+
     }
 
 }
