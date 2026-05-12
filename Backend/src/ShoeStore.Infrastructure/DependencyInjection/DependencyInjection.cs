@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.AddressInterface;
 using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.ChatBotInterface;
@@ -15,7 +15,6 @@ using ShoeStore.Application.Interface.Strategies;
 using ShoeStore.Application.Interface.UploadImage;
 using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Interface.VoucherInterface;
-using ShoeStore.Application.Services;
 using ShoeStore.Infrastructure.Authentication;
 using ShoeStore.Infrastructure.Authentication.Strategies;
 using ShoeStore.Infrastructure.Cloudinary;
@@ -23,7 +22,7 @@ using ShoeStore.Infrastructure.Data;
 using ShoeStore.Infrastructure.Notification;
 using ShoeStore.Infrastructure.Repositories;
 using ShoeStore.Infrastructure.RestorePassService;
-using ShoeStore.Application.Interface.AddressInterface;
+
 namespace ShoeStore.Infrastructure.DependencyInjection;
 
 public static class DependencyInjection
@@ -72,7 +71,6 @@ public static class DependencyInjection
         services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
         services.AddScoped<IProductEmbeddingRepository, ProductEmbeddingRepository>();
         services.AddScoped<IAddressRepository, AddressRepository>();
-        services.AddScoped<IAddressService, AddressService>();
         return services;
     }
 }

@@ -11,6 +11,7 @@ using ShoeStore.Application.DTOs.StatisticsDto;
 using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.StatisticsInterface;
+using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Domain.Enum;
 using ChatMessage = ShoeStore.Domain.Entities.ChatMessage;
 
@@ -23,18 +24,22 @@ public class ChatBotService(
     IChatSessionRepository chatSessionRepository,
     IUnitOfWork unitOfWork,
     IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
-    IProductEmbeddingRepository productEmbeddingRepository)
+    IProductEmbeddingRepository productEmbeddingRepository,
+    IUserRepository userRepository)
     : IChatBotService
 {
     public async Task<ErrorOr<IAsyncEnumerable<string>>> GenerateCampaignAsync(CreateCampaignRequestDto requestDto,
-        CancellationToken token)
+        Guid publicUserId,CancellationToken token)
     {
         var summaryData = await GetSummaryData(token);
         if (summaryData.IsError) return summaryData.Errors;
         var top3Products = await GetTopProductsData(token);
         if (top3Products.IsError) return top3Products.Errors;
+        
+        var userId = await userRepository.GetUserIdByPublicIdAsync(publicUserId, token);
+        if(userId == null) return Error.NotFound("User.NotFound", "User not found");
 
-        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(requestDto.PublicSessionId, token);
+        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(requestDto.PublicSessionId,userId.Value,token);
         if (sessionId == null) return Error.NotFound("ChatSession.NotFound", "Chat session not found");
         var executionSetting = BuildExecutionSettings();
         IAsyncEnumerable<StreamingChatMessageContent> response;
@@ -86,13 +91,15 @@ public class ChatBotService(
     }
 
     public async Task<ErrorOr<IAsyncEnumerable<string>>> ChatAskAboutStatisticsAsync(Guid publicSessionId,
-        ChatMessageRequestDto messageRequestDto, CancellationToken token)
+        ChatMessageRequestDto messageRequestDto,Guid publicUserId ,CancellationToken token)
     {
         var summaryData = await GetSummaryData(token);
         if (summaryData.IsError) return summaryData.Errors;
         var top3Products = await GetTopProductsData(token);
         if (top3Products.IsError) return top3Products.Errors;
-        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(publicSessionId, token);
+        var userId = await userRepository.GetUserIdByPublicIdAsync(publicUserId, token);
+        if(userId == null) return Error.NotFound("User.NotFound", "User not found");
+        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(publicSessionId,userId.Value ,token);
         if (sessionId == null) return Error.NotFound("ChatSession.NotFound", "Chat session not found");
         var totalRevenue = summaryData.Value.TotalRevenue;
         var totalOrders = summaryData.Value.TotalOrders;
@@ -174,9 +181,11 @@ public class ChatBotService(
     }
 
     public async Task<ErrorOr<IAsyncEnumerable<string>>> ChatAskAboutProductsAsync(Guid publicSessionId,
-        ChatMessageRequestDto messageRequestDto, CancellationToken token)
+        ChatMessageRequestDto messageRequestDto,Guid publicUserId ,CancellationToken token)
     {
-        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(publicSessionId, token);
+        var userId = await userRepository.GetUserIdByPublicIdAsync(publicUserId, token);
+        if(userId == null) return Error.NotFound("User.NotFound", "User not found");
+        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(publicSessionId,userId.Value ,token);
         if (sessionId == null) return Error.NotFound("ChatSession.NotFound", "Chat session not found");
 
         var historyChat = await chatMessageRepository.GetHistoryChatMessageAsync(sessionId.Value, token);
