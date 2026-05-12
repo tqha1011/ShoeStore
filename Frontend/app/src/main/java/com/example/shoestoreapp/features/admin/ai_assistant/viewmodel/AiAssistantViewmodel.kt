@@ -10,8 +10,10 @@ import com.example.shoestoreapp.features.admin.ai_assistant.data.repository.AiCh
 import com.example.shoestoreapp.features.admin.ai_assistant.viewmodel.ChatMessage
 import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.ErrorDisplay
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class AiAssistantState(
     val messages: List<ChatMessage> = emptyList(),
@@ -31,9 +33,6 @@ class AiAssistantViewmodel(
         if (!initialPrompt.isNullOrBlank()) {
             // Generate Campaign
             startNewSessionAndGenerateCampaign(initialPrompt)
-        } else {
-            // Ai Icons
-            loadSessions()
         }
     }
 
@@ -60,19 +59,21 @@ class AiAssistantViewmodel(
             runCatching {
                 // Create new session
                 val response = repository.createSession()
-                if (response.isSuccessful) response.body()?.publicSessionId
-                else throw Exception("Failed to create session: ${response.code()}")
+                if (!response.isSuccessful) {
+                    val errorBody = response.errorBody()?.string()?.take(200)
+                    throw Exception("Failed to create session: ${response.code()} ${errorBody ?: ""}".trim())
+                }
+                val sessionId = response.body()?.publicSessionId
+                if (sessionId.isNullOrBlank()) {
+                    throw Exception("Session creation returned empty ID")
+                }
+                sessionId
             }
                 .onSuccess { sessionId ->
-                    if (sessionId != null) {
-                        // Save ID session into state
-                        state = state.copy(currentSessionId = sessionId, error = null)
-                        // Have ID , start stream letter of AI
-                        streamResponse(initialPrompt, isCampaign = true)
-                    }
-                    else {
-                        state = state.copy(error = "Session creation returned null ID")
-                    }
+                    // Save ID session into state
+                    state = state.copy(currentSessionId = sessionId, error = null)
+                    // Have ID , start stream letter of AI
+                    streamResponse(initialPrompt, isCampaign = true)
                 }
                 .onFailure { exception ->
                     val errorMsg = ChatMessage(text = "Network error : ${exception.message}", isUser = false)
@@ -96,16 +97,19 @@ class AiAssistantViewmodel(
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
                 val response = repository.createSession()
-                if (response.isSuccessful) response.body()?.publicSessionId
-                else throw Exception("Failed to create session: ${response.code()}")
+                if (!response.isSuccessful) {
+                    val errorBody = response.errorBody()?.string()?.take(200)
+                    throw Exception("Failed to create session: ${response.code()} ${errorBody ?: ""}".trim())
+                }
+                val sessionId = response.body()?.publicSessionId
+                if (sessionId.isNullOrBlank()) {
+                    throw Exception("Session creation returned empty ID")
+                }
+                sessionId
             }
                 .onSuccess { sessionId ->
-                    if (sessionId != null) {
-                        state = state.copy(currentSessionId = sessionId, error = null)
-                        streamResponse(userText, isCampaign = false)
-                    } else {
-                        state = state.copy(error = "Session creation returned null ID")
-                    }
+                    state = state.copy(currentSessionId = sessionId, error = null)
+                    streamResponse(userText, isCampaign = false)
                 }
                 .onFailure { exception ->
                     val errorMsg = ChatMessage(text = "Network error : ${exception.message}", isUser = false)
@@ -146,14 +150,7 @@ class AiAssistantViewmodel(
         }
                 .collect { chunk ->
                     val formattedChunk = chunk.replace("\\n", "\n")
-
-                    val updatedMessages = state.messages.map { msg ->
-                        if (msg.id == aiMessageId){
-                            msg.copy(text = msg.text + formattedChunk)
-                        }
-                        else msg
-                    }
-                    state = state.copy(messages = updatedMessages)
+                    typeChunk(aiMessageId, formattedChunk)
                 }
             val finalMessage = state.messages.map { msg ->
                 if (msg.id == aiMessageId) msg.copy(isStreaming = false)
@@ -162,7 +159,37 @@ class AiAssistantViewmodel(
             state = state.copy(messages = finalMessage)
         }
     }
+    private suspend fun appendAiChunk(aiMessageId: String, chunk: String) {
+        withContext(Dispatchers.Main) {
+            val updatedMessages = state.messages.map { msg ->
+                if (msg.id == aiMessageId){
+                    msg.copy(text = msg.text + chunk)
+                }
+                else msg
+            }
+            state = state.copy(messages = updatedMessages)
+        }
+    }
+
+    private suspend fun typeChunk(aiMessageId: String, chunk: String) {
+        if (chunk.isBlank()) {
+            appendAiChunk(aiMessageId, chunk)
+            return
+        }
+
+        val tokens = chunk.split(Regex("(?<=\\s)"))
+        for (token in tokens) {
+            appendAiChunk(aiMessageId, token)
+            delay(28)
+        }
+    }
+
     fun clearError() {
         state = state.copy(error = null)
+    }
+
+    fun selectSession(sessionId: String) {
+        if (sessionId.isBlank()) return
+        state = state.copy(currentSessionId = sessionId, messages = emptyList(), error = null)
     }
 }

@@ -20,10 +20,10 @@ class AiChatRepository (
     suspend fun getSessions(pageNumber : Int, pageSize : Int) = sessionApi.getSession(pageNumber, pageSize)
 
     fun streamChatStatistics(sessionId : String, title : String) =
-        baseStreamCall("${Constants.BASE_URL}/api/chatbot/chat-statistics?publicSessionId=$sessionId", title)
+        baseStreamCall("${Constants.BASE_URL}/api/v1/chatbot/chat-statistics?publicSessionId=$sessionId", title)
 
     fun streamGenerateCampaign(sessionId : String, content : String) =
-        baseStreamCall("${Constants.BASE_URL}/api/chatbot/generate-campaign", content, sessionId)
+        baseStreamCall("${Constants.BASE_URL}/api/v1/chatbot/generate-campaign", content, sessionId)
 
     private fun baseStreamCall(url : String, content : String, sessionId : String? = null) : Flow<String> = flow {
         val json = JSONObject().apply {
@@ -41,13 +41,14 @@ class AiChatRepository (
         okHttpClient.newCall(request).execute().use { response ->
             if (!response.isSuccessful) throw Exception("Stream API Error: ${response.code}")
 
-            val reader = BufferedReader(InputStreamReader(response.body!!.byteStream()))
+            val responseBody = response.body ?: throw Exception("Stream API Error: empty response body")
+            val reader = BufferedReader(InputStreamReader(responseBody.byteStream()))
             var line : String?
             while (reader.readLine().also { line = it } != null) {
                if ( line!!.startsWith("data: ")){
                    val chunk = line.substring(6)
                    if (chunk.trim() == "[DONE]") break
-                   emit(chunk)
+                   emit(if (chunk.isBlank()) "\n" else chunk)
                }
             }
         }

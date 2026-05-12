@@ -321,7 +321,7 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
         val isGeneratingCampaign = backStackEntry.arguments?.getBoolean("isGeneratingCampaign") ?: false
         val initialPrompt = if (isGeneratingCampaign) {
             """
-            Run a Revenue Optimization analysis for the last 14 days focused on mobile users
+            Generate campaign to improve shop's revenue with the data based on shop's statistics
             """.trimIndent()
         } else {
             null
