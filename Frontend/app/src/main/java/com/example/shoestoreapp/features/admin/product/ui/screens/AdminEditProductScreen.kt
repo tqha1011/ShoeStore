@@ -75,6 +75,7 @@ fun AdminEditProductScreen(
     var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
     var pendingVariantCameraUri by remember { mutableStateOf<Uri?>(null) }
     val showDeleteConfirmation by viewModel.showDeleteConfirmation.collectAsState()
+    val variantToDelete by viewModel.variantToDelete.collectAsState()
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -133,6 +134,9 @@ fun AdminEditProductScreen(
                 }
                 AdminEditProductUiEvent.VariantUpdateSuccess -> {
                     android.widget.Toast.makeText(context, "Update variant success", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                AdminEditProductUiEvent.VariantDeleteSuccess -> {
+                    android.widget.Toast.makeText(context, "Variant deleted", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -297,6 +301,24 @@ fun AdminEditProductScreen(
             },
             dismissButton = {
                 TextButton(onClick = viewModel::onDismissDeleteDialog) {
+                    Text(text = "Cancel")
+                }
+            }
+        )
+    }
+
+    if (variantToDelete != null) {
+        AlertDialog(
+            onDismissRequest = viewModel::onDismissDeleteVariantDialog,
+            title = { Text(text = "Delete Variant?") },
+            text = { Text(text = "Delete Variant? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.confirmDeleteVariant(productId) }) {
+                    Text(text = "Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = viewModel::onDismissDeleteVariantDialog) {
                     Text(text = "Cancel")
                 }
             }

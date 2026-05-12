@@ -207,6 +207,19 @@ class AdminProductRepositoryImpl(
         }
     }
 
+    override suspend fun deleteVariant(productId: String, variantId: String): Result<Unit> {
+        return try {
+            val response = adminApi.deleteVariant(productId, variantId)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(response.toRepositoryException())
+            }
+        } catch (e: Exception) {
+            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: "Unknown error"))
+        }
+    }
+
     private fun mapDtoToAdminProduct(dto: ProductSearchDto): AdminProduct {
         val totalStock = dto.variants?.sumOf { it.stock ?: 0 } ?: 0
         val stockStatus = when {

@@ -52,6 +52,8 @@ interface AdminProductRepository {
         imageUrl: String,
         imageFile: File?
     ): Result<Unit>
+
+    suspend fun deleteVariant(productId: String, variantId: String): Result<Unit>
 }
 
 sealed class AdminProductRepositoryException(message: String) : Exception(message) {

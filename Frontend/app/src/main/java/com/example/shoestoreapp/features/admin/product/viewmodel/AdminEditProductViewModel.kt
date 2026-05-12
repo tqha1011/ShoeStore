@@ -33,6 +33,7 @@ sealed class AdminEditProductUiEvent {
     object DeleteSuccess : AdminEditProductUiEvent()
     object VariantCreateSuccess : AdminEditProductUiEvent()
     object VariantUpdateSuccess : AdminEditProductUiEvent()
+    object VariantDeleteSuccess : AdminEditProductUiEvent()
 }
 
 class AdminEditProductViewModel(
@@ -78,6 +79,9 @@ class AdminEditProductViewModel(
     private val _showDeleteConfirmation = MutableStateFlow(false)
     val showDeleteConfirmation: StateFlow<Boolean> = _showDeleteConfirmation.asStateFlow()
 
+    private val _variantToDelete = MutableStateFlow<ProductVariantResponseDto?>(null)
+    val variantToDelete: StateFlow<ProductVariantResponseDto?> = _variantToDelete.asStateFlow()
+
     init {
         fetchCategories()
         fetchMasterData()
@@ -91,13 +95,14 @@ class AdminEditProductViewModel(
                 val imageUrl = dto.variants.firstOrNull { !it.imageUrl.isNullOrBlank() }?.imageUrl
                 val category = _categories.value.firstOrNull { it.id == dto.categoryId }
                     ?: Category(dto.categoryId, dto.categoryName)
+                val activeVariants = dto.variants.filterNot { it.isDelete }
 
                 _uiState.value = _uiState.value.copy(
                     productName = dto.productName,
                     brand = dto.brand,
                     selectedCategory = category,
                     imageUrl = imageUrl,
-                    variants = dto.variants,
+                    variants = activeVariants,
                     isLoading = false,
                     errorMessage = null
                 )
@@ -207,6 +212,35 @@ class AdminEditProductViewModel(
     }
 
     fun onDeleteVariantClick(variant: ProductVariantResponseDto) {
+        _variantToDelete.value = variant
+    }
+
+    fun onDismissDeleteVariantDialog() {
+        _variantToDelete.value = null
+    }
+
+    fun confirmDeleteVariant(productId: String) {
+        val variantId = _variantToDelete.value?.publicId ?: return
+        _variantToDelete.value = null
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            try {
+                val result = repository.deleteVariant(productId, variantId)
+                result.onSuccess {
+                    loadProductDetails(productId)
+                    _uiEvent.send(AdminEditProductUiEvent.VariantDeleteSuccess)
+                }.onFailure { throwable ->
+                    _uiEvent.send(
+                        AdminEditProductUiEvent.ShowError(
+                            throwable.message ?: "Delete variant failed."
+                        )
+                    )
+                }
+            } finally {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+            }
+        }
     }
 
     fun onAddVariantClick() {

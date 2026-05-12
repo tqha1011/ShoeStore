@@ -71,4 +71,10 @@ interface AdminProductApi {
         @Part("ImageUrl") imageUrl: RequestBody,
         @Part image: MultipartBody.Part?
     ): Response<Unit>
+
+    @DELETE("/api/products/{productGuid}/variants/{variantGuid}")
+    suspend fun deleteVariant(
+        @Path("productGuid") productId: String,
+        @Path("variantGuid") variantId: String
+    ): Response<Unit>
 }

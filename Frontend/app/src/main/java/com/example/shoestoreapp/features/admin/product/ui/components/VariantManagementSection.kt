@@ -52,7 +52,7 @@ fun VariantManagementSection(
                 color = Color.Black
             )
             Text(
-                text = "${variants.size} total",
+                text = "${variants.count { !it.isDelete }} total",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color(0xFF6B6B6B)
             )
@@ -71,7 +71,7 @@ fun VariantManagementSection(
                     .border(1.dp, Color(0xFFD0D0D0), RoundedCornerShape(12.dp))
             ) {
                 VariantHeaderRow()
-                variants.forEach { variant ->
+                variants.filterNot { it.isDelete }.forEach { variant ->
                     VariantRow(
                         variant = variant,
                         onEditClick = { onEditClick(variant) },
