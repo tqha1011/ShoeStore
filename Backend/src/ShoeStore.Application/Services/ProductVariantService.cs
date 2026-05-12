@@ -53,7 +53,11 @@ public class ProductVariantService(
         variant.IsDeleted = true;
         productVariantRepository.Update(variant);
         await uow.SaveChangesAsync(token);
-        await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(productVariantGuid), token);
+        var product = await productRepository.GetByIdAsync(variant.ProductId, token);
+        if (product != null)
+        {
+            await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
+        }
         await cache.RemoveByTagAsync(CacheTag.Product, token);
         return Result.Deleted;
     }
