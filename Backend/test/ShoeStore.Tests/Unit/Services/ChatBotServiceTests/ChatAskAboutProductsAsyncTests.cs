@@ -3,10 +3,10 @@ using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Moq;
 using ShoeStore.Application.DTOs.ChatBotDTOs;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.StatisticsInterface;
+using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Services;
 using ShoeStore.Domain.Entities.Embedding;
 using ShoeStore.Domain.Enum;
@@ -24,6 +24,7 @@ public class ChatAskAboutProductsAsyncTests
     private readonly Mock<IStatisticsService> _statisticsService = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IProductEmbeddingRepository> _productEmbeddingRepository = new();
+    private readonly Mock<IUserRepository> _userRepository = new();
 
     public ChatAskAboutProductsAsyncTests()
     {
@@ -34,7 +35,8 @@ public class ChatAskAboutProductsAsyncTests
             _chatSessionRepository.Object,
             _unitOfWork.Object,
             _embeddingGenerator.Object,
-            _productEmbeddingRepository.Object);
+            _productEmbeddingRepository.Object,
+            _userRepository.Object);
     }
 
     [Fact]
@@ -42,12 +44,16 @@ public class ChatAskAboutProductsAsyncTests
     {
         // Arrange
         var request = new ChatMessageRequestDto("What shoes are trending?");
+        var publicUserId = Guid.NewGuid();
+        _userRepository
+            .Setup(r => r.GetUserIdByPublicIdAsync(publicUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
         _chatSessionRepository
-            .Setup(r => r.GetChatSessionIdByPublicIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetChatSessionIdByPublicIdAsync(It.IsAny<Guid>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((int?)null);
 
         // Act
-        var result = await _service.ChatAskAboutProductsAsync(Guid.NewGuid(), request, CancellationToken.None);
+        var result = await _service.ChatAskAboutProductsAsync(Guid.NewGuid(), request, publicUserId, CancellationToken.None);
 
         // Assert
         Assert.True(result.IsError);
@@ -62,6 +68,7 @@ public class ChatAskAboutProductsAsyncTests
         // Arrange
         var request = new ChatMessageRequestDto("Show me popular sneakers");
         var sessionPublicId = Guid.NewGuid();
+        var publicUserId = Guid.NewGuid();
         const int sessionId = 12;
 
         var history = new List<ChatMessage>
@@ -84,8 +91,11 @@ public class ChatAskAboutProductsAsyncTests
             }
         };
 
+        _userRepository
+            .Setup(r => r.GetUserIdByPublicIdAsync(publicUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
         _chatSessionRepository
-            .Setup(r => r.GetChatSessionIdByPublicIdAsync(sessionPublicId, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetChatSessionIdByPublicIdAsync(sessionPublicId, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(sessionId);
         _chatMessageRepository
             .Setup(r => r.GetHistoryChatMessageAsync(sessionId, It.IsAny<CancellationToken>()))
@@ -117,7 +127,7 @@ public class ChatAskAboutProductsAsyncTests
             .Returns(BuildStreamingResponse("Product ", "info"));
 
         // Act
-        var result = await _service.ChatAskAboutProductsAsync(sessionPublicId, request, CancellationToken.None);
+        var result = await _service.ChatAskAboutProductsAsync(sessionPublicId, request, publicUserId, CancellationToken.None);
 
         // Assert
         Assert.False(result.IsError);
@@ -143,10 +153,14 @@ public class ChatAskAboutProductsAsyncTests
         // Arrange
         var request = new ChatMessageRequestDto("Any shoes available?");
         var sessionPublicId = Guid.NewGuid();
+        var publicUserId = Guid.NewGuid();
         const int sessionId = 33;
 
+        _userRepository
+            .Setup(r => r.GetUserIdByPublicIdAsync(publicUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
         _chatSessionRepository
-            .Setup(r => r.GetChatSessionIdByPublicIdAsync(sessionPublicId, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetChatSessionIdByPublicIdAsync(sessionPublicId, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(sessionId);
         _chatMessageRepository
             .Setup(r => r.GetHistoryChatMessageAsync(sessionId, It.IsAny<CancellationToken>()))
@@ -171,7 +185,7 @@ public class ChatAskAboutProductsAsyncTests
             .Returns(BuildStreamingResponse("No ", "products"));
 
         // Act
-        var result = await _service.ChatAskAboutProductsAsync(sessionPublicId, request, CancellationToken.None);
+        var result = await _service.ChatAskAboutProductsAsync(sessionPublicId, request, publicUserId, CancellationToken.None);
 
         // Assert
         Assert.False(result.IsError);

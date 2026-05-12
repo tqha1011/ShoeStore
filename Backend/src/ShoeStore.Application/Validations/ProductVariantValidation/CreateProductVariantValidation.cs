@@ -22,9 +22,8 @@ public class CreateProductVariantValidation : AbstractValidator<CreateProductVar
         RuleFor(x => x.Price)
             .NotEmpty().WithMessage("Price is required.")
             .GreaterThan(0).WithMessage("Price must be greater than 0.")
-            .LessThanOrEqualTo(999999.99m).WithMessage("Price cannot exceed 999,999.99.")
-            .Must(x => x.ToString().Split('.').Length == 1 || x.ToString().Split('.')[1].Length <= 2)
-            .WithMessage("Price cannot have more than 2 decimal places.");
+            .LessThanOrEqualTo(999999999m).WithMessage("Price cannot exceed 999,999,999.")
+            .PrecisionScale(18, 2, true).WithMessage("Price cannot have more than 2 decimal places.");
 
         RuleFor(x => x.ImageUrl)
             .Must(uri => string.IsNullOrEmpty(uri) || Uri.TryCreate(uri, UriKind.Absolute, out _))
