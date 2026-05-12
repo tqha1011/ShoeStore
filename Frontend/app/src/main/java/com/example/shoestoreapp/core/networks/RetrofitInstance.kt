@@ -2,7 +2,7 @@ package com.example.shoestoreapp.core.networks
 
 import android.content.Context
 import com.example.shoestoreapp.core.utils.Constants
-import com.example.shoestoreapp.features.admin.ai_assistant.data.remote.ChatSessionApi
+import com.example.shoestoreapp.features.agent_intelligent.data.remote.ChatSessionApi
 import com.example.shoestoreapp.features.admin.product.data.remote.AdminProductApi
 import com.example.shoestoreapp.features.auth.data.remote.AuthApi
 import com.example.shoestoreapp.features.user.product.data.remote.ProductApi
@@ -15,6 +15,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 
 object RetrofitInstance {
 
@@ -38,6 +39,9 @@ object RetrofitInstance {
     }
     val client by lazy {
         OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
             .addInterceptor(authInterceptor)
             .addInterceptor(logging)
             .addInterceptor(loggingInterceptor)

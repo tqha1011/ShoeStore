@@ -1,15 +1,12 @@
 package com.example.shoestoreapp.features.admin.ai_assistant.viewmodel
 
-import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.shoestoreapp.features.admin.ai_assistant.data.remote.ChatSessionResponseDto
-import com.example.shoestoreapp.features.admin.ai_assistant.data.repository.AiChatRepository
-import com.example.shoestoreapp.features.admin.ai_assistant.viewmodel.ChatMessage
-import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.ErrorDisplay
+import com.example.shoestoreapp.features.agent_intelligent.data.remote.ChatSessionResponseDto
+import com.example.shoestoreapp.features.agent_intelligent.data.repository.AiChatRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -17,7 +14,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-data class AiAssistantState(
+data class AiStrategyState(
     val messages: List<ChatMessage> = emptyList(),
     val sessions: List<ChatSessionResponseDto> = emptyList(),
     val isLoadingSesions : Boolean = false,
@@ -25,11 +22,11 @@ data class AiAssistantState(
     val error : String? = null
 )
 
-class AiAssistantViewmodel(
+class AiStrategyViewmodel(
     private val repository : AiChatRepository,
     private val ioDispatcher : CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
-    var state by mutableStateOf(AiAssistantState())
+    var state by mutableStateOf(AiStrategyState())
         private set
 
     fun initialize(initialPrompt: String?) {

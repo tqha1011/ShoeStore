@@ -7,7 +7,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,8 +31,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.shoestoreapp.features.admin.ai_assistant.data.remote.ChatSessionResponseDto
-import com.example.shoestoreapp.features.admin.ai_assistant.viewmodel.AiAssistantViewmodel
+import com.example.shoestoreapp.features.agent_intelligent.data.remote.ChatSessionResponseDto
+import com.example.shoestoreapp.features.admin.ai_assistant.viewmodel.AiStrategyViewmodel
 import dev.jeziellago.compose.markdowntext.MarkdownText
 
 /**
@@ -42,8 +41,8 @@ import dev.jeziellago.compose.markdowntext.MarkdownText
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AiStrategyAssistantScreen(
-    viewModel: AiAssistantViewmodel,
+fun AiStrategyScreen(
+    viewModel: AiStrategyViewmodel,
     initialPrompt: String? = null,
     onBackClick: () -> Unit = {}
 ) {
@@ -71,25 +70,13 @@ fun AiStrategyAssistantScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Strategy Assistant", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    // History Sessions Button
-                    IconButton(onClick = {
-                        showHistorySheet = true
-                        viewModel.loadSessions()
-                    }) {
-                        Icon(Icons.Default.History, contentDescription = "History", tint = Color.Gray)
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
+            TopBar(
+                onBackClick = onBackClick,
+                onHistoryClick = { showHistorySheet = true },
+                viewModel = viewModel
             )
-        }
+        },
+        containerColor = Color.White
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -175,7 +162,32 @@ fun AiStrategyAssistantScreen(
         }
     }
 }
-
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TopBar (
+    onBackClick: () -> Unit,
+    onHistoryClick : () -> Unit,
+    viewModel: AiStrategyViewmodel
+){
+        CenterAlignedTopAppBar(
+            title = { Text("Strategy Assistant", fontSize = 24.sp, fontWeight = FontWeight.Bold) },
+            navigationIcon = {
+                IconButton(onClick = onBackClick) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                }
+            },
+            actions = {
+                // History Sessions Button
+                IconButton(onClick = {
+                    onHistoryClick()
+                    viewModel.loadSessions()
+                }) {
+                    Icon(Icons.Default.History, contentDescription = "History", tint = Color.Gray)
+                }
+            },
+            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
+        )
+}
 /**
  * Old Sessions Area
  */
@@ -200,7 +212,7 @@ fun SessionListArea(
         itemsIndexed(sessions) { index, session ->
             val displayTitle = when {
                 !session.title.isNullOrBlank() -> session.title
-                !session.publicId.isNullOrBlank() -> "Session: ${session.publicId.take(8)}..."
+                session.publicId.isNotBlank() -> "Session: ${session.publicId.take(8)}..."
                 else -> "Session #${index + 1}"
             }
             val sessionId = session.publicId
@@ -208,8 +220,8 @@ fun SessionListArea(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 12.dp)
-                    .clickable(enabled = !sessionId.isNullOrBlank()) {
-                        if (!sessionId.isNullOrBlank()) {
+                    .clickable(enabled = sessionId.isNotBlank()) {
+                        if (sessionId.isNotBlank()) {
                             onSessionClick(sessionId)
                         }
                     },

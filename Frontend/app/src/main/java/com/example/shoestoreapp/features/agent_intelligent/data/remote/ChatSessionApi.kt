@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.admin.ai_assistant.data.remote
+package com.example.shoestoreapp.features.agent_intelligent.data.remote
 
 import retrofit2.Response
 import retrofit2.http.GET

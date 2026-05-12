@@ -7,7 +7,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -38,7 +37,7 @@ import com.example.shoestoreapp.features.admin.crud.data.repositories.MasterData
 import com.example.shoestoreapp.features.admin.analytics.ui.AdminAnalyticsScreen
 import com.example.shoestoreapp.features.admin.analytics.viewmodel.AdminAnalyticsViewModel
 import com.example.shoestoreapp.features.admin.analytics.data.AnalyticsRepository
-import com.example.shoestoreapp.features.admin.ai_assistant.ui.AiStrategyAssistantScreen
+import com.example.shoestoreapp.features.admin.ai_assistant.ui.AiStrategyScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenContent
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
@@ -46,8 +45,8 @@ import com.example.shoestoreapp.features.auth.presentation.welcome.WelcomeScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.CreateNewPasswordScreen
 import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.core.utils.JwtUtils
-import com.example.shoestoreapp.features.admin.ai_assistant.data.repository.AiChatRepository
-import com.example.shoestoreapp.features.admin.ai_assistant.viewmodel.AiAssistantViewmodel
+import com.example.shoestoreapp.features.agent_intelligent.data.repository.AiChatRepository
+import com.example.shoestoreapp.features.admin.ai_assistant.viewmodel.AiStrategyViewmodel
 import com.example.shoestoreapp.features.user.invoice.data.UserInvoiceRepository
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import kotlinx.coroutines.launch
@@ -329,14 +328,14 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
         }
 
         val aiViewmodel = remember {
-            AiAssistantViewmodel(
+            AiStrategyViewmodel(
                 repository = AiChatRepository(
                     sessionApi = RetrofitInstance.chatSessionApi, // Reuse authApi for session management
                     okHttpClient = RetrofitInstance.okHttpClient // Use the same OkHttpClient for streaming
                 )
             )
         }
-        AiStrategyAssistantScreen (
+        AiStrategyScreen (
             viewModel = aiViewmodel,
             initialPrompt = initialPrompt,
             onBackClick = { navController.popBackStack() }

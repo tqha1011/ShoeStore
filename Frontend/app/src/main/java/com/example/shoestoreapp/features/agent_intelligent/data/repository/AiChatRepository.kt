@@ -1,7 +1,7 @@
-package com.example.shoestoreapp.features.admin.ai_assistant.data.repository
+package com.example.shoestoreapp.features.agent_intelligent.data.repository
 
 import com.example.shoestoreapp.core.utils.Constants
-import com.example.shoestoreapp.features.admin.ai_assistant.data.remote.ChatSessionApi
+import com.example.shoestoreapp.features.agent_intelligent.data.remote.ChatSessionApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import okhttp3.MediaType.Companion.toMediaType
@@ -22,6 +22,8 @@ class AiChatRepository (
     fun streamChatStatistics(sessionId : String, title : String) =
         baseStreamCall("${Constants.BASE_URL}/api/v1/chatbot/chat-statistics?publicSessionId=$sessionId", title)
 
+    fun streamChatProducts(sessionId : String, title : String) =
+        baseStreamCall("${Constants.BASE_URL}/api/v1/chatbot/chat-product?publicSessionId=$sessionId", title)
     fun streamGenerateCampaign(sessionId : String, content : String) =
         baseStreamCall("${Constants.BASE_URL}/api/v1/chatbot/generate-campaign", content, sessionId)
 
