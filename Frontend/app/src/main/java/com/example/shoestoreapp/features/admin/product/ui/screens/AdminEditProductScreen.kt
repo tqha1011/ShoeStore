@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.AddAPhoto
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -46,6 +47,7 @@ import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.example.shoestoreapp.features.admin.product.viewmodel.AdminEditProductUiEvent
 import com.example.shoestoreapp.features.admin.product.viewmodel.AdminEditProductViewModel
+import com.example.shoestoreapp.features.admin.product.ui.components.AddVariantBottomSheet
 import com.example.shoestoreapp.features.admin.product.ui.components.EditProductTopBar
 import com.example.shoestoreapp.features.admin.product.ui.components.PhotoActionBottomSheet
 import com.example.shoestoreapp.features.admin.product.ui.components.ProductFormSection
@@ -61,11 +63,17 @@ fun AdminEditProductScreen(
     val uiState by viewModel.uiState.collectAsState()
     val localImageUri by viewModel.localImageUri.collectAsState()
     val categories by viewModel.categories.collectAsState()
+    val sizes by viewModel.sizes.collectAsState()
+    val colors by viewModel.colors.collectAsState()
+    val variantDraft by viewModel.variantDraft.collectAsState()
+    val isAddVariantSheetVisible by viewModel.isAddVariantSheetVisible.collectAsState()
     val scrollState = rememberScrollState()
     val context = LocalContext.current
 
     var showBottomSheet by remember { mutableStateOf(false) }
+    var showVariantPhotoSheet by remember { mutableStateOf(false) }
     var pendingCameraUri by remember { mutableStateOf<Uri?>(null) }
+    var pendingVariantCameraUri by remember { mutableStateOf<Uri?>(null) }
     val showDeleteConfirmation by viewModel.showDeleteConfirmation.collectAsState()
 
     val galleryLauncher = rememberLauncherForActivityResult(
@@ -80,6 +88,22 @@ fun AdminEditProductScreen(
         onResult = { success ->
             if (success) {
                 pendingCameraUri?.let { viewModel.uploadSelectedImage(context, it) }
+            }
+        }
+    )
+
+    val variantGalleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            uri?.let { viewModel.uploadVariantImage(context, it) }
+        }
+    )
+
+    val variantCameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { success ->
+            if (success) {
+                pendingVariantCameraUri?.let { viewModel.uploadVariantImage(context, it) }
             }
         }
     )
@@ -103,6 +127,9 @@ fun AdminEditProductScreen(
                 AdminEditProductUiEvent.DeleteSuccess -> {
                     android.widget.Toast.makeText(context, "Delete product success", android.widget.Toast.LENGTH_SHORT).show()
                     onBackClick()
+                }
+                AdminEditProductUiEvent.VariantCreateSuccess -> {
+                    android.widget.Toast.makeText(context, "Create variant success", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -174,7 +201,7 @@ fun AdminEditProductScreen(
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
-                    androidx.compose.material3.Icon(
+                    Icon(
                         imageVector = Icons.Default.AddAPhoto,
                         contentDescription = "Add photo",
                         tint = Color(0xFF9E9E9E),
@@ -214,6 +241,39 @@ fun AdminEditProductScreen(
             onChooseFromGalleryClick = {
                 showBottomSheet = false
                 galleryLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                )
+            }
+        )
+    }
+
+    if (isAddVariantSheetVisible) {
+        AddVariantBottomSheet(
+            state = variantDraft,
+            sizes = sizes,
+            colors = colors,
+            onDismiss = viewModel::onDismissVariantSheet,
+            onImageClick = { showVariantPhotoSheet = true },
+            onSizeSelected = { viewModel.updateVariantDraft(size = it) },
+            onColorSelected = { viewModel.updateVariantDraft(color = it) },
+            onPriceChange = { viewModel.updateVariantDraft(price = it) },
+            onStockChange = { viewModel.updateVariantDraft(stock = it) },
+            onSaveClick = { viewModel.onSaveVariant(context, productId) }
+        )
+    }
+
+    if (showVariantPhotoSheet) {
+        PhotoActionBottomSheet(
+            onDismiss = { showVariantPhotoSheet = false },
+            onTakePhotoClick = {
+                val uri = createTempImageUri(context)
+                pendingVariantCameraUri = uri
+                showVariantPhotoSheet = false
+                variantCameraLauncher.launch(uri)
+            },
+            onChooseFromGalleryClick = {
+                showVariantPhotoSheet = false
+                variantGalleryLauncher.launch(
                     PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                 )
             }

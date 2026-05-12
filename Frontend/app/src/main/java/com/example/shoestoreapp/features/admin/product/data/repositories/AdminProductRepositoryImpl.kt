@@ -6,12 +6,19 @@ import com.example.shoestoreapp.features.admin.product.data.models.StockStatus
 import com.example.shoestoreapp.features.admin.product.data.remote.AdminProductApi
 import com.example.shoestoreapp.features.admin.product.data.remote.ProductResponseDto
 import com.example.shoestoreapp.features.admin.product.data.remote.ProductSearchDto
+import com.example.shoestoreapp.features.admin.product.data.remote.ProductVariantResponseDto
 import com.example.shoestoreapp.features.admin.product.data.remote.UpdateProductDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.File
 
 class AdminProductRepositoryImpl(
     private val adminApi: AdminProductApi = RetrofitInstance.adminApi
@@ -111,6 +118,49 @@ class AdminProductRepositoryImpl(
         }
     }
 
+    override suspend fun createVariant(
+        productId: String,
+        sizeId: Int,
+        colorId: Int,
+        stock: Int,
+        price: Double,
+        isSelling: Boolean,
+        imageFile: File?
+    ): Result<ProductVariantResponseDto> {
+        val textMediaType = "text/plain".toMediaType()
+        val sizeBody: RequestBody = sizeId.toString().toRequestBody(textMediaType)
+        val colorBody: RequestBody = colorId.toString().toRequestBody(textMediaType)
+        val stockBody: RequestBody = stock.toString().toRequestBody(textMediaType)
+        val priceBody: RequestBody = price.toString().toRequestBody(textMediaType)
+        val sellingBody: RequestBody = isSelling.toString().toRequestBody(textMediaType)
+        val imageUrlBody: RequestBody = "".toRequestBody(textMediaType)
+
+        val imagePart = imageFile?.let { file ->
+            val imageRequest = file.asRequestBody("image/*".toMediaType())
+            MultipartBody.Part.createFormData("image", file.name, imageRequest)
+        }
+
+        return try {
+            val response = adminApi.createVariant(
+                productId = productId,
+                sizeId = sizeBody,
+                colorId = colorBody,
+                stock = stockBody,
+                price = priceBody,
+                isSelling = sellingBody,
+                imageUrl = imageUrlBody,
+                image = imagePart
+            )
+            if (response.isSuccessful) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(response.toRepositoryException())
+            }
+        } catch (e: Exception) {
+            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: "Unknown error"))
+        }
+    }
+
     private fun mapDtoToAdminProduct(dto: ProductSearchDto): AdminProduct {
         val totalStock = dto.variants?.sumOf { it.stock ?: 0 } ?: 0
         val stockStatus = when {
@@ -119,11 +169,14 @@ class AdminProductRepositoryImpl(
             else -> StockStatus.IN_STOCK
         }
         val variantsCount = dto.variants?.size ?: 0
+        val representativeImageUrl = dto.variants
+            ?.firstOrNull { !it.imageUrl.isNullOrBlank() }
+            ?.imageUrl
 
         return AdminProduct(
             id = dto.publicId,
             name = dto.productName,
-            imageUrl = dto.variants?.firstOrNull()?.imageUrl ?: "",
+            imageUrl = representativeImageUrl,
             price = dto.variants?.firstOrNull()?.price ?: 0.0,
             stockStatus = stockStatus,
             stock = totalStock,

@@ -26,5 +26,5 @@ data class ProductVariantDto(
     @SerializedName("price") val price: Double?,
     @SerializedName("stockStatus") val stockStatus: String?,
     @SerializedName("stock") val stock: Int?,
-    @SerializedName("imageUrl") val imageUrl: String?,
+    @SerializedName("imgUrl") val imageUrl: String?,
 )

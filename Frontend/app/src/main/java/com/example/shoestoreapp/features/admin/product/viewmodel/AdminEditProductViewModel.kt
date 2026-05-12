@@ -10,6 +10,9 @@ import com.example.shoestoreapp.features.admin.addproduct.data.repositories.Mast
 import com.example.shoestoreapp.features.admin.product.Category
 import com.example.shoestoreapp.features.admin.product.EditProductUiState
 import com.example.shoestoreapp.features.admin.product.ProductVariant
+import com.example.shoestoreapp.features.admin.product.ShoeColor
+import com.example.shoestoreapp.features.admin.product.ShoeSize
+import com.example.shoestoreapp.features.admin.product.VariantUiState
 import com.example.shoestoreapp.features.admin.product.data.repositories.AdminProductRepository
 import com.example.shoestoreapp.features.admin.product.data.repositories.AdminProductRepositoryImpl
 import com.example.shoestoreapp.features.admin.product.data.repositories.ImageRepository
@@ -28,6 +31,7 @@ sealed class AdminEditProductUiEvent {
     data class ShowError(val message: String) : AdminEditProductUiEvent()
     object UpdateSuccess : AdminEditProductUiEvent()
     object DeleteSuccess : AdminEditProductUiEvent()
+    object VariantCreateSuccess : AdminEditProductUiEvent()
 }
 
 class AdminEditProductViewModel(
@@ -49,6 +53,18 @@ class AdminEditProductViewModel(
     private val _categories = MutableStateFlow<List<Category>>(emptyList())
     val categories: StateFlow<List<Category>> = _categories.asStateFlow()
 
+    private val _sizes = MutableStateFlow<List<ShoeSize>>(emptyList())
+    val sizes: StateFlow<List<ShoeSize>> = _sizes.asStateFlow()
+
+    private val _colors = MutableStateFlow<List<ShoeColor>>(emptyList())
+    val colors: StateFlow<List<ShoeColor>> = _colors.asStateFlow()
+
+    private val _isAddVariantSheetVisible = MutableStateFlow(false)
+    val isAddVariantSheetVisible: StateFlow<Boolean> = _isAddVariantSheetVisible.asStateFlow()
+
+    private val _variantDraft = MutableStateFlow(VariantUiState())
+    val variantDraft: StateFlow<VariantUiState> = _variantDraft.asStateFlow()
+
     private val _localImageUri = MutableStateFlow<Uri?>(null)
     val localImageUri: StateFlow<Uri?> = _localImageUri.asStateFlow()
 
@@ -63,6 +79,7 @@ class AdminEditProductViewModel(
 
     init {
         fetchCategories()
+        fetchMasterData()
     }
 
     fun loadProductDetails(productId: String) {
@@ -185,6 +202,29 @@ class AdminEditProductViewModel(
     }
 
     fun onAddVariantClick() {
+        _variantDraft.value = VariantUiState()
+        _isAddVariantSheetVisible.value = true
+    }
+
+    fun onDismissVariantSheet() {
+        _isAddVariantSheetVisible.value = false
+    }
+
+    fun updateVariantDraft(
+        size: ShoeSize? = null,
+        color: ShoeColor? = null,
+        price: String? = null,
+        stock: String? = null,
+        uri: Uri? = null
+    ) {
+        val current = _variantDraft.value
+        _variantDraft.value = current.copy(
+            selectedSize = size ?: current.selectedSize,
+            selectedColor = color ?: current.selectedColor,
+            price = price ?: current.price,
+            stock = stock ?: current.stock,
+            imageUri = uri ?: current.imageUri
+        )
     }
 
     fun uploadSelectedImage(context: Context, uri: Uri) {
@@ -211,6 +251,95 @@ class AdminEditProductViewModel(
         }
     }
 
+    fun uploadVariantImage(context: Context, uri: Uri) {
+        _variantDraft.value = _variantDraft.value.copy(imageUri = uri, isUploadingImage = true)
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val result = try {
+                val file = context.applicationContext.uriToTempFile(uri)
+                imageRepository.uploadImage(file)
+            } catch (e: Exception) {
+                Result.failure(ImageRepositoryException.Unknown(e.message ?: "Unable to upload image right now."))
+            }
+
+            result.onSuccess { url ->
+                _variantDraft.value = _variantDraft.value.copy(imageUrl = url, isUploadingImage = false)
+            }.onFailure { throwable ->
+                _variantDraft.value = _variantDraft.value.copy(isUploadingImage = false)
+                _uiEvent.trySend(
+                    AdminEditProductUiEvent.ShowError(
+                        throwable.message ?: "Unable to upload image right now."
+                    )
+                )
+            }
+        }
+    }
+
+    fun onSaveVariant(context: Context, productId: String) {
+        val draft = _variantDraft.value
+        val size = draft.selectedSize
+        val color = draft.selectedColor
+        if (size == null || color == null) {
+            _uiEvent.trySend(AdminEditProductUiEvent.ShowError("Please select size and color."))
+            return
+        }
+
+        val priceValue = draft.price.toDoubleOrNull()
+        if (priceValue == null || priceValue <= 0.0) {
+            _uiEvent.trySend(AdminEditProductUiEvent.ShowError("Please enter a valid price."))
+            return
+        }
+
+        val stockValue = draft.stock.toIntOrNull()
+        if (stockValue == null || stockValue < 0) {
+            _uiEvent.trySend(AdminEditProductUiEvent.ShowError("Please enter a valid stock."))
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            try {
+                val imageFile = draft.imageUri?.let { uri ->
+                    try {
+                        context.applicationContext.uriToTempFile(uri)
+                    } catch (e: Exception) {
+                        _uiEvent.send(
+                            AdminEditProductUiEvent.ShowError(
+                                e.message ?: "Unable to prepare image right now."
+                            )
+                        )
+                        return@launch
+                    }
+                }
+
+                val result = repository.createVariant(
+                    productId = productId,
+                    sizeId = size.id,
+                    colorId = color.id,
+                    stock = stockValue,
+                    price = priceValue,
+                    isSelling = true,
+                    imageFile = imageFile
+                )
+
+                result.onSuccess {
+                    _isAddVariantSheetVisible.value = false
+                    _variantDraft.value = VariantUiState()
+                    loadProductDetails(productId)
+                    _uiEvent.send(AdminEditProductUiEvent.VariantCreateSuccess)
+                }.onFailure { throwable ->
+                    _uiEvent.send(
+                        AdminEditProductUiEvent.ShowError(
+                            throwable.message ?: "Create variant failed."
+                        )
+                    )
+                }
+            } finally {
+                _uiState.value = _uiState.value.copy(isLoading = false)
+            }
+        }
+    }
+
     private fun fetchCategories() {
         viewModelScope.launch {
             masterDataRepository.getCategories().collect { resource ->
@@ -220,6 +349,47 @@ class AdminEditProductViewModel(
                             Category(
                                 id = dto.id.toIntOrNull() ?: 0,
                                 name = dto.categoryName
+                            )
+                        }
+                    }
+                    is Resource.Error -> {
+                        _uiEvent.trySend(AdminEditProductUiEvent.ShowError(resource.message))
+                    }
+                    Resource.Loading -> Unit
+                }
+            }
+        }
+    }
+
+    private fun fetchMasterData() {
+        viewModelScope.launch {
+            masterDataRepository.getSizes().collect { resource ->
+                when (resource) {
+                    is Resource.Success -> {
+                        _sizes.value = resource.data.map { dto ->
+                            ShoeSize(
+                                id = dto.id.toIntOrNull() ?: 0,
+                                value = dto.sizeValue
+                            )
+                        }
+                    }
+                    is Resource.Error -> {
+                        _uiEvent.trySend(AdminEditProductUiEvent.ShowError(resource.message))
+                    }
+                    Resource.Loading -> Unit
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            masterDataRepository.getColors().collect { resource ->
+                when (resource) {
+                    is Resource.Success -> {
+                        _colors.value = resource.data.map { dto ->
+                            ShoeColor(
+                                id = dto.id.toIntOrNull() ?: 0,
+                                name = dto.colorName,
+                                hexCode = ""
                             )
                         }
                     }

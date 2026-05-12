@@ -99,6 +99,7 @@ dependencies {
     implementation(libs.googleid)
     implementation(libs.facebook.login)
     implementation(libs.androidx.foundation.layout)
+    implementation(libs.androidx.material3)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

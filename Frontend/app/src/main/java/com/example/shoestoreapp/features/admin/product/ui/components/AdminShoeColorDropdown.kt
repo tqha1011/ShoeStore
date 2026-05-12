@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.admin.addproduct.ui.components
+package com.example.shoestoreapp.features.admin.product.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,27 +12,29 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.shoestoreapp.features.admin.addproduct.data.remote.master_data.SizeDto
+import com.example.shoestoreapp.features.admin.addproduct.data.remote.master_data.ColorDto
+import com.example.shoestoreapp.features.admin.addproduct.ui.components.AdminCrudColors
 
 /**
- * Shoe Size Dropdown Component
+ * Shoe Color Dropdown Component
  */
 @Composable
-fun AdminShoeSizeDropdown(
-    selectedSize: String,
-    sizesList: List<SizeDto>,
-    onSizeSelected: (String, String) -> Unit
+fun AdminShoeColorDropdown(
+    selectedColor: String,
+    colorsList: List<ColorDto>,
+    onColorSelected: (String, String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     Column {
         Text(
-            text = "SIZE",
+            text = "COLOR",
             fontSize = 10.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.5.sp,
@@ -55,17 +57,17 @@ fun AdminShoeSizeDropdown(
                 )
                 .clickable { expanded = true }
                 .padding(horizontal = 12.dp),
-            contentAlignment = androidx.compose.ui.Alignment.Center
+            contentAlignment = Alignment.Center
         ) {
             Row(
                 modifier = Modifier.fillMaxSize(),
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = selectedSize.ifEmpty { "Select shoe size" },
+                    text = selectedColor.ifEmpty { "Select shoe color" },
                     fontSize = 13.sp,
-                    color = if (selectedSize.isEmpty()) AdminCrudColors.gray500 else AdminCrudColors.onSurface
+                    color = if (selectedColor.isEmpty()) AdminCrudColors.gray500 else AdminCrudColors.onSurface
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -84,11 +86,11 @@ fun AdminShoeSizeDropdown(
             onDismissRequest = { expanded = false },
             modifier = Modifier.fillMaxWidth(0.9f)
         ) {
-            sizesList.forEach { size ->
+            colorsList.forEach { color ->
                 DropdownMenuItem(
-                    text = { Text(size.sizeValue) },
+                    text = { Text(color.colorName) },
                     onClick = {
-                        onSizeSelected(size.id, size.sizeValue)
+                        onColorSelected(color.id, color.colorName)
                         expanded = false
                     }
                 )

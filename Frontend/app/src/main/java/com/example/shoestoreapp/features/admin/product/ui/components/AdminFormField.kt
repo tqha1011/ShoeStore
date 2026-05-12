@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.admin.addproduct.ui.components
+package com.example.shoestoreapp.features.admin.product.ui.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.shoestoreapp.features.admin.addproduct.ui.components.AdminCrudColors
 
 /**
  * Form Field Component (TextInput)
