@@ -28,6 +28,7 @@ data class AiAssistantState(
 class AiAssistantViewmodel(
     private val repository : AiChatRepository,
     private val ioDispatcher : CoroutineDispatcher = Dispatchers.IO,
+    private val mainDispatcher : CoroutineDispatcher = Dispatchers.Main,
 ) : ViewModel() {
     var state by mutableStateOf(AiAssistantState())
         private set
@@ -163,7 +164,7 @@ class AiAssistantViewmodel(
         }
     }
     private suspend fun appendAiChunk(aiMessageId: String, chunk: String) {
-        withContext(Dispatchers.Main) {
+        withContext(mainDispatcher) {
             val updatedMessages = state.messages.map { msg ->
                 if (msg.id == aiMessageId){
                     msg.copy(text = msg.text + chunk)
