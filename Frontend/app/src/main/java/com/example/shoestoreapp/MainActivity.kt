@@ -189,7 +189,9 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
                 println("onNavigateToDetail called - productGuid: $productGuid")
                 navController.navigate(Routes.PRODUCT_DETAIL.replace("{productGuid}", productGuid))
             },
-            onTopMenuClick = { println("Menu clicked") },
+            onAiAssistantClick = {
+                // TODO
+            },
             onNavigateToShoppingBag = { println("Shopping bag clicked") },
             onBottomTabSelected = { tab -> handleUserHomeTabSelection(tab, navController) }
         )
@@ -260,7 +262,6 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
     composable(Routes.ADMIN_PRODUCT_LIST) {
         AdminProductListScreen(
             viewModel = remember { AdminProductListViewModel() },
-            onMenuClick = { println("Admin Menu clicked") },
             onAddProductClick = {
                 navController.navigate(Routes.ADMIN_CRUD)
             },

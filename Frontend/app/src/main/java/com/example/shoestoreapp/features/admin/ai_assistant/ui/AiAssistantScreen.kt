@@ -47,22 +47,21 @@ fun AiStrategyAssistantScreen(
     initialPrompt: String? = null,
     onBackClick: () -> Unit = {}
 ) {
-    // 1. Rút "Khay dữ liệu" (State) từ ViewModel ra
+
     val state = viewModel.state
 
-    // Biến lưu chữ sếp đang gõ ở dưới thanh chat
+    // Save text of users when users are typing
     var inputText by remember { mutableStateOf("") }
     var showHistorySheet by remember { mutableStateOf(false) }
 
-    // Quản lý trạng thái cuộn của danh sách
+    // Manage scroll state  of list
     val listState = rememberLazyListState()
 
-    // 2. Kích hoạt logic khi màn hình vừa mở lên (Chạy đúng 1 lần)
     LaunchedEffect(initialPrompt) {
         viewModel.initialize(initialPrompt)
     }
 
-    // 3. Phép thuật Auto-Scroll: Cứ mỗi khi AI nhả thêm 1 chữ (độ dài text thay đổi), tự động cuộn xuống dòng cuối cùng
+    // Auto scroll when AI response
     val messages = state.messages
     LaunchedEffect(messages.size, messages.lastOrNull()?.text?.length) {
         if (messages.isNotEmpty()) {
@@ -80,7 +79,7 @@ fun AiStrategyAssistantScreen(
                     }
                 },
                 actions = {
-                    // Nút xem lại lịch sử
+                    // History Sessions Button
                     IconButton(onClick = {
                         showHistorySheet = true
                         viewModel.loadSessions()
@@ -137,19 +136,19 @@ fun AiStrategyAssistantScreen(
                 }
             }
 
-            // --- THANH NHẬP CHAT Ở ĐÁY MÀN HÌNH ---
+            // Input Require
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .imePadding() // Tự đẩy lên khi bàn phím ảo xuất hiện
+                    .imePadding() // Push up when keyboard appears
                     .padding(16.dp)
             ) {
                 ChatInputBar(
                     value = inputText,
                     onValueChange = { inputText = it },
                     onSend = {
-                        viewModel.SendMessage(inputText) // Gọi hàm gửi bên ViewModel
-                        inputText = "" // Xóa trắng ô nhập
+                        viewModel.SendMessage(inputText)
+                        inputText = ""
                     }
                 )
             }
@@ -178,7 +177,7 @@ fun AiStrategyAssistantScreen(
 }
 
 /**
- * Khu vực hiển thị danh sách Session cũ
+ * Old Sessions Area
  */
 @Composable
 fun SessionListArea(
@@ -231,7 +230,7 @@ fun SessionListArea(
 }
 
 /**
- * Bong bóng chat của AI (Có hiệu ứng Typing |)
+ * Message Bubble of AI
  */
 @Composable
 fun AiMessageBubble(text: String, isStreaming: Boolean = false) {
@@ -305,7 +304,7 @@ private fun ThinkingIndicator() {
 }
 
 /**
- * Bong bóng chat của Admin (User)
+ * Message Bubble of Admin (User)
  */
 @Composable
 fun UserMessageBubble(text: String) {
@@ -331,7 +330,7 @@ fun UserMessageBubble(text: String) {
 }
 
 /**
- * Thanh nhập chat nổi dưới cùng màn hình
+ * Input bar bottom phone
  */
 @Composable
 fun ChatInputBar(value: String, onValueChange: (String) -> Unit, onSend: () -> Unit) {

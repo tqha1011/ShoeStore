@@ -52,7 +52,7 @@ import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewM
 fun ProductListScreen(
     viewModel: ProductListViewModel,
     onNavigateToDetail: (String) -> Unit = {},  // Changed from Int to String (GUID)
-    onTopMenuClick: () -> Unit = {},
+    onAiAssistantClick: () -> Unit = {},
     onNavigateToShoppingBag: () -> Unit = {},
     onBottomTabSelected: (BottomNavTab) -> Unit = {}
 ) {
@@ -71,7 +71,7 @@ fun ProductListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                onMenuClick = onTopMenuClick,
+                onAiClick = onAiAssistantClick,
                 onShoppingBagClick = onNavigateToShoppingBag
             )
         },
