@@ -40,6 +40,18 @@ interface AdminProductRepository {
         isSelling: Boolean,
         imageFile: File?
     ): Result<ProductVariantResponseDto>
+
+    suspend fun updateVariant(
+        productId: String,
+        variantId: String,
+        sizeId: Int,
+        colorId: Int,
+        stock: Int,
+        price: Double,
+        isSelling: Boolean,
+        imageUrl: String,
+        imageFile: File?
+    ): Result<Unit>
 }
 
 sealed class AdminProductRepositoryException(message: String) : Exception(message) {

@@ -28,7 +28,8 @@ import com.example.shoestoreapp.features.admin.addproduct.ui.components.AdminCru
 fun AdminShoeColorDropdown(
     selectedColor: String,
     colorsList: List<ColorDto>,
-    onColorSelected: (String, String) -> Unit
+    onColorSelected: (String, String) -> Unit,
+    enabled: Boolean = true
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -55,7 +56,7 @@ fun AdminShoeColorDropdown(
                     color = AdminCrudColors.gray300,
                     shape = RoundedCornerShape(8.dp)
                 )
-                .clickable { expanded = true }
+                .clickable(enabled = enabled) { expanded = true }
                 .padding(horizontal = 12.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -67,7 +68,11 @@ fun AdminShoeColorDropdown(
                 Text(
                     text = selectedColor.ifEmpty { "Select shoe color" },
                     fontSize = 13.sp,
-                    color = if (selectedColor.isEmpty()) AdminCrudColors.gray500 else AdminCrudColors.onSurface
+                    color = when {
+                        !enabled -> AdminCrudColors.gray500
+                        selectedColor.isEmpty() -> AdminCrudColors.gray500
+                        else -> AdminCrudColors.onSurface
+                    }
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -82,7 +87,7 @@ fun AdminShoeColorDropdown(
         }
 
         DropdownMenu(
-            expanded = expanded,
+            expanded = expanded && enabled,
             onDismissRequest = { expanded = false },
             modifier = Modifier.fillMaxWidth(0.9f)
         ) {

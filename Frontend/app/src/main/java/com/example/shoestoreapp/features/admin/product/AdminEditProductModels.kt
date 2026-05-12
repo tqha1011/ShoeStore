@@ -1,6 +1,7 @@
 package com.example.shoestoreapp.features.admin.product
 
 import android.net.Uri
+import com.example.shoestoreapp.features.admin.product.data.remote.ProductVariantResponseDto
 
 data class ProductVariant(
     val size: String,
@@ -18,7 +19,7 @@ data class EditProductUiState(
     val brand: String,
     val selectedCategory: Category?,
     val imageUrl: String?,
-    val variants: List<ProductVariant>,
+    val variants: List<ProductVariantResponseDto>,
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )
@@ -35,6 +36,8 @@ data class ShoeColor(
 )
 
 data class VariantUiState(
+    val variantId: String? = null,
+    val existingImageUrl: String? = null,
     val imageUri: Uri? = null,
     val imageUrl: String? = null,
     val selectedSize: ShoeSize? = null,

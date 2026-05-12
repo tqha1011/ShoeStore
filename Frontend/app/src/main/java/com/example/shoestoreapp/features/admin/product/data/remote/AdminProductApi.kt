@@ -57,4 +57,18 @@ interface AdminProductApi {
         @Part("ImageUrl") imageUrl: RequestBody,
         @Part image: MultipartBody.Part?
     ): Response<ProductVariantResponseDto>
+
+    @Multipart
+    @PUT("/api/products/{productGuid}/variants/{variantGuid}")
+    suspend fun updateVariant(
+        @Path("productGuid") productId: String,
+        @Path("variantGuid") variantId: String,
+        @Part("SizeId") sizeId: RequestBody,
+        @Part("ColorId") colorId: RequestBody,
+        @Part("Stock") stock: RequestBody,
+        @Part("Price") price: RequestBody,
+        @Part("IsSelling") isSelling: RequestBody,
+        @Part("ImageUrl") imageUrl: RequestBody,
+        @Part image: MultipartBody.Part?
+    ): Response<Unit>
 }

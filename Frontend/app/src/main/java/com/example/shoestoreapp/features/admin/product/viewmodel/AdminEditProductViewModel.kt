@@ -9,10 +9,10 @@ import com.example.shoestoreapp.core.utils.uriToTempFile
 import com.example.shoestoreapp.features.admin.addproduct.data.repositories.MasterDataRepository
 import com.example.shoestoreapp.features.admin.product.Category
 import com.example.shoestoreapp.features.admin.product.EditProductUiState
-import com.example.shoestoreapp.features.admin.product.ProductVariant
 import com.example.shoestoreapp.features.admin.product.ShoeColor
 import com.example.shoestoreapp.features.admin.product.ShoeSize
 import com.example.shoestoreapp.features.admin.product.VariantUiState
+import com.example.shoestoreapp.features.admin.product.data.remote.ProductVariantResponseDto
 import com.example.shoestoreapp.features.admin.product.data.repositories.AdminProductRepository
 import com.example.shoestoreapp.features.admin.product.data.repositories.AdminProductRepositoryImpl
 import com.example.shoestoreapp.features.admin.product.data.repositories.ImageRepository
@@ -32,6 +32,7 @@ sealed class AdminEditProductUiEvent {
     object UpdateSuccess : AdminEditProductUiEvent()
     object DeleteSuccess : AdminEditProductUiEvent()
     object VariantCreateSuccess : AdminEditProductUiEvent()
+    object VariantUpdateSuccess : AdminEditProductUiEvent()
 }
 
 class AdminEditProductViewModel(
@@ -87,13 +88,6 @@ class AdminEditProductViewModel(
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             val result = repository.getProductById(productId)
             result.onSuccess { dto ->
-                val variants = dto.variants.map { variant ->
-                    ProductVariant(
-                        size = formatSize(variant.size),
-                        color = variant.colorName ?: "Unknown",
-                        stock = variant.stock
-                    )
-                }
                 val imageUrl = dto.variants.firstOrNull { !it.imageUrl.isNullOrBlank() }?.imageUrl
                 val category = _categories.value.firstOrNull { it.id == dto.categoryId }
                     ?: Category(dto.categoryId, dto.categoryName)
@@ -103,7 +97,7 @@ class AdminEditProductViewModel(
                     brand = dto.brand,
                     selectedCategory = category,
                     imageUrl = imageUrl,
-                    variants = variants,
+                    variants = dto.variants,
                     isLoading = false,
                     errorMessage = null
                 )
@@ -195,10 +189,24 @@ class AdminEditProductViewModel(
         }
     }
 
-    fun onEditVariantClick(variant: ProductVariant) {
+    fun onEditVariantClick(variant: ProductVariantResponseDto) {
+        val size = _sizes.value.firstOrNull { it.id == variant.sizeId }
+        val color = _colors.value.firstOrNull { it.id == variant.colorId }
+
+        _variantDraft.value = _variantDraft.value.copy(
+            variantId = variant.publicId,
+            existingImageUrl = variant.imageUrl,
+            imageUri = null,
+            imageUrl = null,
+            selectedSize = size,
+            selectedColor = color,
+            price = variant.price.toString(),
+            stock = variant.stock.toString()
+        )
+        _isAddVariantSheetVisible.value = true
     }
 
-    fun onDeleteVariantClick(variant: ProductVariant) {
+    fun onDeleteVariantClick(variant: ProductVariantResponseDto) {
     }
 
     fun onAddVariantClick() {
@@ -312,25 +320,47 @@ class AdminEditProductViewModel(
                     }
                 }
 
-                val result = repository.createVariant(
-                    productId = productId,
-                    sizeId = size.id,
-                    colorId = color.id,
-                    stock = stockValue,
-                    price = priceValue,
-                    isSelling = true,
-                    imageFile = imageFile
-                )
+                val result = if (draft.variantId == null) {
+                    repository.createVariant(
+                        productId = productId,
+                        sizeId = size.id,
+                        colorId = color.id,
+                        stock = stockValue,
+                        price = priceValue,
+                        isSelling = true,
+                        imageFile = imageFile
+                    ).map { Unit }
+                } else {
+                    repository.updateVariant(
+                        productId = productId,
+                        variantId = draft.variantId,
+                        sizeId = size.id,
+                        colorId = color.id,
+                        stock = stockValue,
+                        price = priceValue,
+                        isSelling = true,
+                        imageUrl = draft.existingImageUrl ?: "",
+                        imageFile = imageFile
+                    )
+                }
 
                 result.onSuccess {
                     _isAddVariantSheetVisible.value = false
                     _variantDraft.value = VariantUiState()
                     loadProductDetails(productId)
-                    _uiEvent.send(AdminEditProductUiEvent.VariantCreateSuccess)
+                    if (draft.variantId == null) {
+                        _uiEvent.send(AdminEditProductUiEvent.VariantCreateSuccess)
+                    } else {
+                        _uiEvent.send(AdminEditProductUiEvent.VariantUpdateSuccess)
+                    }
                 }.onFailure { throwable ->
                     _uiEvent.send(
                         AdminEditProductUiEvent.ShowError(
-                            throwable.message ?: "Create variant failed."
+                            throwable.message ?: if (draft.variantId == null) {
+                                "Create variant failed."
+                            } else {
+                                "Update variant failed."
+                            }
                         )
                     )
                 }
@@ -400,10 +430,5 @@ class AdminEditProductViewModel(
                 }
             }
         }
-    }
-
-    private fun formatSize(size: Double): String {
-        val text = if (size % 1.0 == 0.0) size.toInt().toString() else size.toString()
-        return "US $text"
     }
 }

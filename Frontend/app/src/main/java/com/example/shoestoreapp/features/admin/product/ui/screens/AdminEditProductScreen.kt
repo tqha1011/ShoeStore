@@ -47,10 +47,10 @@ import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.example.shoestoreapp.features.admin.product.viewmodel.AdminEditProductUiEvent
 import com.example.shoestoreapp.features.admin.product.viewmodel.AdminEditProductViewModel
-import com.example.shoestoreapp.features.admin.product.ui.components.AddVariantBottomSheet
 import com.example.shoestoreapp.features.admin.product.ui.components.EditProductTopBar
 import com.example.shoestoreapp.features.admin.product.ui.components.PhotoActionBottomSheet
 import com.example.shoestoreapp.features.admin.product.ui.components.ProductFormSection
+import com.example.shoestoreapp.features.admin.product.ui.components.VariantActionBottomSheet
 import com.example.shoestoreapp.features.admin.product.ui.components.VariantManagementSection
 import java.io.File
 
@@ -130,6 +130,9 @@ fun AdminEditProductScreen(
                 }
                 AdminEditProductUiEvent.VariantCreateSuccess -> {
                     android.widget.Toast.makeText(context, "Create variant success", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                AdminEditProductUiEvent.VariantUpdateSuccess -> {
+                    android.widget.Toast.makeText(context, "Update variant success", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -248,7 +251,7 @@ fun AdminEditProductScreen(
     }
 
     if (isAddVariantSheetVisible) {
-        AddVariantBottomSheet(
+        VariantActionBottomSheet(
             state = variantDraft,
             sizes = sizes,
             colors = colors,

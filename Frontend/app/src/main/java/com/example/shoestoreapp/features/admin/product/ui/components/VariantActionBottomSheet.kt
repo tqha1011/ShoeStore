@@ -37,7 +37,7 @@ import com.example.shoestoreapp.features.admin.product.VariantUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddVariantBottomSheet(
+fun VariantActionBottomSheet(
     state: VariantUiState,
     sizes: List<ShoeSize>,
     colors: List<ShoeColor>,
@@ -65,7 +65,7 @@ fun AddVariantBottomSheet(
                     .clickable(onClick = onImageClick),
                 contentAlignment = Alignment.Center
             ) {
-                val imageModel = state.imageUri ?: state.imageUrl
+                val imageModel = state.imageUri ?: state.existingImageUrl
                 if (imageModel != null) {
                     AsyncImage(
                         model = imageModel,
@@ -94,7 +94,8 @@ fun AddVariantBottomSheet(
                         sizesList = sizeDtos,
                         onSizeSelected = { id, _ ->
                             sizes.firstOrNull { it.id.toString() == id }?.let(onSizeSelected)
-                        }
+                        },
+                        enabled = state.variantId == null
                     )
                 }
                 Box(modifier = Modifier.weight(1f)) {
@@ -103,7 +104,8 @@ fun AddVariantBottomSheet(
                         colorsList = colorDtos,
                         onColorSelected = { id, _ ->
                             colors.firstOrNull { it.id.toString() == id }?.let(onColorSelected)
-                        }
+                        },
+                        enabled = state.variantId == null
                     )
                 }
             }
@@ -143,7 +145,7 @@ fun AddVariantBottomSheet(
                 shape = MaterialTheme.shapes.medium
             ) {
                 Text(
-                    text = "Add Variant",
+                    text = if (state.variantId == null) "Add Variant" else "Save Variant",
                     color = Color.White,
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                 )

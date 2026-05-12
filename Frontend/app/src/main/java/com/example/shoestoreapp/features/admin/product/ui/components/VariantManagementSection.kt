@@ -31,14 +31,14 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.shoestoreapp.features.admin.product.ProductVariant
+import com.example.shoestoreapp.features.admin.product.data.remote.ProductVariantResponseDto
 
 @Composable
 fun VariantManagementSection(
-    variants: List<ProductVariant>,
+    variants: List<ProductVariantResponseDto>,
     onAddClick: () -> Unit,
-    onEditClick: (ProductVariant) -> Unit,
-    onDeleteClick: (ProductVariant) -> Unit
+    onEditClick: (ProductVariantResponseDto) -> Unit,
+    onDeleteClick: (ProductVariantResponseDto) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -162,11 +162,13 @@ private fun VariantHeaderRow() {
 
 @Composable
 private fun VariantRow(
-    variant: ProductVariant,
+    variant: ProductVariantResponseDto,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
     val stockColor = if (variant.stock == 0) Color(0xFFBA1A1A) else Color.Black
+    val sizeText = formatSize(variant.size)
+    val colorText = variant.colorName ?: "Unknown"
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -174,13 +176,13 @@ private fun VariantRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = variant.size,
+            text = sizeText,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyMedium,
             color = Color.Black
         )
         Text(
-            text = variant.color,
+            text = colorText,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.bodyMedium,
             color = Color(0xFF6B6B6B)
@@ -211,4 +213,9 @@ private fun VariantRow(
             }
         }
     }
+}
+
+private fun formatSize(size: Double): String {
+    val text = if (size % 1.0 == 0.0) size.toInt().toString() else size.toString()
+    return "US $text"
 }

@@ -161,6 +161,52 @@ class AdminProductRepositoryImpl(
         }
     }
 
+    override suspend fun updateVariant(
+        productId: String,
+        variantId: String,
+        sizeId: Int,
+        colorId: Int,
+        stock: Int,
+        price: Double,
+        isSelling: Boolean,
+        imageUrl: String,
+        imageFile: File?
+    ): Result<Unit> {
+        val textMediaType = "text/plain".toMediaType()
+        val sizeBody: RequestBody = sizeId.toString().toRequestBody(textMediaType)
+        val colorBody: RequestBody = colorId.toString().toRequestBody(textMediaType)
+        val stockBody: RequestBody = stock.toString().toRequestBody(textMediaType)
+        val priceBody: RequestBody = price.toString().toRequestBody(textMediaType)
+        val sellingBody: RequestBody = isSelling.toString().toRequestBody(textMediaType)
+        val imageUrlBody: RequestBody = imageUrl.toRequestBody(textMediaType)
+
+        val imagePart = imageFile?.let { file ->
+            val imageRequest = file.asRequestBody("image/*".toMediaType())
+            MultipartBody.Part.createFormData("image", file.name, imageRequest)
+        }
+
+        return try {
+            val response = adminApi.updateVariant(
+                productId = productId,
+                variantId = variantId,
+                sizeId = sizeBody,
+                colorId = colorBody,
+                stock = stockBody,
+                price = priceBody,
+                isSelling = sellingBody,
+                imageUrl = imageUrlBody,
+                image = imagePart
+            )
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(response.toRepositoryException())
+            }
+        } catch (e: Exception) {
+            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: "Unknown error"))
+        }
+    }
+
     private fun mapDtoToAdminProduct(dto: ProductSearchDto): AdminProduct {
         val totalStock = dto.variants?.sumOf { it.stock ?: 0 } ?: 0
         val stockStatus = when {
