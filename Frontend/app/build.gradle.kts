@@ -83,6 +83,7 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.lifecycle.runtime.ktx)
     implementation("androidx.compose.material:material-icons-extended")
+    implementation("com.github.jeziellago:compose-markdown:0.5.4") // mark down for AI
     implementation(libs.activity.compose)
     implementation(platform(libs.compose.bom))
     implementation(libs.ui)
