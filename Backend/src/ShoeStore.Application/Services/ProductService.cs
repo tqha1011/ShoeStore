@@ -101,6 +101,7 @@ public class ProductService(
                     CategoryName = productEntity.Category?.Name ?? string.Empty,
                     CategoryId = productEntity.CategoryId,
                     Variants = productEntity.ProductVariants
+                        .Where(v => !v.IsDeleted)
                         .Select(v => new ProductVariantResponseDto
                         {
                             PublicId = v.PublicId,

@@ -1,5 +1,4 @@
 using ErrorOr;
-using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs.ChatBotDTOs;
 
 namespace ShoeStore.Application.Interface.ChatBotInterface;
