@@ -6,5 +6,5 @@ data class ChatMessage(
     val id: String = UUID.randomUUID().toString(),
     val text: String,
     val isUser: Boolean,
-    val isStreaming: Boolean = false // Determines if the typing cursor '█'
+    val isStreaming: Boolean = false // Determines if the typing cursor '|'
 )

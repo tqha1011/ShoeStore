@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -50,6 +51,8 @@ import com.example.shoestoreapp.features.agent_intelligent.data.repository.AiCha
 import com.example.shoestoreapp.features.admin.ai_assistant.viewmodel.AiStrategyViewmodel
 import com.example.shoestoreapp.features.user.invoice.data.UserInvoiceRepository
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
+import com.example.shoestoreapp.features.user.ai_assistant.ui.AiProductScreen
+import com.example.shoestoreapp.features.user.ai_assistant.viewmodel.AiProductViewmodel
 import kotlinx.coroutines.launch
 
 private object Routes {
@@ -334,7 +337,7 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
             null
         }
 
-        val aiViewmodel = remember {
+        val aiStrategyViewmodel = remember {
             AiStrategyViewmodel(
                 repository = AiChatRepository(
                     sessionApi = RetrofitInstance.chatSessionApi, // Reuse authApi for session management
@@ -343,8 +346,38 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
             )
         }
         AiStrategyScreen (
-            viewModel = aiViewmodel,
+            viewModel = aiStrategyViewmodel,
             initialPrompt = initialPrompt,
+            onBackClick = { navController.popBackStack() }
+        )
+    }
+    composable(Routes.USER_AI_ASSISTANT,
+        arguments = listOf(
+            navArgument("isGeneratingProduct"){
+                type = NavType.BoolType
+                defaultValue = false
+            }
+        )
+    ){
+        backStackEntry ->
+        val isGeneratingProduct = backStackEntry.arguments?.getBoolean("isGeneratingProduct") ?: false
+        val initialPrompt = if (isGeneratingProduct) {
+            """Generate product recommendation based on user's purchase history and preferences
+            """.trimIndent()
+        }
+        else {
+            null
+        }
+        val aiProductViewmodel = remember {
+            AiProductViewmodel(
+                repository = AiChatRepository(
+                    sessionApi = RetrofitInstance.chatSessionApi, // Reuse authApi for session management
+                    okHttpClient = RetrofitInstance.okHttpClient // Use the same OkHttpClient for streaming
+                )
+            )
+        }
+        AiProductScreen (
+            viewModel = aiProductViewmodel,
             onBackClick = { navController.popBackStack() }
         )
     }

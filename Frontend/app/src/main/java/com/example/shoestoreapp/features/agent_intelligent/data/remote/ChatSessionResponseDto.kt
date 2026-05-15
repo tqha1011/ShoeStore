@@ -3,12 +3,12 @@ package com.example.shoestoreapp.features.agent_intelligent.data.remote
 import com.google.gson.annotations.SerializedName
 
 data class ChatSessionResponseDto (
-    @SerializedName("PublicId")
-    val publicId : String,
-    @SerializedName("PublicUserId")
-    val publicUserId : String,
-    @SerializedName("Title")
+    @SerializedName("publicId")
+    val publicId : String?  ,
+    @SerializedName("publicUserId")
+    val publicUserId : String?,
+    @SerializedName("title")
     val title : String?,
-    @SerializedName("CreateAt")
-    val createAt : String,
+    @SerializedName("createAt")
+    val createdAt : String,
 )
