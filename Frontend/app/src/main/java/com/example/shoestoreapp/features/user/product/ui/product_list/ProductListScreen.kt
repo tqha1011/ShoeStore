@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,11 +63,12 @@ fun ProductListScreen(
     val selectedBottomTab = viewModel.selectedBottomTab.collectAsState()
     val isLoading = viewModel.isLoading.collectAsState()
     val isLoadingMore = viewModel.isLoadingMore.collectAsState()
+    val hasMore = viewModel.hasMore.collectAsState()
     val errorMessage = viewModel.errorMessage.collectAsState()
 
     val lazyGridState = rememberLazyGridState()
 
-    SetupInfiniteScroll(lazyGridState, productList.value, isLoadingMore.value, viewModel)
+    SetupInfiniteScroll(lazyGridState, productList.value, isLoadingMore.value, hasMore.value, viewModel)
 
     Scaffold(
         topBar = {
@@ -125,16 +127,23 @@ private fun SetupInfiniteScroll(
     lazyGridState: androidx.compose.foundation.lazy.grid.LazyGridState,
     productList: List<*>?,
     isLoadingMore: Boolean,
+    hasMore: Boolean,
     viewModel: ProductListViewModel
 ) {
+    // Bùa chú chống Stale Closure đây:
+    val currentIsLoadingMore by androidx.compose.runtime.rememberUpdatedState(isLoadingMore)
+    val currentProductList by androidx.compose.runtime.rememberUpdatedState(productList)
+    val currentHasMore by androidx.compose.runtime.rememberUpdatedState(hasMore)
+
     LaunchedEffect(lazyGridState) {
         snapshotFlow { lazyGridState.layoutInfo.visibleItemsInfo }
             .collect { visibleItems ->
                 if (visibleItems.isNotEmpty()) {
                     val lastVisibleIndex = visibleItems.last().index
-                    val totalItems = productList?.size
+                    val totalItems = currentProductList?.size ?: 0
 
-                    if (lastVisibleIndex >= (totalItems?.minus(2) ?: 0) && !isLoadingMore) {
+                    // Dùng biến current thay vì biến cứng ban đầu
+                    if (totalItems > 0 && currentHasMore && lastVisibleIndex >= totalItems - 2 && !currentIsLoadingMore) {
                         viewModel.loadNextPage()
                     }
                 }
@@ -234,7 +243,8 @@ private fun ProductGrid(
         }
 
         if (isLoadingMore) {
-            item {
+            // FIX Ở ĐÂY: Thêm span = { GridItemSpan(maxLineSpan) }
+            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -249,6 +259,8 @@ private fun ProductGrid(
         }
     }
 }
+
+
 
 
 
