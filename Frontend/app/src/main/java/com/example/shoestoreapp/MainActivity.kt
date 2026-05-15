@@ -15,6 +15,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navigation
 import com.example.shoestoreapp.core.networks.RetrofitInstance
 import com.example.shoestoreapp.features.user.product.ui.product_detail.ProductDetailScreen
 import com.example.shoestoreapp.features.user.product.ui.product_list.ProductListScreen
@@ -38,7 +39,7 @@ import com.example.shoestoreapp.features.admin.crud.data.repositories.MasterData
 import com.example.shoestoreapp.features.admin.analytics.ui.AdminAnalyticsScreen
 import com.example.shoestoreapp.features.admin.analytics.viewmodel.AdminAnalyticsViewModel
 import com.example.shoestoreapp.features.admin.analytics.data.AnalyticsRepository
-import com.example.shoestoreapp.features.admin.ai_assistant.ui.AiStrategyAssistantScreen
+import com.example.shoestoreapp.features.admin.ai_assistant.ui.AiStrategyScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenContent
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
@@ -46,10 +47,12 @@ import com.example.shoestoreapp.features.auth.presentation.welcome.WelcomeScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.CreateNewPasswordScreen
 import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.core.utils.JwtUtils
-import com.example.shoestoreapp.features.admin.ai_assistant.data.repository.AiChatRepository
-import com.example.shoestoreapp.features.admin.ai_assistant.viewmodel.AiAssistantViewmodel
+import com.example.shoestoreapp.features.agent_intelligent.data.repository.AiChatRepository
+import com.example.shoestoreapp.features.admin.ai_assistant.viewmodel.AiStrategyViewmodel
 import com.example.shoestoreapp.features.user.invoice.data.UserInvoiceRepository
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
+import com.example.shoestoreapp.features.user.ai_assistant.ui.AiProductScreen
+import com.example.shoestoreapp.features.user.ai_assistant.viewmodel.AiProductViewmodel
 import kotlinx.coroutines.launch
 
 private object Routes {
@@ -69,6 +72,8 @@ private object Routes {
     const val ADMIN_ANALYTICS = "admin_analytics"
     const val ADMIN_AI_ASSISTANT_BASE = "admin_ai_assistant"
     const val ADMIN_AI_ASSISTANT = "$ADMIN_AI_ASSISTANT_BASE?isGeneratingCampaign={isGeneratingCampaign}"
+    const val USER_AI_ASSISTANT_BASE = "user_ai_assistant"
+    const val USER_AI_ASSISTANT = "$USER_AI_ASSISTANT_BASE?isGenerateProduct={isGeneratingProduct}"
     const val ADMIN_SETTINGS = "admin_settings"
 
     fun createNewPassword(email: String, otp: String): String = "create_new_password/$email/$otp"
@@ -79,6 +84,10 @@ private object Routes {
     // Admin AI Assistant
     fun adminAiAssistant(isGeneratingCampaign: Boolean = false): String {
         return "$ADMIN_AI_ASSISTANT_BASE?isGeneratingCampaign=$isGeneratingCampaign"
+    }
+    // User AI Assistant
+    fun userAiAssistant(isGeneratingProduct: Boolean = false): String {
+        return "$USER_AI_ASSISTANT_BASE?isGenerateProduct=$isGeneratingProduct"
     }
 }
 
@@ -190,7 +199,7 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
                 navController.navigate(Routes.PRODUCT_DETAIL.replace("{productGuid}", productGuid))
             },
             onAiAssistantClick = {
-                // TODO
+                navController.navigate(Routes.userAiAssistant(isGeneratingProduct = false))
             },
             onNavigateToShoppingBag = { println("Shopping bag clicked") },
             onBottomTabSelected = { tab -> handleUserHomeTabSelection(tab, navController) }
@@ -328,17 +337,47 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
             null
         }
 
-        val aiViewmodel = remember {
-            AiAssistantViewmodel(
+        val aiStrategyViewmodel = remember {
+            AiStrategyViewmodel(
                 repository = AiChatRepository(
                     sessionApi = RetrofitInstance.chatSessionApi, // Reuse authApi for session management
                     okHttpClient = RetrofitInstance.okHttpClient // Use the same OkHttpClient for streaming
                 )
             )
         }
-        AiStrategyAssistantScreen (
-            viewModel = aiViewmodel,
+        AiStrategyScreen (
+            viewModel = aiStrategyViewmodel,
             initialPrompt = initialPrompt,
+            onBackClick = { navController.popBackStack() }
+        )
+    }
+    composable(Routes.USER_AI_ASSISTANT,
+        arguments = listOf(
+            navArgument("isGeneratingProduct"){
+                type = NavType.BoolType
+                defaultValue = false
+            }
+        )
+    ){
+        backStackEntry ->
+        val isGeneratingProduct = backStackEntry.arguments?.getBoolean("isGeneratingProduct") ?: false
+        val initialPrompt = if (isGeneratingProduct) {
+            """Generate product recommendation based on user's purchase history and preferences
+            """.trimIndent()
+        }
+        else {
+            null
+        }
+        val aiProductViewmodel = remember {
+            AiProductViewmodel(
+                repository = AiChatRepository(
+                    sessionApi = RetrofitInstance.chatSessionApi, // Reuse authApi for session management
+                    okHttpClient = RetrofitInstance.okHttpClient // Use the same OkHttpClient for streaming
+                )
+            )
+        }
+        AiProductScreen (
+            viewModel = aiProductViewmodel,
             onBackClick = { navController.popBackStack() }
         )
     }

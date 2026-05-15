@@ -48,6 +48,7 @@ import com.example.shoestoreapp.features.admin.product.viewmodel.AdminProductLis
 fun AdminProductListScreen(
     viewModel: AdminProductListViewModel = AdminProductListViewModel(),
     navController: NavHostController,
+    onAiAssistantClick: () -> Unit = {},
     onAddProductClick: () -> Unit = {},
     onTabSelected: (AdminBottomNavTab) -> Unit = {}
 ) {

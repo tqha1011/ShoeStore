@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /**
@@ -52,6 +53,11 @@ class ProductListViewModel(
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
 
+    private val _hasMore = MutableStateFlow(true)
+    val hasMore: StateFlow<Boolean> = _hasMore.asStateFlow()
+
+    private var searchJob: Job? = null
+
     companion object {
         private const val DEFAULT_PAGE_SIZE = 4
     }
@@ -69,14 +75,21 @@ class ProductListViewModel(
     private fun loadProducts() {
         viewModelScope.launch {
             _isLoading.value = true
-            repository.searchProducts(
-                ProductSearchRequest(
-                    pageIndex = 1,
-                    pageSize = DEFAULT_PAGE_SIZE
-                )
-            ).collect { products ->
+            try {
+                val products = repository.searchProducts(
+                    ProductSearchRequest(
+                        pageIndex = 1,
+                        pageSize = DEFAULT_PAGE_SIZE
+                    )
+                ).first()
                 Log.d("SHOE_DEBUG", "Dữ liệu đã về ViewModel: ${products?.size} đôi")
                 _products.value = products
+                _currentPage.value = 1
+                _hasMore.value = (products?.size ?: 0) >= DEFAULT_PAGE_SIZE
+                _errorMessage.value = null
+            } catch (e: Exception) {
+                _errorMessage.value = "Failed to load products: ${e.message}"
+            } finally {
                 _isLoading.value = false
             }
         }
@@ -124,7 +137,7 @@ class ProductListViewModel(
      */
     fun loadNextPage() {
         // Prevent duplicate requests - if already loading more, ignore
-        if (_isLoadingMore.value) {
+        if (_isLoadingMore.value || !_hasMore.value) {
             return
         }
 
@@ -144,10 +157,13 @@ class ProductListViewModel(
                 val products = repository.searchProducts(request).first()
 
                 // Thêm sản phẩm mới vào danh sách hiện tại (append, không replace)
-                if (products?.isNotEmpty() ?: false) {
+                if (products?.isNotEmpty() == true) {
                     _products.value = _products.value?.plus(products)
                     _currentPage.value = nextPage
+                    _hasMore.value = products.size >= DEFAULT_PAGE_SIZE
                     _errorMessage.value = null
+                } else {
+                    _hasMore.value = false
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -169,19 +185,26 @@ class ProductListViewModel(
      * 3. Reset về trang 1 khi search/filter thay đổi
      */
     private fun applyFiltersAndSearch() {
-        viewModelScope.launch {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
             _isLoading.value = true
-            val categoryId = getCategoryIdFromFilter(_selectedFilter.value)
-            val searchTerm = searchText.value.ifEmpty { null }
-            val request = ProductSearchRequest(
-                keyword = searchTerm,
-                brand = categoryId,
-                pageIndex = 1,
-                pageSize = DEFAULT_PAGE_SIZE
-            )
-            repository.searchProducts(request).collect { products ->
+            try {
+                val categoryId = getCategoryIdFromFilter(_selectedFilter.value)
+                val searchTerm = searchText.value.ifEmpty { null }
+                val request = ProductSearchRequest(
+                    keyword = searchTerm,
+                    brand = categoryId,
+                    pageIndex = 1,
+                    pageSize = DEFAULT_PAGE_SIZE
+                )
+                val products = repository.searchProducts(request).first()
                 _products.value = products
                 _currentPage.value = 1
+                _hasMore.value = (products?.size ?: 0) >= DEFAULT_PAGE_SIZE
+                _errorMessage.value = null
+            } catch (e: Exception) {
+                _errorMessage.value = "Failed to search products: ${e.message}"
+            } finally {
                 _isLoading.value = false
             }
         }
