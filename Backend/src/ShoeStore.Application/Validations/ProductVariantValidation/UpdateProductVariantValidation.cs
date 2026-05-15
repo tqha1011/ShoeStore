@@ -21,7 +21,7 @@ public class UpdateProductVariantValidation : AbstractValidator<UpdateProductVar
 
         RuleFor(x => x.Price)
             .GreaterThan(0).WithMessage("Price must be greater than 0.")
-            .LessThanOrEqualTo(999999.99m).WithMessage("Price cannot exceed 999,999.99.")
+            .LessThanOrEqualTo(999999999m).WithMessage("Price cannot exceed 999,999,999.")
             .Must(x => x.Value.ToString().Split('.').Length == 1 || x.Value.ToString().Split('.')[1].Length <= 2)
             .WithMessage("Price cannot have more than 2 decimal places.")
             .When(x => x.Price.HasValue);
