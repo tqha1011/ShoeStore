@@ -22,31 +22,36 @@ import java.util.UUID
 data class AIChatState(
     val messages: List<ChatMessage> = emptyList(),
     val sessions: List<ChatSessionResponseDto> = emptyList(),
-    val isLoadingSesions : Boolean = false, // Initial loading state ( Page 1 )
+    val isLoadingSesions: Boolean = false, // Initial loading state ( Page 1 )
     val isMoreLoading: Boolean = false, // Pagination loading state ( Scroll to bottom )
-    val currentPage : Int = 1,   // Tracks the current page for infinite scroll
-    val isLastPage : Boolean = false, // Flag to stop fetching when no more data is available
-    val currentSessionId : String? = null,
-    val error : String? = null
+    val currentPage: Int = 1,   // Tracks the current page for infinite scroll
+    val isLastPage: Boolean = false, // Flag to stop fetching when no more data is available
+    val currentSessionId: String? = null,
+    val error: String? = null,
+    val isHistoryLoading: Boolean = false
 )
 
 abstract class BaseAIViewModel(
-    protected val repository : AiChatRepository,
-    protected val ioDispatcher : CoroutineDispatcher = Dispatchers.IO,
+    protected val repository: AiChatRepository,
+    protected val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     var state by mutableStateOf(AIChatState())
         protected set
 
     // Subclasses MUST implement this to define which specific API endpoint to stream from
-    protected abstract fun getStreamFlow (sessionId: String, prompt: String, isCampaign: Boolean) : Flow<String>
+    protected abstract fun getStreamFlow(
+        sessionId: String,
+        prompt: String,
+        isCampaign: Boolean
+    ): Flow<String>
 
     open fun initialize(initialPrompt: String?) {}
 
-    fun loadSessions(isNextPage : Boolean = false) {
+    fun loadSessions(isNextPage: Boolean = false) {
         // Prevent concurrent API calls or fetching if we already reached the last page
-       if ((isNextPage && state.isLastPage) || state.isLoadingSesions || state.isMoreLoading) return
+        if ((isNextPage && state.isLastPage) || state.isLoadingSesions || state.isMoreLoading) return
 
-        viewModelScope.launch (ioDispatcher){
+        viewModelScope.launch(ioDispatcher) {
             val pageLoad = if (isNextPage) state.currentPage + 1 else 1
 
             state = if (isNextPage) state.copy(isMoreLoading = true, error = null)
@@ -78,16 +83,16 @@ abstract class BaseAIViewModel(
                 }
         }
     }
-    fun SendMessage(userText : String, isCampaign: Boolean = false) {
+
+    fun SendMessage(userText: String, isCampaign: Boolean = false) {
         if (userText.isBlank()) return
         val userMsg = ChatMessage(text = userText, isUser = true)
         state = state.copy(messages = state.messages + userMsg, error = null)
 
         val sessionId = state.currentSessionId
         if (sessionId == null) {
-            startNewSessionAndSendMessage(userText,isCampaign)
-        }
-        else {
+            startNewSessionAndSendMessage(userText, isCampaign)
+        } else {
             streamResponse(userText, isCampaign)
         }
     }
@@ -113,12 +118,13 @@ abstract class BaseAIViewModel(
                 .onFailure { exception ->
                     val errorMsg =
                         ChatMessage(text = "Network error : ${exception.message}", isUser = false)
-                    state = state.copy(messages = state.messages + errorMsg, error = exception.message)
+                    state =
+                        state.copy(messages = state.messages + errorMsg, error = exception.message)
                 }
         }
     }
 
-    fun streamResponse(prompt : String, isCampaign : Boolean){
+    fun streamResponse(prompt: String, isCampaign: Boolean) {
         val sessionId = state.currentSessionId ?: return
         // Create Bubble Chat for user messages
 
@@ -126,21 +132,24 @@ abstract class BaseAIViewModel(
         val aiMessageId = java.util.UUID.randomUUID().toString()
 
         // Create an empty placeholder message for the AI with the streaming flag turned on
-        val aiMsgPlaceHolder = ChatMessage(id = aiMessageId, text = "", isUser = false, isStreaming = true)
+        val aiMsgPlaceHolder =
+            ChatMessage(id = aiMessageId, text = "", isUser = false, isStreaming = true)
         state = state.copy(messages = state.messages + aiMsgPlaceHolder, error = null)
 
 
 
-        viewModelScope.launch(ioDispatcher){
+        viewModelScope.launch(ioDispatcher) {
             val streamFlow = getStreamFlow(sessionId, prompt, isCampaign)
 
             streamFlow
                 .catch { exception ->
                     val updatedMessages = state.messages.map { msg ->
                         if (msg.id == aiMessageId) {
-                            msg.copy(text = "Error Response: ${exception.message}", isStreaming = false)
-                        }
-                        else msg
+                            msg.copy(
+                                text = "Error Response: ${exception.message}",
+                                isStreaming = false
+                            )
+                        } else msg
                     }
                     state = state.copy(messages = updatedMessages)
                 }
@@ -156,13 +165,13 @@ abstract class BaseAIViewModel(
             state = state.copy(messages = finalMessage)
         }
     }
+
     private suspend fun appendAiChunk(aiMessageId: String, chunk: String) {
         withContext(Dispatchers.Main) {
             val updatedMessages = state.messages.map { msg ->
-                if (msg.id == aiMessageId){
+                if (msg.id == aiMessageId) {
                     msg.copy(text = msg.text + chunk)
-                }
-                else msg
+                } else msg
             }
             state = state.copy(messages = updatedMessages)
         }
@@ -187,6 +196,45 @@ abstract class BaseAIViewModel(
 
     fun selectSession(sessionId: String) {
         if (sessionId.isBlank()) return
-        state = state.copy(currentSessionId = sessionId, messages = emptyList(), error = null)
+        state = state.copy(
+            currentSessionId = sessionId,
+            messages = emptyList(),
+            error = null,
+            isHistoryLoading = true
+        )
+        loadChatHistory(sessionId)
+    }
+
+    private fun loadChatHistory(sessionId: String) {
+        viewModelScope.launch(ioDispatcher) {
+            runCatching {
+
+                val response = repository.getChatMessages(sessionId)
+                if (response.isSuccessful) response.body()
+                else throw Exception("Failed to load chat history: ${response.code()}")
+            }
+                .onSuccess { data ->
+                    val historyMessages = data?.messages?.map { dto ->
+                        ChatMessage(
+                            id = dto.messageId ?: UUID.randomUUID().toString(),
+                            text = dto.content ?: "",
+                            isUser = dto.role?.equals("Assistant", ignoreCase = true) == false,
+                            isStreaming = false,
+                            createdAt = dto.createdAt ?: ""
+                        )
+                    }?.reversed() ?: emptyList()
+
+                    state = state.copy(
+                        messages = historyMessages,
+                        isHistoryLoading = false
+                    )
+                }
+                .onFailure { exception ->
+                    state = state.copy(
+                        error = "Cannot load messages: ${exception.message}",
+                        isHistoryLoading = false
+                    )
+                }
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.example.shoestoreapp.features.agent_intelligent.data.repository
 
 import com.example.shoestoreapp.core.utils.Constants
+import com.example.shoestoreapp.features.agent_intelligent.data.remote.ChatHistoryResponseDto
 import com.example.shoestoreapp.features.agent_intelligent.data.remote.ChatSessionApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -8,10 +9,10 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
-
 class AiChatRepository (
     private val sessionApi : ChatSessionApi,
     private val okHttpClient: OkHttpClient
@@ -19,6 +20,9 @@ class AiChatRepository (
     suspend fun createSession() = sessionApi.createSession()
     suspend fun getSessions(pageNumber : Int, pageSize : Int) = sessionApi.getSession(pageNumber, pageSize)
 
+    suspend fun getChatMessages(sessionId: String, cursor: String? = null): retrofit2.Response<ChatHistoryResponseDto> {
+        return sessionApi.getChatMessages(sessionId, cursor)
+    }
     fun streamChatStatistics(sessionId : String, title : String) =
         baseStreamCall("${Constants.BASE_URL}/api/v1/chatbot/chat-statistics?publicSessionId=$sessionId", title)
 

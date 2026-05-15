@@ -113,12 +113,17 @@ fun BaseAIChatScreen(
                 } else {
                     items(state.messages) { message ->
                         if (message.isUser) {
-                            SharedUserMessageBubble(text = message.text, roleName = userRoleName)
+                            SharedUserMessageBubble(
+                                text = message.text,
+                                roleName = userRoleName,
+                                timeString = message.createdAt ?: "Now"
+                            )
                         } else {
                             SharedAiMessageBubble(
                                 text = message.text,
                                 isStreaming = message.isStreaming,
-                                roleName = aiRoleName
+                                roleName = aiRoleName,
+                                timeString = if (message.isStreaming) "NOW" else (message.createdAt ?: "Now")
                             )
                         }
                     }
@@ -241,11 +246,11 @@ fun SharedSessionListArea(
     val shouldLoadMore = remember {
         derivedStateOf {
             val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
-            lastVisibleItem != null && lastVisibleItem.index >= sessions.size - 1
+            lastVisibleItem != null && lastVisibleItem.index >= sessions.size - 3
         }
     }
     LaunchedEffect(shouldLoadMore.value) {
-        if (shouldLoadMore.value && isLoading && !isMoreLoading) {
+        if (shouldLoadMore.value && !isLoading && !isMoreLoading) {
             onLoadMore()
         }
     }
@@ -257,7 +262,10 @@ fun SharedSessionListArea(
         return
     }
 
-    LazyColumn(modifier = modifier.padding(16.dp)) {
+    LazyColumn(
+        state = listState, // Attach a camera to track swipe gestures
+        modifier = modifier.padding(16.dp)
+    ) {
         item {
             Text(
                 "Recent Sessions",
@@ -278,8 +286,8 @@ fun SharedSessionListArea(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 12.dp)
-                    .clickable(enabled = !sessionId.isNotBlank()) {
-                        sessionId?.let { onSessionClick(it) }
+                    .clickable(enabled = sessionId.isNotBlank()) {
+                        onSessionClick(sessionId)
                     }, colors = CardDefaults.cardColors(containerColor = Color(0xFFF4F4F5))
             ) {
                 Row(
@@ -316,7 +324,12 @@ fun SharedSessionListArea(
  * Message Bubble of AI
  */
 @Composable
-fun SharedAiMessageBubble(text: String, isStreaming: Boolean = false, roleName: String) {
+fun SharedAiMessageBubble(
+    text: String,
+    isStreaming: Boolean = false,
+    roleName: String,
+    timeString: String? = null
+) {
     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(
             modifier = Modifier
@@ -352,7 +365,7 @@ fun SharedAiMessageBubble(text: String, isStreaming: Boolean = false, roleName: 
                 }
             }
             Text(
-                roleName,
+                text = "$roleName • $timeString",
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.LightGray,
@@ -364,7 +377,11 @@ fun SharedAiMessageBubble(text: String, isStreaming: Boolean = false, roleName: 
 }
 
 @Composable
-fun SharedUserMessageBubble(text: String, roleName: String) {
+fun SharedUserMessageBubble(
+    text: String,
+    roleName: String,
+    timeString: String? = null
+) {
     Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
         Spacer(modifier = Modifier.width(60.dp))
         Column(horizontalAlignment = Alignment.End) {
@@ -378,7 +395,7 @@ fun SharedUserMessageBubble(text: String, roleName: String) {
                 Text(text = text, fontSize = 14.sp, color = Color.White, lineHeight = 20.sp)
             }
             Text(
-                roleName,
+                text = "$roleName • $timeString",
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.LightGray,
