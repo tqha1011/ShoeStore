@@ -73,6 +73,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHostedService<OrderCancellationService>();
 builder.Services.AddHostedService<NotifyNewVoucherService>();
 builder.Services.AddHostedService<DeleteVoucherExpiredService>();
+builder.Services.AddHostedService<UpdateTitleSessionService>();
 builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {
