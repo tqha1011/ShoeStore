@@ -1,4 +1,3 @@
-using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Application.DTOs.CheckOutDTOs;
@@ -13,6 +12,23 @@ public sealed record InvoiceDto(
     decimal ShippingFee,
     decimal FinalPrice,
     DateTime CreatedAt,
-    List<Voucher?> Vouchers,
-    List<InvoiceDetail> Details
+    List<VoucherDto> Vouchers,
+    List<InvoiceDetailDto> Details
 );
+
+public sealed record VoucherDto(
+    Guid VoucherPublicId,
+    string VoucherName,
+    string? VoucherDescription,
+    decimal Discount,
+    VoucherScope VoucherScope,
+    DiscountType DiscountType,
+    decimal MaxPriceDiscount,
+    decimal MinOrderPrice);
+
+public sealed record InvoiceDetailDto(
+    Guid InvoiceDetailPublicId,
+    int InvoiceId,
+    int ProductVariantId,
+    int Quantity,
+    decimal UnitPrice);
