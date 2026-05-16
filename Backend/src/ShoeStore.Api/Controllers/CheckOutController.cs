@@ -51,13 +51,13 @@ public class CheckOutController(ICheckOutService checkOutService) : ControllerBa
     public async Task<IActionResult> PrepareCheckOut(List<CheckOutRequestDto> checkOutList, CancellationToken token)
     {
         var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (validUser == null)
+        if (validUser == null || !Guid.TryParse(validUser, out var publicUserId))
             return Unauthorized(new
             {
                 message = "You are not authorized to perform this action.",
                 description = "Please login to your account and try again."
             });
-        var result = await checkOutService.PrepareCheckOutAsync(checkOutList, token);
+        var result = await checkOutService.PrepareCheckOutAsync(checkOutList,publicUserId, token);
 
         var response = result.Match<IActionResult>(
             responseDto => Ok(responseDto),

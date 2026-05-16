@@ -5,6 +5,7 @@ using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Application.Interface.UserInterface;
+using ShoeStore.Application.Utilities;
 using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Services;
@@ -134,12 +135,14 @@ public class CartItemService(
         };
     }
 
-    public async Task<ErrorOr<List<UserCartItemResponseDto>>> GetCartItemsByUserIdAsync(Guid userPublicId,
+    public async Task<ErrorOr<CartItemResponseDto>> GetCartItemsByUserIdAsync(Guid userPublicId,
         CancellationToken token)
     {
         var user = await userRepository.CheckUserExistsAsync(userPublicId, token);
         if (!user) return Error.NotFound("User.NotFound", "User not found.");
         
+        var userAddress = await userRepository.GetUserDefaultAddressAsync(userPublicId, token);
+        var shippingFee = userAddress.CalculateShip();
         var cartItems = cartItemRepository.GetCartItemsByUserId(userPublicId);
         var response = await cartItems.Select(x => new UserCartItemResponseDto
         {
@@ -157,6 +160,7 @@ public class CartItemService(
             ProductVariantId = x.ProductVariant.PublicId,
             IsSelling = x.ProductVariant.IsSelling
         }).ToListAsync(token);
-        return response;
+        var result = new CartItemResponseDto(response, shippingFee);
+        return result;
     }
 }

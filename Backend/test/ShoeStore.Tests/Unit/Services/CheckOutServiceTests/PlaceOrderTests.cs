@@ -213,13 +213,6 @@ public class PlaceOrderTests
         Assert.Equal("0909", result.Value.PhoneNumber);
         Assert.Equal(InvoiceStatus.Pending, result.Value.Status);
         Assert.Equal(1, variant.Stock);
-        Assert.Single(result.Value.Details);
-
-        var detail = Assert.Single(result.Value.Details);
-        Assert.Equal(1, detail.ProductVariantId);
-        Assert.Equal(4, detail.Quantity);
-        Assert.Equal(100, detail.UnitPrice);
-
         Assert.NotNull(addedInvoice);
         _cartItemRepository.Verify(
             repo => repo.DeleteListCartItem(It.Is<IEnumerable<CartItem>>(items => items.Count() == 1)), Times.Once);

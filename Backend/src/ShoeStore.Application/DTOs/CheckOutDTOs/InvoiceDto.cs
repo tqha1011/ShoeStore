@@ -11,24 +11,5 @@ public sealed record InvoiceDto(
     InvoiceStatus Status,
     decimal ShippingFee,
     decimal FinalPrice,
-    DateTime CreatedAt,
-    List<VoucherDto> Vouchers,
-    List<InvoiceDetailDto> Details
+    DateTime CreatedAt
 );
-
-public sealed record VoucherDto(
-    Guid VoucherPublicId,
-    string VoucherName,
-    string? VoucherDescription,
-    decimal Discount,
-    VoucherScope VoucherScope,
-    DiscountType DiscountType,
-    decimal MaxPriceDiscount,
-    decimal MinOrderPrice);
-
-public sealed record InvoiceDetailDto(
-    Guid InvoiceDetailPublicId,
-    int InvoiceId,
-    int ProductVariantId,
-    int Quantity,
-    decimal UnitPrice);
