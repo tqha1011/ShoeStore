@@ -28,4 +28,8 @@
         <ProjectReference Include="..\..\src\ShoeStore.Infrastructure\ShoeStore.Infrastructure.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="LoadTesting\" />
+    </ItemGroup>
+
 </Project>
