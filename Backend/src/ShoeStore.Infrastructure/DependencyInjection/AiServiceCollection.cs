@@ -19,14 +19,14 @@ public static class AiServiceCollection
 
         var embeddingModel = configuration[$"Chatbot:{provider}:EmbeddingModel"] ??
                              throw new InvalidOperationException("Chatbot embedding model is missing");
+        
+        var summaryModel = configuration[$"Chatbot:{provider}:SmallModel"] ??
+                           throw new InvalidOperationException("Chatbot summary model is missing");
 
         if (provider == "Ollama")
         {
             var url = configuration[$"Chatbot:{provider}:Url"] ??
                       throw new InvalidOperationException("Chatbot url is missing");
-
-            var summaryModel = configuration[$"Chatbot:{provider}:SmallModel"] ??
-                               throw new InvalidOperationException("Chatbot summary model is missing");
 
             var endpoint = new Uri(url);
 

@@ -38,7 +38,7 @@ public partial class UpdateTitleSessionService(
                     string newTitle;
                     if (requestDto.IsGenerateCampaign)
                     {
-                        newTitle = ExtractCampaignTitle(session.Title);
+                        newTitle = ExtractCampaignTitle(requestDto.Content);
                     }
                     else
                     {
@@ -47,7 +47,7 @@ public partial class UpdateTitleSessionService(
                     }
                     session.Title = newTitle;
                     await unitOfWork.SaveChangesAsync(stoppingToken);
-                    logger.LogInformation($"Update title session {session.PublicId} completed");
+                    logger.LogInformation("Update title session {SessionPublicId} completed", session.PublicId);
                 }
             }
             catch (Exception ex)

@@ -25,6 +25,7 @@ public class ChatAskAboutProductsAsyncTests
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IProductEmbeddingRepository> _productEmbeddingRepository = new();
     private readonly Mock<IUserRepository> _userRepository = new();
+    private readonly Mock<IUpdateTitleQueue> _queue = new();
 
     public ChatAskAboutProductsAsyncTests()
     {
@@ -36,7 +37,8 @@ public class ChatAskAboutProductsAsyncTests
             _unitOfWork.Object,
             _embeddingGenerator.Object,
             _productEmbeddingRepository.Object,
-            _userRepository.Object);
+            _userRepository.Object,
+            _queue.Object);
     }
 
     [Fact]

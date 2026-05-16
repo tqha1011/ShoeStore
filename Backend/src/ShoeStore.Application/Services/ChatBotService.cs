@@ -25,7 +25,8 @@ public class ChatBotService(
     IUnitOfWork unitOfWork,
     IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
     IProductEmbeddingRepository productEmbeddingRepository,
-    IUserRepository userRepository)
+    IUserRepository userRepository,
+    IUpdateTitleQueue queue)
     : IChatBotService
 {
     public async Task<ErrorOr<IAsyncEnumerable<string>>> GenerateCampaignAsync(CreateCampaignRequestDto requestDto,
@@ -86,8 +87,19 @@ public class ChatBotService(
                     executionSetting,
                     cancellationToken: token);
         }
+        
+        Func<string, Task> onCompleted = async (botResponse) =>
+        {
+            await queue.EnqueueAsync(new UpdateTitleRequestDto
+            (
+                requestDto.PublicSessionId,
+                botResponse,
+                userId.Value,
+                true
+            ), token);
+        };
 
-        return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value, token));
+        return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value,onCompleted,token));
     }
 
     public async Task<ErrorOr<IAsyncEnumerable<string>>> ChatAskAboutStatisticsAsync(Guid publicSessionId,
@@ -101,6 +113,8 @@ public class ChatBotService(
         if(userId == null) return Error.NotFound("User.NotFound", "User not found");
         var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(publicSessionId,userId.Value ,token);
         if (sessionId == null) return Error.NotFound("ChatSession.NotFound", "Chat session not found");
+        var historyChat = await chatMessageRepository.GetHistoryChatMessageAsync(sessionId.Value, token);
+        var isFirstMessage = historyChat.Count == 0;
         var totalRevenue = summaryData.Value.TotalRevenue;
         var totalOrders = summaryData.Value.TotalOrders;
         var executionSetting = BuildExecutionSettings();
@@ -135,7 +149,6 @@ public class ChatBotService(
             var top3 = top3Products.Value.Count > 2
                 ? $"{top3Products.Value[2].ProductName} - Revenue: {top3Products.Value[2].TotalRevenue} VND - Total invoices for the product: {top3Products.Value[2].TotalInvoices}"
                 : "Updating";
-            var historyChat = await chatMessageRepository.GetHistoryChatMessageAsync(sessionId.Value, token);
             var reverseHistoryChat = historyChat.OrderBy(m => m.CreatedAt)
                 .Select(c => new
                 {
@@ -176,8 +189,21 @@ public class ChatBotService(
                     executionSetting,
                     cancellationToken: token);
         }
-
-        return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value, token));
+        Func<string, Task>? onCompleted = null;
+        if (isFirstMessage)
+        {
+            onCompleted = async (_) =>
+            {
+                await queue.EnqueueAsync(new UpdateTitleRequestDto
+                (
+                    publicSessionId,
+                    messageRequestDto.Content,
+                    userId.Value,
+                    false
+                ), token);
+            };
+        }
+        return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value,onCompleted,token));
     }
 
     public async Task<ErrorOr<IAsyncEnumerable<string>>> ChatAskAboutProductsAsync(Guid publicSessionId,
@@ -187,8 +213,8 @@ public class ChatBotService(
         if(userId == null) return Error.NotFound("User.NotFound", "User not found");
         var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(publicSessionId,userId.Value ,token);
         if (sessionId == null) return Error.NotFound("ChatSession.NotFound", "Chat session not found");
-
         var historyChat = await chatMessageRepository.GetHistoryChatMessageAsync(sessionId.Value, token);
+        var isFirstMessage = historyChat.Count == 0;
         var reverseHistoryChat = historyChat.OrderBy(m => m.CreatedAt)
             .Select(c => new
             {
@@ -253,8 +279,22 @@ public class ChatBotService(
                     executionSetting,
                     cancellationToken: token);
         }
-
-        return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value, token));
+        
+        Func<string, Task>? onCompleted = null;
+        if (isFirstMessage)
+        {
+            onCompleted = async (_) =>
+            {
+                await queue.EnqueueAsync(new UpdateTitleRequestDto
+                (
+                    publicSessionId,
+                    messageRequestDto.Content,
+                    userId.Value,
+                    false
+                ), token);
+            };
+        }
+        return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value,onCompleted,token));
     }
 
     private async Task<ErrorOr<StatisticsSummaryResponseDto>> GetSummaryData(CancellationToken token)
@@ -268,7 +308,7 @@ public class ChatBotService(
     }
 
     private async IAsyncEnumerable<string> GenerateAnswerAsync(
-        IAsyncEnumerable<StreamingChatMessageContent> response, int sessionId,
+        IAsyncEnumerable<StreamingChatMessageContent> response, int sessionId,Func<string, Task>? onStreamCompleted,
         [EnumeratorCancellation] CancellationToken token)
     {
         var message = new StringBuilder();
@@ -285,9 +325,10 @@ public class ChatBotService(
         }
         finally
         {
+            var completeBotResponse = message.ToString();
             var newAssistantMessage = new ChatMessage
             {
-                Content = message.ToString(),
+                Content = completeBotResponse,
                 SessionId = sessionId,
                 CreatedAt = DateTime.UtcNow,
                 TokenCount = message.Length / 4, // Rough token estimation
@@ -295,6 +336,10 @@ public class ChatBotService(
             };
             chatMessageRepository.Add(newAssistantMessage);
             await unitOfWork.SaveChangesAsync(token);
+            if (onStreamCompleted != null)
+            {
+                await onStreamCompleted(completeBotResponse);
+            }
         }
     }
 
