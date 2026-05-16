@@ -38,9 +38,9 @@
       - shoestore-backend
     
     volumes:
-      - redis_data:/data
+      - redis_shoestore_data:/data
     command:
-      - redis-server --requirepass ${REDIS_PASSWORD}
+      redis-server --requirepass ${REDIS_PASSWORD}
 
 
 networks:
@@ -50,5 +50,5 @@ networks:
     driver: bridge
     
 volumes:
-  redis_data:
+  redis_shoestore_data:
 
