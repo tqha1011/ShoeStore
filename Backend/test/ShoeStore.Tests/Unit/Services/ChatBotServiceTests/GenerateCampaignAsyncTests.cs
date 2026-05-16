@@ -26,6 +26,7 @@ public class GenerateCampaignAsyncTests
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IProductEmbeddingRepository> _productEmbeddingRepository = new();
     private readonly Mock<IUserRepository> _userRepository = new();
+    private readonly Mock<IUpdateTitleQueue> _queue = new();
 
     public GenerateCampaignAsyncTests()
     {
@@ -37,7 +38,8 @@ public class GenerateCampaignAsyncTests
             _unitOfWork.Object,
             _embeddingGenerator.Object,
             _productEmbeddingRepository.Object,
-            _userRepository.Object);
+            _userRepository.Object,
+            _queue.Object);
     }
 
     [Fact]

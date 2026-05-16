@@ -43,6 +43,7 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddScoped<IAddressService, AddressService>();
         services.AddScoped<IChatMessageService, ChatMessageService>();
+        services.AddSingleton<IUpdateTitleQueue, UpdateTitleService>();
         return services;
     }
 }
