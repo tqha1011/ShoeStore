@@ -1,13 +1,25 @@
 global: 
-  scrape_interval: 15s
+  scrape_interval: 15s # pull the data from the shoe store application, interval of 15 seconds
   
 storage:
   tsdb: 
     out_of_order_time_window: 10m
     
+rule_files: 
+  - "alert.rules.yml" # the alert rules file, which contains the alerting rules for the shoe store application
+
+
 scrape_configs:
-  - job_name: 'shoe-store-prometheus'
+  - job_name: 'shoestore-prometheus' # tracking prometheus itself
     static_configs:
       - targets: ['localhost:9090']
+  
+  - job_name: 'shoestore-api' # tracking the shoe store application
+    static_configs:
+      - targets: ['ShoeStore_api:8080'] # tracking the api container, using the container name as the target
+        
+  - job_name: 'shoestore_cache' # tracking the cache container
+    static_configs:
+      - targets: ['shoestore_cache:6379'] # tracking the cache container, using the container name as the target
     
   
