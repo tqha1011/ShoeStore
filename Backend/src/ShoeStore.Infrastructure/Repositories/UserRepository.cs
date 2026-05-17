@@ -43,4 +43,14 @@ public class UserRepository(AppDbContext context) : GenericRepository<User, int>
             .Select(x => x.Id)
             .FirstOrDefaultAsync(token);
     }
+
+    public async Task<string?> GetUserDefaultAddressAsync(Guid userId, CancellationToken token)
+    {
+        return await DbSet.AsNoTracking()
+            .Where(u => u.PublicId == userId)
+            .SelectMany(u => u.UserAddresses)
+            .Where(a => a.IsDefault)
+            .Select(a => a.Address)
+            .FirstOrDefaultAsync(token);
+    }
 }

@@ -27,3 +27,5 @@ public sealed record UserCartItemResponseDto
     
     public bool IsSelling { get; set; }
 }
+
+public sealed record CartItemResponseDto(List<UserCartItemResponseDto> Items,decimal ShippingFee);
