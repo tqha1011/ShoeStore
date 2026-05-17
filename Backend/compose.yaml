@@ -67,8 +67,8 @@
       - monitoring
       - shoestore-backend
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=${Grafana__Admin__User:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${Grafana__Admin__Password:-admin}
     volumes:
       - grafana_data:/var/lib/grafana
     depends_on:
