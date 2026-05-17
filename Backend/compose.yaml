@@ -41,14 +41,49 @@
       - redis_shoestore_data:/data
     command:
       redis-server --requirepass ${ConnectionStrings__RedisPassword}
-
+    
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: shoestore_prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+      - shoestore-backend
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-remote-write-receiver'
+  
+  grafana:
+    image: grafana/grafana:latest
+    container_name: shoestore_grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring
+      - shoestore-backend
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
 
 networks:
   shoestore-frontend:
     driver: bridge
   shoestore-backend:
     driver: bridge
+  monitoring:
+    driver: bridge
     
 volumes:
   redis_shoestore_data:
+  grafana_data:
+  
 
