@@ -66,7 +66,7 @@ Built with scalability and performance in mind, the project leverages a reactive
 
 
 ## Deployment
-### 1. 🐳 Deploy Backend (ASP.NET Core API)
+### 1. 🐳 Deploy Backend with Docker (ASP.NET Core API)
 If you don't have `Docker`, get it from [official website](https://www.docker.com/) to install `Docker`
 
 Open your terminal and navigate to `Backend` folder
@@ -77,7 +77,11 @@ Run the below command:
 ```
 Navigate to `http://localhost:<port>/scalar/v1` to see the **API Docs**
 
-### 2. 📱 Deploy Frontend (Android App)
+### 2. Use deploy link service with Azure App Service
+- We have deployed the backend API to Azure App Service, you can access it via this link:
+[API Docs](https://deploy-service-h6acgba9dkc0gvcw.eastasia-01.azurewebsites.net/scalar/v1)
+
+### 3. 📱 Deploy Frontend (Android App)
 **Requirement:** Install [Android Studio](https://developer.android.com/studio) && `JDK 17`
 
 #### Step 1: 
@@ -88,7 +92,38 @@ Navigate to `http://localhost:<port>/scalar/v1` to see the **API Docs**
 - Open `app/src/main/res/values/strings.xml` to change the backend's IP Address
 - If you run emulator, simply change the `localhost` to `http://10.0.2.2:<port>`
 
+## Performance Testing
+- We have implemented load testing for the backend API performance using **[k6](https://github.com/grafana/k6)**.
+- The load test script is written in `JavaScript` and is located in the `Backend/test/ShoeStore.Tests/LoadTesting` folder.
+- **Test Scenario:** Unlike a simple ping test, this script simulates a realistic e-commerce user funnel (User Journey). Multiple virtual users (VUs) will concurrently perform:
+    1. Authenticating and acquiring JWT Tokens.
+    2. Searching for products randomly.
+    3. Viewing specific product details.
+    4. Placing orders (Checkout) to heavily test the PostgreSQL database's transactional integrity and concurrency handling (Row-level locks, stock deduction).
+### 🛠️ Configuration & Execution
 
+By default, the script targets the local environment (`http://localhost:8080`).
+
+**Testing against the Deployed Environment (Azure/Cloud):**
+If you want to run the load test against the live server, you must open the `loadtest.js` file and replace all instances of `http://localhost:8080` with the actual deployed base URL (e.g., `https://deploy-service-h6acgba9dkc0gvcw.eastasia-01.azurewebsites.net`).
+
+**Configure Test Parameters:**
+- The script is designed to run for a total duration of 1m15s with a ramp-up, peak load and ramp-down phase. You can adjust the `stages` in the `options` object to simulate different load patterns (e.g., longer peak duration, higher user count, etc.).
+- Do not change the data setup in the script (e.g., user credentials, product IDs,...) unless you have a specific reason to do so, as it is tailored to the existing database state.
+``` javascript
+export const options = {
+  stages: [
+    { duration: '15s', target: 50 },  // Up to 50 users in 15 seconds (warm-up)
+    { duration: '45s', target: 300 }, // (peak load) Modify target as needed to simulate more users
+    { duration: '15s', target: 0 },   // back-down: decrease to 0 users in 15 seconds (cool-down)
+  ],
+};
+```
+**Run the Load Test:**
+- Navigate to `Backend/test/ShoeStore.Tests/LoadTesting` folder and run the below command to execute the load test. You must provide the testing password via environment variables (contact the repository owner if you don't have this)
+```bash
+  k6 run -e TEST_PASSWORD="contact_me_tranquangha2006@gmail.com" loadtest.js
+```
 
 ## Documentation
 

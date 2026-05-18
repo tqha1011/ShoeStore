@@ -13,10 +13,17 @@ public class ChatSessionRepository(AppDbContext context)
         return DbSet.Where(s => s.UserId == userId && s.IsActive);
     }
 
-    public async Task<int?> GetChatSessionIdByPublicIdAsync(Guid publicSessionId,int userId ,CancellationToken token)
+    public async Task<int?> GetChatSessionIdByPublicIdAsync(Guid publicSessionId, int userId, CancellationToken token)
     {
         return await DbSet.AsNoTracking()
             .Where(s => s.PublicId == publicSessionId && s.IsActive && s.UserId == userId).Select(c => c.Id)
+            .FirstOrDefaultAsync(token);
+    }
+
+    public async Task<ChatSession?> GetChatSessionByPublicIdAsync(Guid publicSessionId, int userId, CancellationToken token)
+    {
+        return await DbSet
+            .Where(s => s.PublicId == publicSessionId && s.IsActive && s.UserId == userId)
             .FirstOrDefaultAsync(token);
     }
 }

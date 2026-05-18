@@ -5,7 +5,7 @@ namespace ShoeStore.Application.Interface.CheckoutInterface;
 
 public interface ICheckOutService
 {
-    Task<ErrorOr<CheckOutResponseDto>> PrepareCheckOutAsync(List<CheckOutRequestDto> checkOutList,
+    Task<ErrorOr<CheckOutResponseDto>> PrepareCheckOutAsync(List<CheckOutRequestDto> checkOutList,Guid publicUserId,
         CancellationToken token);
 
     Task<ErrorOr<InvoiceDto>> PlaceOrderAsync(PlaceOrderRequestDto placeOrderRequestDto, Guid publicUserId,

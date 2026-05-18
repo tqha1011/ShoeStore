@@ -14,4 +14,6 @@ public interface IUserRepository : IGenericRepository<User, int>
     Task<bool> CheckUserExistsAsync(Guid publicId, CancellationToken token);
     
     Task<int?> GetUserIdByPublicIdAsync(Guid publicId, CancellationToken token);
+    
+    Task<string?> GetUserDefaultAddressAsync(Guid userId, CancellationToken token);
 }

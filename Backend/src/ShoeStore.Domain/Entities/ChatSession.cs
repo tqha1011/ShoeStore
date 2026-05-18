@@ -6,7 +6,7 @@ public class ChatSession : Entity<int>
 {
     public Guid PublicId { get; set; } = Guid.NewGuid();
 
-    public string? Title { get; set; }
+    public string Title { get; set; } = "New Chat";
 
     public required int UserId { get; set; }
 
