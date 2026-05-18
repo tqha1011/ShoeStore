@@ -1,6 +1,5 @@
 using Moq;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
@@ -45,7 +44,7 @@ public class PrepareCheckOutTests
             .Setup(x => x.GetListVariantsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(fakeProductVariants);
 
-        var result = await _checkOutService.PrepareCheckOutAsync(fakeRequest, CancellationToken.None);
+        var result = await _checkOutService.PrepareCheckOutAsync(fakeRequest,Guid.NewGuid(),CancellationToken.None);
 
         Assert.True(result.IsError);
         Assert.Equal("Variant.NotFound", result.FirstError.Code);
@@ -81,7 +80,7 @@ public class PrepareCheckOutTests
             .Setup(x => x.GetListVariantsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(fakeProductVariants);
 
-        var result = await _checkOutService.PrepareCheckOutAsync(fakeRequest, CancellationToken.None);
+        var result = await _checkOutService.PrepareCheckOutAsync(fakeRequest,Guid.NewGuid(),CancellationToken.None);
 
         Assert.False(result.IsError);
         var item = Assert.Single(result.Value.Items);
@@ -118,7 +117,7 @@ public class PrepareCheckOutTests
             .Setup(x => x.GetListVariantsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(fakeProductVariants);
 
-        var result = await _checkOutService.PrepareCheckOutAsync(fakeRequest, CancellationToken.None);
+        var result = await _checkOutService.PrepareCheckOutAsync(fakeRequest,Guid.NewGuid() ,CancellationToken.None);
 
         Assert.False(result.IsError);
 

@@ -5,6 +5,7 @@ using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Application.Interface.UserInterface;
+using ShoeStore.Application.Utilities;
 using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Services;
@@ -24,45 +25,10 @@ public class CartItemService(
 
         if (cartItem == null) return Error.NotFound("CartItem.NotFound", "Cart item not found.");
 
-        var productVariant = await productVariantRepository.GetByGuidAsync(dto.NewProductVariantId, token);
+        var productVariant = await productVariantRepository.GetByIdWithIncludesAsync(cartItem.ProductVariantId, token);
 
         if (productVariant == null)
             return Error.NotFound("ProductVariant.NotFound", "Product Variant not found.");
-
-        if (cartItem.ProductVariantId != productVariant.Id)
-        {
-            var existingItem =
-                await cartItemRepository.GetExistCartItemAsync(cartItem.UserId, productVariant.Id, token);
-            if (existingItem != null)
-            {
-                existingItem.Quantity += dto.Quantity;
-                if (existingItem.Quantity > productVariant.Stock)
-                    return Error.Validation("CartItem.QuantityExceedsStock",
-                        "The quantity exceeds the available stock.");
-
-                cartItemRepository.Update(existingItem);
-                cartItemRepository.Delete(cartItem);
-                await unitOfWork.SaveChangesAsync(token);
-                return new UserCartItemResponseDto
-                {
-                    CartItemId = existingItem.PublicId,
-                    Quantity = existingItem.Quantity,
-                    ColorId = productVariant.ColorId,
-                    ColorName = productVariant.Color?.ColorName ?? string.Empty,
-                    SizeId = productVariant.SizeId,
-                    Size = productVariant.Size?.Size ?? 0,
-                    Price = productVariant.Price,
-                    Stock = productVariant.Stock,
-                    ImageUrl = productVariant.ImageUrl,
-                    ProductVariantId = productVariant.PublicId,
-                    ProductName = productVariant.Product?.ProductName ?? string.Empty,
-                    Brand = productVariant.Product?.Brand ?? string.Empty,
-                    IsSelling = productVariant.IsSelling
-                };
-            }
-
-            cartItem.ProductVariantId = productVariant.Id;
-        }
 
         cartItem.Quantity = finalQuantity;
         if (cartItem.Quantity > productVariant.Stock)
@@ -169,12 +135,14 @@ public class CartItemService(
         };
     }
 
-    public async Task<ErrorOr<List<UserCartItemResponseDto>>> GetCartItemsByUserIdAsync(Guid userPublicId,
+    public async Task<ErrorOr<CartItemResponseDto>> GetCartItemsByUserIdAsync(Guid userPublicId,
         CancellationToken token)
     {
         var user = await userRepository.CheckUserExistsAsync(userPublicId, token);
         if (!user) return Error.NotFound("User.NotFound", "User not found.");
         
+        var userAddress = await userRepository.GetUserDefaultAddressAsync(userPublicId, token);
+        var shippingFee = userAddress.CalculateShip();
         var cartItems = cartItemRepository.GetCartItemsByUserId(userPublicId);
         var response = await cartItems.Select(x => new UserCartItemResponseDto
         {
@@ -192,6 +160,7 @@ public class CartItemService(
             ProductVariantId = x.ProductVariant.PublicId,
             IsSelling = x.ProductVariant.IsSelling
         }).ToListAsync(token);
-        return response;
+        var result = new CartItemResponseDto(response, shippingFee);
+        return result;
     }
 }

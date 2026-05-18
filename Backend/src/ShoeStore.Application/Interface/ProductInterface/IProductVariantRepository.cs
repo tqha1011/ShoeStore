@@ -8,4 +8,6 @@ public interface IProductVariantRepository : IGenericRepository<ProductVariant, 
     Task<ProductVariant?> GetByGuidAsync(Guid productGuid, CancellationToken token);
 
     Task<List<ProductVariant>> GetListVariantsAsync(List<Guid> productVariantIds, CancellationToken token);
+    
+    Task<ProductVariant?> GetByIdWithIncludesAsync(int id, CancellationToken token);
 }

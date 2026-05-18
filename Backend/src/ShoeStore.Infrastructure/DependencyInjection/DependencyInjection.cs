@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.AddressInterface;
 using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Interface.CartItemInterface;
+using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
@@ -13,7 +14,7 @@ using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Application.Interface.Strategies;
 using ShoeStore.Application.Interface.UploadImage;
 using ShoeStore.Application.Interface.UserInterface;
-using ShoeStore.Application.Services;
+using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Infrastructure.Authentication;
 using ShoeStore.Infrastructure.Authentication.Strategies;
 using ShoeStore.Infrastructure.Cloudinary;
@@ -21,7 +22,6 @@ using ShoeStore.Infrastructure.Data;
 using ShoeStore.Infrastructure.Notification;
 using ShoeStore.Infrastructure.Repositories;
 using ShoeStore.Infrastructure.RestorePassService;
-using ShoeStore.Application.Interface.VoucherInterface;
 
 namespace ShoeStore.Infrastructure.DependencyInjection;
 
@@ -36,10 +36,11 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString,
                 opt
-                    => opt.EnableRetryOnFailure(
-                        5,
-                        TimeSpan.FromSeconds(30),
-                        null)).UseSnakeCaseNamingConvention());
+                    => opt.UseVector()
+                        .EnableRetryOnFailure(
+                            5,
+                            TimeSpan.FromSeconds(30),
+                            null)).UseSnakeCaseNamingConvention());
 
         services.AddHealthChecks().AddDbContextCheck<AppDbContext>("/api/health");
         services.AddScoped<IPasswordHash, PasswordHasher>();
@@ -56,18 +57,20 @@ public static class DependencyInjection
         services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
         services.AddScoped<ICartItemRepository, CartItemRepository>();
         services.AddHttpContextAccessor();
-        services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddScoped<IInvoiceRepository, InvoiceRepository>();
-        services.AddScoped<IInvoiceService, InvoiceService>();
         services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<IColorRepository, ColorRepository>();
         services.AddScoped<ISizeRepository, SizeRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IVoucherRepository, VoucherRepository>();
-        services.AddScoped<IVoucherService, VoucherService>();
         services.AddScoped<IUserVoucherRepository, UserVoucherRepository>();
         services.AddScoped<IGoogleValidator, GoogleValidator>();
+        services.AddSingleton<INotificationQueue, NotificationQueue>();
+        services.AddScoped<IChatSessionRepository, ChatSessionRepository>();
+        services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
+        services.AddScoped<IProductEmbeddingRepository, ProductEmbeddingRepository>();
+        services.AddScoped<IAddressRepository, AddressRepository>();
         return services;
     }
 }

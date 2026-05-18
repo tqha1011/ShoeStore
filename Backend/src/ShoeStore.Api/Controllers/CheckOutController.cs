@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -14,6 +15,7 @@ namespace ShoeStore.Api.Controllers;
 /// </summary>
 /// <param name="checkOutService">Service for handling checkout and order operations.</param>
 [Route("api/checkout")]
+[ApiVersion(1)]
 [ApiController]
 [Authorize]
 public class CheckOutController(ICheckOutService checkOutService) : ControllerBase
@@ -49,13 +51,13 @@ public class CheckOutController(ICheckOutService checkOutService) : ControllerBa
     public async Task<IActionResult> PrepareCheckOut(List<CheckOutRequestDto> checkOutList, CancellationToken token)
     {
         var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (validUser == null)
+        if (validUser == null || !Guid.TryParse(validUser, out var publicUserId))
             return Unauthorized(new
             {
                 message = "You are not authorized to perform this action.",
                 description = "Please login to your account and try again."
             });
-        var result = await checkOutService.PrepareCheckOutAsync(checkOutList, token);
+        var result = await checkOutService.PrepareCheckOutAsync(checkOutList,publicUserId, token);
 
         var response = result.Match<IActionResult>(
             responseDto => Ok(responseDto),
@@ -90,7 +92,7 @@ public class CheckOutController(ICheckOutService checkOutService) : ControllerBa
     /// <param name="placeOrderRequestDto">The complete order details for placement.</param>
     /// <param name="fromUserCart">Flag indicating if order is from user's saved cart (true) or direct checkout (false).</param>
     /// <param name="token">Cancellation token for the request.</param>
-    /// <response code="201">Order placed successfully. Returns order confirmation and invoice details.</response>
+    /// <response code="200">Order placed successfully. Returns order confirmation and invoice details.</response>
     /// <response code="404">Not found; one or more product variants or cart items do not exist.</response>
     /// <response code="401">Unauthorized; user must be logged in with a valid JWT token.</response>
     /// <response code="429">Too many requests; rate limit exceeded for this user.</response>
@@ -99,7 +101,7 @@ public class CheckOutController(ICheckOutService checkOutService) : ControllerBa
     ///     An action result containing the order confirmation on success, or an error response describing what went
     ///     wrong.
     /// </returns>
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(InvoiceDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
@@ -123,7 +125,7 @@ public class CheckOutController(ICheckOutService checkOutService) : ControllerBa
             await checkOutService.PlaceOrderAsync(placeOrderRequestDto, publicUserId, fromUserCart, token);
 
         var response = result.Match<IActionResult>(
-            _ => Created(),
+            invoice => Ok(invoice),
             errors => errors[0].Code switch
             {
                 "Variant.NotFound" => NotFound(new

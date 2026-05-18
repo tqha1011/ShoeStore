@@ -2,7 +2,6 @@ using ErrorOr;
 using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
 using ShoeStore.Application.Extensions;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.CartItemInterface;
 using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.Common;
@@ -23,7 +22,7 @@ public class CheckOutService(
     IUserRepository userRepository) : ICheckOutService
 {
     public async Task<ErrorOr<CheckOutResponseDto>> PrepareCheckOutAsync(List<CheckOutRequestDto> checkOutList,
-        CancellationToken token)
+        Guid publicUserId,CancellationToken token)
     {
         // get variant list by variant id in check out list
         var variantIdList = checkOutList.Select(x => x.VariantId)
@@ -33,6 +32,9 @@ public class CheckOutService(
 
         if (variantsList.Count < variantIdList.Count)
             return Error.NotFound("Variant.NotFound", "One or more variants are deleted.");
+        
+        var userAddress = await userRepository.GetUserDefaultAddressAsync(publicUserId, token);
+        var shippingFee = userAddress.CalculateShip(); // 40k VND for user without address
 
         // transform a list to a dictionary to optimize performance
         // Use GroupBy to sum the quantity if it has duplicate variantId in check out list
@@ -59,7 +61,7 @@ public class CheckOutService(
             .ToList();
 
         var total = items.Sum(x => x.SubTotal);
-        var summary = new CheckOutSummaryDto(total, total);
+        var summary = new CheckOutSummaryDto(total, total,shippingFee);
 
         var warnings = items.Where(x => x.IsOutOfStock)
             .Select(x => $"{x.ProductName} is only have {x.StockAvailable} items.")
@@ -123,7 +125,7 @@ public class CheckOutService(
                 // If all stages execute successfully, commit the transaction, otherwise rollback the transaction
                 await unitOfWork.SaveChangesAsync(token);
                 await unitOfWork.CommitTransactionAsync(token);
-                return invoice.MapToInvoiceDto(vouchersApplied, invoice.InvoiceDetails.ToList());
+                return invoice.MapToInvoiceDto();
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -173,7 +175,7 @@ public class CheckOutService(
             return variant.Price * quantity;
         }).Sum();
 
-        var shippingFee = CalculateShippingFee(placeOrderRequestDto.Address);
+        var shippingFee = placeOrderRequestDto.Address.CalculateShip();
 
         var invoice = new Invoice
         {
@@ -228,19 +230,6 @@ public class CheckOutService(
         }
 
         return Result.Success;
-    }
-
-    private static decimal CalculateShippingFee(string shippingAddress)
-    {
-        if (string.IsNullOrWhiteSpace(shippingAddress)) return 25000; // 25k VND for empty address
-
-        var addressLower = shippingAddress.ToLower();
-        if (addressLower.Contains("Hồ Chí Minh", StringComparison.OrdinalIgnoreCase) ||
-            addressLower.Contains("HCM", StringComparison.OrdinalIgnoreCase) ||
-            addressLower.Contains("TPHCM", StringComparison.OrdinalIgnoreCase))
-            return 20000; // 20k VND for Ho Chi Minh City
-
-        return 35000; // 35k VND for other provinces
     }
 
     private static List<Voucher?> ValidateVoucher(List<Voucher?> vouchers, decimal subTotal)

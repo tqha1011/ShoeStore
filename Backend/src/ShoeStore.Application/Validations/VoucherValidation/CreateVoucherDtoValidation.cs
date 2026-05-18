@@ -1,5 +1,5 @@
 using FluentValidation;
-using ShoeStore.Application.DTOs.VoucherDtos;
+using ShoeStore.Application.DTOs.VoucherDTOs;
 
 namespace ShoeStore.Application.Validations.VoucherValidation;
 

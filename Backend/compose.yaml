@@ -5,40 +5,50 @@
     build:
       context: .
       dockerfile: src/ShoeStore.Api/Dockerfile
+      target: build
+    
+    command:
+      dotnet watch run --no-hot-reload
+    
+    env_file:
+      - .env
     
     environment:
-      - ConnectionStrings__DefaultConnection=${DEFAULT_CONNECTION}
-      - Jwt__Key=${JWT_KEY}
-      - Jwt__Issuer=${JWT_ISSUER}
-      - Jwt__Audience=${JWT_AUDIENCE}
-      - GoogleAuthentication__ClientId=${GOOGLEAUTHENTICATION_CLIENTID}
-      - FacebookAuthentication__Url=${FACEBOOKAUTHENTICATION_URL}
-      - GoogleAuthentication__AppPassword=${GOOGLEAUTHENTICATION_APPPASSWORD}
-      - Cloudinary__CloudName=${CLOUDINARY_CLOUDNAME}
-      - Cloudinary__ApiKey=${CLOUDINARY_APIKEY}
-      - Cloudinary__ApiSecret=${CLOUDINARY_APISECRET}
-      - Cloudinary__UploadPreset=${CLOUDINARY_UPLOADPRESET}
-      - Sepay__ApiKey=${SEPAY_APIKEY}
-      - ConnectionStrings__RedisConnection=${REDIS_CONNECTION}
+      - ASPNETCORE_URLS=http://+:8080
     
     ports:
       - "8080:8080"
     networks:
-      - frontend
-      - backend
+      - shoestore-frontend
+      - shoestore-backend
+    
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: ./src
   
   cache:
     image: redis:8.6.1-alpine
     container_name: shoestore_cache
-    ports:
-      - "6379:6379"
     networks:
-      - backend
+      - shoestore-backend
+    
+    volumes:
+      - redis_shoestore_data:/data
+    command:
+      redis-server --requirepass ${ConnectionStrings__RedisPassword}
 
 
 networks:
-  frontend:
+  shoestore-frontend:
     driver: bridge
-  backend:
+  shoestore-backend:
     driver: bridge
+    
+volumes:
+  redis_shoestore_data:
 

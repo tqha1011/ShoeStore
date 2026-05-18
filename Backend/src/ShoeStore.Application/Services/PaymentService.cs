@@ -1,11 +1,12 @@
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Caching.Hybrid;
+using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.Common;
+using ShoeStore.Application.Interface.InvoiceInterface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
-using ShoeStore.Application.Interface.InvoiceInterface;
 
 namespace ShoeStore.Application.Services;
 
@@ -13,7 +14,8 @@ public class PaymentService(
     IInvoiceRepository invoiceRepository,
     IPaymentRepository paymentRepository,
     IPaymentTransactionRepository paymentTransactionRepository,
-    IUnitOfWork unitOfWork) : IPaymentService
+    IUnitOfWork unitOfWork,
+    HybridCache cache) : IPaymentService
 {
     public async Task<bool> ProcessSepayWebhookAsync(SepayWebhookDto sepayWebhookDto, CancellationToken token)
     {
@@ -44,6 +46,7 @@ public class PaymentService(
         invoice.PaymentTransactions.Add(paymentTransaction);
         invoice.Status = InvoiceStatus.Paid;
         await unitOfWork.SaveChangesAsync(token);
+        await cache.RemoveByTagAsync(CacheTag.Statistic, token);
         return true;
     }
 

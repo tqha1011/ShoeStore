@@ -1,9 +1,8 @@
-﻿namespace ShoeStore.Application.DTOs.ProductDTOs;
+namespace ShoeStore.Application.DTOs.ProductDTOs;
 
-public class ProductBaseDto
+public abstract class ProductBaseDto
 {
-    public required string ProductName { get; set; }
+    public string? ProductName { get; set; }
     public string? Brand { get; set; }
-
-    public int CategoryId { get; set; }
+    public int? CategoryId { get; set; }
 }

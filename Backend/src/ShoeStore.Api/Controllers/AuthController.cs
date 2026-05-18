@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using ShoeStore.Application.DTOs.AuthDTOs;
@@ -11,6 +12,7 @@ namespace ShoeStore.Api.Controllers;
 /// </summary>
 /// <param name="authService"></param>
 [Route("api/auth")]
+[ApiVersion(1)]
 [ApiController]
 public class AuthController(IAuthService authService) : ControllerBase
 {
