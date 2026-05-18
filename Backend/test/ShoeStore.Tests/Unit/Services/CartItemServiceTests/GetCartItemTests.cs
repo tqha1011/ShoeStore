@@ -62,6 +62,8 @@ public class GetCartItemTests
 
         _userRepository.Setup(x => x.CheckUserExistsAsync(userPublicId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
+        _userRepository.Setup(x => x.GetUserDefaultAddressAsync(userPublicId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
         _cartItemRepository.Setup(x => x.GetCartItemsByUserId(userPublicId))
             .Returns(fakeCartItems);
 
@@ -71,9 +73,10 @@ public class GetCartItemTests
         // Assert
         Assert.False(result.IsError);
         var cartItems = result.Value;
-        Assert.Single(cartItems);
+        Assert.Equal(40000, cartItems.ShippingFee);
+        Assert.Single(cartItems.Items);
 
-        var cartItem = cartItems[0];
+        var cartItem = cartItems.Items[0];
         Assert.Equal(cartItemPublicId, cartItem.CartItemId);
         Assert.Equal(2, cartItem.Quantity);
         Assert.Equal(variantPublicId, cartItem.ProductVariantId);
