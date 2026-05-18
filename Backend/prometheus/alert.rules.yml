@@ -1,0 +1,38 @@
+groups:
+  - name: shoe-store-api-alerts
+    rules:
+      - alert: PrometheusDown
+        expr: up{job="shoestore-prometheus"} == 0
+        for: 1m # Alert will fire if the instance is down for more than 1 minute
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus {{ $labels.instance }} down"
+          description: "The instance {{ $labels.instance }} has been down for more than 1 minutes."
+      
+      - alert: ServerDown
+        expr: up{job="shoestore_api"} == 0 # track the job_name in prometheus.yml, which is shoestore_api
+        for: 30s # Alert will fire if the instance is down for more than 30 seconds
+        labels:
+          severity: critical
+        annotations:
+          summary: "ShoeStore API {{ $labels.instance }} down"
+          description: "The instance {{ $labels.instance }} has been down for more than 30 seconds."
+      
+      - alert: HighRequestLatency
+        expr: rate(http_request_duration_seconds_sum[1m]) / rate(http_request_duration_seconds_count[1m]) > 2.0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High request latency on {{ $labels.instance }}"
+          description: "The average request latency on api has been above 2 seconds for more than 1 minute."
+          
+      - alert: CacheDown
+        expr: up{job="shoestore_cache"} == 0
+        for: 30s # Alert will fire if the instance is down for more than 30 seconds
+        labels:
+          severity: critical
+        annotations:
+          summary: "Cache {{ $labels.instance }} down"
+          description: "The cache instance {{ $labels.instance }} has been down for more than 30 seconds."
