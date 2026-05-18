@@ -764,6 +764,15 @@ private fun formatCount(value: Int): String {
  * Format percentage value for display
  */
 private fun formatPercent(value: Double): String {
+    // Check nullable
+    if (value.isNaN()) return "N/A"
+
+    if (value.isInfinite()) return "New"
+
+    // Max only 999%
+    if (value > 999.0) return "> 999%"
+    if (value < -999.0) return "< -999%"
+
     val sign = when {
         value > 0.0 -> "+"
         value < 0.0 -> "-"
