@@ -12,7 +12,7 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
         // Automatically load environment variables from .env file
         Env.TraversePath().Load();
 
-        var connectionString = Environment.GetEnvironmentVariable("DEFAULT_CONNECTION");
+        var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 
         if (string.IsNullOrEmpty(connectionString))
             throw new InvalidOperationException(
