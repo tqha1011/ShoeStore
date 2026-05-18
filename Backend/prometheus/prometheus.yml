@@ -2,7 +2,7 @@ global:
   scrape_interval: 15s # pull the data from the shoe store application, interval of 15 seconds
   
 storage:
-  tsdb: 
+  tsdb: # time series database configuration
     out_of_order_time_window: 10m
     
 rule_files: 

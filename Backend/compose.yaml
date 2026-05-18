@@ -62,6 +62,7 @@
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml
+      - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -94,5 +95,6 @@ networks:
 volumes:
   redis_shoestore_data:
   grafana_data:
+  prometheus_data:
   
 
