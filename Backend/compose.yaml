@@ -42,6 +42,15 @@
     command:
       redis-server --requirepass ${ConnectionStrings__RedisPassword}
     
+  redis_exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: shoestore_redis_exporter
+    networks:
+      - shoestore-backend
+    environment:
+      - REDIS_ADDR=redis://shoestore_cache:6379
+      - REDIS_PASSWORD=${ConnectionStrings__RedisPassword}
+    
   prometheus:
     image: prom/prometheus:latest
     container_name: shoestore_prometheus

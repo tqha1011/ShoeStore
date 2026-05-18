@@ -20,6 +20,6 @@ scrape_configs:
         
   - job_name: 'shoestore_cache' # tracking the cache container
     static_configs:
-      - targets: ['shoestore_cache:6379'] # tracking the cache container, using the container name as the target
+      - targets: ['shoestore_redis_exporter:9121'] # tracking the cache container, using the container name as the target
     
   

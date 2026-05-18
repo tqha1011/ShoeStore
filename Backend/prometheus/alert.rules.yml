@@ -11,7 +11,7 @@ groups:
           description: "The instance {{ $labels.instance }} has been down for more than 1 minutes."
       
       - alert: ServerDown
-        expr: up{job="ShoeStore_api"} == 0
+        expr: up{job="shoestore_api"} == 0 # track the job_name in prometheus.yml, which is shoestore_api
         for: 30s # Alert will fire if the instance is down for more than 30 seconds
         labels:
           severity: critical
