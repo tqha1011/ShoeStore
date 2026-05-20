@@ -10,11 +10,11 @@ rule_files:
 
 
 scrape_configs:
-  - job_name: 'shoestore-prometheus' # tracking prometheus itself
+  - job_name: 'shoestore_prometheus' # tracking prometheus itself
     static_configs:
       - targets: ['localhost:9090']
   
-  - job_name: 'shoestore-api' # tracking the shoe store application
+  - job_name: 'shoestore_api' # tracking the shoe store application
     static_configs:
       - targets: ['ShoeStore_api:8080'] # tracking the api container, using the container name as the target
         
