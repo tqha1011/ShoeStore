@@ -1,9 +1,11 @@
 package com.example.shoestoreapp
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
@@ -93,6 +95,7 @@ private object Routes {
 
 @Suppress("DEPRECATION")
 class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         RetrofitInstance.init(this)
         super.onCreate(savedInstanceState)
@@ -105,11 +108,28 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavHost() {
     val navController = rememberNavController()
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
+    val token by tokenManager.getToken.collectAsState(initial = "LOADING")
+
+    LaunchedEffect(token) {
+        if (token == "LOADING") return@LaunchedEffect
+        if (token.isNullOrBlank()) {
+            val currentRoute = navController.currentDestination?.route
+            if (currentRoute != Routes.SIGN_IN && currentRoute != Routes.WELCOME) {
+                navController.navigateAfterLogout()
+            }
+            return@LaunchedEffect
+        }
+        if (JwtUtils.isTokenExpired(token)) {
+            tokenManager.clearAuthInfo()
+            navController.navigateAfterLogout()
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -267,6 +287,7 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenManager: TokenManager) {
     composable(Routes.ADMIN_PRODUCT_LIST) {
         AdminProductListScreen(

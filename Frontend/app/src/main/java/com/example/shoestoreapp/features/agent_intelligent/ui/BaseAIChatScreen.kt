@@ -1,5 +1,7 @@
 package com.example.shoestoreapp.features.agent_intelligent.ui
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -37,7 +39,11 @@ import com.example.shoestoreapp.features.agent_intelligent.data.remote.ChatSessi
 import com.example.shoestoreapp.features.agent_intelligent.viewmodel.BaseAIViewModel
 import com.example.shoestoreapp.features.user.ai_assistant.viewmodel.AiProductViewmodel
 import dev.jeziellago.compose.markdowntext.MarkdownText
+import java.time.ZoneId
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BaseAIChatScreen(
@@ -116,14 +122,14 @@ fun BaseAIChatScreen(
                             SharedUserMessageBubble(
                                 text = message.text,
                                 roleName = userRoleName,
-                                timeString = message.createdAt ?: "Now"
+                                timeString =  formatChatTime(message.createdAt)
                             )
                         } else {
                             SharedAiMessageBubble(
                                 text = message.text,
                                 isStreaming = message.isStreaming,
                                 roleName = aiRoleName,
-                                timeString = if (message.isStreaming) "NOW" else (message.createdAt ?: "Now")
+                                timeString = if (message.isStreaming) "Now" else formatChatTime(message.createdAt)
                             )
                         }
                     }
@@ -427,4 +433,21 @@ private fun SharedThinkingIndicator() {
             modifier = Modifier.alpha(alpha)
         )
     }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun formatChatTime(timeStr: String?): String {
+    if (timeStr.isNullOrBlank()) return "Now"
+
+    return runCatching {
+
+        val parsedTime = ZonedDateTime.parse(timeStr)
+        //Convert to the device's local time zone
+        val localTime = parsedTime.withZoneSameInstant(ZoneId.systemDefault())
+
+        //Format to the desired pattern: Day/Month/Year Hour:Minute
+        val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+        localTime.format(formatter)
+    }.getOrDefault("Now") // Fallback to "Now" if any parsing exception occurs
 }

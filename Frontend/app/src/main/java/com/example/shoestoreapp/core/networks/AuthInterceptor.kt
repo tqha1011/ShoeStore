@@ -18,11 +18,20 @@ class AuthInterceptor(private val context: Context) : Interceptor {
 
         val requestBuilder = chain.request().newBuilder()
         val normalizedToken = JwtUtils.normalizeToken(token)
+        val isExpired = normalizedToken?.let { JwtUtils.isTokenExpired(it) } == true
 
-        normalizedToken?.let {
-            requestBuilder.header("Authorization", "Bearer $it")
+        if (isExpired) {
+            runBlocking { tokenManager.clearAuthInfo() }
+        } else {
+            normalizedToken?.let {
+                requestBuilder.header("Authorization", "Bearer $it")
+            }
         }
 
-        return chain.proceed(requestBuilder.build())
+        val response = chain.proceed(requestBuilder.build())
+        if (response.code == 401) {
+            runBlocking { tokenManager.clearAuthInfo() }
+        }
+        return response
     }
 }
