@@ -47,7 +47,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             modelBuilder.Entity<ProductEmbedding>(builder =>
             {
                 builder.Property(e => e.Embedding)
-                    .HasColumnType("vector(768)")
+                    .HasColumnType("vector(1536)") // Assuming 1536 dimensions for the embedding
                     .HasConversion(
                         v => new Vector(v.ToArray()),
                         v => new ReadOnlyMemory<float>(v.ToArray()))
