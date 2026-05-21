@@ -195,7 +195,10 @@ public class AuthController(IAuthService authService) : ControllerBase
         var result = await authService.LoginWithSocialAsync("Facebook", accessToken, token);
 
         var response = result.Match<IActionResult>(
-            jwtToken => Ok(jwtToken),
+            jwtToken => Ok(new
+            {
+                token = jwtToken
+            }),
             errors =>
             {
                 // Get the first error to determine the exact failure reason
