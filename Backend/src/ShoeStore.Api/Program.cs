@@ -204,4 +204,5 @@ app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();
 app.MapHub<NotifyHub>("/hubs/notify");
+app.MapHub<NotifyBotHub>("hubs/agent/notify");
 app.Run();

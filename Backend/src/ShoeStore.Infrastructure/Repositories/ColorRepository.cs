@@ -17,4 +17,12 @@ public class ColorRepository(AppDbContext context) : GenericRepository<Color, in
         return await DbSet.AsNoTracking()
             .AnyAsync(x => x.ColorName.ToLower() == name.ToLower(), token);
     }
+
+    public async Task<int?> GetColorIdAsync(string name, CancellationToken token)
+    {
+        return await DbSet.AsNoTracking()
+            .Where(x => x.ColorName.Equals(name, StringComparison.CurrentCultureIgnoreCase))
+            .Select(x => (int?)x.Id)
+            .FirstOrDefaultAsync(token);
+    }
 }
