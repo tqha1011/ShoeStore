@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using ShoeStore.Api.Hubs;
 using ShoeStore.Api.JsonSerialize;
@@ -28,6 +29,11 @@ builder.Services.AddOpenApi("v1", options =>
     options.AddDocumentTransformer((document, context, cancellationToken) =>
     {
         document.Info.Title = "Shoe Store API v1";
+        document.Servers?.Clear();
+        document.Servers?.Add(new OpenApiServer
+        {
+            Url = "/"
+        });
         return Task.CompletedTask;
     });
 });
@@ -187,6 +193,11 @@ app.MapScalarApiReference(options =>
     options.WithTheme(ScalarTheme.BluePlanet);
 
     options.WithDefaultHttpClient(ScalarTarget.Kotlin, ScalarClient.OkHttp);
+
+    options.Servers?.Add(new ScalarServer
+    (
+        "/"
+    ));
 });
 app.UseAuthentication();
 app.UseAuthorization();

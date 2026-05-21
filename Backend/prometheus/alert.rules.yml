@@ -2,7 +2,7 @@ groups:
   - name: shoe-store-api-alerts
     rules:
       - alert: PrometheusDown
-        expr: up{job="shoestore-prometheus"} == 0
+        expr: up{job="shoestore_prometheus"} == 0
         for: 1m # Alert will fire if the instance is down for more than 1 minute
         labels:
           severity: critical

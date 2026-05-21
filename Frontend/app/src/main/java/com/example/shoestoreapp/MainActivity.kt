@@ -132,6 +132,22 @@ fun AppNavHost() {
     val navController = rememberNavController()
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
+    val token by tokenManager.getToken.collectAsState(initial = "LOADING")
+
+    LaunchedEffect(token) {
+        if (token == "LOADING") return@LaunchedEffect
+        if (token.isNullOrBlank()) {
+            val currentRoute = navController.currentDestination?.route
+            if (currentRoute != Routes.SIGN_IN && currentRoute != Routes.WELCOME) {
+                navController.navigateAfterLogout()
+            }
+            return@LaunchedEffect
+        }
+        if (JwtUtils.isTokenExpired(token)) {
+            tokenManager.clearAuthInfo()
+            navController.navigateAfterLogout()
+        }
+    }
 
     NavHost(
         navController = navController,
