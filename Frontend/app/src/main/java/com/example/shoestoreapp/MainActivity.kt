@@ -56,6 +56,11 @@ import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import com.example.shoestoreapp.features.user.ai_assistant.ui.AiProductScreen
 import com.example.shoestoreapp.features.user.ai_assistant.viewmodel.AiProductViewmodel
 import kotlinx.coroutines.launch
+import android.content.pm.PackageManager
+import android.util.Base64
+import android.util.Log
+import com.facebook.login.LoginManager
+import java.security.MessageDigest
 
 private object Routes {
     const val WELCOME = "welcome"
@@ -100,6 +105,19 @@ class MainActivity : ComponentActivity() {
         RetrofitInstance.init(this)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        try {
+            val info = packageManager.getPackageInfo(
+                packageName,
+                PackageManager.GET_SIGNATURES
+            )
+            for (signature in info.signatures!!) {
+                val md = MessageDigest.getInstance("SHA")
+                md.update(signature.toByteArray())
+                Log.d("MY_KEY_HASH", Base64.encodeToString(md.digest(), Base64.DEFAULT))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         setContent {
             MaterialTheme {
                 AppNavHost()
@@ -114,22 +132,6 @@ fun AppNavHost() {
     val navController = rememberNavController()
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
-    val token by tokenManager.getToken.collectAsState(initial = "LOADING")
-
-    LaunchedEffect(token) {
-        if (token == "LOADING") return@LaunchedEffect
-        if (token.isNullOrBlank()) {
-            val currentRoute = navController.currentDestination?.route
-            if (currentRoute != Routes.SIGN_IN && currentRoute != Routes.WELCOME) {
-                navController.navigateAfterLogout()
-            }
-            return@LaunchedEffect
-        }
-        if (JwtUtils.isTokenExpired(token)) {
-            tokenManager.clearAuthInfo()
-            navController.navigateAfterLogout()
-        }
-    }
 
     NavHost(
         navController = navController,
@@ -264,7 +266,8 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             },
             onLogoutClick = {
                 scope.launch {
-                    tokenManager.clearAuthInfo()
+                    tokenManager.clearAuthInfo() // clear token
+                    LoginManager.getInstance().logOut() // log out this facebook sesssion
                     navController.navigateAfterLogout()
                 }
             },

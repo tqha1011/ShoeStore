@@ -98,6 +98,7 @@ dependencies {
     implementation(libs.androidx.credentials.play.services)
     implementation(libs.googleid)
     implementation(libs.facebook.login)
+    implementation("com.facebook.android:facebook-login:17.0.0")
     implementation(libs.androidx.foundation.layout)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
