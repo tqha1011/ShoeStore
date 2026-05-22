@@ -19,7 +19,8 @@ public class ProductService(
     HybridCache cache,
     ILogger<ProductService> logger) : IProductService
 {
-    public async Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsUserAsync(ProductSearchRequest request, CancellationToken token)
+    public async Task<ErrorOr<PageResult<ProductResponseDto>>> GetProductsUserAsync(ProductSearchRequest request,
+        CancellationToken token)
     {
         // Validate pagination parameters
         if (request.PageIndex <= 0)
@@ -133,13 +134,13 @@ public class ProductService(
         {
             ProductName = dto.ProductName ?? string.Empty,
             CategoryId = dto.CategoryId ?? 0,
-            Brand = dto.Brand ?? string.Empty,
+            Brand = dto.Brand ?? string.Empty
         };
 
         // Add product to repository and save
         productRepository.Add(product);
         await uow.SaveChangesAsync(token);
-        
+
         try
         {
             await cache.RemoveByTagAsync(CacheTag.Product, token);
@@ -152,7 +153,8 @@ public class ProductService(
         return product.PublicId;
     }
 
-    public async Task<ErrorOr<Updated>> UpdateProductAsync(Guid productGuid, UpdateProductDto dto, CancellationToken token)
+    public async Task<ErrorOr<Updated>> UpdateProductAsync(Guid productGuid, UpdateProductDto dto,
+        CancellationToken token)
     {
         var product = await productRepository.GetForUpdateByGuidAsync(productGuid, token);
 
@@ -195,8 +197,9 @@ public class ProductService(
             variant.IsDeleted = true;
             variant.IsSelling = false; // Also mark as not selling to prevent it from showing up in searches
         }
+
         product.IsDeleted = true;
-        
+
         productRepository.Update(product);
         await uow.SaveChangesAsync(token);
         try
@@ -212,7 +215,8 @@ public class ProductService(
         return Result.Deleted;
     }
 
-    public async Task<ErrorOr<PageResult<ProductAdminRespone>>> GetProductsAdminAsync(ProductAdminRequestDto request, CancellationToken token)
+    public async Task<ErrorOr<PageResult<ProductAdminResponse>>> GetProductsAdminAsync(ProductAdminRequestDto request,
+        CancellationToken token)
     {
         var query = productRepository.GetAll().ApplyStock(request).AsNoTracking();
 
@@ -220,15 +224,15 @@ public class ProductService(
 
         var products = await query
             .ApplyPaging(request.PageIndex, request.PageSize)
-            .Select(p => new ProductAdminRespone
+            .Select(p => new ProductAdminResponse
             {
-                PublicID = p.PublicId,
+                PublicId = p.PublicId,
                 ProductName = p.ProductName,
                 Variants = p.ProductVariants
                     .Where(v => v.IsSelling && !v.IsDeleted)
-                    .Select(v => new ProductVariantAdminResponeDto
+                    .Select(v => new ProductVariantAdminResponseDto
                     {
-                        imgUrl = v.ImageUrl ?? string.Empty,
+                        ImgUrl = v.ImageUrl ?? string.Empty,
                         Price = v.Price,
                         Stock = v.Stock,
                         StockStatus = v.Stock <= 0 ? "Out of Stock" :
@@ -236,7 +240,7 @@ public class ProductService(
                     })
                     .ToList()
             }).ToListAsync(token);
-        var pageResult = new PageResult<ProductAdminRespone>
+        var pageResult = new PageResult<ProductAdminResponse>
         {
             Items = products.Count == 0 ? [] : products,
             TotalCount = totalCount,

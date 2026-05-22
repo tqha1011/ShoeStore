@@ -8,4 +8,6 @@ public interface IColorRepository : IGenericRepository<Color, int>
     Task<List<Color>> GetColorsAsync(CancellationToken token);
 
     Task<bool> ColorNameExistAsync(string name, CancellationToken token);
+
+    Task<int?> GetColorIdAsync(string name, CancellationToken token);
 }

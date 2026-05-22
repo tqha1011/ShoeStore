@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 using OpenAI;
+using ShoeStore.Application.Plugin;
 
 namespace ShoeStore.Infrastructure.DependencyInjection;
 
@@ -60,7 +61,9 @@ public static class AiServiceCollection
             );
         }
 
-        services.AddKernel();
+        services.AddScoped<ProductPluginService>();
+        services.AddScoped<MasterDataPluginService>();
+        services.AddKernel().Plugins.AddFromType<ProductPluginService>().AddFromType<MasterDataPluginService>();
         return services;
     }
 }
