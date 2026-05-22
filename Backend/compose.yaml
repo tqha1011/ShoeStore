@@ -90,7 +90,10 @@
     
     ports:
       - "8080:80"
-    
+    environment:
+      - BACKEND_HOST=shoestore.api
+      - BACKEND_PORT=8080
+
     networks:
       - shoestore-backend
       - shoestore-frontend
