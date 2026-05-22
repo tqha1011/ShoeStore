@@ -16,4 +16,7 @@ public interface IProductRepository : IGenericRepository<Product, int>
     IQueryable<Product> GetProductsInformation();
 
     Task<int> CountActiveProductAsync(CancellationToken token);
+
+    Task<ProductResultDto?> CheckProductVariantExistsAsync(Guid productId, int colorId, int sizeId,
+        CancellationToken token);
 }

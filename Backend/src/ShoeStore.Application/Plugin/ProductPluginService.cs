@@ -40,6 +40,7 @@ public class ProductPluginService(
             logger.LogError("Unauthorized access attempt to search-product by user {UserId}", currentUser.Id);
             return new SearchResultDto("UserNotValid", "User is not valid", []);
         }
+
         var productKeywords = new ProductSearchRequest
         {
             Keyword = keyword
@@ -78,10 +79,11 @@ public class ProductPluginService(
                  "CRITICAL: You MUST have the exact product GUID before calling this function. " +
                  "After calling, analyze the 'Status' field in the response: " +
                  "1. If 'Success': Tell the user that the draft has been created successfully on their screen. " +
-                 "2. If 'SizeNotFound' or 'ColorNotFound': Apologize and ask the user to provide a valid size or color. " +
+                 "2. If 'SizeNotFound' or 'ColorNotFound': Apologize, explain that the requested size or color does not exist in the master data, and PROACTIVELY ASK the user if they want you to automatically create that new size or color for them. " +
                  "3. If 'InvalidStock' or 'InvalidPrice': Ask the user to provide a positive number for stock/price. " +
                  "4. If 'ProductNotFound': Inform the user that the product is invalid and ask them to search again." +
-                 "5. If 'UserNotValid': Apologize and inform the user that they do not have the required admin permissions to perform this action.")]
+                 "5. If 'UserNotValid': Apologize and inform the user that they do not have the required admin permissions to perform this action." +
+                 "6. If 'VariantAlreadyExist': Inform the user that a variant with the same size and color already exists for this product, and ask them to provide different attributes.")]
     public async Task<AddVariantResultDto> AddNewVariant(
         [Description("The unique GUID of the parent product (obtained from the search-product function).")]
         Guid publicProductId,
@@ -103,6 +105,7 @@ public class ProductPluginService(
             logger.LogError("Unauthorized access attempt to search-product by user {UserId}", currentUser.Id);
             return new AddVariantResultDto("UserNotValid", "User is not valid", null);
         }
+
         var sizeId = await sizeRepository.GetProductSizesIdAsync(size, token);
         if (sizeId == null)
         {
@@ -117,17 +120,25 @@ public class ProductPluginService(
             return new AddVariantResultDto("ColorNotFound", $"Color {colorName} does not exist", null);
         }
 
-        var product = await productRepository.GetDetailsByGuidAsync(publicProductId, token);
-        if (product == null)
+        var productExist =
+            await productRepository.CheckProductVariantExistsAsync(publicProductId, colorId.Value, sizeId.Value, token);
+        if (productExist == null)
         {
             logger.LogWarning("Product {ProductId} not found", publicProductId);
             return new AddVariantResultDto("ProductNotFound", $"Product {publicProductId} not found", null);
         }
 
+        if (productExist.IsVariantExist)
+        {
+            logger.LogWarning("Variant with {Size} and {Color} is exist", size, colorName);
+            return new AddVariantResultDto("VariantAlreadyExist",
+                $"Variant with size {size} and color {colorName} already exists", null);
+        }
+
         var variantResult = new VariantResultDto(sizeId.Value, size, colorId.Value, colorName, stock, price, imageUrl);
 
         var response = new AddVariantResultDto("Success", "All information is correct", variantResult);
-        await notifyBotResponse.NotifyAddVariantDraftAsync(response,currentUser.Id.Value);
+        await notifyBotResponse.NotifyAddVariantDraftAsync(response, currentUser.Id.Value);
         return response;
     }
 }
