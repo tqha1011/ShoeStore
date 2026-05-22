@@ -15,6 +15,7 @@ using ShoeStore.Api.Hubs;
 using ShoeStore.Api.JsonSerialize;
 using ShoeStore.Api.Middlewares;
 using ShoeStore.Application.DependencyInjection;
+using ShoeStore.Application.Interface.Hub;
 using ShoeStore.Infrastructure.Cloudinary;
 using ShoeStore.Infrastructure.DependencyInjection;
 using ShoeStore.Infrastructure.Worker;
@@ -81,6 +82,7 @@ builder.Services.AddHostedService<NotifyNewVoucherService>();
 builder.Services.AddHostedService<DeleteVoucherExpiredService>();
 builder.Services.AddHostedService<UpdateTitleSessionService>();
 builder.Services.AddSignalR();
+builder.Services.AddScoped<INotifyBotResponse,NotifyBotResponse>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
