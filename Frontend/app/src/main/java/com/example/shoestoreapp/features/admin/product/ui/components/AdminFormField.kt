@@ -28,7 +28,9 @@ fun AdminFormField(
     onValueChange: (String) -> Unit,
     placeholder: String = "",
     keyboardType: KeyboardType = KeyboardType.Text,
-    isEnabled: Boolean = true
+    isEnabled: Boolean = true,
+    singleLine: Boolean = true,
+    minLines: Int = 1
 ) {
     Column {
         if (label.isNotEmpty()) {
@@ -53,7 +55,8 @@ fun AdminFormField(
             },
             modifier = Modifier.fillMaxWidth(),
             enabled = isEnabled,
-            singleLine = true,
+            singleLine = singleLine,
+            minLines = minLines,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             shape = RoundedCornerShape(8.dp),
             textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),

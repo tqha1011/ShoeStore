@@ -24,7 +24,7 @@ import java.util.Locale
 
 /**
  * ProductCard: Composable hiển thị card sản phẩm theo design mới
- * Match với Product model mới (publicId, productName, brand, variants)
+ * Match với Product model mới (publicId, productName, categoryName, variants)
  * 
  * @param product: Sản phẩm cần hiển thị
  * @param onProductClick: Gọi callback khi click vào card (nhận publicId: String)
@@ -79,14 +79,14 @@ fun ProductCard(
             }
         }
 
-        // ========== PHẦN 2: BADGE (Brand thay vì category) ==========
+        // ========== PHẦN 2: BADGE (Category thay vì brand) ==========
         Box(
             modifier = Modifier
                 .padding(top = 12.dp)
                 .padding(horizontal = 4.dp)
         ) {
             Text(
-                text = product.brand,  // ← Dùng brand thay vì category
+                text = product.categoryName,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFFD2650F),
@@ -129,6 +129,8 @@ fun ProductCard(
         )
     }
 }
+
+
 
 
 

@@ -6,13 +6,13 @@ package com.example.shoestoreapp.features.user.product.data.models
  *
  * @param publicId - GUID của sản phẩm (từ Backend)
  * @param productName - Tên sản phẩm (VD: "Nike Air Max 270")
- * @param brand - Thương hiệu (VD: "Nike")
+ * @param categoryName - Danh mục sản phẩm (VD: "Giày thể thao")
  * @param variants - Danh sách các biến thể (size, color, price, stock)
  */
 data class Product(
     val publicId: String,
     val productName: String,
-    val brand: String,
+    val categoryName: String,
     val variants: List<ProductVariant> = emptyList()
 )
 
@@ -43,6 +43,3 @@ data class ProductVariant(
     val isSelling: Boolean = true,
     val isDelete: Boolean = false
 )
-
-
-

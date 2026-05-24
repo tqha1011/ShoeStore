@@ -9,6 +9,7 @@ import com.example.shoestoreapp.features.user.cart.data.remote.CartApi
 import com.example.shoestoreapp.features.admin.addproduct.data.remote.MasterDataApi
 import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutApi
 import com.example.shoestoreapp.features.admin.product.data.remote.ImageApi
+import com.example.shoestoreapp.features.admin.voucher.data.remote.AdminVoucherApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -80,5 +81,10 @@ object RetrofitInstance {
     // 9. Create CheckOutApi service for checkout endpoints
     val checkOutApi: CheckOutApi by lazy {
         retrofit.create(CheckOutApi::class.java)
+    }
+
+    // 10. Create AdminVoucherApi service for admin voucher endpoints
+    val adminVoucherApi: AdminVoucherApi by lazy {
+        retrofit.create(AdminVoucherApi::class.java)
     }
 }

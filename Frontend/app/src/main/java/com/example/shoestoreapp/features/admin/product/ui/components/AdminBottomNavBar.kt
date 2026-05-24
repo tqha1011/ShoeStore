@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material3.Icon
@@ -23,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 enum class AdminBottomNavTab {
-    ADMIN, ORDERS, ANALYTICS, SETTINGS
+    ADMIN, ORDERS, VOUCHERS, ANALYTICS, SETTINGS
 }
 
 /**
@@ -86,6 +88,14 @@ fun AdminBottomNavBar(
                         Icon(
                             imageVector = Icons.Outlined.Receipt,
                             contentDescription = "Orders",
+                            modifier = Modifier.padding(bottom = 2.dp),
+                            tint = if (isSelected) Color.Black else Color(0xFFBBBBBB)
+                        )
+                    }
+                    AdminBottomNavTab.VOUCHERS -> {
+                        Icon(
+                            imageVector = if (isSelected) Icons.Default.ConfirmationNumber else Icons.Outlined.ConfirmationNumber,
+                            contentDescription = "Vouchers",
                             modifier = Modifier.padding(bottom = 2.dp),
                             tint = if (isSelected) Color.Black else Color(0xFFBBBBBB)
                         )

@@ -63,6 +63,8 @@ data class ProductResponseDto(
     val publicId: String,  // UUID của sản phẩm
     val productName: String,
     val brand: String,
+    val categoryId: Int,
+    val categoryName: String,
     val variants: List<ProductVariantDto> = emptyList()
 )
 

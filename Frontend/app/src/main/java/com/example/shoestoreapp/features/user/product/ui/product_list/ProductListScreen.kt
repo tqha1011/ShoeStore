@@ -19,6 +19,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +34,8 @@ import com.example.shoestoreapp.features.user.product.ui.components.ProductCard
 import com.example.shoestoreapp.features.user.product.ui.components.SearchBar
 import com.example.shoestoreapp.features.user.product.ui.components.TopAppBar
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewModel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * ProductListScreen: Composable screen hiển thị danh sách sản phẩm với Infinite Scroll
@@ -66,7 +70,13 @@ fun ProductListScreen(
 
     val lazyGridState = rememberLazyGridState()
 
-    SetupInfiniteScroll(lazyGridState, productList.value, isLoadingMore.value, viewModel)
+    SetupInfiniteScroll(
+        lazyGridState,
+        productList.value,
+        isLoading.value,
+        isLoadingMore.value,
+        viewModel
+    )
 
     Scaffold(
         topBar = {
@@ -124,19 +134,22 @@ fun ProductListScreen(
 private fun SetupInfiniteScroll(
     lazyGridState: androidx.compose.foundation.lazy.grid.LazyGridState,
     productList: List<*>?,
+    isLoading: Boolean,
     isLoadingMore: Boolean,
     viewModel: ProductListViewModel
 ) {
-    LaunchedEffect(lazyGridState) {
-        snapshotFlow { lazyGridState.layoutInfo.visibleItemsInfo }
-            .collect { visibleItems ->
-                if (visibleItems.isNotEmpty()) {
-                    val lastVisibleIndex = visibleItems.last().index
-                    val totalItems = productList?.size
+    val currentList by rememberUpdatedState(productList)
+    val currentLoading by rememberUpdatedState(isLoading)
+    val currentLoadingMore by rememberUpdatedState(isLoadingMore)
 
-                    if (lastVisibleIndex >= (totalItems?.minus(2) ?: 0) && !isLoadingMore) {
-                        viewModel.loadNextPage()
-                    }
+    LaunchedEffect(lazyGridState) {
+        snapshotFlow { lazyGridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+            .distinctUntilChanged()
+            .collectLatest { lastVisibleIndex ->
+                val totalItems = currentList?.size ?: 0
+                if (totalItems == 0 || currentLoading || currentLoadingMore) return@collectLatest
+                if (lastVisibleIndex >= totalItems - 2) {
+                    viewModel.loadNextPage()
                 }
             }
     }
@@ -249,7 +262,3 @@ private fun ProductGrid(
         }
     }
 }
-
-
-
-

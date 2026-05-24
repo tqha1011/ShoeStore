@@ -197,7 +197,7 @@ fun ProductDetailScreen(
                     price = defaultVariant?.price ?: 0.0,
                     rating = 0.0,
                     reviewCount = 0,
-                    productType = productDetail?.brand ?: ""
+                    productType = productDetail?.categoryName ?: ""
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -237,7 +237,7 @@ fun ProductDetailScreen(
 
                 ExpandableSection(
                     title = "Product Description",
-                    content = "Premium product from ${productDetail?.brand ?: "our collection"}. Crafted with quality materials and designed for comfort.",
+                    content = "Premium product from ${productDetail?.categoryName ?: "our collection"}. Crafted with quality materials and designed for comfort.",
                     isExpanded = isDescriptionExpanded,
                     onExpandedChange = { viewModel.toggleDescriptionExpanded() }
                 )
