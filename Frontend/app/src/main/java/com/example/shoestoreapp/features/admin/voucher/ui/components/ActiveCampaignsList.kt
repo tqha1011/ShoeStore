@@ -2,6 +2,7 @@ package com.example.shoestoreapp.features.admin.voucher.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,11 +15,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -28,10 +33,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.admin.voucher.data.remote.ResponseVoucherAdminDto
+import java.text.NumberFormat
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Currency
 import java.util.Locale
 
 @Composable
-fun ActiveCampaignsList(vouchers: List<ResponseVoucherAdminDto>) {
+fun ActiveCampaignsList(
+    vouchers: List<ResponseVoucherAdminDto>,
+    onEditVoucherClick: (ResponseVoucherAdminDto) -> Unit,
+    onDeleteClick: (String) -> Unit,
+    onClearExpiredClick: () -> Unit
+) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -53,33 +67,56 @@ fun ActiveCampaignsList(vouchers: List<ResponseVoucherAdminDto>) {
                     color = Color.Black
                 )
             }
-            Text(
-                text = "${vouchers.size} Running",
-                fontSize = 10.sp,
-                color = Color(0xFF6B6B6B),
-                modifier = Modifier
-                    .background(Color(0xFFF2F2F2), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "${vouchers.size} Running",
+                    fontSize = 10.sp,
+                    color = Color(0xFF6B6B6B),
+                    modifier = Modifier
+                        .background(Color(0xFFF2F2F2), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                IconButton(onClick = onClearExpiredClick) {
+                    Icon(
+                        imageVector = Icons.Default.CleaningServices,
+                        contentDescription = "Clear expired vouchers",
+                        tint = Color(0xFF6B6B6B)
+                    )
+                }
+            }
         }
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             vouchers.forEach { voucher ->
-                VoucherItem(voucher)
+                VoucherItem(voucher, onEditVoucherClick, onDeleteClick)
             }
         }
     }
 }
 
 @Composable
-private fun VoucherItem(voucher: ResponseVoucherAdminDto) {
+private fun VoucherItem(
+    voucher: ResponseVoucherAdminDto,
+    onEditVoucherClick: (ResponseVoucherAdminDto) -> Unit,
+    onDeleteClick: (String) -> Unit
+) {
+    val isPercentage = voucher.discountType?.equals("Percentage", ignoreCase = true) == true
+    val isShipping = voucher.voucherScope?.equals("Shipping", ignoreCase = true) == true
+    val isProduct = voucher.voucherScope?.equals("Product", ignoreCase = true) == true
+    val scopeLabel = when {
+        isShipping -> " Shipping"
+        isProduct -> " Product"
+        else -> "Product"
+    }
+
     val summary = buildString {
-        if (voucher.discountType == 0) {
+        if (isPercentage) {
             append("${voucher.discount.toInt()}% off")
         } else {
             append("${formatMoney(voucher.discount)} off")
         }
-        append(if (voucher.voucherScope == 1) " Shipping" else " Invoice")
-        if (voucher.discountType == 0 && voucher.maxPriceDiscount > 0.0) {
+        append(scopeLabel)
+        if (isPercentage && voucher.maxPriceDiscount > 0.0) {
             append(" • Up to ${formatMoney(voucher.maxPriceDiscount)}")
         }
         if (voucher.minOrderPrice > 0.0) {
@@ -107,14 +144,14 @@ private fun VoucherItem(voucher: ResponseVoucherAdminDto) {
                         .border(1.dp, Color(0xFFEDEDED), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (voucher.discountType == 0) {
+                    if (isPercentage) {
                         Text(
                             text = "%",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.Black
                         )
-                    } else if (voucher.voucherScope == 1) {
+                    } else if (isShipping) {
                         Icon(
                             imageVector = Icons.Default.LocalShipping,
                             contentDescription = null,
@@ -122,7 +159,7 @@ private fun VoucherItem(voucher: ResponseVoucherAdminDto) {
                         )
                     } else {
                         Text(
-                            text = "$",
+                            text = "$$",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.Black
@@ -143,17 +180,67 @@ private fun VoucherItem(voucher: ResponseVoucherAdminDto) {
                         color = Color(0xFF6B6B6B)
                     )
                     Text(
-                        text = "VALID UNTIL: ${voucher.validTo}",
+                        text = "VALID UNTIL: ${formatDateDdMmYyyy(voucher.validTo)}",
                         fontSize = 10.sp,
                         color = Color(0xFF9A9A9A)
                     )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit voucher",
+                            tint = Color(0xFF6B6B6B),
+                            modifier = Modifier
+                                .size(18.dp)
+                                .clickable { onEditVoucherClick(voucher) }
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete voucher",
+                            tint = Color(0xFF6B6B6B),
+                            modifier = Modifier
+                                .size(18.dp)
+                                .clickable { onDeleteClick(voucher.voucherGuid) }
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-private fun formatMoney(value: Double): String {
-    return "$" + String.format(Locale.US, "%.0f", value)
+private fun formatDateDdMmYyyy(raw: String): String {
+    val input = raw.trim()
+    if (input.isEmpty()) return ""
+
+    val inputPatterns = listOf(
+        "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        "yyyy-MM-dd'T'HH:mm:ss",
+        "yyyy-MM-dd"
+    )
+    val parsed = inputPatterns.firstNotNullOfOrNull { pattern ->
+        val sdf = SimpleDateFormat(pattern, Locale.US).apply { isLenient = false }
+        try {
+            sdf.parse(input)
+        } catch (_: ParseException) {
+            null
+        }
+    } ?: return input
+
+    val output = SimpleDateFormat("dd/MM/yyyy", Locale.US)
+    return output.format(parsed)
 }
 
+private fun formatMoney(value: Double): String {
+    val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN")).apply {
+        currency = Currency.getInstance("VND")
+        maximumFractionDigits = 0
+    }
+    return formatter.format(value)
+}

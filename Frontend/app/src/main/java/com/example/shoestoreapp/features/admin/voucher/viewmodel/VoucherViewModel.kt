@@ -1,10 +1,18 @@
 package com.example.shoestoreapp.features.admin.voucher.viewmodel
+
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.features.admin.voucher.data.remote.CreateVoucherDto
 import com.example.shoestoreapp.features.admin.voucher.data.remote.ResponseVoucherAdminDto
+import com.example.shoestoreapp.features.admin.voucher.data.remote.UpdateVoucherDto
 import com.example.shoestoreapp.features.admin.voucher.data.repositories.VoucherRepository
 import com.example.shoestoreapp.features.admin.voucher.data.repositories.VoucherRepositoryImpl
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.TimeZone
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +32,18 @@ class VoucherViewModel(
 
     private val _vouchers = MutableStateFlow<List<ResponseVoucherAdminDto>>(emptyList())
     val vouchers: StateFlow<List<ResponseVoucherAdminDto>> = _vouchers.asStateFlow()
+
+    private val _isEditSheetVisible = MutableStateFlow(false)
+    val isEditSheetVisible: StateFlow<Boolean> = _isEditSheetVisible.asStateFlow()
+
+    private val _editingVoucherId = MutableStateFlow<String?>(null)
+    val editingVoucherId: StateFlow<String?> = _editingVoucherId.asStateFlow()
+
+    private val _voucherToDelete = MutableStateFlow<String?>(null)
+    val voucherToDelete: StateFlow<String?> = _voucherToDelete.asStateFlow()
+
+    private val _showDeleteExpiredDialog = MutableStateFlow(false)
+    val showDeleteExpiredDialog: StateFlow<Boolean> = _showDeleteExpiredDialog.asStateFlow()
 
     private var currentPage = 1
     private var isLastPage = false
@@ -115,7 +135,7 @@ class VoucherViewModel(
             return
         }
 
-        val maxPriceDiscount = if (state.discountStyle == 0) {
+        val maxPriceDiscount = if (state.discountStyle == 2) {
             val parsed = state.maxReduction.trim().toDoubleOrNull()
             if (parsed == null || parsed <= 0.0) {
                 _uiEvent.trySend(VoucherUiEvent.ShowError("Max reduction is invalid."))
@@ -126,19 +146,34 @@ class VoucherViewModel(
             0.0
         }
 
+        val voucherScopeId = state.targetApplication
+        val discountTypeId = state.discountStyle
+        val formattedValidFrom = parseDateToIso(state.validFrom, endOfDay = false)
+        val formattedValidTo = parseDateToIso(state.validTo, endOfDay = true)
+
+        if (formattedValidFrom == null || formattedValidTo == null) {
+            _uiEvent.trySend(
+                VoucherUiEvent.ShowError(
+                    "Invalid date format. Please use MM/dd/yyyy or yyyy-MM-dd."
+                )
+            )
+            return
+        }
+
         val dto = CreateVoucherDto(
             voucherName = voucherName,
             voucherDescription = state.description.trim(),
-            voucherScope = state.targetApplication,
-            discountType = state.discountStyle,
+            voucherScope = voucherScopeId,
+            discountType = discountTypeId,
             discount = discount,
             maxPriceDiscount = maxPriceDiscount,
             minOrderPrice = minOrder,
             totalQuantity = totalQuantity,
             maxUsagePerUser = maxUsagePerUser,
-            validFrom = state.validFrom.trim(),
-            validTo = state.validTo.trim()
+            validFrom = formattedValidFrom,
+            validTo = formattedValidTo
         )
+        
 
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
@@ -185,6 +220,244 @@ class VoucherViewModel(
                 )
             }
             isLoadingList = false
+        }
+    }
+
+    fun onEditVoucherClick(voucher: ResponseVoucherAdminDto) {
+        _editingVoucherId.value = voucher.voucherGuid
+        _uiState.update {
+            it.copy(
+                voucherName = voucher.voucherName,
+                description = voucher.voucherDescription.orEmpty(),
+                targetApplication = mapVoucherScopeToUi(voucher.voucherScope),
+                discountStyle = mapDiscountTypeToUi(voucher.discountType),
+                discountValue = voucher.discount.toString(),
+                maxReduction = if (mapDiscountTypeToUi(voucher.discountType) == 2) {
+                    voucher.maxPriceDiscount.toString()
+                } else {
+                    ""
+                },
+                minOrder = voucher.minOrderPrice.toString(),
+                totalQuantity = voucher.quantity.toString(),
+                maxUsagePerUser = it.maxUsagePerUser.ifBlank { "1" },
+                validFrom = parseApiDateToUi(voucher.validFrom),
+                validTo = parseApiDateToUi(voucher.validTo)
+            )
+        }
+        _isEditSheetVisible.value = true
+    }
+
+    fun onDismissEditSheet() {
+        _isEditSheetVisible.value = false
+        _editingVoucherId.value = null
+    }
+
+    fun onDeleteIconClick(voucherId: String) {
+        _voucherToDelete.value = voucherId
+    }
+
+    fun onDismissDeleteDialog() {
+        _voucherToDelete.value = null
+    }
+
+    fun onClearExpiredClick() {
+        _showDeleteExpiredDialog.value = true
+    }
+
+    fun onDismissDeleteExpiredDialog() {
+        _showDeleteExpiredDialog.value = false
+    }
+
+    fun confirmDeleteExpiredVouchers() {
+        viewModelScope.launch {
+            val result = repository.deleteExpiredVouchers()
+            result.onSuccess {
+                _uiEvent.send(VoucherUiEvent.ShowSuccess("Expired vouchers cleared"))
+                _showDeleteExpiredDialog.value = false
+                loadVouchers(true)
+            }.onFailure { error ->
+                _uiEvent.send(
+                    VoucherUiEvent.ShowError(error.message ?: "Unable to clear expired vouchers.")
+                )
+            }
+        }
+    }
+
+    fun confirmDeleteVoucher() {
+        viewModelScope.launch {
+            if (_voucherToDelete.value == null) return@launch
+            val result = repository.deleteVoucher(_voucherToDelete.value!!)
+            result.onSuccess {
+                _uiEvent.send(VoucherUiEvent.ShowSuccess("Voucher deleted."))
+                _voucherToDelete.value = null
+                loadVouchers(true)
+            }.onFailure { error ->
+                _uiEvent.send(
+                    VoucherUiEvent.ShowError(error.message ?: "Unable to delete voucher.")
+                )
+            }
+        }
+    }
+
+    fun onUpdateVoucherClick() {
+        val state = _uiState.value
+        val voucherId = _editingVoucherId.value ?: return
+        if (state.isLoading) return
+
+        if (state.validFrom.isBlank() || state.validTo.isBlank()) {
+            _uiEvent.trySend(VoucherUiEvent.ShowError("Please select valid dates."))
+            return
+        }
+
+        val discount = state.discountValue.trim().toDoubleOrNull()
+        if (discount == null || discount <= 0.0) {
+            _uiEvent.trySend(VoucherUiEvent.ShowError("Discount value is invalid."))
+            return
+        }
+
+        val minOrder = state.minOrder.trim().toDoubleOrNull()
+        if (minOrder == null || minOrder < 0.0) {
+            _uiEvent.trySend(VoucherUiEvent.ShowError("Minimum order value is invalid."))
+            return
+        }
+
+        val totalQuantity = state.totalQuantity.trim().toIntOrNull()
+        if (totalQuantity == null || totalQuantity <= 0) {
+            _uiEvent.trySend(VoucherUiEvent.ShowError("Total quantity is invalid."))
+            return
+        }
+
+        val maxUsagePerUser = state.maxUsagePerUser.trim().toIntOrNull()
+        if (maxUsagePerUser == null || maxUsagePerUser <= 0) {
+            _uiEvent.trySend(VoucherUiEvent.ShowError("Max usage per user is invalid."))
+            return
+        }
+
+        val maxPriceDiscount = if (state.discountStyle == 2) {
+            val parsed = state.maxReduction.trim().toDoubleOrNull()
+            if (parsed == null || parsed <= 0.0) {
+                _uiEvent.trySend(VoucherUiEvent.ShowError("Max reduction is invalid."))
+                return
+            }
+            parsed
+        } else {
+            0.0
+        }
+
+        val voucherScopeId = state.targetApplication
+        val discountTypeId = state.discountStyle
+        val formattedValidFrom = parseDateToIso(state.validFrom, endOfDay = false)
+        val formattedValidTo = parseDateToIso(state.validTo, endOfDay = true)
+
+        if (formattedValidFrom == null || formattedValidTo == null) {
+            _uiEvent.trySend(
+                VoucherUiEvent.ShowError(
+                    "Invalid date format. Please use MM/dd/yyyy or yyyy-MM-dd."
+                )
+            )
+            return
+        }
+
+        val dto = UpdateVoucherDto(
+            voucherDescription = state.description.trim(),
+            voucherScope = voucherScopeId,
+            discountType = discountTypeId,
+            discount = discount,
+            maxPriceDiscount = maxPriceDiscount,
+            minOrderPrice = minOrder,
+            totalQuantity = totalQuantity,
+            maxUsagePerUser = maxUsagePerUser,
+            validFrom = formattedValidFrom,
+            validTo = formattedValidTo
+        )
+
+        _uiState.update { it.copy(isLoading = true) }
+        viewModelScope.launch {
+            val result = repository.updateVoucher(voucherId, dto)
+            _uiState.update { it.copy(isLoading = false) }
+            result.onSuccess {
+                _uiEvent.send(VoucherUiEvent.ShowSuccess("Voucher updated."))
+                _uiState.update { VoucherUiState() }
+                _isEditSheetVisible.value = false
+                _editingVoucherId.value = null
+                loadVouchers(true)
+            }.onFailure { error ->
+                _uiEvent.send(
+                    VoucherUiEvent.ShowError(error.message ?: "Unable to update voucher.")
+                )
+            }
+        }
+    }
+
+    private fun parseDateToIso(raw: String?, endOfDay: Boolean): String? {
+        val input = raw?.trim().orEmpty()
+        if (input.isEmpty()) return null
+
+        val patterns = listOf(
+            "yyyy-MM-dd",
+            "MM/dd/yyyy",
+            "dd/MM/yyyy",
+            "yyyy/MM/dd",
+            "M/d/yyyy",
+            "d/M/yyyy",
+            "dd-MM-yyyy"
+        )
+        val parsed = patterns.firstNotNullOfOrNull { pattern ->
+            val sdf = SimpleDateFormat(pattern, Locale.US).apply { isLenient = false }
+            try {
+                sdf.parse(input)
+            } catch (_: ParseException) {
+                null
+            }
+        } ?: return null
+
+        val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"), Locale.US).apply {
+            time = parsed
+            set(Calendar.HOUR_OF_DAY, if (endOfDay) 23 else 0)
+            set(Calendar.MINUTE, if (endOfDay) 59 else 0)
+            set(Calendar.SECOND, if (endOfDay) 59 else 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+
+        val outFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
+        return outFormat.format(calendar.time)
+    }
+
+    private fun parseApiDateToUi(raw: String?): String {
+        val input = raw?.trim().orEmpty()
+        if (input.isEmpty()) return ""
+
+        val inputPatterns = listOf(
+            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd"
+        )
+        val parsed = inputPatterns.firstNotNullOfOrNull { pattern ->
+            val sdf = SimpleDateFormat(pattern, Locale.US).apply { isLenient = false }
+            try {
+                sdf.parse(input)
+            } catch (_: ParseException) {
+                null
+            }
+        } ?: return input
+
+        val outFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        return outFormat.format(parsed)
+    }
+
+    private fun mapVoucherScopeToUi(scope: String?): Int {
+        return when (scope?.lowercase(Locale.US)) {
+            "shipping" -> 2
+            else -> 1
+        }
+    }
+
+    private fun mapDiscountTypeToUi(type: String?): Int {
+        return when (type?.lowercase(Locale.US)) {
+            "percentage" -> 2
+            else -> 1
         }
     }
 

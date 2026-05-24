@@ -15,13 +15,13 @@ data class VoucherSearchResponseDto(
 data class ResponseVoucherAdminDto(
     @SerializedName("voucherGuid") val voucherGuid: String,
     @SerializedName("voucherName") val voucherName: String,
+    @SerializedName("voucherDescription") val voucherDescription: String? = null,
     @SerializedName("discount") val discount: Double,
-    @SerializedName("discountType") val discountType: Int,
+    @SerializedName("discountType") val discountType: String?,
     @SerializedName("maxPriceDiscount") val maxPriceDiscount: Double,
     @SerializedName("minOrderPrice") val minOrderPrice: Double,
     @SerializedName("quantity") val quantity: Int,
     @SerializedName("validFrom") val validFrom: String,
     @SerializedName("validTo") val validTo: String,
-    @SerializedName("voucherScope") val voucherScope: Int
+    @SerializedName("voucherScope") val voucherScope: String?
 )
-

@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -263,7 +264,7 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
         val productId = backStackEntry.arguments?.getString("productId") ?: ""
         com.example.shoestoreapp.features.admin.product.ui.screens.AdminEditProductScreen(
             productId = productId,
-            viewModel = remember { AdminEditProductViewModel() },
+            viewModel = viewModel(),
             onBackClick = { navController.popBackStack() }
         )
     }
