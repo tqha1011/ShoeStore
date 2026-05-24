@@ -59,6 +59,7 @@ import kotlinx.coroutines.launch
 import android.content.pm.PackageManager
 import android.util.Base64
 import android.util.Log
+import com.example.shoestoreapp.core.utils.SignalRManager
 import com.facebook.login.LoginManager
 import java.security.MessageDigest
 
@@ -368,6 +369,10 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
         )
     ) {
         backStackEntry ->
+        // Get context and create pile to connect SignalR
+        val context = LocalContext.current
+        val tokenManager = remember { TokenManager(context) }
+        val signalRManager = remember { SignalRManager(tokenManager) }
         val isGeneratingCampaign = backStackEntry.arguments?.getBoolean("isGeneratingCampaign") ?: false
         val initialPrompt = if (isGeneratingCampaign) {
             """
@@ -382,7 +387,8 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
                 repository = AiChatRepository(
                     sessionApi = RetrofitInstance.chatSessionApi, // Reuse authApi for session management
                     okHttpClient = RetrofitInstance.okHttpClient // Use the same OkHttpClient for streaming
-                )
+                ),
+                signalRManager = signalRManager
             )
         }
         AiStrategyScreen (
@@ -400,6 +406,10 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
         )
     ){
         backStackEntry ->
+        // Get context and create pile to connect SignalR
+        val context = LocalContext.current
+        val tokenManager = remember { TokenManager(context) }
+        val signalRManager = remember { SignalRManager(tokenManager) }
         val isGeneratingProduct = backStackEntry.arguments?.getBoolean("isGeneratingProduct") ?: false
         val initialPrompt = if (isGeneratingProduct) {
             """Generate product recommendation based on user's purchase history and preferences
@@ -413,7 +423,8 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
                 repository = AiChatRepository(
                     sessionApi = RetrofitInstance.chatSessionApi, // Reuse authApi for session management
                     okHttpClient = RetrofitInstance.okHttpClient // Use the same OkHttpClient for streaming
-                )
+                ),
+                signalRManager = signalRManager
             )
         }
         AiProductScreen (
