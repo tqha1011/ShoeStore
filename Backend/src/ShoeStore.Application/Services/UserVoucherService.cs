@@ -37,7 +37,10 @@ public class UserVoucherService(IUserVoucherRepository userVoucherRepository, IU
                 ValidFrom = v.Voucher.ValidFrom,
                 ValidTo = v.Voucher.ValidTo,
                 IsUsed = v.IsUsed,
-                SavedAt = v.SavedAt
+                SavedAt = v.SavedAt,
+                DiscountType = v.Voucher.DiscountType,
+                VoucherScope = v.Voucher.VoucherScope,
+                MinOrderPrice = v.Voucher.MinOrderPrice
             })
             .ToListAsync(token);
 
