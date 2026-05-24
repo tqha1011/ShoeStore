@@ -6,6 +6,7 @@ public sealed record AddVariantResultDto(
     VariantResultDto? Variant);
 
 public sealed record VariantResultDto(
+    Guid ProductId,
     int SizeId,
     decimal Size,
     int ColorId,
