@@ -63,14 +63,18 @@ public class ProductPluginService(
                         ColorName = v.Color!.ColorName,
                         Price = v.Price
                     }).ToList()
-            }).ToListAsync(token);
-        return products.Count switch
+            })
+            .Take(20)
+            .ToListAsync(token);
+        var response = products.Count switch
         {
             0 => new SearchResultDto("NotFound", "Can not find matching product", products),
             > 1 => new SearchResultDto("MultipleFound", "Find more than 1 product, please provide clearly keyword",
                 products),
             _ => new SearchResultDto("Success", "Find matching product", products)
         };
+        await notifyBotResponse.NotifyProductSearchResultAsync(response, currentUser.Id.Value);
+        return response;
     }
 
     // LLM entry point: validate inputs, resolve size/color/product, then notify admin UI via SignalR.
@@ -106,38 +110,59 @@ public class ProductPluginService(
             return new AddVariantResultDto("UserNotValid", "User is not valid", null);
         }
 
+        var draftData = new VariantResultDto(
+            Guid.Empty, // productPublicId placeholder
+            0, // sizeId placeholder,
+            size,
+            0, // colorId placeholder
+            colorName,
+            stock, price, imageUrl);
+
+        var product = await productRepository.GetDetailsByGuidAsync(publicProductId, token);
+        if (product == null)
+        {
+            logger.LogWarning("Product {ProductId} not found", publicProductId);
+            await notifyBotResponse.NotifyAddVariantDraftAsync(
+                new AddVariantResultDto("ProductNotFound", $"Product {publicProductId} not found", draftData),
+                currentUser.Id.Value);
+            return new AddVariantResultDto("ProductNotFound", $"Product {publicProductId} not found", null);
+        }
+
+        draftData = draftData with { ProductId = publicProductId };
+
         var sizeId = await sizeRepository.GetProductSizesIdAsync(size, token);
         if (sizeId == null)
         {
             logger.LogWarning("Invalid size {Size}", size);
+            await notifyBotResponse.NotifyAddVariantDraftAsync(
+                new AddVariantResultDto("SizeNotFound", $"Size {size} does not exist", draftData),
+                currentUser.Id.Value);
             return new AddVariantResultDto("SizeNotFound", $"Size {size} does not exist", null);
         }
+
+        draftData = draftData with { SizeId = sizeId.Value };
 
         var colorId = await colorRepository.GetColorIdAsync(colorName, token);
         if (colorId == null)
         {
             logger.LogWarning("Invalid color {Color}", colorName);
+            await notifyBotResponse.NotifyAddVariantDraftAsync(
+                new AddVariantResultDto("ColorNotFound", $"Color {colorName} does not exist", draftData),
+                currentUser.Id.Value);
             return new AddVariantResultDto("ColorNotFound", $"Color {colorName} does not exist", null);
         }
 
-        var productExist =
-            await productRepository.CheckProductVariantExistsAsync(publicProductId, colorId.Value, sizeId.Value, token);
-        if (productExist == null)
-        {
-            logger.LogWarning("Product {ProductId} not found", publicProductId);
-            return new AddVariantResultDto("ProductNotFound", $"Product {publicProductId} not found", null);
-        }
+        draftData = draftData with { ColorId = colorId.Value };
 
-        if (productExist.IsVariantExist)
+        if (product!.ProductVariants.Any(v =>
+                v is { IsSelling: true, IsDeleted: false } && v.ColorId == colorId.Value && v.SizeId == sizeId.Value))
         {
             logger.LogWarning("Variant with {Size} and {Color} is exist", size, colorName);
             return new AddVariantResultDto("VariantAlreadyExist",
                 $"Variant with size {size} and color {colorName} already exists", null);
         }
 
-        var variantResult = new VariantResultDto(sizeId.Value, size, colorId.Value, colorName, stock, price, imageUrl);
-
-        var response = new AddVariantResultDto("Success", "All information is correct", variantResult);
+        var response = new AddVariantResultDto("Success", "All information is correct", draftData);
         await notifyBotResponse.NotifyAddVariantDraftAsync(response, currentUser.Id.Value);
         return response;
     }

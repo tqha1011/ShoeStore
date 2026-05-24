@@ -5,4 +5,6 @@ namespace ShoeStore.Application.Interface.Hub;
 public interface INotifyBotHub
 {
     Task NotifyAddVariantResponse(AddVariantResultDto result);
+
+    Task NotifySearchResultAsync(SearchResultDto result);
 }
