@@ -117,7 +117,7 @@ public class UserVoucherController(IUserVoucherService userVoucherService) : Con
                 {
                     message = "Voucher claimed failed",
                     detail = errors[0].Description
-                })
+                }),
                 _ => StatusCode(StatusCodes.Status500InternalServerError, new
                 {
                     message = "Some thing went wrong, please try again later!",
