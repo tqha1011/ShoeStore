@@ -18,3 +18,21 @@ public class ResponseVoucherAdminDto
 
     public DateTime? ValidTo { get; set; }
 }
+
+public class ResponseVoucherDto
+{
+    public Guid VoucherGuid { get; set; }
+    public string? VoucherName { get; set; }
+    public string? Description { get; set; }
+    public decimal Discount { get; set; } = 0;
+    public VoucherScope? VoucherScope { get; set; }
+    public DiscountType? DiscountType { get; set; }
+    public decimal? MaxPriceDiscount { get; set; }
+    public decimal? MinOrderPrice { get; set; }
+
+    public int Quantity { get; set; } = 1;
+
+    public DateTime? ValidFrom { get; set; }
+
+    public DateTime? ValidTo { get; set; }
+}
