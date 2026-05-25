@@ -61,5 +61,8 @@ public class VoucherConfiguration : IEntityTypeConfiguration<Voucher>
 
         builder.Property(c => c.MaxPriceDiscount)
             .HasColumnType("numeric(18,2)");
+
+        builder.Property<uint>("Version")
+            .IsRowVersion();
     }
 }
