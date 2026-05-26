@@ -81,7 +81,10 @@ builder.Services.AddHostedService<OrderCancellationService>();
 builder.Services.AddHostedService<NotifyNewVoucherService>();
 builder.Services.AddHostedService<DeleteVoucherExpiredService>();
 builder.Services.AddHostedService<UpdateTitleSessionService>();
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+});
 builder.Services.AddScoped<INotifyBotResponse,NotifyBotResponse>();
 builder.Services.AddCors(options =>
 {

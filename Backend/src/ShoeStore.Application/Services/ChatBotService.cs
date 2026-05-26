@@ -8,6 +8,7 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs.ChatBotDTOs;
 using ShoeStore.Application.DTOs.StatisticsDto;
+using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.StatisticsInterface;
@@ -26,21 +27,27 @@ public class ChatBotService(
     IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
     IProductEmbeddingRepository productEmbeddingRepository,
     IUserRepository userRepository,
-    IUpdateTitleQueue queue)
+    IUpdateTitleQueue queue,
+    ICurrentUser currentUser,
+    Kernel kernel,
+    IProductPluginService productPluginService,
+    IMasterDataPluginService masterDataPluginService)
     : IChatBotService
 {
     public async Task<ErrorOr<IAsyncEnumerable<string>>> GenerateCampaignAsync(CreateCampaignRequestDto requestDto,
-        Guid publicUserId,CancellationToken token)
+        Guid publicUserId, CancellationToken token)
     {
         var summaryData = await GetSummaryData(token);
         if (summaryData.IsError) return summaryData.Errors;
         var top3Products = await GetTopProductsData(token);
         if (top3Products.IsError) return top3Products.Errors;
-        
-        var userId = await userRepository.GetUserIdByPublicIdAsync(publicUserId, token);
-        if(userId == null) return Error.NotFound("User.NotFound", "User not found");
 
-        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(requestDto.PublicSessionId,userId.Value,token);
+        var userId = await userRepository.GetUserIdByPublicIdAsync(publicUserId, token);
+        if (userId == null) return Error.NotFound("User.NotFound", "User not found");
+
+        var sessionId =
+            await chatSessionRepository.GetChatSessionIdByPublicIdAsync(requestDto.PublicSessionId, userId.Value,
+                token);
         if (sessionId == null) return Error.NotFound("ChatSession.NotFound", "Chat session not found");
         var executionSetting = BuildExecutionSettings();
         IAsyncEnumerable<StreamingChatMessageContent> response;
@@ -63,6 +70,7 @@ public class ChatBotService(
             response = chatCompletionService.GetStreamingChatMessageContentsAsync(
                 emptyStatisticsChat,
                 executionSetting,
+                kernel: kernel,
                 cancellationToken: token);
         }
         else
@@ -85,10 +93,11 @@ public class ChatBotService(
                 chatCompletionService.GetStreamingChatMessageContentsAsync(
                     chat,
                     executionSetting,
+                    kernel: kernel,
                     cancellationToken: token);
         }
-        
-        Func<string, Task> onCompleted = async (botResponse) =>
+
+        Func<string, Task> onCompleted = async botResponse =>
         {
             await queue.EnqueueAsync(new UpdateTitleRequestDto
             (
@@ -99,19 +108,20 @@ public class ChatBotService(
             ), token);
         };
 
-        return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value,onCompleted,token));
+        return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value, onCompleted, token));
     }
 
     public async Task<ErrorOr<IAsyncEnumerable<string>>> ChatAskAboutStatisticsAsync(Guid publicSessionId,
-        ChatMessageRequestDto messageRequestDto,Guid publicUserId ,CancellationToken token)
+        ChatMessageRequestDto messageRequestDto, Guid publicUserId, CancellationToken token)
     {
         var summaryData = await GetSummaryData(token);
         if (summaryData.IsError) return summaryData.Errors;
         var top3Products = await GetTopProductsData(token);
         if (top3Products.IsError) return top3Products.Errors;
         var userId = await userRepository.GetUserIdByPublicIdAsync(publicUserId, token);
-        if(userId == null) return Error.NotFound("User.NotFound", "User not found");
-        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(publicSessionId,userId.Value ,token);
+        if (userId == null) return Error.NotFound("User.NotFound", "User not found");
+        var sessionId =
+            await chatSessionRepository.GetChatSessionIdByPublicIdAsync(publicSessionId, userId.Value, token);
         if (sessionId == null) return Error.NotFound("ChatSession.NotFound", "Chat session not found");
         var historyChat = await chatMessageRepository.GetHistoryChatMessageAsync(sessionId.Value, token);
         var isFirstMessage = historyChat.Count == 0;
@@ -136,6 +146,7 @@ public class ChatBotService(
             response = chatCompletionService.GetStreamingChatMessageContentsAsync(
                 emptyStatisticsChat,
                 executionSetting,
+                kernel: kernel,
                 cancellationToken: token);
         }
         else
@@ -187,31 +198,37 @@ public class ChatBotService(
                 chatCompletionService.GetStreamingChatMessageContentsAsync(
                     chat,
                     executionSetting,
+                    kernel: kernel,
                     cancellationToken: token);
         }
+
         Func<string, Task>? onCompleted = null;
         if (isFirstMessage)
-        {
-            onCompleted = async (_) =>
+            onCompleted = async _ =>
             {
                 await queue.EnqueueAsync(new UpdateTitleRequestDto
                 (
                     publicSessionId,
                     messageRequestDto.Content,
-                    userId.Value,
-                    false
+                    userId.Value
                 ), token);
             };
-        }
-        return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value,onCompleted,token));
+        return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value, onCompleted, token));
     }
 
     public async Task<ErrorOr<IAsyncEnumerable<string>>> ChatAskAboutProductsAsync(Guid publicSessionId,
-        ChatMessageRequestDto messageRequestDto,Guid publicUserId ,CancellationToken token)
+        ChatMessageRequestDto messageRequestDto, Guid publicUserId, CancellationToken token)
     {
         var userId = await userRepository.GetUserIdByPublicIdAsync(publicUserId, token);
-        if(userId == null) return Error.NotFound("User.NotFound", "User not found");
-        var sessionId = await chatSessionRepository.GetChatSessionIdByPublicIdAsync(publicSessionId,userId.Value ,token);
+        if (userId == null) return Error.NotFound("User.NotFound", "User not found");
+        if (currentUser.IsAdmin)
+        {
+            kernel.Plugins.AddFromObject(productPluginService);
+            kernel.Plugins.AddFromObject(masterDataPluginService);
+        }
+
+        var sessionId =
+            await chatSessionRepository.GetChatSessionIdByPublicIdAsync(publicSessionId, userId.Value, token);
         if (sessionId == null) return Error.NotFound("ChatSession.NotFound", "Chat session not found");
         var historyChat = await chatMessageRepository.GetHistoryChatMessageAsync(sessionId.Value, token);
         var isFirstMessage = historyChat.Count == 0;
@@ -244,6 +261,7 @@ public class ChatBotService(
                 chatCompletionService.GetStreamingChatMessageContentsAsync(
                     emptyInventoryChat,
                     executionSetting,
+                    kernel: kernel,
                     cancellationToken: token);
         }
         else
@@ -277,24 +295,22 @@ public class ChatBotService(
                 chatCompletionService.GetStreamingChatMessageContentsAsync(
                     chat,
                     executionSetting,
+                    kernel: kernel,
                     cancellationToken: token);
         }
-        
+
         Func<string, Task>? onCompleted = null;
         if (isFirstMessage)
-        {
-            onCompleted = async (_) =>
+            onCompleted = async _ =>
             {
                 await queue.EnqueueAsync(new UpdateTitleRequestDto
                 (
                     publicSessionId,
                     messageRequestDto.Content,
-                    userId.Value,
-                    false
+                    userId.Value
                 ), token);
             };
-        }
-        return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value,onCompleted,token));
+        return ErrorOrFactory.From(GenerateAnswerAsync(response, sessionId.Value, onCompleted, token));
     }
 
     private async Task<ErrorOr<StatisticsSummaryResponseDto>> GetSummaryData(CancellationToken token)
@@ -308,7 +324,7 @@ public class ChatBotService(
     }
 
     private async IAsyncEnumerable<string> GenerateAnswerAsync(
-        IAsyncEnumerable<StreamingChatMessageContent> response, int sessionId,Func<string, Task>? onStreamCompleted,
+        IAsyncEnumerable<StreamingChatMessageContent> response, int sessionId, Func<string, Task>? onStreamCompleted,
         [EnumeratorCancellation] CancellationToken token)
     {
         var message = new StringBuilder();
@@ -336,10 +352,7 @@ public class ChatBotService(
             };
             chatMessageRepository.Add(newAssistantMessage);
             await unitOfWork.SaveChangesAsync(token);
-            if (onStreamCompleted != null)
-            {
-                await onStreamCompleted(completeBotResponse);
-            }
+            if (onStreamCompleted != null) await onStreamCompleted(completeBotResponse);
         }
     }
 
@@ -354,7 +367,8 @@ public class ChatBotService(
         return new OpenAIPromptExecutionSettings
         {
             MaxTokens = 500, // Limit response length
-            Temperature = 0.6 // Adjust creativity
+            Temperature = 0.6, // Adjust creativity
+            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions // Allow tool calls
         };
     }
 }

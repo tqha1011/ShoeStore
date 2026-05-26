@@ -30,4 +30,9 @@ public class Voucher : Entity<int>
     ///     Representing the invoices that have applied this voucher and the details of their usage.
     /// </summary>
     public ICollection<VoucherDetail> VoucherDetails { get; set; } = new List<VoucherDetail>();
+
+    /// <summary>
+    ///     Get the collection of user voucher associated with this voucher
+    /// </summary>
+    public ICollection<UserVoucher> UserVouchers { get; set; } = new List<UserVoucher>();
 }
