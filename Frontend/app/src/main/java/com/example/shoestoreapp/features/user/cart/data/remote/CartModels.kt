@@ -46,3 +46,8 @@ data class UpdateCartItemRequest(
     val cartItemId: String,
     val quantity: Int
 )
+
+data class CartResponseDto(
+    val items: List<CartItemResponseDto>,
+    val shippingFee: Double
+)

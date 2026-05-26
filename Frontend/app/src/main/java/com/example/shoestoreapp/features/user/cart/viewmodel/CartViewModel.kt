@@ -56,6 +56,9 @@ class CartViewModel(
     private val _updatingItemIds = MutableStateFlow<Set<String>>(emptySet())
     val updatingItemIds: StateFlow<Set<String>> = _updatingItemIds.asStateFlow()
 
+    private val _shippingFee = MutableStateFlow(0.0)
+    val shippingFee: StateFlow<Double> = _shippingFee.asStateFlow()
+
     private val _cartDtos = MutableStateFlow<List<CartItemResponseDto>>(emptyList())
 
 
@@ -74,8 +77,8 @@ class CartViewModel(
 
             try {
                 val result = repository.getCartItems()
-                result.onSuccess { dtoItems ->
-                    setSuccess(dtoItems)
+                result.onSuccess { response ->
+                    setSuccess(response.items, response.shippingFee)
                 }.onFailure { throwable ->
                     val message = throwable.message ?: "Unable to load cart items"
                     _cartUiState.value = CartUiState.Error(message)
@@ -87,10 +90,11 @@ class CartViewModel(
         }
     }
 
-    private fun setSuccess(dtoItems: List<CartItemResponseDto>) {
+    private fun setSuccess(dtoItems: List<CartItemResponseDto>, shippingFee: Double) {
         _cartDtos.value = dtoItems
+        _shippingFee.value = shippingFee
         val uiItems = dtoItems.map(::mapDtoToCartItem)
-        val summary = buildSummary(uiItems)
+        val summary = buildSummary(uiItems, shippingFee)
         _cartUiState.value = CartUiState.Success(
             items = uiItems,
             summary = summary,
@@ -98,9 +102,9 @@ class CartViewModel(
         )
     }
 
-    private fun buildSummary(items: List<CartItem>): CartSummary {
+    private fun buildSummary(items: List<CartItem>, shippingFee: Double): CartSummary {
         val subtotal = items.sumOf { it.price * it.quantity }
-        val shipping = 0.0
+        val shipping = shippingFee
         val tax = subtotal * 0.1
 
         return CartSummary(
@@ -119,7 +123,7 @@ class CartViewModel(
         val uiItems = (updated ?: _cartDtos.value).map(::mapDtoToCartItem)
         _cartUiState.value = CartUiState.Success(
             items = uiItems,
-            summary = buildSummary(uiItems),
+            summary = buildSummary(uiItems, _shippingFee.value),
             isEmpty = uiItems.isEmpty()
         )
     }

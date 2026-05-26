@@ -25,7 +25,7 @@ import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewModel
 import com.example.shoestoreapp.features.user.invoice.ui.UserInvoiceScreen
-import com.example.shoestoreapp.features.user.profile.ui.UserProfileScreen
+import com.example.shoestoreapp.features.user.profile.ui.screens.UserProfileScreen
 import com.example.shoestoreapp.features.admin.product.ui.screens.AdminProductListScreen
 import com.example.shoestoreapp.features.admin.settings.ui.AdminSettingsScreen
 import com.example.shoestoreapp.features.admin.voucher.ui.screen.VoucherManagementScreen
@@ -40,7 +40,6 @@ import com.example.shoestoreapp.features.auth.presentation.reset_password.create
 import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.admin.addproduct.viewmodel.AdminAddProductViewModel
 import com.example.shoestoreapp.features.admin.addproduct.viewmodel.FetchMasterDataViewModel
-import com.example.shoestoreapp.features.admin.product.viewmodel.AdminEditProductViewModel
 import kotlinx.coroutines.launch
 
 private object Routes {

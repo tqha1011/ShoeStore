@@ -26,7 +26,7 @@ interface CartApi {
      * Endpoint: GET /api/cart/user-cart-items
      */
     @GET("api/cart/user-cart-items")
-    suspend fun getCartItems(): Response<List<CartItemResponseDto>>
+    suspend fun getCartItems(): Response<CartResponseDto>
 
     /**
      * Thêm sản phẩm vào giỏ hàng

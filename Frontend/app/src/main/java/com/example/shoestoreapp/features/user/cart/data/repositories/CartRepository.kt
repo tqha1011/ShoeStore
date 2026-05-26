@@ -4,6 +4,7 @@ import com.example.shoestoreapp.core.networks.RetrofitInstance
 import com.example.shoestoreapp.features.user.cart.data.remote.AddCartItemRequest
 import com.example.shoestoreapp.features.user.cart.data.remote.CartApi
 import com.example.shoestoreapp.features.user.cart.data.remote.CartItemResponseDto
+import com.example.shoestoreapp.features.user.cart.data.remote.CartResponseDto
 import com.example.shoestoreapp.features.user.cart.data.remote.UpdateCartItemRequest
 import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutRequestDto
 import retrofit2.Response
@@ -16,7 +17,7 @@ interface CartRepository {
     /**
      * Lấy toàn bộ cart items của user hiện tại.
      */
-    suspend fun getCartItems(): Result<List<CartItemResponseDto>>
+    suspend fun getCartItems(): Result<CartResponseDto>
 
     /**
      * Thêm sản phẩm vào giỏ hàng.
@@ -77,12 +78,13 @@ class CartRepositoryImpl(
         return pendingCheckoutItems
     }
 
-    override suspend fun getCartItems(): Result<List<CartItemResponseDto>> {
+    override suspend fun getCartItems(): Result<CartResponseDto> {
         return try {
             val response = cartApi.getCartItems()
 
             if (response.isSuccessful) {
-                Result.success(response.body().orEmpty())
+                response.body()?.let { Result.success(it) }
+                    ?: Result.failure(CartRepositoryException.Unknown("Empty response body."))
             } else {
                 val backendMessage = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
                 val exception = when (response.code()) {
