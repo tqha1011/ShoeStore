@@ -1,3 +1,4 @@
+using ShoeStore.Application.DTOs.ChatBotDTOs;
 using ShoeStore.Application.DTOs.HubDTOs;
 using ShoeStore.Domain.Enum;
 

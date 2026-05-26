@@ -17,4 +17,16 @@ public class VoucherRepository(AppDbContext context) : GenericRepository<Voucher
     {
         return DbSet.Where(v => v.PublicId == voucherGuid);
     }
+
+    public async Task<Voucher?> CheckVoucherValidateAsync(Guid voucherGuid, CancellationToken token)
+    {
+        return await DbSet.Where(v =>
+                v.PublicId == voucherGuid && v.ValidTo < DateTime.UtcNow && v.TotalQuantity > 0)
+            .FirstOrDefaultAsync(token);
+    }
+
+    public IQueryable<Voucher> GetValidVouchers()
+    {
+        return DbSet.AsNoTracking();
+    }
 }

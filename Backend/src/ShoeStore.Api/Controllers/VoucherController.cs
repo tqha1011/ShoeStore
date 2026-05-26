@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +17,6 @@ namespace ShoeStore.Api.Controllers;
 /// <param name="voucherService">Service that handles voucher business logic.</param>
 [ApiController]
 [Route("api/admin/vouchers")]
-[Authorize(Roles = "Admin")]
 [ApiVersion(1)]
 public class VoucherController(IVoucherService voucherService) : ControllerBase
 {
@@ -44,6 +44,7 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateVoucher([FromBody] CreateVoucherDto createVoucherDto,
         CancellationToken token)
     {
@@ -82,6 +83,7 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPut("{voucherGuid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateVoucher(Guid voucherGuid, UpdateVoucherDto updateVoucherDto,
         CancellationToken token)
     {
@@ -118,6 +120,7 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpDelete("{voucherGuid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteVoucher(Guid voucherGuid, CancellationToken token)
     {
         var result = await voucherService.DeleteVoucherByGuidAsync(voucherGuid, token);
@@ -151,6 +154,7 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpDelete("expired")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteExpiredVouchers(CancellationToken token)
     {
         var result = await voucherService.DeleteVoucherExpireAsync(token);
@@ -178,6 +182,7 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetVouchersForAdmin(CancellationToken token, [FromQuery] int pageIndex = 1,
         [FromQuery] int pageSize = 10)
     {
@@ -187,6 +192,39 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
             errors => BadRequest(new
             {
                 message = "Failed to get vouchers for admin",
+                detail = errors[0].Description
+            }));
+    }
+
+    /// <summary>
+    ///     Retrieves valid vouchers available to the current user with pagination.
+    /// </summary>
+    /// <remarks>
+    ///     Requires an authenticated user and returns only vouchers that are currently valid.
+    /// </remarks>
+    /// <param name="token">Cancellation token.</param>
+    /// <param name="pageIndex">Page index (1-based).</param>
+    /// <param name="pageSize">Number of items per page.</param>
+    /// <response code="200">Valid vouchers retrieved successfully.</response>
+    /// <response code="400">Request is invalid.</response>
+    /// <response code="401">Caller is not authenticated.</response>
+    /// <returns>An <see cref="IActionResult" /> containing paginated valid vouchers.</returns>
+    [ProducesResponseType(typeof(PageResult<ResponseVoucherDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [HttpGet("valid-voucher")]
+    [Authorize]
+    public async Task<IActionResult> GetValidVouchers(CancellationToken token, [FromQuery] int pageIndex = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(validUser) || !Guid.TryParse(validUser, out _)) return Unauthorized();
+        var result = await voucherService.GetValidVoucherAsync(token, pageIndex, pageSize);
+        return result.Match<IActionResult>(
+            vouchers => Ok(vouchers),
+            errors => BadRequest(new
+            {
+                message = "Failed to get valid vouchers",
                 detail = errors[0].Description
             }));
     }

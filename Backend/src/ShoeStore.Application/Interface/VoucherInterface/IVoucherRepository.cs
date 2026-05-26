@@ -7,4 +7,8 @@ public interface IVoucherRepository : IGenericRepository<Voucher, int>
 {
     IQueryable<Voucher> GetAllVouchers(bool isTracking);
     IQueryable<Voucher> GetVoucherByGuid(Guid voucherGuid);
+
+    Task<Voucher?> CheckVoucherValidateAsync(Guid voucherGuid, CancellationToken token);
+
+    IQueryable<Voucher> GetValidVouchers();
 }

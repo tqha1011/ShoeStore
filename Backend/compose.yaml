@@ -81,7 +81,6 @@
       - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
-<<<<<<< config/docker
   
   nginx:
     image: nginx:1.31.0-alpine
@@ -91,7 +90,10 @@
     
     ports:
       - "8080:80"
-    
+    environment:
+      - BACKEND_HOST=shoestore.api
+      - BACKEND_PORT=8080
+
     networks:
       - shoestore-backend
       - shoestore-frontend
@@ -106,9 +108,6 @@
       interval: 30s
       timeout: 10s
       retries: 3
-    
-=======
->>>>>>> main
 
 networks:
   shoestore-frontend:

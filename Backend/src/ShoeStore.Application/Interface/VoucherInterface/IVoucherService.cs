@@ -25,4 +25,7 @@ public interface IVoucherService
     // NOTIFY
     Task<ErrorOr<Success>> NotifyUserAboutNewVoucherAsync(int voucherId, string voucherName, DateTime validTo,
         CancellationToken token);
+
+    Task<ErrorOr<PageResult<ResponseVoucherDto>>> GetValidVoucherAsync(CancellationToken token, int pageIndex = 1,
+        int pageSize = 10);
 }

@@ -66,4 +66,64 @@ public class UserVoucherController(IUserVoucherService userVoucherService) : Con
                 })
             });
     }
+
+    /// <summary>
+    ///     Claims a voucher for the current authenticated user.
+    /// </summary>
+    /// <remarks>
+    ///     Requires User role authorization.
+    ///     The voucher is identified by its public GUID and assigned to the current user if valid.
+    /// </remarks>
+    /// <param name="publicVoucherId">Public identifier of the voucher to claim.</param>
+    /// <param name="token">Cancellation token.</param>
+    /// <response code="201">Voucher claimed successfully.</response>
+    /// <response code="400">Voucher is not valid or cannot be claimed.</response>
+    /// <response code="401">Unauthorized; user must be authenticated with User role.</response>
+    /// <response code="404">User not found.</response>
+    /// <response code="500">Internal server error; claim failed.</response>
+    /// <returns>An <see cref="IActionResult" /> indicating success or failure.</returns>
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
+    [HttpPost("claim-voucher")]
+    public async Task<IActionResult> ClaimUserVoucher([FromQuery] Guid publicVoucherId, CancellationToken token)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var publicUserId)) return Unauthorized();
+
+        var result = await userVoucherService.ClaimUserVoucherAsync(publicUserId, publicVoucherId, token);
+        var response = result.Match<IActionResult>(
+            _ => Created(),
+            errors => errors[0].Code switch
+            {
+                "User.NotFound" => NotFound(new
+                {
+                    message = "User not found",
+                    detail = errors[0].Description
+                }),
+                "Voucher.NotValid" => BadRequest(new
+                {
+                    message = "Voucher is not valid",
+                    detail = errors[0].Description
+                }),
+                "Voucher.AlreadyClaimed" => Conflict(new
+                {
+                    message = "Voucher already claimed",
+                    detail = errors[0].Description
+                }),
+                "Voucher.ClaimedFailed" => Conflict(new
+                {
+                    message = "Voucher claimed failed",
+                    detail = errors[0].Description
+                }),
+                _ => StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "Some thing went wrong, please try again later!",
+                    detail = errors[0].Description
+                })
+            });
+        return response;
+    }
 }

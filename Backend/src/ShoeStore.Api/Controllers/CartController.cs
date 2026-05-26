@@ -222,7 +222,7 @@ public class CartController(ICartItemService cartItemService) : ControllerBase
     /// <returns>
     ///     An action result containing the user's cart items on success, or an error response describing what went wrong.
     /// </returns>
-    [ProducesResponseType(typeof(List<UserCartItemResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(CartItemResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]

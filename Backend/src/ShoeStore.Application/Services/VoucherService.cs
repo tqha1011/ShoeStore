@@ -158,4 +158,36 @@ public class VoucherService(
         };
         return pageResult;
     }
+
+    public async Task<ErrorOr<PageResult<ResponseVoucherDto>>> GetValidVoucherAsync(CancellationToken token,
+        int pageIndex = 1, int pageSize = 10)
+    {
+        var query = voucherRepository.GetValidVouchers();
+        var filtered = query.Where(v => !v.IsDeleted && v.ValidTo > DateTime.UtcNow && v.TotalQuantity > 0);
+        var totalCount = await filtered.CountAsync(token);
+
+        var vouchers = await filtered
+            .ApplyPagination(pageIndex, pageSize)
+            .Select(v => new ResponseVoucherDto
+            {
+                VoucherGuid = v.PublicId,
+                VoucherName = v.VoucherName,
+                Description = v.VoucherDescription ?? string.Empty,
+                Discount = v.Discount,
+                ValidFrom = v.ValidFrom,
+                ValidTo = v.ValidTo,
+                DiscountType = v.DiscountType,
+                VoucherScope = v.VoucherScope,
+                MinOrderPrice = v.MinOrderPrice
+            }).ToListAsync(token);
+
+        var result = new PageResult<ResponseVoucherDto>
+        {
+            Items = vouchers,
+            TotalCount = totalCount,
+            PageNumber = pageIndex,
+            PageSize = pageSize
+        };
+        return result;
+    }
 }

@@ -65,4 +65,13 @@ public class ProductRepository(AppDbContext context) : GenericRepository<Product
         return await DbSet.Where(p => !p.IsDeleted && p.ProductVariants.Any(v => v.IsSelling && !v.IsDeleted))
             .CountAsync(token);
     }
+
+    public async Task<ProductResultDto?> CheckProductVariantExistsAsync(Guid productId, int colorId, int sizeId,
+        CancellationToken token)
+    {
+        return await DbSet.Where(p => !p.IsDeleted && p.PublicId == productId)
+            .Select(p => new ProductResultDto(
+                p.ProductVariants.Any(v => v.IsSelling && !v.IsDeleted && v.ColorId == colorId && v.SizeId == sizeId)))
+            .FirstOrDefaultAsync(token);
+    }
 }

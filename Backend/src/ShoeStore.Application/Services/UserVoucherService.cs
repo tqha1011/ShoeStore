@@ -3,12 +3,18 @@ using Microsoft.EntityFrameworkCore;
 using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.VoucherDTOs;
 using ShoeStore.Application.Extensions;
+using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Interface.VoucherInterface;
+using ShoeStore.Domain.Entities;
 
 namespace ShoeStore.Application.Services;
 
-public class UserVoucherService(IUserVoucherRepository userVoucherRepository, IUserRepository userRepository)
+public class UserVoucherService(
+    IUserVoucherRepository userVoucherRepository,
+    IUserRepository userRepository,
+    IVoucherRepository voucherRepository,
+    IUnitOfWork unitOfWork)
     : IUserVoucherService
 {
     public async Task<ErrorOr<PageResult<ResponseVoucherUserDto>>> GetAllVoucherForUserAsync(Guid userGuid,
@@ -37,7 +43,10 @@ public class UserVoucherService(IUserVoucherRepository userVoucherRepository, IU
                 ValidFrom = v.Voucher.ValidFrom,
                 ValidTo = v.Voucher.ValidTo,
                 IsUsed = v.IsUsed,
-                SavedAt = v.SavedAt
+                SavedAt = v.SavedAt,
+                DiscountType = v.Voucher.DiscountType,
+                VoucherScope = v.Voucher.VoucherScope,
+                MinOrderPrice = v.Voucher.MinOrderPrice
             })
             .ToListAsync(token);
 
@@ -49,5 +58,38 @@ public class UserVoucherService(IUserVoucherRepository userVoucherRepository, IU
             PageNumber = pageIndex
         };
         return result;
+    }
+
+    public async Task<ErrorOr<Created>> ClaimUserVoucherAsync(Guid userId, Guid voucherId, CancellationToken token)
+    {
+        var validUser = await userRepository.GetUserByPublicIdAsync(userId, token);
+        if (validUser == null) return Error.NotFound("User.NotFound", "User does not exist");
+
+        // Get the voucher with valid quantity and valid time
+        var validVoucher = await voucherRepository.CheckVoucherValidateAsync(voucherId, token);
+        if (validVoucher == null) return Error.Validation("Voucher.NotValid", "Voucher does not exist or is not valid");
+
+        var voucherExists = validUser.UserVouchers.Any(uv => uv.VoucherId == validVoucher.Id);
+        if (voucherExists) return Error.Conflict("Voucher.AlreadyClaimed", "You have already claimed this voucher.");
+
+        var newVoucherUser = new UserVoucher
+        {
+            UserId = validUser.Id,
+            VoucherId = validVoucher.Id,
+            IsUsed = false,
+            SavedAt = DateTime.UtcNow
+        };
+        userVoucherRepository.Add(newVoucherUser);
+        validVoucher.TotalQuantity -= 1;
+        try
+        {
+            await unitOfWork.SaveChangesAsync(token);
+            return Result.Created;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Error.Conflict("Voucher.ClaimFailed",
+                "Failed to claim voucher due to concurrency issues. Please try again.");
+        }
     }
 }
