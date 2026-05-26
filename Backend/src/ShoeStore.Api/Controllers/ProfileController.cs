@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,27 +8,29 @@ using ShoeStore.Application.Interface.ProfileInterface;
 namespace ShoeStore.Api.Controllers;
 
 /// <summary>
-/// Controller for managing user profile information.
+///     Controller for managing user profile information.
 /// </summary>
 /// <param name="profileService">The profile service instance.</param>
 [Authorize]
 [Route("api/profile")]
+[ApiVersion(1)]
 [ApiController]
 public class ProfileController(IProfileService profileService) : ControllerBase
 {
     /// <summary>
-    /// Retrieves the profile information for a specific user.
+    ///     Retrieves the profile information for a specific user.
     /// </summary>
-    /// <param name="userGuid">The unique identifier of the user.</param>
     /// <param name="token">Cancellation token.</param>
     /// <response code="200">Returns the user profile.</response>
     /// <response code="404">User not found.</response>
     /// <returns>The user profile data.</returns>
-    [HttpGet("{userGuid}")]
+    [HttpGet]
     [ProducesResponseType(typeof(ResponseProfileDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetProfile(Guid userGuid, CancellationToken token)
+    public async Task<IActionResult> GetProfile(CancellationToken token)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null || !Guid.TryParse(userId, out var userGuid)) return Unauthorized();
         var result = await profileService.GetProfileAsync(userGuid, token);
 
         return result.Match<IActionResult>(
@@ -41,21 +44,23 @@ public class ProfileController(IProfileService profileService) : ControllerBase
     }
 
     /// <summary>
-    /// Updates the profile information for a specific user.
+    ///     Updates the profile information for a specific user.
     /// </summary>
-    /// <param name="userGuid">The unique identifier of the user.</param>
     /// <param name="updateProfileDto">The updated profile data.</param>
     /// <param name="token">Cancellation token.</param>
     /// <response code="200">Profile updated successfully.</response>
     /// <response code="400">Invalid input data.</response>
     /// <response code="404">User not found.</response>
     /// <returns>A status indicating the result of the update.</returns>
-    [HttpPut("{userGuid}")]
+    [HttpPut]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateProfile(Guid userGuid, [FromBody] UpdateProfileDto updateProfileDto, CancellationToken token)
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileDto updateProfileDto,
+        CancellationToken token)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null || !Guid.TryParse(userId, out var userGuid)) return Unauthorized();
         var result = await profileService.UpdateProfileAsync(userGuid, updateProfileDto, token);
 
         return result.Match<IActionResult>(
@@ -67,36 +72,37 @@ public class ProfileController(IProfileService profileService) : ControllerBase
             }
         );
     }
+
     /// <summary>
-    /// Changes the password for a specific user.
+    ///     Changes the password for a specific user.
     /// </summary>
-    /// <param name="userGuid">
-    /// The unique identifier of the user.
-    /// </param>
     /// <param name="changePasswordDto">
-    /// The password change request data.
+    ///     The password change request data.
     /// </param>
     /// <param name="token">
-    /// Cancellation token.
+    ///     Cancellation token.
     /// </param>
     /// <response code="200">
-    /// Password changed successfully.
+    ///     Password changed successfully.
     /// </response>
     /// <response code="400">
-    /// Invalid password data.
+    ///     Invalid password data.
     /// </response>
     /// <response code="404">
-    /// User not found.
+    ///     User not found.
     /// </response>
     /// <returns>
-    /// A status indicating the result of the password change.
+    ///     A status indicating the result of the password change.
     /// </returns>
-    [HttpPut("{userGuid}/change-password")]
+    [HttpPut("/change-password")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ChangePassword(Guid userGuid, [FromBody] ChangePasswordDto changePasswordDto, CancellationToken token)
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto,
+        CancellationToken token)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null || !Guid.TryParse(userId, out var userGuid)) return Unauthorized();
         var result = await profileService.ChangePasswordAsync(userGuid, changePasswordDto, token);
 
         return result.Match<IActionResult>(
@@ -104,7 +110,6 @@ public class ProfileController(IProfileService profileService) : ControllerBase
             {
                 message = "Password changed successfully"
             }),
-
             errors => errors[0].Code switch
             {
                 "User.NotFound" => NotFound(new
@@ -134,4 +139,3 @@ public class ProfileController(IProfileService profileService) : ControllerBase
         );
     }
 }
-
