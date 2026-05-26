@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using ShoeStore.Application.DTOs.ChatBotDTOs;
 using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.MasterDataInterface;
 using ShoeStore.Domain.Entities;
@@ -16,7 +17,7 @@ public class MasterDataPluginService(
     ISizeRepository sizeRepository,
     IUnitOfWork unitOfWork,
     ICurrentUser currentUser,
-    ILogger<MasterDataPluginService> logger)
+    ILogger<MasterDataPluginService> logger) : IMasterDataPluginService
 {
     // LLM entry point: create a new color in master data after explicit user approval.
     [KernelFunction("add-new-color")]

@@ -6,6 +6,7 @@ using ShoeStore.Application.DTOs.ChatBotDTOs;
 using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
 using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.Hub;
 using ShoeStore.Application.Interface.MasterDataInterface;
 using ShoeStore.Application.Interface.ProductInterface;
@@ -18,7 +19,7 @@ public class ProductPluginService(
     IProductRepository productRepository,
     ICurrentUser currentUser,
     INotifyBotResponse notifyBotResponse,
-    ILogger<ProductPluginService> logger)
+    ILogger<ProductPluginService> logger) : IProductPluginService
 {
     // LLM entry point: search product by keyword, enforce admin check, return a single/multiple/not-found status.
     [KernelFunction("search-product")]
