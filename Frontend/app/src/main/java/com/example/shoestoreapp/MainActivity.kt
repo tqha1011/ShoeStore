@@ -106,19 +106,19 @@ class MainActivity : ComponentActivity() {
         RetrofitInstance.init(this)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        try {
-            val info = packageManager.getPackageInfo(
-                packageName,
-                PackageManager.GET_SIGNATURES
-            )
-            for (signature in info.signatures!!) {
-                val md = MessageDigest.getInstance("SHA")
-                md.update(signature.toByteArray())
-                Log.d("MY_KEY_HASH", Base64.encodeToString(md.digest(), Base64.DEFAULT))
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+//        try {
+//            val info = packageManager.getPackageInfo(
+//                packageName,
+//                PackageManager.GET_SIGNATURES
+//            )
+//            for (signature in info.signatures!!) {
+//                val md = MessageDigest.getInstance("SHA")
+//                md.update(signature.toByteArray())
+//                Log.d("MY_KEY_HASH", Base64.encodeToString(md.digest(), Base64.DEFAULT))
+//            }
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//        }
         setContent {
             MaterialTheme {
                 AppNavHost()
