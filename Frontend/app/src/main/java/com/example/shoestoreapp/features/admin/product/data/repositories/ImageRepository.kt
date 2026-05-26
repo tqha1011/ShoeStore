@@ -1,9 +1,10 @@
 package com.example.shoestoreapp.features.admin.product.data.repositories
 
+import com.example.shoestoreapp.features.admin.product.data.remote.ImageUploadResponseDto
 import java.io.File
 
 interface ImageRepository {
-    suspend fun uploadImage(imageFile: File): Result<String>
+    suspend fun uploadImage(imageFile: File): Result<ImageUploadResponseDto>
 }
 
 sealed class ImageRepositoryException(message: String) : Exception(message) {

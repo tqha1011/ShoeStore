@@ -2,6 +2,7 @@ package com.example.shoestoreapp.features.admin.product.data.repositories
 
 import com.example.shoestoreapp.core.networks.RetrofitInstance
 import com.example.shoestoreapp.features.admin.product.data.remote.ImageApi
+import com.example.shoestoreapp.features.admin.product.data.remote.ImageUploadResponseDto
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -16,15 +17,15 @@ private const val ERROR_UNKNOWN = "Unable to upload image right now."
 class ImageRepositoryImpl(
     private val api: ImageApi = RetrofitInstance.imageApi
 ) : ImageRepository {
-    override suspend fun uploadImage(imageFile: File): Result<String> {
+    override suspend fun uploadImage(imageFile: File): Result<ImageUploadResponseDto> {
         return try {
             val requestBody = imageFile.asRequestBody("image/*".toMediaType())
             val part = MultipartBody.Part.createFormData("file", imageFile.name, requestBody)
             val response = api.uploadImage(part)
 
             if (response.isSuccessful) {
-                val body = response.body()?.string()?.trim().orEmpty()
-                if (body.isNotBlank()) {
+                val body = response.body()
+                if (body != null && body.imageUrl.isNotBlank()) {
                     Result.success(body)
                 } else {
                     Result.failure(ImageRepositoryException.Unknown("Empty response body."))

@@ -45,6 +45,8 @@ import com.example.shoestoreapp.features.user.profile.viewmodel.ProfileViewModel
 fun UserProfileScreen(
     viewModel: ProfileViewModel = ProfileViewModel(),
     onTabSelected: (BottomNavTab) -> Unit = {},
+    onEditProfileClick: () -> Unit = {},
+    onChangePasswordClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
     val profile by viewModel.profileState.collectAsState()
@@ -100,17 +102,8 @@ fun UserProfileScreen(
 
                 ProfileMenuItem(
                     icon = Icons.Outlined.Person,
-                    label = "Edit Name"
-                )
-
-                ProfileMenuItem(
-                    icon = Icons.Outlined.Email,
-                    label = "Update Email"
-                )
-
-                ProfileMenuItem(
-                    icon = Icons.Outlined.Event,
-                    label = "Birth Date"
+                    label = "Edit Profile",
+                    onClick = onEditProfileClick
                 )
             }
 
@@ -129,7 +122,8 @@ fun UserProfileScreen(
 
                 ProfileMenuItem(
                     icon = Icons.Outlined.Lock,
-                    label = "Change Password"
+                    label = "Change Password",
+                    onClick = onChangePasswordClick
                 )
             }
 

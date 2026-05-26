@@ -281,8 +281,8 @@ class AdminEditProductViewModel(
                 Result.failure(ImageRepositoryException.Unknown(e.message ?: "Unable to upload image right now."))
             }
 
-            result.onSuccess { url ->
-                _uploadedImageUrl.value = url
+            result.onSuccess { response ->
+                _uploadedImageUrl.value = response.imageUrl
                 _uiState.value = _uiState.value.copy(isLoading = false)
             }.onFailure { throwable ->
                 _uiState.value = _uiState.value.copy(
@@ -304,8 +304,11 @@ class AdminEditProductViewModel(
                 Result.failure(ImageRepositoryException.Unknown(e.message ?: "Unable to upload image right now."))
             }
 
-            result.onSuccess { url ->
-                _variantDraft.value = _variantDraft.value.copy(imageUrl = url, isUploadingImage = false)
+            result.onSuccess { response ->
+                _variantDraft.value = _variantDraft.value.copy(
+                    imageUrl = response.imageUrl,
+                    isUploadingImage = false
+                )
             }.onFailure { throwable ->
                 _variantDraft.value = _variantDraft.value.copy(isUploadingImage = false)
                 _uiEvent.trySend(

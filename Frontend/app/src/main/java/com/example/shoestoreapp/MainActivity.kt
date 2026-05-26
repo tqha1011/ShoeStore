@@ -25,6 +25,8 @@ import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewModel
 import com.example.shoestoreapp.features.user.invoice.ui.UserInvoiceScreen
+import com.example.shoestoreapp.features.user.profile.ui.screens.ChangePasswordScreen
+import com.example.shoestoreapp.features.user.profile.ui.screens.EditProfileScreen
 import com.example.shoestoreapp.features.user.profile.ui.screens.UserProfileScreen
 import com.example.shoestoreapp.features.admin.product.ui.screens.AdminProductListScreen
 import com.example.shoestoreapp.features.admin.settings.ui.AdminSettingsScreen
@@ -54,6 +56,8 @@ private object Routes {
     const val CHECKOUT = "checkout"
     const val USER_INVOICE_LIST = "user_invoice_list"
     const val USER_PROFILE = "user_profile"
+    const val USER_EDIT_PROFILE = "user_edit_profile"
+    const val USER_CHANGE_PASSWORD = "user_change_password"
     const val ADMIN_PRODUCT_LIST = "admin_product_list"
     const val ADMIN_CRUD = "admin_crud"
     const val ADMIN_EDIT_PRODUCT = "admin_edit_product/{productId}"
@@ -209,12 +213,26 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
 
         UserProfileScreen(
             onTabSelected = { tab -> handleUserProfileTabSelection(tab, navController) },
+            onEditProfileClick = { navController.navigate(Routes.USER_EDIT_PROFILE) },
+            onChangePasswordClick = { navController.navigate(Routes.USER_CHANGE_PASSWORD) },
             onLogoutClick = {
                 scope.launch {
                     tokenManager.clearAuthInfo()
                     navController.navigateAfterLogout()
                 }
             }
+        )
+    }
+
+    composable(Routes.USER_EDIT_PROFILE) {
+        EditProfileScreen(
+            onBackClick = { navController.popBackStack() }
+        )
+    }
+
+    composable(Routes.USER_CHANGE_PASSWORD) {
+        ChangePasswordScreen(
+            onBackClick = { navController.popBackStack() }
         )
     }
 

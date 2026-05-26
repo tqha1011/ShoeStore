@@ -2,6 +2,8 @@ package com.example.shoestoreapp.features.user.profile.data.repositories
 
 import com.example.shoestoreapp.core.networks.RetrofitInstance
 import com.example.shoestoreapp.features.user.profile.data.remote.ProfileApi
+import com.example.shoestoreapp.features.user.profile.data.remote.UpdateProfileDto
+import com.example.shoestoreapp.features.user.profile.data.remote.ChangePasswordDto
 import com.example.shoestoreapp.features.user.profile.data.remote.toUserProfile
 import com.example.shoestoreapp.features.user.profile.data.models.UserProfile
 
@@ -16,6 +18,32 @@ class ProfileRepositoryImpl(
                     ?: Result.failure(Exception("Empty response body."))
             } else {
                 Result.failure(Exception("Fetch profile failed (HTTP ${response.code()})"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateProfile(dto: UpdateProfileDto): Result<Unit> {
+        return try {
+            val response = api.updateProfile(dto)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Update profile failed (HTTP ${response.code()})"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun changePassword(dto: ChangePasswordDto): Result<Unit> {
+        return try {
+            val response = api.changePassword(dto)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Change password failed (HTTP ${response.code()})"))
             }
         } catch (e: Exception) {
             Result.failure(e)
