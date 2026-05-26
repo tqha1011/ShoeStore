@@ -86,7 +86,7 @@ fun ProductCard(
                 .padding(horizontal = 4.dp)
         ) {
             Text(
-                text = product.brand,  // ← Dùng brand thay vì category
+                text = product.categoryName,  // ← Dùng brand thay vì category
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFFD2650F),
