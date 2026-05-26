@@ -79,14 +79,14 @@ fun ProductCard(
             }
         }
 
-        // ========== PHẦN 2: BADGE (Brand thay vì category) ==========
+        // ========== PHẦN 2: BADGE (Category thay vì brand) ==========
         Box(
             modifier = Modifier
                 .padding(top = 12.dp)
                 .padding(horizontal = 4.dp)
         ) {
             Text(
-                text = product.categoryName,  // ← Dùng brand thay vì category
+                text = product.categoryName,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFFD2650F),

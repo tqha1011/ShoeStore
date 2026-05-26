@@ -41,6 +41,10 @@
         override fun getStreamFlow(sessionId: String, prompt: String, isCampaign: Boolean): Flow<String> {
             return repository.streamChatProducts(sessionId, prompt)
         }
+        fun clearSearchResult() {
+            _searchResultState.value = null
+        }
+
         fun clearVariantDraft() {
             _variantDraftState.value = null
         }
