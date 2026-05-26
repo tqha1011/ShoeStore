@@ -13,8 +13,7 @@ data class Product(
     val publicId: String,
     val productName: String,
     val brand: String,
-    val categoryId: Int,
-    val categoryName: String,
+    val categoryName : String,
     val variants: List<ProductVariant> = emptyList()
 )
 
