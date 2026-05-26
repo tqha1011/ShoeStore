@@ -218,8 +218,8 @@ public class VoucherController(IVoucherService voucherService) : ControllerBase
         [FromQuery] int pageSize = 10)
     {
         var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(validUser) || !Guid.TryParse(validUser, out _)) return Unauthorized();
-        var result = await voucherService.GetValidVoucherAsync(token, pageIndex, pageSize);
+        if (string.IsNullOrEmpty(validUser) || !Guid.TryParse(validUser, out var publicUserId)) return Unauthorized();
+        var result = await voucherService.GetValidVoucherAsync(token, publicUserId, pageIndex, pageSize);
         return result.Match<IActionResult>(
             vouchers => Ok(vouchers),
             errors => BadRequest(new

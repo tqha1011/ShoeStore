@@ -160,10 +160,13 @@ public class VoucherService(
     }
 
     public async Task<ErrorOr<PageResult<ResponseVoucherDto>>> GetValidVoucherAsync(CancellationToken token,
-        int pageIndex = 1, int pageSize = 10)
+        Guid publicUserId, int pageIndex = 1, int pageSize = 10)
     {
+        var userId = await userRepository.GetUserIdByPublicIdAsync(publicUserId, token);
+        if (userId == null) return Error.NotFound("User.NotFound", "The user does not exist or has been deleted.");
         var query = voucherRepository.GetValidVouchers();
-        var filtered = query.Where(v => !v.IsDeleted && v.ValidTo > DateTime.UtcNow && v.TotalQuantity > 0);
+        var filtered = query.Where(v => !v.IsDeleted && v.ValidTo > DateTime.UtcNow && v.TotalQuantity > 0
+                                        && v.UserVouchers.All(uv => uv.UserId != userId));
         var totalCount = await filtered.CountAsync(token);
 
         var vouchers = await filtered
