@@ -91,6 +91,11 @@ dependencies {
     implementation(libs.ui.tooling.preview)
     implementation(libs.material3)
     implementation(libs.coil.compose)
+    // WebSocker SignalR library
+    implementation("com.microsoft.signalr:signalr:8.0.0")
+    // RxJava is library attached with SignalR
+    implementation("io.reactivex.rxjava3:rxjava:3.1.8")
+    implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.8.5")
     implementation(libs.foundation) // Icons Library
@@ -98,6 +103,7 @@ dependencies {
     implementation(libs.androidx.credentials.play.services)
     implementation(libs.googleid)
     implementation(libs.facebook.login)
+    implementation("com.facebook.android:facebook-login:17.0.0")
     implementation(libs.androidx.foundation.layout)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

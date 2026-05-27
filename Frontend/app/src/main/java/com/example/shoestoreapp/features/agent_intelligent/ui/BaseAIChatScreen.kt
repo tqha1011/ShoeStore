@@ -53,6 +53,7 @@ fun BaseAIChatScreen(
     userRoleName: String,
     aiRoleName: String,
     onBackClick: () -> Unit = {},
+    headerContent: (@Composable () -> Unit)? = null,
 ) {
     val state = viewModel.state
 
@@ -99,6 +100,11 @@ fun BaseAIChatScreen(
                         Text(
                             text = state.error, color = Color(0xFFB00020), fontSize = 12.sp
                         )
+                    }
+                }
+                headerContent?.let {
+                    item {
+                        it()
                     }
                 }
                 if (state.messages.isEmpty() && !initialPrompt.isNullOrBlank()) {

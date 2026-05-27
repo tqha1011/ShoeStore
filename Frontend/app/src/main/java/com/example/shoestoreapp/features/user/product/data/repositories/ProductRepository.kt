@@ -68,6 +68,7 @@ class ProductRepository(
             publicId = dto.publicId,
             productName = dto.productName,
             brand = dto.brand,
+            categoryName = dto.categoryName,
             variants = variants
         )
     }
