@@ -1,11 +1,9 @@
 using ErrorOr;
-using Microsoft.Extensions.AI;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Moq;
 using ShoeStore.Application.DTOs.ChatBotDTOs;
 using ShoeStore.Application.DTOs.StatisticsDto;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.StatisticsInterface;
@@ -21,15 +19,13 @@ public class GenerateCampaignAsyncTests
     private readonly Mock<IChatCompletionService> _chatCompletionService = new();
     private readonly Mock<IChatMessageRepository> _chatMessageRepository = new();
     private readonly Mock<IChatSessionRepository> _chatSessionRepository = new();
-    private readonly Mock<ICurrentUser> _currentUser = new();
-    private readonly Mock<IEmbeddingGenerator<string, Embedding<float>>> _embeddingGenerator = new();
     private readonly Kernel _kernel = Kernel.CreateBuilder().Build();
     private readonly Mock<IMasterDataPluginService> _masterDataPluginService = new();
-    private readonly Mock<IProductEmbeddingRepository> _productEmbeddingRepository = new();
     private readonly Mock<IProductPluginService> _productPluginService = new();
     private readonly Mock<IUpdateTitleQueue> _queue = new();
     private readonly ChatBotService _service;
     private readonly Mock<IStatisticsService> _statisticsService = new();
+    private readonly Mock<IStoreAssistantPluginService> _storeAssistantPluginService = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IUserRepository> _userRepository = new();
 
@@ -41,14 +37,12 @@ public class GenerateCampaignAsyncTests
             _chatMessageRepository.Object,
             _chatSessionRepository.Object,
             _unitOfWork.Object,
-            _embeddingGenerator.Object,
-            _productEmbeddingRepository.Object,
             _userRepository.Object,
             _queue.Object,
-            _currentUser.Object,
             _kernel,
             _productPluginService.Object,
-            _masterDataPluginService.Object);
+            _masterDataPluginService.Object,
+            _storeAssistantPluginService.Object);
     }
 
     [Fact]
@@ -150,7 +144,7 @@ public class GenerateCampaignAsyncTests
             .Setup(s => s.GetStreamingChatMessageContentsAsync(
                 It.IsAny<ChatHistory>(),
                 It.IsAny<PromptExecutionSettings>(),
-                It.IsAny<Kernel?>(),
+                It.IsAny<Kernel>(),
                 It.IsAny<CancellationToken>()))
             .Returns(BuildStreamingResponse("Buy ", "1 ", "Get 1"));
 

@@ -14,4 +14,7 @@ public interface IChatBotService
 
     Task<ErrorOr<IAsyncEnumerable<string>>> ChatAskAboutProductsAsync(Guid publicSessionId,
         ChatMessageRequestDto messageRequestDto,Guid publicUserId ,CancellationToken token);
+
+    Task<ErrorOr<IAsyncEnumerable<string>>> ChatAskAboutProductsForAdminAsync(Guid publicSessionId,
+        ChatMessageRequestDto messageRequestDto, Guid publicUserId, CancellationToken token);
 }

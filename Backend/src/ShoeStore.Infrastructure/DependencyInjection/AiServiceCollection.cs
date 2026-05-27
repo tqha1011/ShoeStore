@@ -64,6 +64,7 @@ public static class AiServiceCollection
 
         services.AddScoped<IProductPluginService, ProductPluginService>();
         services.AddScoped<IMasterDataPluginService, MasterDataPluginService>();
+        services.AddScoped<IStoreAssistantPluginService, StoreAssistantPluginService>();
         services.AddKernel();
         return services;
     }

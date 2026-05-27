@@ -48,11 +48,8 @@ public class ChatBotController(IChatBotService chatBotService, ILogger<ChatBotCo
         CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null || !Guid.TryParse(userId, out var publicUserId))
-        {
-            return Unauthorized();
-        }
-        var response = await chatBotService.GenerateCampaignAsync(requestDto,publicUserId ,cancellationToken);
+        if (userId == null || !Guid.TryParse(userId, out var publicUserId)) return Unauthorized();
+        var response = await chatBotService.GenerateCampaignAsync(requestDto, publicUserId, cancellationToken);
 
         if (response.IsError) return HandleError(response.FirstError.Description);
 
@@ -69,8 +66,9 @@ public class ChatBotController(IChatBotService chatBotService, ILogger<ChatBotCo
         }
         catch (Exception ex)
         {
-            await SendSseChunkAsync("[ERROR] The LLM can not support for now", CancellationToken.None);
-            logger.LogError(ex, ex.Message);
+            logger.LogError(ex, "LLM call failed. Provider: {Provider}, InnerException: {Inner}",
+                "Ollama", ex.InnerException?.Message ?? ex.Message);
+            await SendSseChunkAsync($"[ERROR] {ex.InnerException?.Message ?? ex.Message}", CancellationToken.None);
         }
 
 
@@ -102,11 +100,10 @@ public class ChatBotController(IChatBotService chatBotService, ILogger<ChatBotCo
         [FromQuery] Guid publicSessionId, CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null || !Guid.TryParse(userId, out var publicUserId))
-        {
-            return Unauthorized();
-        }
-        var response = await chatBotService.ChatAskAboutStatisticsAsync(publicSessionId, requestDto,publicUserId ,cancellationToken);
+        if (userId == null || !Guid.TryParse(userId, out var publicUserId)) return Unauthorized();
+        var response =
+            await chatBotService.ChatAskAboutStatisticsAsync(publicSessionId, requestDto, publicUserId,
+                cancellationToken);
         if (response.IsError) return HandleError(response.FirstError.Description);
 
         SetSseHeaders();
@@ -122,8 +119,9 @@ public class ChatBotController(IChatBotService chatBotService, ILogger<ChatBotCo
         }
         catch (Exception ex)
         {
-            await SendSseChunkAsync("[ERROR] The LLM can not support for now", CancellationToken.None);
-            logger.LogError(ex, ex.Message);
+            logger.LogError(ex, "LLM call failed. Provider: {Provider}, InnerException: {Inner}",
+                "Ollama", ex.InnerException?.Message ?? ex.Message);
+            await SendSseChunkAsync($"[ERROR] {ex.InnerException?.Message ?? ex.Message}", CancellationToken.None);
         }
 
         if (!cancellationToken.IsCancellationRequested) await SendSseChunkAsync("[DONE]", cancellationToken);
@@ -155,11 +153,10 @@ public class ChatBotController(IChatBotService chatBotService, ILogger<ChatBotCo
         CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null || !Guid.TryParse(userId, out var publicUserId))
-        {
-            return Unauthorized();
-        }
-        var response = await chatBotService.ChatAskAboutProductsAsync(publicSessionId, requestDto,publicUserId ,cancellationToken);
+        if (userId == null || !Guid.TryParse(userId, out var publicUserId)) return Unauthorized();
+        var response =
+            await chatBotService.ChatAskAboutProductsAsync(publicSessionId, requestDto, publicUserId,
+                cancellationToken);
         if (response.IsError) return HandleError(response.FirstError.Description);
 
         SetSseHeaders();
@@ -174,8 +171,49 @@ public class ChatBotController(IChatBotService chatBotService, ILogger<ChatBotCo
         }
         catch (Exception ex)
         {
-            await SendSseChunkAsync("[ERROR] The LLM can not support for now", CancellationToken.None);
-            logger.LogError(ex, ex.Message);
+            logger.LogError(ex, "LLM call failed. Provider: {Provider}, InnerException: {Inner}",
+                "Bot", ex.InnerException?.Message ?? ex.Message);
+            await SendSseChunkAsync($"[ERROR] {ex.InnerException?.Message ?? ex.Message}", CancellationToken.None);
+        }
+
+        if (!cancellationToken.IsCancellationRequested) await SendSseChunkAsync("[DONE]", cancellationToken);
+        return new EmptyResult();
+    }
+
+    /// <summary>
+    /// </summary>
+    /// <param name="requestDto"></param>
+    /// <param name="publicSessionId"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    [HttpPost("chat-product-admin")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ChatAskAboutProductForAdmin([FromBody] ChatMessageRequestDto requestDto,
+        [FromQuery] Guid publicSessionId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null || !Guid.TryParse(userId, out var publicUserId)) return Unauthorized();
+        var response =
+            await chatBotService.ChatAskAboutProductsForAdminAsync(publicSessionId, requestDto, publicUserId,
+                cancellationToken);
+        if (response.IsError) return HandleError(response.FirstError.Description);
+
+        SetSseHeaders();
+        try
+        {
+            await foreach (var chunk in response.Value.WithCancellation(cancellationToken))
+            {
+                var success = await SafeSendChunkAsync(chunk, cancellationToken);
+                if (!success)
+                    break; // Stop processing further chunks if sending failed
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "LLM call failed. Provider: {Provider}, InnerException: {Inner}",
+                "Bot", ex.InnerException?.Message ?? ex.Message);
+            await SendSseChunkAsync($"[ERROR] {ex.InnerException?.Message ?? ex.Message}", CancellationToken.None);
         }
 
         if (!cancellationToken.IsCancellationRequested) await SendSseChunkAsync("[DONE]", cancellationToken);
