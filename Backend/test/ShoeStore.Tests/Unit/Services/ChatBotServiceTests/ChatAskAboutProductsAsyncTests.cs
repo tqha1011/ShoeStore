@@ -129,7 +129,7 @@ public class ChatAskAboutProductsAsyncTests
 
     private sealed class FakeStoreAssistantPluginService : IStoreAssistantPluginService
     {
-        [KernelFunction("search-inventory")]
+        [KernelFunction("search-store-inventory")]
         public Task<string> SearchInventory(string keyword, CancellationToken token)
         {
             return Task.FromResult(string.Empty);
