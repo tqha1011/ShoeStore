@@ -66,9 +66,9 @@ public class ChatBotController(IChatBotService chatBotService, ILogger<ChatBotCo
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "LLM call failed. Provider: {Provider}, InnerException: {Inner}",
-                "Ollama", ex.InnerException?.Message ?? ex.Message);
-            await SendSseChunkAsync($"[ERROR] {ex.InnerException?.Message ?? ex.Message}", CancellationToken.None);
+            logger.LogError(ex, "LLM streaming failed. SessionId: {SessionId}, UserId: {UserId}",
+                requestDto.PublicSessionId,publicUserId);
+            await SendSseChunkAsync("[ERROR] Something went wrong. Please try again.", CancellationToken.None);
         }
 
 
@@ -119,9 +119,9 @@ public class ChatBotController(IChatBotService chatBotService, ILogger<ChatBotCo
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "LLM call failed. Provider: {Provider}, InnerException: {Inner}",
-                "Ollama", ex.InnerException?.Message ?? ex.Message);
-            await SendSseChunkAsync($"[ERROR] {ex.InnerException?.Message ?? ex.Message}", CancellationToken.None);
+            logger.LogError(ex, "LLM streaming failed. SessionId: {SessionId}, UserId: {UserId}",
+                publicSessionId, publicUserId);
+            await SendSseChunkAsync("[ERROR] Something went wrong. Please try again.", CancellationToken.None);
         }
 
         if (!cancellationToken.IsCancellationRequested) await SendSseChunkAsync("[DONE]", cancellationToken);
@@ -171,9 +171,9 @@ public class ChatBotController(IChatBotService chatBotService, ILogger<ChatBotCo
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "LLM call failed. Provider: {Provider}, InnerException: {Inner}",
-                "Bot", ex.InnerException?.Message ?? ex.Message);
-            await SendSseChunkAsync($"[ERROR] {ex.InnerException?.Message ?? ex.Message}", CancellationToken.None);
+            logger.LogError(ex, "LLM streaming failed. SessionId: {SessionId}, UserId: {UserId}",
+                publicSessionId, publicUserId);
+            await SendSseChunkAsync("[ERROR] Something went wrong. Please try again.", CancellationToken.None);
         }
 
         if (!cancellationToken.IsCancellationRequested) await SendSseChunkAsync("[DONE]", cancellationToken);
@@ -211,9 +211,9 @@ public class ChatBotController(IChatBotService chatBotService, ILogger<ChatBotCo
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "LLM call failed. Provider: {Provider}, InnerException: {Inner}",
-                "Bot", ex.InnerException?.Message ?? ex.Message);
-            await SendSseChunkAsync($"[ERROR] {ex.InnerException?.Message ?? ex.Message}", CancellationToken.None);
+            logger.LogError(ex, "LLM streaming failed. SessionId: {SessionId}, UserId: {UserId}",
+                publicSessionId, publicUserId);
+            await SendSseChunkAsync("[ERROR] Something went wrong. Please try again.", CancellationToken.None);
         }
 
         if (!cancellationToken.IsCancellationRequested) await SendSseChunkAsync("[DONE]", cancellationToken);
