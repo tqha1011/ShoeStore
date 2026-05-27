@@ -55,7 +55,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 @Composable
 fun ProductListScreen(
     viewModel: ProductListViewModel,
-    onNavigateToDetail: (String) -> Unit = {},  // Changed from Int to String (GUID)
+    onNavigateToDetail: (String, String) -> Unit = { _, _ -> },
     onTopMenuClick: () -> Unit = {},
     onNavigateToShoppingBag: () -> Unit = {},
     onBottomTabSelected: (BottomNavTab) -> Unit = {}
@@ -193,7 +193,7 @@ private fun ProductListContent(
     productList: List<*>?,
     isLoadingMore: Boolean,
     lazyGridState: androidx.compose.foundation.lazy.grid.LazyGridState,
-    onNavigateToDetail: (String) -> Unit
+    onNavigateToDetail: (String, String) -> Unit
 ) {
     if (isLoading && productList?.isEmpty() == true) {
         LoadingSpinner()
@@ -222,7 +222,7 @@ private fun ProductGrid(
     productList: List<*>?,
     isLoadingMore: Boolean,
     lazyGridState: androidx.compose.foundation.lazy.grid.LazyGridState,
-    onNavigateToDetail: (String) -> Unit
+    onNavigateToDetail: (String, String) -> Unit
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
@@ -239,9 +239,9 @@ private fun ProductGrid(
                 ProductCard(
                     product = it,
                     onProductClick = { productGuid: String ->
-                        onNavigateToDetail(productGuid)
-                    },
-                    onFavoriteClick = {}
+                        val passedColorName = it.variants.firstOrNull()?.colorName ?: ""
+                        onNavigateToDetail(productGuid, passedColorName)
+                    }
                 )
             }
         }

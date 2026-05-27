@@ -4,9 +4,11 @@ import com.example.shoestoreapp.features.user.voucher.data.models.VoucherDiscoun
 import com.example.shoestoreapp.features.user.voucher.data.models.VoucherStatus
 import com.example.shoestoreapp.features.user.voucher.data.models.VoucherUiModel
 import java.text.SimpleDateFormat
+import java.text.NumberFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import kotlin.math.roundToLong
 
 private val uiDateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.US)
 
@@ -22,7 +24,7 @@ fun ResponseVoucherUserDto.toUiModel(nowDate: Date = Date()): VoucherUiModel {
         "SHIPPING"
     } else {
         if (minOrderPrice > 0) {
-            "MIN. SPEND $${minOrderPrice.toInt()}"
+            "MIN. SPEND ${formatVnd(minOrderPrice)}"
         } else {
             "STOREWIDE"
         }
@@ -32,8 +34,8 @@ fun ResponseVoucherUserDto.toUiModel(nowDate: Date = Date()): VoucherUiModel {
         2 -> "FREE" to VoucherDiscountType.FREESHIP
         else -> when (this.discountType) {
             2 -> "${discount.toInt()}% OFF" to VoucherDiscountType.PERCENTAGE
-            1 -> "$${discount.toInt()} OFF" to VoucherDiscountType.FIXED
-            else -> "$${discount.toInt()} OFF" to VoucherDiscountType.FIXED
+            1 -> "${formatVnd(discount)} OFF" to VoucherDiscountType.FIXED
+            else -> "${formatVnd(discount)} OFF" to VoucherDiscountType.FIXED
         }
     }
 
@@ -67,4 +69,9 @@ private fun parseApiDate(value: String?): Date? {
     } catch (_: Exception) {
         null
     }
+}
+
+private fun formatVnd(price: Double): String {
+    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    return "${formatter.format(price.roundToLong())} ₫"
 }

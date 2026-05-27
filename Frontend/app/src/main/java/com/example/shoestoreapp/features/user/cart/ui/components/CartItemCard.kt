@@ -27,6 +27,9 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.shoestoreapp.features.user.cart.data.models.CartItem
 import androidx.compose.ui.draw.alpha
+import java.text.NumberFormat
+import java.util.Locale
+import kotlin.math.roundToLong
 
 /**
  * CartItemCard Component
@@ -249,7 +252,7 @@ private fun IncreaseButton(item: CartItem, onIncrease: (String) -> Unit, isUpdat
 @Composable
 private fun PriceDisplay(price: Double) {
     Text(
-        text = "$${price}",
+        text = formatVnd(price),
         fontSize = 14.sp,
         fontWeight = FontWeight.Bold,
         color = Color.Black,
@@ -276,4 +279,9 @@ private fun DeleteButton(item: CartItem, onRemove: (String) -> Unit) {
             )
         }
     }
+}
+
+private fun formatVnd(price: Double): String {
+    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    return "${formatter.format(price.roundToLong())} ₫"
 }

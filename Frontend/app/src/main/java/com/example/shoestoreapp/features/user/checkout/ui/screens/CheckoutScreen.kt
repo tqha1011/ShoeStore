@@ -1,4 +1,3 @@
-
 package com.example.shoestoreapp.features.user.checkout.ui.screens
 
 import android.widget.Toast
@@ -29,7 +28,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutRequestDto
 import com.example.shoestoreapp.features.user.checkout.ui.components.CheckoutTopAppBar
 import com.example.shoestoreapp.features.user.checkout.ui.components.CheckoutHeader
-import com.example.shoestoreapp.features.user.checkout.ui.components.CurrencySwitcher
 import com.example.shoestoreapp.features.user.checkout.ui.components.CompletePurchaseButton
 import com.example.shoestoreapp.features.user.checkout.ui.components.DeliveryAddressSection
 import com.example.shoestoreapp.features.user.checkout.ui.components.OrderSummarySection
@@ -54,7 +52,6 @@ import com.example.shoestoreapp.features.user.checkout.viewmodel.PlaceOrderUiSta
  * 1. TopAppBar: Nike logo + Menu + Shopping Bag
  * 2. Content ScrollView:
  *    - Checkout Header
- *    - Currency Switcher
  *    - Delivery Address Section
  *    - Payment Method Section
  *    - Promo Code Section
@@ -81,7 +78,6 @@ fun CheckoutScreen(
 ) {
 
     // Observe state từ ViewModel
-    val selectedCurrency = checkoutViewModel.selectedCurrency.collectAsState()
     val deliveryAddress = checkoutViewModel.deliveryAddress.collectAsState()
     val paymentMethod = checkoutViewModel.paymentMethod.collectAsState()
     val availablePaymentMethods = checkoutViewModel.availablePaymentMethods.collectAsState()
@@ -178,14 +174,6 @@ fun CheckoutScreen(
                 // Checkout Header
                 CheckoutHeader()
 
-                // Currency Switcher
-                CurrencySwitcher(
-                    selectedCurrency = selectedCurrency.value,
-                    onCurrencySelected = { currency ->
-                        checkoutViewModel.selectCurrency(currency)
-                    }
-                )
-
                 // Delivery Address Section
                 DeliveryAddressSection(
                     address = deliveryAddress.value,
@@ -211,7 +199,6 @@ fun CheckoutScreen(
                 // Order Summary Section
                 OrderSummarySection(
                     orderSummary = orderSummary.value,
-                    selectedCurrency = selectedCurrency.value,
                     cartItems = cartItems.value
                 )
 
@@ -237,5 +224,3 @@ fun CheckoutScreen(
         }
     }
 }
-
-

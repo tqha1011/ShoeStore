@@ -16,15 +16,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.shoestoreapp.features.user.checkout.data.models.CurrencyType
 import com.example.shoestoreapp.features.user.checkout.data.models.OrderSummary
 import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutItemDto
+import java.text.NumberFormat
+import java.util.Locale
+import kotlin.math.roundToLong
 
 /**
  * Component hiển thị tóm tắt đơn hàng với phí vận chuyển, thuế và tổng tiền.
  *
  * @param orderSummary - Thông tin tóm tắt đơn hàng
- * @param selectedCurrency - Loại tiền tệ để định dạng giá
+ * @param cartItems - Danh sách sản phẩm trong đơn hàng
  *
  * UI Structure:
  * - Header: "ORDER SUMMARY"
@@ -34,7 +36,6 @@ import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutItemD
 @Composable
 fun OrderSummarySection(
     orderSummary: OrderSummary,
-    selectedCurrency: CurrencyType,
     cartItems: List<CheckOutItemDto>,
     modifier: Modifier = Modifier
 ) {
@@ -68,8 +69,7 @@ fun OrderSummarySection(
                     productName = item.productName,
                     colorName = item.colorName,
                     quantity = item.quantity,
-                    price = item.unitPrice,
-                    currency = selectedCurrency
+                    price = item.unitPrice
                 )
             }
 
@@ -90,8 +90,7 @@ fun OrderSummarySection(
                     total = orderSummary.total,
                     promoCode = orderSummary.promoCode,
                     discountAmount = orderSummary.discountAmount
-                ),
-                currency = selectedCurrency
+                )
             )
         }
     }
@@ -106,7 +105,6 @@ fun ProductItemRow(
     colorName: String?,
     quantity: Int,
     price: Double,
-    currency: CurrencyType,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -143,10 +141,7 @@ fun ProductItemRow(
             )
 
             Text(
-                text = formatPrice(
-                    price,
-                    currency
-                ),
+                text = formatVnd(price),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Black,
                 color = Color.Black
@@ -173,8 +168,7 @@ data class PricingInfo(
 @Composable
 fun PricingBreakdown(
     modifier: Modifier = Modifier,
-    pricingInfo: PricingInfo,
-    currency: CurrencyType
+    pricingInfo: PricingInfo
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -183,30 +177,21 @@ fun PricingBreakdown(
         // Subtotal
         PricingRow(
             label = "Subtotal",
-            value = formatPrice(
-                pricingInfo.subtotal,
-                currency
-            ),
+            value = formatVnd(pricingInfo.subtotal),
             isHighlight = false
         )
 
         // Shipping
         PricingRow(
             label = "Estimated Shipping",
-            value = if (pricingInfo.shipping == 0.0) "Free" else formatPrice(
-                pricingInfo.shipping,
-                currency
-            ),
+            value = if (pricingInfo.shipping == 0.0) "Free" else formatVnd(pricingInfo.shipping),
             isHighlight = false
         )
 
         // Tax
         PricingRow(
             label = "Tax",
-            value = formatPrice(
-                pricingInfo.tax,
-                currency
-            ),
+            value = formatVnd(pricingInfo.tax),
             isHighlight = false
         )
 
@@ -214,12 +199,7 @@ fun PricingBreakdown(
         if (pricingInfo.promoCode.isNotEmpty() && pricingInfo.discountAmount > 0) {
             PricingRow(
                 label = "Discount (${pricingInfo.promoCode})",
-                value = "- ${
-                    formatPrice(
-                        pricingInfo.discountAmount,
-                        currency
-                    )
-                }",
+                value = "- ${formatVnd(pricingInfo.discountAmount)}",
                 isHighlight = false,
                 valueColor = Color(0xFF27AE60)
             )
@@ -242,10 +222,7 @@ fun PricingBreakdown(
             )
 
             Text(
-                text = formatPrice(
-                    pricingInfo.total,
-                    currency
-                ),
+                text = formatVnd(pricingInfo.total),
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = 0.3.sp,
@@ -288,12 +265,9 @@ fun PricingRow(
 }
 
 /**
- * Định dạng giá theo loại tiền tệ.
+ * Định dạng giá theo VND.
  */
-fun formatPrice(price: Double, currency: CurrencyType): String {
-    return when (currency.decimalPlaces) {
-        0 -> "${price.toLong()}${currency.symbol}"
-        else -> "${currency.symbol}${String.format("%.${currency.decimalPlaces}f", price)}"
-    }
+fun formatVnd(price: Double): String {
+    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    return "${formatter.format(price.roundToLong())} ₫"
 }
-

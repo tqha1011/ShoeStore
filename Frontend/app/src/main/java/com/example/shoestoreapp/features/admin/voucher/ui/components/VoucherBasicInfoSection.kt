@@ -24,10 +24,9 @@ fun VoucherBasicInfoSection(
             label = "Description",
             value = description,
             onValueChange = onDescriptionChange,
-            placeholder = "e.g., 20% off all orders above $100...",
+            placeholder = "e.g., 20% off all orders above 100,000 ₫...",
             singleLine = false,
             minLines = 3
         )
     }
 }
-

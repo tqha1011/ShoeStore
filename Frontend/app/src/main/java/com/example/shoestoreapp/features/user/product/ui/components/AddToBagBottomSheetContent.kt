@@ -43,6 +43,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import java.text.NumberFormat
+import java.util.Locale
+import kotlin.math.roundToLong
 
 @Composable
 fun AddToBagBottomSheetContent(
@@ -110,7 +113,7 @@ fun AddToBagBottomSheetContent(
                     modifier = Modifier.padding(top = 2.dp)
                 )
                 Text(
-                    text = "$${price.toInt()}",
+                    text = formatVnd(price),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
@@ -303,4 +306,9 @@ private fun colorNameToSwatch(colorName: String): Color {
             Color(r, g, b)
         }
     }
+}
+
+private fun formatVnd(price: Double): String {
+    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    return "${formatter.format(price.roundToLong())} ₫"
 }

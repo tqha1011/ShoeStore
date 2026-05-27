@@ -4,12 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -20,7 +16,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.shoestoreapp.features.user.product.data.models.Product
+import java.text.NumberFormat
 import java.util.Locale
+import kotlin.math.roundToLong
 
 /**
  * ProductCard: Composable hiển thị card sản phẩm theo design mới
@@ -28,18 +26,16 @@ import java.util.Locale
  * 
  * @param product: Sản phẩm cần hiển thị
  * @param onProductClick: Gọi callback khi click vào card (nhận publicId: String)
- * @param onFavoriteClick: Gọi callback khi click vào icon trái tim (nhận publicId: String)
  */
 @Composable
 fun ProductCard(
     product: Product,
-    onProductClick: (String) -> Unit = {},
-    onFavoriteClick: (String) -> Unit = {}
+    onProductClick: (String) -> Unit = {}
 ) {
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        // ========== PHẦN 1: ẢNH SẢN PHẨM + ICON TRÁI TIM ==========
+        // ========== PHẦN 1: ẢNH SẢN PHẨM ==========
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -59,24 +55,6 @@ fun ProductCard(
                     .clip(RoundedCornerShape(12.dp)),
                 contentScale = ContentScale.Crop
             )
-
-            // Icon trái tim (favorite) - góc trên phải
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(12.dp)
-                    .size(32.dp)
-                    .background(Color.White, RoundedCornerShape(50))
-                    .clickable { onFavoriteClick(product.publicId) },  // ← Pass publicId
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.FavoriteBorder,  // ← Backend không cung cấp favorite status, luôn show empty
-                    contentDescription = "Favorite",
-                    modifier = Modifier.size(20.dp),
-                    tint = Color.Black
-                )
-            }
         }
 
         // ========== PHẦN 2: BADGE (Category thay vì brand) ==========
@@ -121,7 +99,7 @@ fun ProductCard(
 
         // ========== PHẦN 5: GIÁ (từ first variant) ==========
         Text(
-            text = "$${String.format(Locale.US, "%.0f", product.variants.firstOrNull()?.price ?: 0.0)}",  // ← Từ variant.price
+            text = formatVnd(product.variants.firstOrNull()?.price ?: 0.0),
             fontSize = 14.sp,
             fontWeight = FontWeight.Black,
             color = Color.Black,
@@ -130,7 +108,7 @@ fun ProductCard(
     }
 }
 
-
-
-
-
+private fun formatVnd(price: Double): String {
+    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    return "${formatter.format(price.roundToLong())} ₫"
+}

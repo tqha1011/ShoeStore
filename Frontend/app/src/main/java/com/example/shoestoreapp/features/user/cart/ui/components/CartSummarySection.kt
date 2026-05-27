@@ -14,7 +14,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.user.cart.data.models.CartSummary
+import java.text.NumberFormat
 import java.util.Locale
+import kotlin.math.roundToLong
 
 /**
  * CartSummary Component
@@ -43,21 +45,21 @@ fun CartSummarySection(
         // Subtotal
         SummaryRow(
             label = "Subtotal",
-            value = "$${String.format(Locale.US,"%.2f", summary.subtotal)}",
+            value = formatVnd(summary.subtotal),
             isHighlight = false
         )
 
         // Shipping
         SummaryRow(
             label = "Estimated Shipping & Handling",
-            value = "$${String.format(Locale.US,"%.2f", summary.shippingCost)}",
+            value = formatVnd(summary.shippingCost),
             isHighlight = false
         )
 
         // Tax
         SummaryRow(
             label = "Estimated Tax",
-            value = if (summary.tax == 0.0) "—" else "$${String.format(Locale.US,"%.2f", summary.tax)}",
+            value = if (summary.tax == 0.0) "—" else formatVnd(summary.tax),
             isHighlight = false
         )
 
@@ -70,7 +72,7 @@ fun CartSummarySection(
         // Total
         SummaryRow(
             label = "Total",
-            value = "$${String.format(Locale.US,"%.2f", summary.getTotal())}",
+            value = formatVnd(summary.getTotal()),
             isHighlight = true
         )
     }
@@ -109,3 +111,7 @@ private fun SummaryRow(
     }
 }
 
+private fun formatVnd(price: Double): String {
+    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    return "${formatter.format(price.roundToLong())} ₫"
+}

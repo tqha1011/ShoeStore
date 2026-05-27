@@ -49,7 +49,7 @@ fun CartScreen(
     onNavigateToCheckout: () -> Unit = {},
     onNavigateToHome: () -> Unit = {},
     onNavigateToShop: () -> Unit = {},
-    onNavigateToFavorites: () -> Unit = {},
+    onNavigateToVoucher: () -> Unit = {},
     onNavigateToProfile: () -> Unit = {}
 ) {
     // Collect state từ ViewModel
@@ -75,7 +75,7 @@ fun CartScreen(
                     when (tab) {
                         BottomNavTab.HOME -> onNavigateToHome()
                         BottomNavTab.SHOP -> onNavigateToShop()
-                        BottomNavTab.FAVORITES -> onNavigateToFavorites()
+                        BottomNavTab.VOUCHER -> onNavigateToVoucher()
                         BottomNavTab.PROFILE -> onNavigateToProfile()
                         else -> {
                             // Already on BAG, no action needed

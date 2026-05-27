@@ -43,26 +43,25 @@ import com.example.shoestoreapp.features.user.product.viewmodel.AddToCartUiState
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
 import kotlinx.coroutines.launch
 
-/**
- * ProductDetailScreen: Màn hình hiển thị chi tiết sản phẩm
- * @param productGuid - GUID của sản phẩm cần hiển thị (String, không phải Int)
- * @param viewModel - ProductDetailViewModel quản lý logic
- * @param onBackClick - Callback khi user click nút back
- * @param onNavigateToCart - Callback khi user thêm vào giỏ hàng
- */
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
 fun ProductDetailScreen(
     productGuid: String,
+    passedColorName: String? = null,
     viewModel: ProductDetailViewModel = ProductDetailViewModel(),
     onBackClick: () -> Unit = {},
     onNavigateToCart: () -> Unit = {}
 ) {
-    val productDetail by viewModel.productDetail.collectAsState(initial = null)
-    val isLoading by viewModel.isLoading.collectAsState(initial = false)
-    val addToCartState by viewModel.addToCartState.collectAsState(initial = AddToCartUiState.Idle)
-    val isShippingExpanded by viewModel.isShippingExpanded.collectAsState(initial = false)
-    val isDescriptionExpanded by viewModel.isDescriptionExpanded.collectAsState(initial = false)
+    val productDetail by viewModel.productDetail.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    // Hứng các State liên quan đến Màu và Ảnh từ ViewModel
+    val selectedColor by viewModel.selectedColor.collectAsState()
+    val selectedImageUrl by viewModel.selectedImageUrl.collectAsState()
+
+    val addToCartState by viewModel.addToCartState.collectAsState()
+    val isShippingExpanded by viewModel.isShippingExpanded.collectAsState()
+    val isDescriptionExpanded by viewModel.isDescriptionExpanded.collectAsState()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -70,39 +69,29 @@ fun ProductDetailScreen(
 
     var showAddToBagSheet by rememberSaveable { mutableStateOf(false) }
     var selectedSize by rememberSaveable(productGuid) { mutableStateOf<Int?>(null) }
-    var selectedColor by rememberSaveable(productGuid) { mutableStateOf<String?>(null) }
     var quantity by rememberSaveable(productGuid) { mutableIntStateOf(1) }
 
     val context = LocalContext.current
 
     LaunchedEffect(productGuid) {
-        viewModel.loadProductDetail(productGuid)
+        viewModel.loadProductDetail(productGuid, passedColorName)
     }
 
     LaunchedEffect(addToCartState) {
         when (val state = addToCartState) {
             is AddToCartUiState.Success -> {
-                // 1. Ẩn Bottom Sheet NGAY LẬP TỨC
                 if (showAddToBagSheet) {
                     sheetState.hide()
                     showAddToBagSheet = false
                 }
-                // 2. Bắn Toast thông báo (hiển thị xuyên màn hình)
                 Toast.makeText(context, "Added to cart successfully", Toast.LENGTH_SHORT).show()
-
-                // 3. Chuyển trang sang Cart
                 onNavigateToCart()
-
-                // 4. Reset state
                 viewModel.resetAddToCartState()
             }
-
             is AddToCartUiState.Error -> {
-                // Lỗi thì khoan đóng Sheet, báo Toast cho user biết bị gì
                 Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
                 viewModel.resetAddToCartState()
             }
-
             else -> Unit
         }
     }
@@ -111,10 +100,10 @@ fun ProductDetailScreen(
         productDetail?.variants
             ?.filter { variant ->
                 !variant.colorName.isNullOrBlank() &&
-                    variant.size != null &&
-                    variant.isSelling &&
-                    !variant.isDelete &&
-                    variant.stock > 0
+                        variant.size != null &&
+                        variant.isSelling &&
+                        !variant.isDelete &&
+                        variant.stock > 0
             }
             .orEmpty()
     }
@@ -131,7 +120,7 @@ fun ProductDetailScreen(
             .asSequence()
             .filter { variant ->
                 normalizedSelectedColor == null ||
-                    variant.colorName?.trim()?.lowercase() == normalizedSelectedColor
+                        variant.colorName?.trim()?.lowercase() == normalizedSelectedColor
             }
             .mapNotNull { it.size }
             .distinct()
@@ -181,8 +170,9 @@ fun ProductDetailScreen(
                 onShoppingBagClick = { onNavigateToCart() }
             )
 
+            // Ảnh chính của sản phẩm (Hiển thị theo ảnh của màu đang được chọn)
             ProductHeroImage(
-                imageUrl = defaultVariant?.imageUrl,
+                imageUrl = selectedImageUrl ?: defaultVariant?.imageUrl,
                 contentDescription = productDetail?.productName,
                 modifier = Modifier.padding(top = 12.dp)
             )
@@ -194,7 +184,7 @@ fun ProductDetailScreen(
             ) {
                 ProductHeaderInfo(
                     name = productDetail?.productName ?: "",
-                    price = defaultVariant?.price ?: 0.0,
+                    price = selectedVariantForCart?.price ?: defaultVariant?.price ?: 0.0,
                     rating = 0.0,
                     reviewCount = 0,
                     productType = productDetail?.categoryName ?: ""
@@ -208,13 +198,7 @@ fun ProductDetailScreen(
                             showAddToBagSheet = true
                             coroutineScope.launch { sheetState.show() }
                         }
-                    },
-                    onFavoriteClick = {
-                        productDetail?.publicId?.let {
-                            // TODO: Implement favorite when backend endpoint is available.
-                        }
-                    },
-                    isFavorite = false
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
@@ -230,7 +214,7 @@ fun ProductDetailScreen(
 
                 ExpandableSection(
                     title = "Shipping & Returns",
-                    content = "Free standard shipping on orders over " + "$" + "50. Returns are accepted within 30 days of delivery for a full refund.",
+                    content = "Free standard shipping on orders over 50,000 ₫. Returns are accepted within 30 days of delivery for a full refund.",
                     isExpanded = isShippingExpanded,
                     onExpandedChange = { viewModel.toggleShippingExpanded() }
                 )
@@ -264,17 +248,20 @@ fun ProductDetailScreen(
                 containerColor = Color.White
             ) {
                 AddToBagBottomSheetContent(
-                    imageUrl = selectedVariantForCart?.imageUrl ?: defaultVariant?.imageUrl,
+                    // Truyền ảnh của màu đang chọn vào BottomSheet
+                    imageUrl = selectedImageUrl ?: defaultVariant?.imageUrl,
                     title = productDetail?.productName.orEmpty(),
-                    category = "Men's Shoes",
+                    category = productDetail?.categoryName ?: "Category",
                     price = selectedVariantForCart?.price ?: defaultVariant?.price ?: 0.0,
                     colorOptions = availableColors,
                     selectedColor = selectedColor,
                     onColorSelected = { color: String ->
                         val normalizedColor = color.trim()
-                        selectedColor = normalizedColor
 
-                        // Recompute sizes for the newly selected color to avoid stale-state mismatch.
+                        // Gọi ViewModel để cập nhật cả Màu và tự đổi Ảnh
+                        viewModel.selectColor(normalizedColor)
+
+                        // Recompute sizes for the newly selected color
                         val validSizesForColor = selectableVariants
                             .asSequence()
                             .filter { variant ->

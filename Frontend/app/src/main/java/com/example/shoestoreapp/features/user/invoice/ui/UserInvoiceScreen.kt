@@ -24,6 +24,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.text.NumberFormat
+import java.util.Locale
+import kotlin.math.roundToLong
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import com.example.shoestoreapp.features.invoice.model.PaymentMethod
@@ -145,7 +148,7 @@ private fun UserInvoiceCard(invoice: Invoice) {
                     )
                 }
                 Text(
-                    text = "$${"%.2f".format(invoice.finalPrice)}",
+                    text = formatVnd(invoice.finalPrice),
                     color = Color.Black,
                     fontWeight = FontWeight.Black,
                     fontSize = 18.sp
@@ -176,4 +179,7 @@ private fun UserInvoiceCard(invoice: Invoice) {
     }
 }
 
-
+private fun formatVnd(price: Double): String {
+    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    return "${formatter.format(price.roundToLong())} ₫"
+}

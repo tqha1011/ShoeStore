@@ -159,7 +159,7 @@ private fun VoucherItem(
                         )
                     } else {
                         Text(
-                            text = "$$",
+                            text = "₫",
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.Black

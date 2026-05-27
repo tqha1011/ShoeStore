@@ -30,6 +30,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.text.NumberFormat
+import java.util.Locale
+import kotlin.math.roundToLong
 import com.example.shoestoreapp.features.admin.invoice.ui.components.AdminInvoiceFilterChips
 import com.example.shoestoreapp.features.admin.invoice.viewmodel.AdminInvoiceViewModel
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavBar
@@ -165,7 +168,7 @@ private fun InvoiceCard(
 
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "$${"%.2f".format(invoice.finalPrice)}",
+                        text = formatVnd(invoice.finalPrice),
                         fontWeight = FontWeight.Black,
                         fontSize = 20.sp,
                         color = Color.Black
@@ -230,3 +233,7 @@ private fun StatusChip(status: InvoiceStatus) {
     )
 }
 
+private fun formatVnd(price: Double): String {
+    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    return "${formatter.format(price.roundToLong())} ₫"
+}

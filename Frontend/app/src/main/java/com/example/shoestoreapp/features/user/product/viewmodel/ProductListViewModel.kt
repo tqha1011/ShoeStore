@@ -23,7 +23,6 @@ import kotlinx.coroutines.launch
  * API được sử dụng:
  * - repository.searchProducts(request) - Tìm kiếm với filters/sorting/pagination
  * - repository.getProductsByCategory(categoryId) - Lọc theo danh mục
- * - repository.updateFavoriteToAPI(productGuid, status) - Cập nhật yêu thích
  */
 class ProductListViewModel(
     private val repository: ProductRepository = ProductRepository()
@@ -108,7 +107,7 @@ class ProductListViewModel(
     /**
      * Xử lý khi user chọn tab ở BottomNavBar
      * 
-     * @param tab - Tab được chọn (SHOP, DISCOVER, HOME, FAVORITES, PROFILE)
+     * @param tab - Tab được chọn (SHOP, DISCOVER, HOME, VOUCHER, PROFILE)
      */
     fun onTabSelected(tab: BottomNavTab) {
         _selectedBottomTab.value = tab

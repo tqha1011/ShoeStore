@@ -1,9 +1,7 @@
-
 package com.example.shoestoreapp.features.user.checkout.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.shoestoreapp.features.user.checkout.data.models.CurrencyType
 import com.example.shoestoreapp.features.user.checkout.data.models.DeliveryAddress
 import com.example.shoestoreapp.features.user.checkout.data.models.OrderSummary
 import com.example.shoestoreapp.features.user.checkout.data.models.PaymentMethod
@@ -19,8 +17,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlin.math.pow
-import kotlin.math.round
 
 sealed interface PlaceOrderUiState {
     object Idle : PlaceOrderUiState
@@ -32,26 +28,19 @@ sealed interface PlaceOrderUiState {
  * CheckoutViewModel: Quản lý logic và state của trang Checkout.
  *
  * Chức năng chính:
- * - Quản lý state UI (currency, delivery address, payment method, order summary)
- * - Tính toán giá tiền theo loại tiền tệ đã chọn
- * - Cập nhật OrderSummary khi thay đổi currency
- * - Xử lý các tương tác từ user (chọn currency, chọn địa chỉ, chọn phương thức thanh toán)
+ * - Quản lý state UI (delivery address, payment method, order summary)
+ * - Xử lý các tương tác từ user (chọn địa chỉ, chọn phương thức thanh toán)
  * - Xử lý áp dụng mã khuyến mãi
  *
  * State Management:
  * - Sử dụng MutableStateFlow để quản lý các state có thể thay đổi
  * - Expose StateFlow (read-only) để UI observe các thay đổi
- * - Tự động cập nhật order summary khi currency thay đổi
  */
 class CheckoutViewModel(
     private val checkoutRepository: CheckOutRepository = CheckoutRepositoryImpl(),
 ) : ViewModel() {
 
     // ============ STATE MANAGEMENT ============
-
-    // Loại tiền tệ hiện tại
-    private val _selectedCurrency = MutableStateFlow(CurrencyType.USD)
-    val selectedCurrency: StateFlow<CurrencyType> = _selectedCurrency.asStateFlow()
 
     // Địa chỉ giao hàng
     private val _deliveryAddress = MutableStateFlow(DeliveryAddress())
@@ -64,9 +53,6 @@ class CheckoutViewModel(
     // Tóm tắt đơn hàng
     private val _orderSummary = MutableStateFlow(OrderSummary())
     val orderSummary: StateFlow<OrderSummary> = _orderSummary.asStateFlow()
-
-    // BẢN GỐC TỪ SERVER (Không bao giờ bị thay đổi bởi tỷ giá)
-    private var baseOrderSummary = OrderSummary()
 
     // Trạng thái loading
     private val _isLoading = MutableStateFlow(false)
@@ -126,10 +112,7 @@ class CheckoutViewModel(
             try {
                 val result = checkoutRepository.prepareCheckOut(cartItems)
                 result.onSuccess { response ->
-                    response.summary.toOrderSummary().let { summary ->
-                        baseOrderSummary = summary
-                        _orderSummary.value = summary
-                    }
+                    _orderSummary.value = response.summary.toOrderSummary()
                     _cartItems.value = response.items
                     _isLoading.value = false
                 }.onFailure { exception ->
@@ -145,22 +128,6 @@ class CheckoutViewModel(
     }
 
 
-
-    /**
-     * Thay đổi loại tiền tệ và cập nhật giá tiền tương ứng.
-     *
-     * @param currency - Loại tiền tệ mới
-     *
-     * Quy trình:
-     * 1. Cập nhật _selectedCurrency
-     * 2. Gọi recalculateOrderSummary() để tính toán lại giá tiền
-     */
-    fun selectCurrency(currency: CurrencyType) {
-        viewModelScope.launch {
-            _selectedCurrency.value = currency
-            recalculateOrderSummary()
-        }
-    }
 
     /**
      * Chọn phương thức thanh toán.
@@ -237,48 +204,4 @@ class CheckoutViewModel(
 
     // ============ PRIVATE FUNCTIONS ============
 
-
-    /**
-     * Tính toán lại tóm tắt đơn hàng dựa trên currency hiện tại.
-     *
-     * Công thức:
-     * - basePrice (USD): $160.00
-     * - convertedPrice = basePrice * exchangeRate
-     * - tax = convertedPrice * 0.08 (8% tax)
-     * - total = convertedPrice + tax
-     *
-     * Ví dụ:
-     * - USD: $160.00 -> tax $12.80 -> total $172.80
-     * - VND: ₫3,920,000 -> tax ₫313,600 -> total ₫4,233,600
-     * - EUR: €147.20 -> tax €11.78 -> total €159.00
-     */
-    private fun recalculateOrderSummary() {
-        val baseSubtotal = baseOrderSummary.subtotal
-        val baseTax = baseOrderSummary.tax
-        val baseTotal = baseOrderSummary.total
-
-        val currency = _selectedCurrency.value
-
-
-        val convertedSubtotal = baseSubtotal * currency.exchangeRate
-        val convertedTax = baseTax * currency.exchangeRate
-        val convertedTotal = baseTotal * currency.exchangeRate
-
-        _orderSummary.value = _orderSummary.value.copy(
-            subtotal = roundToDecimalPlaces(convertedSubtotal, currency.decimalPlaces),
-            tax = roundToDecimalPlaces(convertedTax, currency.decimalPlaces),
-            total = roundToDecimalPlaces(convertedTotal, currency.decimalPlaces)
-        )
-    }
-
-    /**
-     * Làm tròn số theo số chữ số thập phân.
-     */
-    private fun roundToDecimalPlaces(value: Double, places: Int): Double {
-        if (places <= 0) return round(value)
-        val multiplier = 10.0.pow(places.toDouble())
-        return round(value * multiplier) / multiplier
-    }
-
 }
-

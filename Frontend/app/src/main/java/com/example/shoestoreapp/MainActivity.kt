@@ -10,9 +10,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.shoestoreapp.core.networks.RetrofitInstance
 import com.example.shoestoreapp.features.user.product.ui.product_detail.ProductDetailScreen
 import com.example.shoestoreapp.features.user.product.ui.product_list.ProductListScreen
@@ -51,7 +53,7 @@ private object Routes {
     const val FORGOT_PASSWORD = "forgot_password"
     const val CREATE_NEW_PASSWORD = "create_new_password/{email}/{otp}"
     const val PRODUCT_LIST = "product_list"
-    const val PRODUCT_DETAIL = "product_detail/{productGuid}"
+    const val PRODUCT_DETAIL = "product_detail/{productGuid}?colorName={colorName}"
     const val CART = "cart"
     const val CHECKOUT = "checkout"
     const val USER_INVOICE_LIST = "user_invoice_list"
@@ -164,9 +166,12 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
     composable(Routes.PRODUCT_LIST) {
         ProductListScreen(
             viewModel = remember { ProductListViewModel() },
-            onNavigateToDetail = { productGuid ->
+            onNavigateToDetail = { productGuid, colorName ->
                 println("onNavigateToDetail called - productGuid: $productGuid")
-                navController.navigate(Routes.PRODUCT_DETAIL.replace("{productGuid}", productGuid))
+                val route = Routes.PRODUCT_DETAIL
+                    .replace("{productGuid}", productGuid)
+                    .replace("{colorName}", colorName)
+                navController.navigate(route)
             },
             onTopMenuClick = { println("Menu clicked") },
             onNavigateToShoppingBag = { navController.navigate(Routes.CART) },
@@ -185,7 +190,7 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             onNavigateToShop = {
                 navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CART)
             },
-            onNavigateToFavorites = { println("Favorites tab selected") },
+            onNavigateToVoucher = { println("Voucher tab selected") },
             onNavigateToProfile = {
                 navController.navigateAndPopTo(Routes.USER_PROFILE, Routes.CART)
             }
@@ -236,11 +241,22 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
         )
     }
 
-    composable(Routes.PRODUCT_DETAIL) { backStackEntry ->
+    composable(
+        route = Routes.PRODUCT_DETAIL,
+        arguments = listOf(
+            navArgument("colorName") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            }
+        )
+    ) { backStackEntry ->
         val productGuid = backStackEntry.arguments?.getString("productGuid") ?: "unknown"
+        val passedColorName = backStackEntry.arguments?.getString("colorName")
 
         ProductDetailScreen(
             productGuid = productGuid,
+            passedColorName = passedColorName,
             viewModel = remember { ProductDetailViewModel() },
             onBackClick = { navController.popBackStack() },
             onNavigateToCart = { navController.navigate(Routes.CART) }

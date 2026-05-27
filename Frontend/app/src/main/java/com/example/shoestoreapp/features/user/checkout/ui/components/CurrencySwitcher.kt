@@ -20,15 +20,13 @@ import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.user.checkout.data.models.CurrencyType
 
 /**
- * Component hiển thị Currency Switcher - cho phép người dùng chọn loại tiền tệ.
+ * Component hiển thị đơn vị tiền tệ (VND).
  *
  * @param selectedCurrency - Loại tiền tệ hiện tại
  * @param onCurrencySelected - Callback khi người dùng chọn currency
  *
  * UI Structure:
- * - Grid 3 cột: USD (selected), VND, EUR
- * - Selected currency: white background, black border, shadow
- * - Unselected currencies: hover effect, gray text
+ * - Hiển thị 1 đơn vị tiền tệ duy nhất
  */
 @Composable
 fun CurrencySwitcher(
@@ -36,7 +34,7 @@ fun CurrencySwitcher(
     onCurrencySelected: (com.example.shoestoreapp.features.user.checkout.data.models.CurrencyType) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val currencies = _root_ide_package_.com.example.shoestoreapp.features.user.checkout.data.models.CurrencyType.entries
+    val currencies = CurrencyType.entries
 
     Box(
         modifier = modifier
@@ -53,7 +51,7 @@ fun CurrencySwitcher(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             currencies.forEach { currency ->
-                _root_ide_package_.com.example.shoestoreapp.features.user.checkout.ui.components.CurrencyButton(
+                CurrencyButton(
                     currency = currency,
                     isSelected = currency == selectedCurrency,
                     onSelect = { onCurrencySelected(currency) },
@@ -109,4 +107,3 @@ fun CurrencyButton(
         }
     }
 }
-
