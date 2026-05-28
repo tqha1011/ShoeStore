@@ -17,7 +17,6 @@ using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Infrastructure.Authentication;
 using ShoeStore.Infrastructure.Authentication.Strategies;
-using ShoeStore.Application.Interface.AddressInterface;
 using ShoeStore.Infrastructure.Cloudinary;
 using ShoeStore.Infrastructure.ExternalServices;
 using ShoeStore.Infrastructure.Data;
