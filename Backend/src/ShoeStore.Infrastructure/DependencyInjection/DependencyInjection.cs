@@ -17,7 +17,9 @@ using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Infrastructure.Authentication;
 using ShoeStore.Infrastructure.Authentication.Strategies;
+using ShoeStore.Application.Interface.AddressInterface;
 using ShoeStore.Infrastructure.Cloudinary;
+using ShoeStore.Infrastructure.ExternalServices;
 using ShoeStore.Infrastructure.Data;
 using ShoeStore.Infrastructure.Notification;
 using ShoeStore.Infrastructure.Repositories;
@@ -71,6 +73,8 @@ public static class DependencyInjection
         services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
         services.AddScoped<IProductEmbeddingRepository, ProductEmbeddingRepository>();
         services.AddScoped<IAddressRepository, AddressRepository>();
+        services.AddHttpClient<IProvinceApiService, ProvinceApiService>(c =>
+            c.BaseAddress = new Uri("https://provinces.open-api.vn/api/v2/"));
         return services;
     }
 }

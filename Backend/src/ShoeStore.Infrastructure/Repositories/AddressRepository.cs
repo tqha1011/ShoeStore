@@ -11,4 +11,9 @@ public class AddressRepository(AppDbContext context) : GenericRepository<UserAdd
     {
         return DbSet.Where(v => v.User.PublicId == userGuid).AsNoTracking();
     }
+
+    public Task<UserAddress?> GetDefaultAddressAsync(int userId, CancellationToken token)
+    {
+        return DbSet.FirstOrDefaultAsync(a => a.UserId == userId && a.IsDefault, token);
+    }
 }
