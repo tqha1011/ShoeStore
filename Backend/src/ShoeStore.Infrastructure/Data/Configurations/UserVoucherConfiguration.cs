@@ -26,7 +26,7 @@ public class UserVoucherConfiguration : IEntityTypeConfiguration<UserVoucher>
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne(c => c.Voucher)
-            .WithMany()
+            .WithMany(v => v.UserVouchers)
             .HasForeignKey(c => c.VoucherId)
             .OnDelete(DeleteBehavior.Restrict);
         
