@@ -1,17 +1,22 @@
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ShoeStore.Application.DTOs.AddressDTOs;
 using ShoeStore.Application.Interface.AddressInterface;
 
 namespace ShoeStore.Infrastructure.ExternalServices;
 
-public class ProvinceApiService(HttpClient httpClient, ILogger<ProvinceApiService> logger) : IProvinceApiService
+public class ProvinceApiService(HttpClient httpClient, IConfiguration configuration, ILogger<ProvinceApiService> logger) : IProvinceApiService
 {
     public async Task<(bool IsValid, string Name)> GetProvinceAsync(int code, CancellationToken token)
     {
+        var baseUrl = configuration["ProvinceApi:BaseUrl"];
+        if (string.IsNullOrWhiteSpace(baseUrl))
+            return (false, string.Empty);
+
         try
         {
-            var response = await httpClient.GetAsync($"p/{code}", token);
+            var response = await httpClient.GetAsync($"{baseUrl}p/{code}", token);
             if (!response.IsSuccessStatusCode)
                 return (false, string.Empty);
 
@@ -29,9 +34,13 @@ public class ProvinceApiService(HttpClient httpClient, ILogger<ProvinceApiServic
 
     public async Task<(bool IsValid, string Name, int ProvinceCode)> GetWardAsync(int code, CancellationToken token)
     {
+        var baseUrl = configuration["ProvinceApi:BaseUrl"];
+        if (string.IsNullOrWhiteSpace(baseUrl))
+            return (false, string.Empty, 0);
+
         try
         {
-            var response = await httpClient.GetAsync($"w/{code}", token);
+            var response = await httpClient.GetAsync($"{baseUrl}w/{code}", token);
             if (!response.IsSuccessStatusCode)
                 return (false, string.Empty, 0);
 

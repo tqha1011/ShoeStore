@@ -72,11 +72,7 @@ public static class DependencyInjection
         services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
         services.AddScoped<IProductEmbeddingRepository, ProductEmbeddingRepository>();
         services.AddScoped<IAddressRepository, AddressRepository>();
-        var provinceApiBaseUrl = configuration["ProvinceApi:BaseUrl"];
-        if (string.IsNullOrWhiteSpace(provinceApiBaseUrl))
-            throw new InvalidOperationException("ProvinceApi:BaseUrl configuration is missing.");
-        services.AddHttpClient<IProvinceApiService, ProvinceApiService>(c =>
-            c.BaseAddress = new Uri(provinceApiBaseUrl));
+        services.AddHttpClient<IProvinceApiService, ProvinceApiService>();
         return services;
     }
 }
