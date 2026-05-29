@@ -67,12 +67,14 @@ public class AddressController(IAddressService addressService) : ControllerBase
     /// <param name="token">Cancellation token for the request.</param>
     /// <response code="200">Address updated successfully.</response>
     /// <response code="401">Unauthorized; user is not authenticated.</response>
+    /// <response code="403">Forbidden; user does not have permission to update this address.</response>
     /// <response code="404">User or address not found.</response>
     /// <response code="400">Bad request; invalid update details.</response>
     /// <returns>An action result indicating the outcome of the update process.</returns>
     [HttpPut("{addressId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateAddress(int addressId, [FromBody] UpdateAddressDto dto,
@@ -93,6 +95,7 @@ public class AddressController(IAddressService addressService) : ControllerBase
             errors => errors[0].Code switch
             {
                 "User.NotFound" or "UserAddress.NotFound" => NotFound(new { message = errors[0].Description }),
+                "Address.Forbidden" => Forbid(),
                 "Address.InvalidId" => BadRequest(new { message = errors[0].Description }),
                 _ => BadRequest(new { message = "Failed to update address", detail = errors[0].Description })
             }
@@ -144,11 +147,13 @@ public class AddressController(IAddressService addressService) : ControllerBase
     /// <param name="token">Cancellation token for the request.</param>
     /// <response code="200">Address retrieved successfully.</response>
     /// <response code="401">Unauthorized; user is not authenticated.</response>
+    /// <response code="403">Forbidden; user does not have permission to get this address.</response>
     /// <response code="404">User or address not found.</response>
     /// <returns>An action result containing the address details if found.</returns>
     [HttpGet("{addressId}")]
     [ProducesResponseType(typeof(AddressResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetAddressId(int addressId, CancellationToken token)
     {
@@ -167,6 +172,7 @@ public class AddressController(IAddressService addressService) : ControllerBase
             errors => errors[0].Code switch
             {
                 "User.NotFound" or "UserAddress.NotFound" => NotFound(new { message = errors[0].Description }),
+                "Address.Forbidden" => Forbid(),
                 _ => BadRequest(new { message = "Failed to retrieve address", detail = errors[0].Description })
             }
         );
@@ -176,9 +182,9 @@ public class AddressController(IAddressService addressService) : ControllerBase
     ///     Retrieves all addresses associated with the authenticated user.
     /// </summary>
     /// <param name="token">Cancellation token for the request.</param>
-    /// <response code="200">Addresses retrieved successfully.</response>
+    /// <response code="200">Addresses retrieved successfully; returns a list that may be empty.</response>
     /// <response code="401">Unauthorized; user is not authenticated.</response>
-    /// <response code="404">User not found or no addresses found.</response>
+    /// <response code="404">User not found.</response>
     /// <returns>An action result containing a list of addresses for the user.</returns>
     [HttpGet("all")]
     [ProducesResponseType(typeof(IEnumerable<AddressResponseDto>), StatusCodes.Status200OK)]
@@ -200,7 +206,7 @@ public class AddressController(IAddressService addressService) : ControllerBase
             addresses => Ok(addresses),
             errors => errors[0].Code switch
             {
-                "User.NotFound" or "Address.NotFound" => NotFound(new { message = errors[0].Description }),
+                "User.NotFound" => NotFound(new { message = errors[0].Description }),
                 _ => BadRequest(new { message = "Failed to retrieve addresses", detail = errors[0].Description })
             }
         );

@@ -1,10 +1,11 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using ShoeStore.Application.DTOs.AddressDTOs;
 using ShoeStore.Application.Interface.AddressInterface;
 
 namespace ShoeStore.Infrastructure.ExternalServices;
 
-public class ProvinceApiService(HttpClient httpClient) : IProvinceApiService
+public class ProvinceApiService(HttpClient httpClient, ILogger<ProvinceApiService> logger) : IProvinceApiService
 {
     public async Task<(bool IsValid, string Name)> GetProvinceAsync(int code, CancellationToken token)
     {
@@ -17,10 +18,11 @@ public class ProvinceApiService(HttpClient httpClient) : IProvinceApiService
             var result = await JsonSerializer.DeserializeAsync<ProvinceApiResponseDto>(
                 await response.Content.ReadAsStreamAsync(token), cancellationToken: token);
 
-            return result is not null ? (true, result.Name) : (false, string.Empty);
+            return result?.Name is { } name ? (true, name) : (false, string.Empty);
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to fetch province with code {Code} from the external API.", code);
             return (false, string.Empty);
         }
     }
@@ -36,10 +38,11 @@ public class ProvinceApiService(HttpClient httpClient) : IProvinceApiService
             var result = await JsonSerializer.DeserializeAsync<WardApiResponseDto>(
                 await response.Content.ReadAsStreamAsync(token), cancellationToken: token);
 
-            return result is not null ? (true, result.Name, result.ProvinceCode) : (false, string.Empty, 0);
+            return result?.Name is { } name ? (true, name, result.ProvinceCode) : (false, string.Empty, 0);
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to fetch ward with code {Code} from the external API.", code);
             return (false, string.Empty, 0);
         }
     }
