@@ -409,8 +409,8 @@ public class ChatBotService(
     {
         return new OpenAIPromptExecutionSettings
         {
-            MaxTokens = 500, // Limit response length
-            Temperature = 0.6, // Adjust creativity
+            MaxTokens = 1500, // Limit response length
+            Temperature = 0.1, // Adjust creativity
             ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions // Allow tool calls
         };
     }

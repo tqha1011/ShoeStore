@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using ShoeStore.Application.DTOs.ChatBotDTOs;
 using ShoeStore.Application.DTOs.ProductDTOs;
-using ShoeStore.Application.DTOs.ProductVariantDTOs;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.Hub;
@@ -24,12 +23,17 @@ public class ProductPluginService(
     // LLM entry point: search product by keyword, enforce admin check, return a single/multiple/not-found status.
     [KernelFunction("search-product")]
     [Description("Searches for products in the database using a keyword or product name. " +
-                 "CRITICAL INSTRUCTION: You MUST use this function FIRST to find and confirm the exact product before adding any variants. " +
-                 "After calling this function, check the 'Status' field in the result: " +
-                 "1. If Status is 'NotFound': Stop and ask the user to provide a different name. " +
-                 "2. If Status is 'MultipleFound': Stop and list the found products to the user, asking them to choose the correct one. " +
-                 "3. If Status is 'UserNotValid': Apologize and inform the user that they do not have the required admin permissions to perform this action." +
-                 "4. If Status is 'Success': You have found the exact product, proceed with the user's next request using the provided PublicId.")]
+                 "CRITICAL INSTRUCTION: You MUST use this function FIRST before adding any variants. " +
+                 "After calling, check the 'Status' field: " +
+                 "1. If 'NotFound': Ask the user for a different keyword. " +
+                 "2. If 'MultipleFound': STOP. Display ALL products as a numbered list (1, 2, 3...) " +
+                 "   showing ProductName and Brand. Do NOT pick one yourself. " +
+                 "   Wait for user selection (e.g. 'chọn 1', 'lấy cái đầu', 'số 2'). " +
+                 "   SELECTION HANDLING: When user picks by number or position → map back to the corresponding " +
+                 "   product in YOUR previous list → extract that product's PublicId → treat as Success. " +
+                 "   Do NOT call search-product again after a selection is made. " +
+                 "3. If 'UserNotValid': Apologize, inform user they lack admin permissions. " +
+                 "4. If 'Success': Use products[0].PublicId as the confirmed product ID. ")]
     public async Task<SearchResultDto> SearchProduct(
         [Description(
             "The specific name, brand, or keyword of the product the user wants to find (e.g., 'Nike Air Force 1').")]
@@ -47,24 +51,11 @@ public class ProductPluginService(
             Keyword = keyword
         };
         var products = await productRepository.SearchProduct(productKeywords)
-            .Select(p => new ProductResponseDto
-            {
-                PublicId = p.PublicId,
-                ProductName = p.ProductName,
-                Brand = p.Brand ?? "Nike",
-                CategoryId = p.CategoryId,
-                CategoryName = p.Category!.Name,
-                Variants = p.ProductVariants.Where(v => v.IsSelling && !v.IsDeleted)
-                    .Select(v => new ProductVariantResponseDto
-                    {
-                        PublicId = v.PublicId,
-                        SizeId = v.SizeId,
-                        Size = v.Size!.Size,
-                        ColorId = v.ColorId,
-                        ColorName = v.Color!.ColorName,
-                        Price = v.Price
-                    }).ToList()
-            })
+            .Select(p => new ProductSummaryForLlm(
+                p.PublicId,
+                p.ProductName,
+                p.Brand ?? "Nike",
+                p.Category!.Name))
             .Take(20)
             .ToListAsync(token);
         var response = products.Count switch
@@ -81,6 +72,8 @@ public class ProductPluginService(
     // LLM entry point: validate inputs, resolve size/color/product, then notify admin UI via SignalR.
     [KernelFunction("add-product-variant-draft")]
     [Description("Validates and prepares a draft for a new product variant. " +
+                 "PREREQUISITE: publicProductId MUST be a UUID returned by a prior `search-product` " +
+                 "call in this conversation. Do NOT invent or guess this value. " +
                  "CRITICAL: You MUST have the exact product GUID before calling this function. " +
                  "After calling, analyze the 'Status' field in the response: " +
                  "1. If 'Success': Tell the user that the draft has been created successfully on their screen. " +
@@ -101,7 +94,9 @@ public class ProductPluginService(
         [Description("The selling price of the variant (must be >= 0).")]
         decimal price,
         [Description("The URL of the variant's image. Leave null if the user does not provide one.")]
-        string? imageUrl, CancellationToken token)
+        [DefaultValue(null)]
+        string? imageUrl = null,
+        CancellationToken token = default)
     {
         if (stock < 0) return new AddVariantResultDto("InvalidStock", "Stock cannot be negative", null);
         if (price < 0) return new AddVariantResultDto("InvalidPrice", "Price cannot be negative", null);

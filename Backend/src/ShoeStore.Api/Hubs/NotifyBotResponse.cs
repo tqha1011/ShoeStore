@@ -17,6 +17,8 @@ public class NotifyBotResponse(IHubContext<NotifyBotHub, INotifyBotHub> hubConte
     /// <param name="publicUserid">The public user identifier used to target the admin group.</param>
     public async Task NotifyAddVariantDraftAsync(AddVariantResultDto result, Guid publicUserid)
     {
+        Console.WriteLine(
+            $"[SIGNALR SPEED TEST ADD] Dang phat loa den Group: Admin-{publicUserid} | Cuoc data Status: {result.Status}");
         await hubContext.Clients.Group($"Admin-{publicUserid}").NotifyAddVariantResponse(result);
     }
 
@@ -27,6 +29,8 @@ public class NotifyBotResponse(IHubContext<NotifyBotHub, INotifyBotHub> hubConte
     /// <param name="publicUserid">The public user identifier used to target the admin group.</param>
     public async Task NotifyProductSearchResultAsync(SearchResultDto result, Guid publicUserid)
     {
+        Console.WriteLine(
+            $"[SIGNALR SPEED TEST SEARCH] Dang phat loa den Group: Admin-{publicUserid} | Cuoc data Status: {result.Status}");
         await hubContext.Clients.Group($"Admin-{publicUserid}").NotifySearchResultAsync(result);
     }
 }
