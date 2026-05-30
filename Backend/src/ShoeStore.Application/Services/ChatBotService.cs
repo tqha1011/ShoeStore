@@ -401,7 +401,7 @@ public class ChatBotService(
     {
         return new OpenAIPromptExecutionSettings
         {
-            MaxTokens = 500, // Limit response length
+            MaxTokens = 600, // Limit response length
             Temperature = 0.6 // Adjust creativity
         };
     }
