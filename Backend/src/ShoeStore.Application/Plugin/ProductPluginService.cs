@@ -51,6 +51,7 @@ public class ProductPluginService(
             Keyword = keyword
         };
         var products = await productRepository.SearchProduct(productKeywords)
+            .OrderBy(p => p.Id)
             .Select(p => new ProductSummaryForLlm(
                 p.PublicId,
                 p.ProductName,

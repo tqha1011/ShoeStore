@@ -9,7 +9,7 @@ public class ColorRepository(AppDbContext context) : GenericRepository<Color, in
 {
     public async Task<List<Color>> GetColorsAsync(CancellationToken token)
     {
-        return await DbSet.AsNoTracking().ToListAsync(token);
+        return await DbSet.AsNoTracking().OrderBy(c => c.Id).ToListAsync(token);
     }
 
     public async Task<bool> ColorNameExistAsync(string name, CancellationToken token)

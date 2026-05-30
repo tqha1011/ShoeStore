@@ -7,4 +7,8 @@ public interface IMasterDataPluginService
     Task<MasterDataResultDto> AddNewColor(string colorName, CancellationToken token);
 
     Task<MasterDataResultDto> AddNewSize(decimal size, CancellationToken token);
+
+    Task<ColorDataResultDto> GetColorData(CancellationToken token);
+
+    Task<SizeDataResultDto> GetSizeData(CancellationToken token);
 }
