@@ -1,11 +1,10 @@
-﻿
-namespace ShoeStore.Application.DTOs.AddressDTOs
+namespace ShoeStore.Application.DTOs.AddressDTOs;
+
+public class CreateAddressDto
 {
-    public class CreateAddressDto
-    {
-        public string Province { get; set; } = string.Empty;
-        public string District { get; set; } = string.Empty;
-        public string DetailAddress { get; set; } = string.Empty;
-        public bool IsDefault { get; set; } = false;
-    }
+    public int ProvinceId { get; set; }
+    public int DistrictId { get; set; }
+    public int WardId { get; set; }
+    public string DetailAddress { get; set; } = string.Empty;
+    public bool IsDefault { get; set; } = false;
 }

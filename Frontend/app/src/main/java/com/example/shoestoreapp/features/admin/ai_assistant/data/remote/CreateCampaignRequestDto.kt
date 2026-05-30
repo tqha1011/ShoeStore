@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.agent_intelligent.data.remote
+package com.example.shoestoreapp.features.admin.ai_assistant.data.remote
 
 import com.google.gson.annotations.SerializedName
 
