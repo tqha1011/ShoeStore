@@ -14,6 +14,8 @@ public class Voucher : Entity<int>
 
     public DiscountType DiscountType { get; set; }
 
+    public ReleaseType ReleaseType { get; set; } = ReleaseType.AutoAssign;
+
     public decimal MaxPriceDiscount { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; }

@@ -33,13 +33,15 @@ public class VoucherService(
             MaxUsagePerUser = voucherCreateDto.MaxUsagePerUser,
             TotalQuantity = voucherCreateDto.TotalQuantity ?? 0,
             MinOrderPrice = voucherCreateDto.MinOrderPrice ?? 0,
+            ReleaseType = voucherCreateDto.ReleaseType,
             IsDeleted = false
         };
 
         voucherRepository.Add(voucher);
         await uow.SaveChangesAsync(token);
-        await NotifyUserAboutNewVoucherAsync(voucher.Id, voucher.VoucherName, voucher.ValidTo ?? DateTime.UtcNow,
-            token);
+        if (voucherCreateDto.ReleaseType == ReleaseType.AutoAssign)
+            await NotifyUserAboutNewVoucherAsync(voucher.Id, voucher.VoucherName, voucher.ValidTo ?? DateTime.UtcNow,
+                token);
         return Result.Created;
     }
 
@@ -165,8 +167,10 @@ public class VoucherService(
         var userId = await userRepository.GetUserIdByPublicIdAsync(publicUserId, token);
         if (userId == null) return Error.NotFound("User.NotFound", "The user does not exist or has been deleted.");
         var query = voucherRepository.GetValidVouchers();
-        var filtered = query.Where(v => !v.IsDeleted && v.ValidTo > DateTime.UtcNow && v.TotalQuantity > 0
-                                        && v.UserVouchers.All(uv => uv.UserId != userId));
+        var filtered = query.Where(v => !v.IsDeleted && v.ValidTo > DateTime.UtcNow && v.ValidFrom <= DateTime.UtcNow &&
+                                        v.TotalQuantity > 0
+                                        && v.UserVouchers.All(uv => uv.UserId != userId) &&
+                                        v.ReleaseType == ReleaseType.ManualAssign);
         var totalCount = await filtered.CountAsync(token);
 
         var vouchers = await filtered
