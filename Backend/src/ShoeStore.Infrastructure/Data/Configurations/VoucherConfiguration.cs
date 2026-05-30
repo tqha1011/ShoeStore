@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ShoeStore.Domain.Entities;
+using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Infrastructure.Data.Configurations;
 
@@ -64,5 +65,8 @@ public class VoucherConfiguration : IEntityTypeConfiguration<Voucher>
 
         builder.Property<uint>("Version")
             .IsRowVersion();
+
+        builder.Property(c => c.ReleaseType)
+            .HasDefaultValue(ReleaseType.AutoAssign);
     }
 }

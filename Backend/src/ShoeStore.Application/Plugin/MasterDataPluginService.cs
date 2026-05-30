@@ -100,4 +100,44 @@ public class MasterDataPluginService(
         await unitOfWork.SaveChangesAsync(token);
         return new MasterDataResultDto("Success", "Add new size successfully");
     }
+
+    [KernelFunction("get-color-data")]
+    [Description("Retrieves all available product colors from the database. " +
+                 "Call this function ONLY when the user explicitly asks about available colors " +
+                 "(e.g., 'hiện có màu gì?', 'list all colors', 'màu nào đang có'). " +
+                 "After calling, analyze the 'Status' field: " +
+                 "1. If 'Success': Display the list of colors to the user in a readable format. " +
+                 "2. If 'UserNotValid': Apologize and inform the user that they do not have the required admin permissions.")]
+    public async Task<ColorDataResultDto> GetColorData(CancellationToken token)
+    {
+        if (currentUser.Id == null || !currentUser.IsAdmin)
+        {
+            logger.LogWarning("Unauthorized access attempt to get-color-data by user {UserId}", currentUser.Id);
+            return new ColorDataResultDto("UserNotValid", "Unauthorized user", []);
+        }
+
+        var colorData = await colorRepository.GetColorsAsync(token);
+        var colorResult = colorData.Select(c => new ColorResultDto(c.Id, c.ColorName)).ToList();
+        return new ColorDataResultDto("Success", "Get color data successfully", colorResult);
+    }
+
+    [KernelFunction("get-size-data")]
+    [Description("Retrieves all available product sizes from the database. " +
+                 "Call this function ONLY when the user explicitly asks about available sizes " +
+                 "(e.g., 'hiện có size gì?', 'list all sizes', 'đang có những size nào'). " +
+                 "After calling, analyze the 'Status' field: " +
+                 "1. If 'Success': Display the list of sizes to the user in a readable format. " +
+                 "2. If 'UserNotValid': Apologize and inform the user that they do not have the required admin permissions.")]
+    public async Task<SizeDataResultDto> GetSizeData(CancellationToken token)
+    {
+        if (currentUser.Id == null || !currentUser.IsAdmin)
+        {
+            logger.LogWarning("Unauthorized access attempt to get-size-data by user {UserId}", currentUser.Id);
+            return new SizeDataResultDto("UserNotValid", "Unauthorized user", []);
+        }
+
+        var sizeData = await sizeRepository.GetProductSizesAsync(token);
+        var sizeResult = sizeData.Select(s => new SizeResultDto(s.Id, s.Size)).ToList();
+        return new SizeDataResultDto("Success", "Get size data successfully", sizeResult);
+    }
 }

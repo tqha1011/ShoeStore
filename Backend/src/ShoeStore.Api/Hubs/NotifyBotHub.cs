@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.SignalR;
 using ShoeStore.Application.Interface.Hub;
-using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Api.Hubs;
 
@@ -55,8 +54,21 @@ public class NotifyBotHub : Hub<INotifyBotHub>
     {
         var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         var connectionId = Context.ConnectionId;
-        var role = Context.User?.FindFirst(ClaimTypes.Role)?.Value;
-        if (role == nameof(UserRole.Admin)) await Groups.AddToGroupAsync(connectionId, $"Admin-{userId}");
+        var userPrincipal = Context.User;
+        var roleClaimValue = userPrincipal?.FindFirst(ClaimTypes.Role)?.Value
+                             ?? userPrincipal?.FindFirst("role")?.Value;
+
+        if (!string.IsNullOrEmpty(userId) &&
+            string.Equals(roleClaimValue, "Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            await Groups.AddToGroupAsync(connectionId, $"Admin-{userId}");
+            Console.WriteLine($"[SIGNALR HUB] Thằng Admin ID {userId} đã chui thành công vào Group!");
+        }
+        else
+        {
+            Console.WriteLine($"[SIGNALR HUB] Thằng Admin ID {userId} đã không chui vào Group!");
+        }
+
         await base.OnConnectedAsync();
     }
 }

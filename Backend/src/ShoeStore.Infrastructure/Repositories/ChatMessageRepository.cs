@@ -14,7 +14,7 @@ public class ChatMessageRepository(AppDbContext context)
         return await DbSet.AsNoTracking()
             .Where(x => x.SessionId == sessionId)
             .OrderByDescending(c => c.CreatedAt)
-            .Take(30)
+            .Take(10)
             .ToListAsync(token);
     }
 

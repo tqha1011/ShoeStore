@@ -7,6 +7,7 @@ using Microsoft.SemanticKernel.Connectors.OpenAI;
 using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs.ChatBotDTOs;
 using ShoeStore.Application.DTOs.StatisticsDto;
+using ShoeStore.Application.Extensions;
 using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.StatisticsInterface;
@@ -53,7 +54,7 @@ public class ChatBotService(
             Role = ChatBotRole.User,
             SessionId = sessionId.Value,
             CreatedAt = DateTime.UtcNow,
-            TokenCount = requestDto.Content.Length / 4 // Rough token estimation
+            TokenCount = requestDto.Content.Length / 2 // Rough token estimation
         };
         chatMessageRepository.Add(newUserMessage);
         var totalRevenue = summaryData.Value.TotalRevenue;
@@ -131,7 +132,7 @@ public class ChatBotService(
             Role = ChatBotRole.User,
             SessionId = sessionId.Value,
             CreatedAt = DateTime.UtcNow,
-            TokenCount = messageRequestDto.Content.Length / 4 // Rough token estimation
+            TokenCount = messageRequestDto.Content.Length / 2 // Rough token estimation for Vietnamese
         };
         chatMessageRepository.Add(newChatMessage);
         if (totalRevenue <= 0 && totalOrders == 0 && top3Products.Value.Count == 0)
@@ -168,7 +169,7 @@ public class ChatBotService(
                 SystemPrompt.GenerateStatisticsPrompt(totalRevenue, totalOrders, top1, top2, top3, false);
 
             var chat = new ChatHistory(systemPrompt);
-            var reducer = new ChatHistoryTruncationReducer(20, 35);
+            var reducer = new TokenBudgetChatReducer(3000);
 
             foreach (var message in reverseHistoryChat)
                 switch (message.Role)
@@ -237,13 +238,13 @@ public class ChatBotService(
             Role = ChatBotRole.User,
             SessionId = sessionId.Value,
             CreatedAt = DateTime.UtcNow,
-            TokenCount = messageRequestDto.Content.Length / 4 // Rough token estimation
+            TokenCount = messageRequestDto.Content.Length / 2 // Rough token estimation for Vietnamese
         };
         chatMessageRepository.Add(newChatMessage);
-        var executionSetting = BuildPluginExecutionSettings();
+        var executionSetting = BuildStoreAssistantPluginExecutionSettings();
         var systemPrompt = SystemPrompt.GenerateProductPrompt();
         var chat = new ChatHistory(systemPrompt);
-        var reducer = new ChatHistoryTruncationReducer(20, 35);
+        var reducer = new TokenBudgetChatReducer(3000);
         foreach (var message in reverseHistoryChat)
             switch (message.Role)
             {
@@ -308,12 +309,12 @@ public class ChatBotService(
             Role = ChatBotRole.User,
             SessionId = sessionId.Value,
             CreatedAt = DateTime.UtcNow,
-            TokenCount = messageRequestDto.Content.Length / 4 // Rough token estimation
+            TokenCount = messageRequestDto.Content.Length / 2 // Rough token estimation for Vietnamese
         };
         chatMessageRepository.Add(newChatMessage);
         var systemPrompt = SystemPrompt.GenerateProductAdminSystemPrompt();
         var chat = new ChatHistory(systemPrompt);
-        var reducer = new ChatHistoryTruncationReducer(20, 35);
+        var reducer = new TokenBudgetChatReducer(3000);
         foreach (var message in reverseHistoryChat)
             switch (message.Role)
             {
@@ -409,9 +410,19 @@ public class ChatBotService(
     {
         return new OpenAIPromptExecutionSettings
         {
-            MaxTokens = 500, // Limit response length
-            Temperature = 0.6, // Adjust creativity
+            MaxTokens = 1200, // Limit response length
+            Temperature = 0.1, // Adjust creativity
             ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions // Allow tool calls
+        };
+    }
+
+    private static OpenAIPromptExecutionSettings BuildStoreAssistantPluginExecutionSettings()
+    {
+        return new OpenAIPromptExecutionSettings
+        {
+            MaxTokens = 1000,
+            Temperature = 0.2,
+            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
         };
     }
 }
