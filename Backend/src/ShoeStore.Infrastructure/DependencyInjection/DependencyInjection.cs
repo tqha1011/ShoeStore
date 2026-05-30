@@ -18,6 +18,7 @@ using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Infrastructure.Authentication;
 using ShoeStore.Infrastructure.Authentication.Strategies;
 using ShoeStore.Infrastructure.Cloudinary;
+using ShoeStore.Infrastructure.ExternalServices;
 using ShoeStore.Infrastructure.Data;
 using ShoeStore.Infrastructure.Notification;
 using ShoeStore.Infrastructure.Repositories;
@@ -71,6 +72,7 @@ public static class DependencyInjection
         services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
         services.AddScoped<IProductEmbeddingRepository, ProductEmbeddingRepository>();
         services.AddScoped<IAddressRepository, AddressRepository>();
+        services.AddHttpClient<IProvinceApiService, ProvinceApiService>();
         return services;
     }
 }
