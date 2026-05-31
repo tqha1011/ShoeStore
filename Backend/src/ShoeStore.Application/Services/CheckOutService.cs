@@ -64,28 +64,29 @@ public class CheckOutService(
             })
             .ToList();
 
-        var total = items.Sum(x => x.SubTotal);
-        var finalPrice = total;
+        var totalProductPrice = items.Sum(x => x.SubTotal);
         if (voucherIds.Count > 0)
         {
             var vouchers = await voucherRepository.GetVouchersByIdsAsync(voucherIds, token);
+            var validVouchers = new List<Voucher>();
             foreach (var voucherId in voucherIds)
             {
                 var voucher = vouchers.GetValueOrDefault(voucherId);
                 if (voucher == null || voucher.IsDeleted || voucher.ValidTo < DateTime.UtcNow ||
                     voucher.ValidFrom > DateTime.UtcNow)
                     return Error.Validation("Voucher.Invalid", $"Voucher {voucher?.VoucherName} is invalid.");
-                if (voucher.MinOrderPrice > total)
+                if (voucher.MinOrderPrice > totalProductPrice)
                     return Error.Validation("Voucher.MinOrderPriceNotMet",
                         $"The order price does not meet the minimum requirement for voucher {voucher.VoucherName}.");
-                if(voucher.VoucherScope == VoucherScope.Product)
-                    finalPrice = CalculateFinalProductPrice([voucher], null!, finalPrice);
-                else if(voucher.VoucherScope == VoucherScope.Shipping)
-                    shippingFee = CalculateFinalShippingFee([voucher], null!, shippingFee);
+                validVouchers.Add(voucher);
             }
-        }
 
-        var summary = new CheckOutSummaryDto(total, finalPrice, shippingFee);
+            totalProductPrice = CalculateFinalProductPrice(validVouchers!, null!, totalProductPrice);
+            shippingFee = CalculateFinalShippingFee(validVouchers!, null!, shippingFee);
+        }
+        var finalPrice = totalProductPrice + shippingFee;
+
+        var summary = new CheckOutSummaryDto(totalProductPrice, finalPrice, shippingFee);
 
         var warnings = items.Where(x => x.IsOutOfStock)
             .Select(x => $"{x.ProductName} is only have {x.StockAvailable} items.")
