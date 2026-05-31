@@ -74,7 +74,7 @@ public class CheckOutService(
                     voucher.ValidFrom > DateTime.UtcNow)
                     return Error.Validation("Voucher.Invalid", $"Voucher {voucher?.VoucherName} is invalid.");
                 if (voucher.MinOrderPrice > total)
-                    return Error.Validation("Voucher.Invalid",
+                    return Error.Validation("Voucher.MinOrderPriceNotMet",
                         $"The order price does not meet the minimum requirement for voucher {voucher.VoucherName}.");
                 if(voucher.VoucherScope == VoucherScope.Product)
                     finalPrice = CalculateFinalProductPrice([voucher], null!, finalPrice);

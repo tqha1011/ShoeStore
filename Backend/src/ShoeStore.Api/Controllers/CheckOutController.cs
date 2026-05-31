@@ -69,6 +69,16 @@ public class CheckOutController(ICheckOutService checkOutService) : ControllerBa
                     message = "Your variant does not exist.",
                     description = errors[0].Description
                 }),
+                "Voucher.Invalid" => BadRequest(new
+                {
+                    message = "One or more voucher is not valid",
+                    description = errors[0].Description
+                }),
+                "Voucher.MinOrderPriceNotMet" => BadRequest(new
+                {
+                    message = "Your order price is not meet the required minimum requirement for voucher.",
+                    description = errors[0].Description
+                }),
                 _ => StatusCode(StatusCodes.Status500InternalServerError, new
                 {
                     message = "Something went wrong. Please try again later.",
