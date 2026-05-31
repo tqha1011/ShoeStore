@@ -118,8 +118,8 @@ public class VoucherService(
 
         voucher.MaxPriceDiscount = voucherUpdateDto.MaxPriceDiscount ?? voucher.MaxPriceDiscount;
 
-        voucher.ValidFrom = voucherUpdateDto.ValidFrom ?? voucher.ValidFrom;
-        voucher.ValidTo = voucherUpdateDto.ValidTo ?? voucher.ValidTo;
+        voucher.ValidFrom = voucherUpdateDto.ValidFrom?.AddHours(-7) ?? voucher.ValidFrom;
+        voucher.ValidTo = voucherUpdateDto.ValidTo?.AddHours(23).AddMinutes(59).AddHours(-7) ?? voucher.ValidTo;
 
         voucher.MaxUsagePerUser = voucherUpdateDto.MaxUsagePerUser ?? voucher.MaxUsagePerUser;
         voucher.TotalQuantity = voucherUpdateDto.TotalQuantity ?? voucher.TotalQuantity;
