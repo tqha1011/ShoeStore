@@ -32,4 +32,12 @@ public class VoucherRepository(AppDbContext context) : GenericRepository<Voucher
     {
         return DbSet.AsNoTracking();
     }
+
+    public async Task<Dictionary<int, Voucher>> GetVouchersByIdsAsync(List<int> voucherGuids,
+        CancellationToken token)
+    {
+        if (voucherGuids.Count == 0) return new Dictionary<int, Voucher>();
+        return await DbSet.AsNoTracking().Where(v => voucherGuids.Contains(v.Id) && !v.IsDeleted)
+            .ToDictionaryAsync(v => v.Id, token);
+    }
 }

@@ -8,6 +8,7 @@ using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
 using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Application.Interface.UserInterface;
+using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Application.Services;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
@@ -27,11 +28,13 @@ public class PlaceOrderTests
     private readonly Mock<IDbTransaction> _transaction = new();
 
     private readonly Mock<IUserRepository> _userRepository = new();
+    
+    private readonly Mock<IVoucherRepository> _voucherRepository = new();
 
     public PlaceOrderTests()
     {
         _checkOutService = new CheckOutService(_productVariantRepository.Object, _mockUow.Object,
-            _cartItemRepository.Object, _invoiceRepository.Object, _userRepository.Object);
+            _cartItemRepository.Object, _invoiceRepository.Object, _userRepository.Object,_voucherRepository.Object);
     }
 
     [Fact]

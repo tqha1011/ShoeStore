@@ -31,6 +31,7 @@ public class CheckOutController(ICheckOutService checkOutService) : ControllerBa
     ///     Rate-limited per user to prevent abuse.
     /// </remarks>
     /// <param name="checkOutList">List of checkout request items to prepare.</param>
+    /// <param name="voucherIds"></param>
     /// <param name="token">Cancellation token for the request.</param>
     /// <response code="200">Checkout prepared successfully. Returns order summary with pricing details.</response>
     /// <response code="404">Not found; one or more product variants do not exist.</response>
@@ -48,7 +49,7 @@ public class CheckOutController(ICheckOutService checkOutService) : ControllerBa
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost("prepare")]
     [EnableRateLimiting("limit-per-user")]
-    public async Task<IActionResult> PrepareCheckOut(List<CheckOutRequestDto> checkOutList, CancellationToken token)
+    public async Task<IActionResult> PrepareCheckOut(List<CheckOutRequestDto> checkOutList,List<int> voucherIds ,CancellationToken token)
     {
         var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (validUser == null || !Guid.TryParse(validUser, out var publicUserId))
@@ -57,7 +58,7 @@ public class CheckOutController(ICheckOutService checkOutService) : ControllerBa
                 message = "You are not authorized to perform this action.",
                 description = "Please login to your account and try again."
             });
-        var result = await checkOutService.PrepareCheckOutAsync(checkOutList,publicUserId, token);
+        var result = await checkOutService.PrepareCheckOutAsync(checkOutList,publicUserId,voucherIds, token);
 
         var response = result.Match<IActionResult>(
             responseDto => Ok(responseDto),
