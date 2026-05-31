@@ -1,5 +1,6 @@
 using ErrorOr;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
 using ShoeStore.Application.Extensions;
 using ShoeStore.Application.Interface.CartItemInterface;
@@ -21,7 +22,8 @@ public class CheckOutService(
     ICartItemRepository cartItemRepository,
     IInvoiceRepository invoiceRepository,
     IUserRepository userRepository,
-    IVoucherRepository voucherRepository) : ICheckOutService
+    IVoucherRepository voucherRepository,
+    IConfiguration configuration) : ICheckOutService
 {
     public async Task<ErrorOr<CheckOutResponseDto>> PrepareCheckOutAsync(List<CheckOutRequestDto> checkOutList,
         Guid publicUserId, List<int> voucherIds, CancellationToken token)
@@ -147,6 +149,13 @@ public class CheckOutService(
                 // If all stages execute successfully, commit the transaction, otherwise rollback the transaction
                 await unitOfWork.SaveChangesAsync(token);
                 await unitOfWork.CommitTransactionAsync(token);
+                if (placeOrderRequestDto.PaymentId == 1)
+                {
+                    var shopBankCode = configuration["ShopBank:BankCode"];
+                    var shopBankAccount = configuration["ShopBank:BankAccount"];
+                    var shopBankName = configuration["ShopBank:BankName"];
+                    return invoice.MapToInvoiceDto(shopBankCode, shopBankAccount, shopBankName);
+                }
                 return invoice.MapToInvoiceDto();
             }
             catch (DbUpdateConcurrencyException)
