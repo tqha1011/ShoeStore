@@ -20,16 +20,22 @@ public class VoucherService(
 {
     public async Task<ErrorOr<Created>> CreateVoucherAsync(CreateVoucherDto voucherCreateDto, CancellationToken token)
     {
+        var validDiscount = voucherCreateDto.DiscountType switch
+        {
+            DiscountType.Percentage => voucherCreateDto.Discount / 100m ?? 0,
+            DiscountType.FixedAmount => voucherCreateDto.Discount ?? 0,
+            _ => 0
+        };
         var voucher = new Voucher
         {
             VoucherName = voucherCreateDto.VoucherName ?? string.Empty,
             VoucherDescription = voucherCreateDto.VoucherDescription ?? string.Empty,
-            Discount = voucherCreateDto.Discount ?? 0,
+            Discount = validDiscount,
             VoucherScope = voucherCreateDto.VoucherScope,
             DiscountType = voucherCreateDto.DiscountType,
             MaxPriceDiscount = voucherCreateDto.MaxPriceDiscount,
-            ValidFrom = voucherCreateDto.ValidFrom ?? DateTime.UtcNow,
-            ValidTo = voucherCreateDto.ValidTo,
+            ValidFrom = voucherCreateDto.ValidFrom?.AddHours(-7) ?? DateTime.UtcNow,
+            ValidTo = voucherCreateDto.ValidTo?.AddHours(23).AddMinutes(59).AddHours(-7) ?? DateTime.UtcNow,
             MaxUsagePerUser = voucherCreateDto.MaxUsagePerUser,
             TotalQuantity = voucherCreateDto.TotalQuantity ?? 0,
             MinOrderPrice = voucherCreateDto.MinOrderPrice ?? 0,
