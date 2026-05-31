@@ -21,6 +21,8 @@ import com.example.shoestoreapp.features.user.product.ui.product_list.ProductLis
 import com.example.shoestoreapp.features.user.cart.ui.screens.CartScreen
 import com.example.shoestoreapp.features.user.cart.viewmodel.CartViewModel
 import com.example.shoestoreapp.features.user.checkout.ui.screens.CheckoutScreen
+import com.example.shoestoreapp.features.user.checkout.ui.screens.PaymentQRScreen
+import com.example.shoestoreapp.features.user.voucher.ui.screens.CollectVoucherScreen
 import com.example.shoestoreapp.features.admin.invoice.ui.AdminInvoiceScreen
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
@@ -44,6 +46,7 @@ import com.example.shoestoreapp.features.auth.presentation.reset_password.create
 import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.admin.addproduct.viewmodel.AdminAddProductViewModel
 import com.example.shoestoreapp.features.admin.addproduct.viewmodel.FetchMasterDataViewModel
+import com.example.shoestoreapp.features.user.voucher.ui.screens.MyVoucherScreen
 import kotlinx.coroutines.launch
 
 private object Routes {
@@ -56,10 +59,12 @@ private object Routes {
     const val PRODUCT_DETAIL = "product_detail/{productGuid}?colorName={colorName}"
     const val CART = "cart"
     const val CHECKOUT = "checkout"
+    const val PAYMENT_QR = "payment_qr" // ROUTE MOI CHO MAN HINH QR
     const val USER_INVOICE_LIST = "user_invoice_list"
     const val USER_PROFILE = "user_profile"
     const val USER_EDIT_PROFILE = "user_edit_profile"
     const val USER_CHANGE_PASSWORD = "user_change_password"
+    const val USER_COLLECT_VOUCHERS = "user_collect_vouchers"
     const val ADMIN_PRODUCT_LIST = "admin_product_list"
     const val ADMIN_CRUD = "admin_crud"
     const val ADMIN_EDIT_PRODUCT = "admin_edit_product/{productId}"
@@ -67,6 +72,8 @@ private object Routes {
     const val ADMIN_SETTINGS = "admin_settings"
     const val ADMIN_VOUCHER_MANAGEMENT = "admin_voucher_management"
 
+    const val USER_MY_VOUCHERS = "user_my_vouchers?isSelectionMode={isSelectionMode}"
+    fun userMyVouchers(isSelectionMode: Boolean = false): String = "user_my_vouchers?isSelectionMode=$isSelectionMode"
     fun createNewPassword(email: String, otp: String): String = "create_new_password/$email/$otp"
     fun adminEditProduct(productId: String): String = "admin_edit_product/$productId"
 }
@@ -184,25 +191,56 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             viewModel = remember { CartViewModel() },
             onNavigateBack = { navController.popBackStack() },
             onNavigateToCheckout = { navController.navigate(Routes.CHECKOUT) },
-            onNavigateToHome = {
-                navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CART)
-            },
-            onNavigateToShop = {
-                navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CART)
-            },
-            onNavigateToVoucher = { println("Voucher tab selected") },
-            onNavigateToProfile = {
-                navController.navigateAndPopTo(Routes.USER_PROFILE, Routes.CART)
-            }
+            onTabSelected = { tab -> handleUserBagTabSelection(tab, navController) }
         )
     }
 
     composable(Routes.CHECKOUT) {
         CheckoutScreen(
+            navController = navController,
             onBackClick = { navController.popBackStack() },
             onShoppingBagClick = { navController.navigateAndPopTo(Routes.CART, Routes.CHECKOUT) },
+            onNavigateToVoucherScreen = {
+                // Mo man hinh voucher o che do chon
+                navController.navigate(Routes.userMyVouchers(isSelectionMode = true))
+            },
+            onNavigateToQRScreen = { invoice ->
+                // Nhet du lieu vao savedStateHandle roi chuyen trang
+                navController.currentBackStackEntry?.savedStateHandle?.apply {
+                    set("orderCode", invoice.orderCode)
+                    set("finalPrice", invoice.finalPrice ?: 0.0)
+                    set("bankCode", invoice.shopBankCode ?: "")
+                    set("bankAccount", invoice.shopBankAccount ?: "")
+                    set("accountName", invoice.shopAccountName ?: "")
+                }
+                navController.navigate(Routes.PAYMENT_QR)
+            },
             onCompletePurchaseClick = {
                 navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CHECKOUT)
+            }
+        )
+    }
+
+    composable(Routes.PAYMENT_QR) {
+        // Lay du lieu tu man hinh Checkout truyen sang
+        val arguments = navController.previousBackStackEntry?.savedStateHandle
+        val orderCode = arguments?.get<String>("orderCode") ?: ""
+        val finalPrice = arguments?.get<Double>("finalPrice") ?: 0.0
+        val bankCode = arguments?.get<String>("bankCode") ?: ""
+        val bankAccount = arguments?.get<String>("bankAccount") ?: ""
+        val accountName = arguments?.get<String>("accountName") ?: ""
+
+        PaymentQRScreen(
+            orderCode = orderCode,
+            finalPrice = finalPrice,
+            bankCode = bankCode,
+            bankAccount = bankAccount,
+            accountName = accountName,
+            onBackToHomeClick = {
+                // Xoa toan bo backstack tro ve trang chu
+                navController.navigate(Routes.PRODUCT_LIST) {
+                    popUpTo(Routes.PRODUCT_LIST) { inclusive = true }
+                }
             }
         )
     }
@@ -220,12 +258,19 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             onTabSelected = { tab -> handleUserProfileTabSelection(tab, navController) },
             onEditProfileClick = { navController.navigate(Routes.USER_EDIT_PROFILE) },
             onChangePasswordClick = { navController.navigate(Routes.USER_CHANGE_PASSWORD) },
+            onMyVouchersClick = {navController.navigate(Routes.userMyVouchers(isSelectionMode = false))},
             onLogoutClick = {
                 scope.launch {
                     tokenManager.clearAuthInfo()
                     navController.navigateAfterLogout()
                 }
             }
+        )
+    }
+
+    composable(Routes.USER_COLLECT_VOUCHERS) {
+        CollectVoucherScreen(
+            onTabSelected = { tab -> handleUserVoucherTabSelected(tab, navController) }
         )
     }
 
@@ -238,6 +283,32 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
     composable(Routes.USER_CHANGE_PASSWORD) {
         ChangePasswordScreen(
             onBackClick = { navController.popBackStack() }
+        )
+    }
+
+    composable(
+        route = Routes.USER_MY_VOUCHERS,
+        arguments = listOf(
+            navArgument("isSelectionMode") {
+                type = NavType.BoolType
+                defaultValue = false
+            }
+        )
+    ) { backStackEntry ->
+        val isSelectionMode = backStackEntry.arguments?.getBoolean("isSelectionMode") ?: false
+
+        MyVoucherScreen(
+            isSelectionMode = isSelectionMode,
+            onBackClick = { navController.popBackStack() },
+            onApplyVoucher = { voucherUiModel ->
+                val voucherJson = com.google.gson.Gson().toJson(voucherUiModel)
+
+                navController.previousBackStackEntry?.savedStateHandle?.set("selected_voucher_json", voucherJson)
+                navController.popBackStack()
+            },
+            onShopNowClick = {
+                navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.USER_MY_VOUCHERS)
+            }
         )
     }
 
@@ -352,6 +423,7 @@ private fun handleUserHomeTabSelection(tab: BottomNavTab, navController: NavHost
     when (tab) {
         BottomNavTab.PROFILE -> navController.navigate(Routes.USER_PROFILE)
         BottomNavTab.BAG -> navController.navigate(Routes.CART)
+        BottomNavTab.VOUCHER -> navController.navigate(Routes.USER_COLLECT_VOUCHERS)
         else -> Unit
     }
 }
@@ -364,11 +436,29 @@ private fun handleUserInvoiceTabSelection(tab: BottomNavTab, navController: NavH
         BottomNavTab.PROFILE -> {
             navController.navigateAndPopTo(Routes.USER_PROFILE, Routes.USER_INVOICE_LIST)
         }
+        BottomNavTab.VOUCHER -> {
+            navController.navigateAndPopTo(Routes.USER_COLLECT_VOUCHERS, Routes.USER_INVOICE_LIST)
+        }
         BottomNavTab.BAG -> Unit
         else -> println("User Tab selected: $tab")
     }
 }
 
+private fun handleUserBagTabSelection(tab: BottomNavTab, navController: NavHostController) {
+    when (tab) {
+        BottomNavTab.HOME, BottomNavTab.SHOP -> {
+            navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CART)
+        }
+        BottomNavTab.PROFILE -> {
+            navController.navigateAndPopTo(Routes.USER_PROFILE, Routes.CART)
+        }
+        BottomNavTab.VOUCHER -> {
+            navController.navigateAndPopTo(Routes.USER_COLLECT_VOUCHERS, Routes.CART)
+        }
+        BottomNavTab.BAG -> Unit
+        else -> println("User Tab selected: $tab")
+    }
+}
 private fun handleUserProfileTabSelection(tab: BottomNavTab, navController: NavHostController) {
     when (tab) {
         BottomNavTab.HOME, BottomNavTab.SHOP -> {
@@ -377,7 +467,26 @@ private fun handleUserProfileTabSelection(tab: BottomNavTab, navController: NavH
         BottomNavTab.BAG -> {
             navController.navigateAndPopTo(Routes.CART, Routes.USER_PROFILE)
         }
+        BottomNavTab.VOUCHER -> {
+            navController.navigateAndPopTo(Routes.USER_COLLECT_VOUCHERS, Routes.USER_PROFILE)
+        }
         BottomNavTab.PROFILE -> Unit
+        else -> println("User Tab selected: $tab")
+    }
+}
+
+private fun handleUserVoucherTabSelected(tab: BottomNavTab, navController: NavHostController) {
+    when (tab) {
+        BottomNavTab.HOME, BottomNavTab.SHOP -> {
+            navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CART)
+        }
+        BottomNavTab.BAG -> {
+            navController.navigateAndPopTo(Routes.CART, Routes.CART)
+        }
+        BottomNavTab.PROFILE -> {
+            navController.navigateAndPopTo(Routes.USER_PROFILE, Routes.CART)
+        }
+        BottomNavTab.VOUCHER -> Unit
         else -> println("User Tab selected: $tab")
     }
 }

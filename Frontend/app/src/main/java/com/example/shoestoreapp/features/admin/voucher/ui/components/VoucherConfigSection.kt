@@ -19,6 +19,7 @@ fun VoucherConfigSection(
     uiState: VoucherUiState,
     onTargetApplicationChange: (Int) -> Unit,
     onDiscountStyleChange: (Int) -> Unit,
+    onReleaseTypeChange: (Int) -> Unit,
     onDiscountValueChange: (String) -> Unit,
     onMaxReductionChange: (String) -> Unit,
     onMinOrderChange: (String) -> Unit
@@ -65,6 +66,28 @@ fun VoucherConfigSection(
                 label = "Fixed Amount ($)",
                 selected = uiState.discountStyle == 1, // FixedAmount = 1
                 onClick = { onDiscountStyleChange(1) }
+            )
+        }
+
+        Text(
+            text = "Release Type",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.Black
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RadioRowItem(
+                label = "Auto Assign",
+                selected = uiState.releaseType == 1,
+                onClick = { onReleaseTypeChange(1) }
+            )
+            RadioRowItem(
+                label = "Manual Assign",
+                selected = uiState.releaseType == 2,
+                onClick = { onReleaseTypeChange(2) }
             )
         }
 

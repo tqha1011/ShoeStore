@@ -33,6 +33,7 @@ fun VoucherFormCard(
     onDescriptionChange: (String) -> Unit,
     onTargetApplicationChange: (Int) -> Unit,
     onDiscountStyleChange: (Int) -> Unit,
+    onReleaseTypeChange: (Int) -> Unit,
     onDiscountValueChange: (String) -> Unit,
     onMaxReductionChange: (String) -> Unit,
     onMinOrderChange: (String) -> Unit,
@@ -65,6 +66,7 @@ fun VoucherFormCard(
                 uiState = uiState,
                 onTargetApplicationChange = onTargetApplicationChange,
                 onDiscountStyleChange = onDiscountStyleChange,
+                onReleaseTypeChange = onReleaseTypeChange,
                 onDiscountValueChange = onDiscountValueChange,
                 onMaxReductionChange = onMaxReductionChange,
                 onMinOrderChange = onMinOrderChange
@@ -110,4 +112,3 @@ fun VoucherFormCard(
         }
     }
 }
-

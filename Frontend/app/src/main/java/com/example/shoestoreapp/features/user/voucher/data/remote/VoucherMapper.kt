@@ -1,77 +1,79 @@
 package com.example.shoestoreapp.features.user.voucher.data.remote
 
-import com.example.shoestoreapp.features.user.voucher.data.models.VoucherDiscountType
-import com.example.shoestoreapp.features.user.voucher.data.models.VoucherStatus
 import com.example.shoestoreapp.features.user.voucher.data.models.VoucherUiModel
+import java.text.DecimalFormat
 import java.text.SimpleDateFormat
-import java.text.NumberFormat
-import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-import kotlin.math.roundToLong
 
-private val uiDateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.US)
+private val discountFormat = DecimalFormat("0.##")
 
-fun ResponseVoucherUserDto.toUiModel(nowDate: Date = Date()): VoucherUiModel {
-    val parsedValidTo = parseApiDate(validTo)
-    val status = when {
-        isUsed -> VoucherStatus.USED
-        parsedValidTo != null && nowDate.after(parsedValidTo) -> VoucherStatus.EXPIRED
-        else -> VoucherStatus.AVAILABLE
-    }
-
-    val scopeSubtitle = if (voucherScope == 2) {
-        "SHIPPING"
-    } else {
-        if (minOrderPrice > 0) {
-            "MIN. SPEND ${formatVnd(minOrderPrice)}"
-        } else {
-            "STOREWIDE"
-        }
-    }
-
-    val (discountValue, discountType) = when (voucherScope) {
-        2 -> "FREE" to VoucherDiscountType.FREESHIP
-        else -> when (this.discountType) {
-            2 -> "${discount.toInt()}% OFF" to VoucherDiscountType.PERCENTAGE
-            1 -> "${formatVnd(discount)} OFF" to VoucherDiscountType.FIXED
-            else -> "${formatVnd(discount)} OFF" to VoucherDiscountType.FIXED
-        }
-    }
-
-    val expiryDate = parsedValidTo?.let {
-        uiDateFormatter.format(it)
-    } ?: ""
-
+fun VoucherDto.toUiModel(): VoucherUiModel {
     return VoucherUiModel(
-        id = voucherGuid.ifBlank { voucherId.toString() },
-        title = voucherName.orEmpty(),
-        description = description.orEmpty(),
-        expiryDate = expiryDate,
-        discountValue = discountValue,
-        discountType = discountType,
-        scopeSubtitle = scopeSubtitle,
-        status = status
+        id = voucherGuid ?: "unknown_id",
+        numericId = -1,
+        discountValue = formatDiscountValue(discount ?: 0.0, discountType),
+        scope = mapScope(voucherScope),
+        title = voucherName ?: "SPECIAL OFFER",
+        description = description ?: "Apply this voucher to get discounts.",
+        expiryDate = formatExpiryDate(validTo),
+        isCollected = false,
+        isUsed = false
     )
 }
 
-// Hàm parse ngày tháng "đồ cổ" chuyên trị chuỗi ISO từ Backend
-private fun parseApiDate(value: String?): Date? {
-    if (value.isNullOrBlank()) return null
-    return try {
-        // Cắt bỏ phần đuôi mili-giây và chữ Z (ví dụ: 2026-05-24T12:26:38.741Z -> 2026-05-24T12:26:38)
-        // để SimpleDateFormat dễ thở hơn
-        val cleanValue = value.substringBefore('.').removeSuffix("Z")
-        val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
+fun VoucherUserDto.toUiModel(): VoucherUiModel {
+    return VoucherUiModel(
+        id = voucherGuid ?: "unknown_id",
+        numericId = voucherId ?: -1,
+        discountValue = formatDiscountValue(discount ?: 0.0, discountType),
+        scope = mapScope(voucherScope),
+        title = voucherName ?: "SPECIAL OFFER",
+        description = description ?: "Apply this voucher to get discounts.",
+        expiryDate = formatExpiryDate(validTo),
+        isCollected = true,
+        isUsed = isUsed ?: false
+    )
+}
+
+private fun formatDiscountValue(discount: Double, discountType: String?): String {
+    return when (discountType) {
+        "Percentage" -> {
+            val actualPercent = if (discount > 0.0 && discount <= 1.0) {
+                discount * 100
+            } else {
+                discount
+            }
+            "${discountFormat.format(actualPercent)}% OFF"
         }
-        formatter.parse(cleanValue)
-    } catch (_: Exception) {
-        null
+        "FixedAmount" -> {
+            val formatter = java.text.NumberFormat.getCurrencyInstance(Locale("vi", "VN")).apply {
+                currency = java.util.Currency.getInstance("VND")
+                maximumFractionDigits = 0
+            }
+            val formattedMoney = formatter.format(discount).replace("₫", "").trim()
+            "$formattedMoney VND OFF"
+        }
+        else -> "${discountFormat.format(discount)} OFF"
     }
 }
 
-private fun formatVnd(price: Double): String {
-    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
-    return "${formatter.format(price.roundToLong())} ₫"
+private fun mapScope(scope: String?): String {
+    return when (scope) {
+        "Shipping" -> "SHIPPING"
+        "Product" -> "PRODUCTS"
+        else -> "STOREWIDE"
+    }
+}
+
+private fun formatExpiryDate(value: String?): String {
+    if (value.isNullOrBlank()) return "N/A"
+
+    val cleanValue = value.substringBefore('.').removeSuffix("Z")
+    val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+    val parsed = runCatching { inputFormat.parse(cleanValue) }.getOrNull() ?: return value
+    val outputFormat = SimpleDateFormat("dd MMM yyyy", Locale.US)
+    return outputFormat.format(parsed).uppercase(Locale.US)
 }

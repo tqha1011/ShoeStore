@@ -1,61 +1,84 @@
 package com.example.shoestoreapp.features.user.checkout.data.remote
 
 import com.example.shoestoreapp.features.user.checkout.data.models.OrderSummary
+import com.google.gson.annotations.SerializedName
 
+// 1. DTO thông tin từng món hàng
 data class CheckOutRequestDto(
-    val variantId: String,
-    val quantity: Int
+    @SerializedName("variantId") val variantId: String,
+    @SerializedName("quantity") val quantity: Int
 )
 
+// 2. DTO chỉ phục vụ riêng cho API Prepare Checkout
+data class PrepareCheckOutRequestDto(
+    @SerializedName("checkOutList") val checkOutList: List<CheckOutRequestDto>,
+    @SerializedName("voucherIds") val voucherIds: List<Int>
+)
+
+// 3. Các DTO Response của API Prepare Checkout
 data class CheckOutResponseDto(
-    val items: List<CheckOutItemDto>,
-    val summary: CheckOutSummaryDto,
-    val warnings: List<String>? = emptyList()
+    @SerializedName("items") val items: List<CheckOutItemDto>,
+    @SerializedName("summary") val summary: CheckOutSummaryDto,
+    @SerializedName("warnings") val warnings: List<String>? = emptyList()
 )
 
 data class CheckOutItemDto(
-    val colorName: String?,
-    val isOutOfStock: Boolean,
-    val productName: String,
-    val quantity: Int,
-    val size: Double,
-    val stockAvailable: Int,
-    val subTotal: Double,
-    val unitPrice: Double,
-    val variantId: String
+    @SerializedName("colorName") val colorName: String?,
+    @SerializedName("isOutOfStock") val isOutOfStock: Boolean,
+    @SerializedName("productName") val productName: String,
+    @SerializedName("quantity") val quantity: Int,
+    @SerializedName("size") val size: Double,
+    @SerializedName("stockAvailable") val stockAvailable: Int,
+    @SerializedName("subTotal") val subTotal: Double,
+    @SerializedName("unitPrice") val unitPrice: Double,
+    @SerializedName("variantId") val variantId: String
 )
 
 data class CheckOutSummaryDto(
-    val finalPrice: Double,
-    val totalPrice: Double
+    @SerializedName("finalPrice") val finalPrice: Double,
+    @SerializedName("shippingFee") val shippingFee: Double,
+    @SerializedName("totalPrice") val totalPrice: Double
 )
 
 data class PlaceOrderRequestDto(
-    val address: String,
-    val fullName: String,
-    val items: List<CheckOutRequestDto>,
-    val paymentId: Int,
-    val phoneNumber: String,
-    val voucherIds: List<String>
+    @SerializedName("address") val address: String,
+    @SerializedName("fullName") val fullName: String,
+    @SerializedName("items") val items: List<CheckOutRequestDto>,
+    @SerializedName("paymentId") val paymentId: Int,
+    @SerializedName("phoneNumber") val phoneNumber: String,
+    @SerializedName("voucherIds") val voucherIds: List<Int>
+)
+
+data class InvoiceDto(
+    @SerializedName("invoicePublicId") val invoicePublicId: String,
+    @SerializedName("orderCode") val orderCode: String,
+    @SerializedName("fullName") val fullName: String,
+    @SerializedName("shippingAddress") val shippingAddress: String,
+    @SerializedName("phoneNumber") val phoneNumber: String,
+    @SerializedName("status") val status: String,
+    @SerializedName("shippingFee") val shippingFee: Double?,
+    @SerializedName("finalPrice") val finalPrice: Double?,
+    @SerializedName("createdAt") val createdAt: String,
+    @SerializedName("paymentId") val paymentId: Int,
+    @SerializedName("shopBankCode") val shopBankCode: String?,
+    @SerializedName("shopBankAccount") val shopBankAccount: String?,
+    @SerializedName("shopAccountName") val shopAccountName: String?,
 )
 
 /**
  * Hàm mở rộng giúp chuyển đổi từ DTO của Server sang Model của UI
  */
 fun CheckOutSummaryDto.toOrderSummary(): OrderSummary {
-    // Tự động tính toán số tiền được giảm (nếu có)
-    val calculatedDiscount = if (this.totalPrice > this.finalPrice) {
-        this.totalPrice - this.finalPrice
+    val totalBeforeDiscount = this.totalPrice + this.shippingFee
+    val calculatedDiscount = if (totalBeforeDiscount > this.finalPrice) {
+        totalBeforeDiscount - this.finalPrice
     } else {
         0.0
     }
 
     return OrderSummary(
-        subtotal = this.totalPrice,   // Tổng tiền trước thuế/giảm giá
-        total = this.finalPrice,      // Số tiền cuối cùng user phải trả
-        shipping = 0.0,               // API chưa trả về, tạm set 0.0 (Free shipping)
-        tax = 0.0,                    // API chưa trả về, tạm set 0.0
-        discountAmount = calculatedDiscount,
-        promoCode = ""                // Tạm thời để trống vì chưa có API áp mã
+        subtotal = this.totalPrice,
+        total = this.finalPrice,
+        shipping = this.shippingFee,
     )
 }

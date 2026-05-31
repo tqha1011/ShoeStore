@@ -106,12 +106,13 @@ private fun VoucherItem(
     val scopeLabel = when {
         isShipping -> " Shipping"
         isProduct -> " Product"
-        else -> "Product"
+        else -> " Product"
     }
 
     val summary = buildString {
         if (isPercentage) {
-            append("${voucher.discount.toInt()}% off")
+            val percentageValue = (voucher.discount * 100).toInt()
+            append("${percentageValue}% off")
         } else {
             append("${formatMoney(voucher.discount)} off")
         }
@@ -167,7 +168,7 @@ private fun VoucherItem(
                     }
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = voucher.voucherName,
                         fontSize = 13.sp,
@@ -184,31 +185,28 @@ private fun VoucherItem(
                         fontSize = 10.sp,
                         color = Color(0xFF9A9A9A)
                     )
-                    Row(
+                }
+                Row(
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Edit voucher",
+                        tint = Color(0xFF6B6B6B),
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit voucher",
-                            tint = Color(0xFF6B6B6B),
-                            modifier = Modifier
-                                .size(18.dp)
-                                .clickable { onEditVoucherClick(voucher) }
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete voucher",
-                            tint = Color(0xFF6B6B6B),
-                            modifier = Modifier
-                                .size(18.dp)
-                                .clickable { onDeleteClick(voucher.voucherGuid) }
-                        )
-                    }
+                            .size(18.dp)
+                            .clickable { onEditVoucherClick(voucher) }
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete voucher",
+                        tint = Color(0xFF6B6B6B),
+                        modifier = Modifier
+                            .size(18.dp)
+                            .clickable { onDeleteClick(voucher.voucherGuid) }
+                    )
                 }
             }
         }

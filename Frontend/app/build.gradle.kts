@@ -100,6 +100,8 @@ dependencies {
     implementation(libs.facebook.login)
     implementation(libs.androidx.foundation.layout)
     implementation(libs.androidx.material3)
+    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("com.microsoft.signalr:signalr:8.0.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

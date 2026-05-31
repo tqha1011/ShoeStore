@@ -12,7 +12,7 @@ data class CreateVoucherDto(
     @SerializedName("minOrderPrice") val minOrderPrice: Double,
     @SerializedName("totalQuantity") val totalQuantity: Int,
     @SerializedName("maxUsagePerUser") val maxUsagePerUser: Int,
+    @SerializedName("releaseType") val releaseType: Int,
     @SerializedName("validFrom") val validFrom: String,
     @SerializedName("validTo") val validTo: String
 )
-

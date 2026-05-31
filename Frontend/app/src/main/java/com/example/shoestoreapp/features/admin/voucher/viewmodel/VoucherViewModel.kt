@@ -69,6 +69,10 @@ class VoucherViewModel(
         _uiState.update { it.copy(discountStyle = value) }
     }
 
+    fun onReleaseTypeChanged(value: Int) {
+        _uiState.update { it.copy(releaseType = value) }
+    }
+
     fun updateDiscountValue(value: String) {
         _uiState.update { it.copy(discountValue = value) }
     }
@@ -170,6 +174,7 @@ class VoucherViewModel(
             minOrderPrice = minOrder,
             totalQuantity = totalQuantity,
             maxUsagePerUser = maxUsagePerUser,
+            releaseType = state.releaseType,
             validFrom = formattedValidFrom,
             validTo = formattedValidTo
         )
@@ -231,6 +236,7 @@ class VoucherViewModel(
                 description = voucher.voucherDescription.orEmpty(),
                 targetApplication = mapVoucherScopeToUi(voucher.voucherScope),
                 discountStyle = mapDiscountTypeToUi(voucher.discountType),
+                releaseType = 2,
                 discountValue = voucher.discount.toString(),
                 maxReduction = if (mapDiscountTypeToUi(voucher.discountType) == 2) {
                     voucher.maxPriceDiscount.toString()

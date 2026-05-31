@@ -47,10 +47,7 @@ fun CartScreen(
     viewModel: CartViewModel,
     onNavigateBack: () -> Unit = {},
     onNavigateToCheckout: () -> Unit = {},
-    onNavigateToHome: () -> Unit = {},
-    onNavigateToShop: () -> Unit = {},
-    onNavigateToVoucher: () -> Unit = {},
-    onNavigateToProfile: () -> Unit = {}
+    onTabSelected: (BottomNavTab) -> Unit = {}
 ) {
     // Collect state từ ViewModel
     val cartUiState = viewModel.cartUiState.collectAsState()
@@ -71,17 +68,7 @@ fun CartScreen(
         bottomBar = {
             BottomNavBar(
                 selectedTab = BottomNavTab.BAG,
-                onTabSelected = { tab ->
-                    when (tab) {
-                        BottomNavTab.HOME -> onNavigateToHome()
-                        BottomNavTab.SHOP -> onNavigateToShop()
-                        BottomNavTab.VOUCHER -> onNavigateToVoucher()
-                        BottomNavTab.PROFILE -> onNavigateToProfile()
-                        else -> {
-                            // Already on BAG, no action needed
-                        }
-                    }
-                }
+                onTabSelected = onTabSelected
             )
         },
         modifier = Modifier.fillMaxSize()

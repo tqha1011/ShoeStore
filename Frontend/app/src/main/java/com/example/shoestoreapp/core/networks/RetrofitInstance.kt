@@ -10,8 +10,8 @@ import com.example.shoestoreapp.features.admin.addproduct.data.remote.MasterData
 import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutApi
 import com.example.shoestoreapp.features.admin.product.data.remote.ImageApi
 import com.example.shoestoreapp.features.admin.voucher.data.remote.AdminVoucherApi
-import com.example.shoestoreapp.features.user.voucher.data.remote.UserVoucherApi
 import com.example.shoestoreapp.features.user.profile.data.remote.ProfileApi
+import com.example.shoestoreapp.features.user.voucher.data.remote.VoucherApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -90,9 +90,9 @@ object RetrofitInstance {
         retrofit.create(AdminVoucherApi::class.java)
     }
 
-    // 11. Create UserVoucherApi service for user voucher endpoints
-    val userVoucherApi: UserVoucherApi by lazy {
-        retrofit.create(UserVoucherApi::class.java)
+    // 11. Create VoucherApi service for valid voucher endpoints
+    val voucherApi: VoucherApi by lazy {
+        retrofit.create(VoucherApi::class.java)
     }
 
     // 12. Create ProfileApi service for user profile endpoints

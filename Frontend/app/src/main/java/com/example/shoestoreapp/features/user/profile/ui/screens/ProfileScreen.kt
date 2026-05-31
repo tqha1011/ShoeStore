@@ -47,6 +47,7 @@ fun UserProfileScreen(
     onTabSelected: (BottomNavTab) -> Unit = {},
     onEditProfileClick: () -> Unit = {},
     onChangePasswordClick: () -> Unit = {},
+    onMyVouchersClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
     val profile by viewModel.profileState.collectAsState()
@@ -137,7 +138,8 @@ fun UserProfileScreen(
 
                 ProfileMenuItem(
                     icon = Icons.Outlined.ConfirmationNumber,
-                    label = "My Vouchers"
+                    label = "My Vouchers",
+                    onClick = onMyVouchersClick
                 )
             }
 

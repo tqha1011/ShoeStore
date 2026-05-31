@@ -5,6 +5,7 @@ data class VoucherUiState(
     val description: String = "",
     val targetApplication: Int = 0,
     val discountStyle: Int = 0,
+    val releaseType: Int = 0,
     val discountValue: String = "",
     val maxReduction: String = "",
     val minOrder: String = "",

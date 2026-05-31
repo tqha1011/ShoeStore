@@ -86,10 +86,7 @@ fun OrderSummarySection(
                 pricingInfo = PricingInfo(
                     subtotal = orderSummary.subtotal,
                     shipping = orderSummary.shipping,
-                    tax = orderSummary.tax,
-                    total = orderSummary.total,
-                    promoCode = orderSummary.promoCode,
-                    discountAmount = orderSummary.discountAmount
+                    total = orderSummary.total
                 )
             )
         }
@@ -156,10 +153,7 @@ fun ProductItemRow(
 data class PricingInfo(
     val subtotal: Double,
     val shipping: Double,
-    val tax: Double,
     val total: Double,
-    val promoCode: String = "",
-    val discountAmount: Double = 0.0
 )
 
 /**
@@ -187,23 +181,6 @@ fun PricingBreakdown(
             value = if (pricingInfo.shipping == 0.0) "Free" else formatVnd(pricingInfo.shipping),
             isHighlight = false
         )
-
-        // Tax
-        PricingRow(
-            label = "Tax",
-            value = formatVnd(pricingInfo.tax),
-            isHighlight = false
-        )
-
-        // Discount (if any)
-        if (pricingInfo.promoCode.isNotEmpty() && pricingInfo.discountAmount > 0) {
-            PricingRow(
-                label = "Discount (${pricingInfo.promoCode})",
-                value = "- ${formatVnd(pricingInfo.discountAmount)}",
-                isHighlight = false,
-                valueColor = Color(0xFF27AE60)
-            )
-        }
 
         // Total
         Row(
