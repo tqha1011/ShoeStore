@@ -8,6 +8,7 @@ using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Application.Services;
 using ShoeStore.Domain.Entities;
+using Microsoft.Extensions.Configuration;
 
 namespace ShoeStore.Tests.Unit.Services.CheckOutServiceTests;
 
@@ -25,11 +26,13 @@ public class PrepareCheckOutTests
     private readonly Mock<IUserRepository> _userRepository = new();
     
     private readonly Mock<IVoucherRepository> _voucherRepository = new();
+    private readonly Mock<IConfiguration> _configuration = new();
 
     public PrepareCheckOutTests()
     {
         _checkOutService = new CheckOutService(_productVariantRepository.Object, _mockUow.Object,
-            _cartItemRepository.Object, _invoiceRepository.Object, _userRepository.Object,_voucherRepository.Object);
+            _cartItemRepository.Object, _invoiceRepository.Object, _userRepository.Object,
+            _voucherRepository.Object, _configuration.Object);
     }
 
     [Fact]

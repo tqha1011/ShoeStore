@@ -11,5 +11,9 @@ public sealed record InvoiceDto(
     InvoiceStatus Status,
     decimal ShippingFee,
     decimal FinalPrice,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    int PaymentId,
+    string? ShopBankCode,
+    string? ShopBankAccount,
+    string? ShopAccountName
 );
