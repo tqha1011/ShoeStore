@@ -154,7 +154,7 @@ public class CheckOutService(
                 {
                     var shopBankCode = configuration["ShopBank:BankCode"];
                     var shopBankAccount = configuration["ShopBank:BankAccount"];
-                    var shopBankName = configuration["ShopBank:BankName"];
+                    var shopBankName = configuration["ShopBank:AccountName"];
                     return invoice.MapToInvoiceDto(shopBankCode, shopBankAccount, shopBankName);
                 }
                 return invoice.MapToInvoiceDto();
