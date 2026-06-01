@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.user.profile.ui.screens
+package com.example.shoestoreapp.features.admin.profile.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -11,10 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ConfirmationNumber
-import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Event
-import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -32,29 +28,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
-import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
+import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavBar
+import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
+import com.example.shoestoreapp.features.admin.profile.viewmodel.AdminProfileViewModel
 import com.example.shoestoreapp.features.user.profile.ui.components.LogoutButton
 import com.example.shoestoreapp.features.user.profile.ui.components.ProfileHeader
 import com.example.shoestoreapp.features.user.profile.ui.components.ProfileMenuItem
 import com.example.shoestoreapp.features.user.profile.ui.components.ProfileSectionLabel
-import com.example.shoestoreapp.features.user.profile.viewmodel.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UserProfileScreen(
-    viewModel: ProfileViewModel = ProfileViewModel(),
-    onTabSelected: (BottomNavTab) -> Unit = {},
+fun AdminProfileScreen(
+    viewModel: AdminProfileViewModel = AdminProfileViewModel(),
+    onTabSelected: (AdminBottomNavTab) -> Unit = {},
     onEditProfileClick: () -> Unit = {},
     onChangePasswordClick: () -> Unit = {},
-    onManageAddressClick: () -> Unit = {},
-    onMyVouchersClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
     val profile by viewModel.profileState.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.fetchUserProfile()
+        viewModel.fetchAdminProfile()
     }
 
     Scaffold(
@@ -75,8 +69,8 @@ fun UserProfileScreen(
             )
         },
         bottomBar = {
-            BottomNavBar(
-                selectedTab = BottomNavTab.PROFILE,
+            AdminBottomNavBar(
+                selectedTab = AdminBottomNavTab.PROFILE,
                 onTabSelected = onTabSelected
             )
         }
@@ -115,33 +109,12 @@ fun UserProfileScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                ProfileSectionLabel(text = "Security & Address")
-
-                ProfileMenuItem(
-                    icon = Icons.Outlined.LocationOn,
-                    label = "Manage Addresses",
-                    onClick = onManageAddressClick
-                )
+                ProfileSectionLabel(text = "Security")
 
                 ProfileMenuItem(
                     icon = Icons.Outlined.Lock,
                     label = "Change Password",
                     onClick = onChangePasswordClick
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                ProfileSectionLabel(text = "Account")
-
-                ProfileMenuItem(
-                    icon = Icons.Outlined.ConfirmationNumber,
-                    label = "My Vouchers",
-                    onClick = onMyVouchersClick
                 )
             }
 
@@ -167,3 +140,4 @@ fun UserProfileScreen(
         }
     }
 }
+

@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingBag
@@ -31,7 +30,7 @@ import androidx.compose.ui.unit.sp
  */
 @Composable
 fun BottomNavBar(
-    selectedTab: BottomNavTab = BottomNavTab.HOME,
+    selectedTab: BottomNavTab = BottomNavTab.SHOP,
     onTabSelected: (BottomNavTab) -> Unit = {}
 ) {
     Row(
@@ -42,13 +41,6 @@ fun BottomNavBar(
         horizontalArrangement = Arrangement.SpaceAround,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        BottomNavItem(
-            icon = Icons.Filled.Home,
-            label = "Home",
-            isSelected = selectedTab == BottomNavTab.HOME,
-            onClick = { onTabSelected(BottomNavTab.HOME) }
-        )
-
         BottomNavItem(
             icon = Icons.Filled.Storefront,
             label = "Shop",
@@ -110,7 +102,6 @@ private fun BottomNavItem(
 }
 
 enum class BottomNavTab {
-    HOME,
     SHOP,
     VOUCHER,
     BAG,

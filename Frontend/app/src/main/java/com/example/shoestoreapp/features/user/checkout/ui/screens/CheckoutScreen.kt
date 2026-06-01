@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
@@ -23,6 +24,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -30,11 +33,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -77,6 +84,10 @@ fun CheckoutScreen(
 
     val selectedProductVoucher by checkoutViewModel.selectedProductVoucher.collectAsState()
     val selectedShippingVoucher by checkoutViewModel.selectedShippingVoucher.collectAsState()
+
+    // Khai báo state lưu trữ Tên và Số điện thoại do người dùng nhập
+    var receiverName by remember { mutableStateOf("") }
+    var receiverPhone by remember { mutableStateOf("") }
 
     val context = LocalContext.current
 
@@ -251,6 +262,49 @@ fun CheckoutScreen(
                     onEditClick = onEditAddressClick
                 )
 
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "RECEIVER INFORMATION",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.2.sp
+                    )
+
+                    OutlinedTextField(
+                        value = receiverName,
+                        onValueChange = { receiverName = it },
+                        label = { Text("Full Name") },
+                        placeholder = { Text("Enter receiver's name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.Black,
+                            unfocusedBorderColor = Color(0xFFE5E7EB),
+                            focusedLabelColor = Color.Black,
+                            unfocusedLabelColor = Color.Gray
+                        ),
+                        singleLine = true
+                    )
+
+                    OutlinedTextField(
+                        value = receiverPhone,
+                        onValueChange = { receiverPhone = it },
+                        label = { Text("Phone Number") },
+                        placeholder = { Text("Enter phone number") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color.Black,
+                            unfocusedBorderColor = Color(0xFFE5E7EB),
+                            focusedLabelColor = Color.Black,
+                            unfocusedLabelColor = Color.Gray
+                        ),
+                        singleLine = true
+                    )
+                }
+
                 PaymentMethodSection(
                     selectedPaymentMethod = paymentMethod.value,
                     availablePaymentMethods = availablePaymentMethods.value,
@@ -275,10 +329,16 @@ fun CheckoutScreen(
 
                 CompletePurchaseButton(
                     onCompletePurchaseClick = {
+                        // Validate nhẹ trước khi gọi API (tránh trường hợp bỏ trống)
+                        if (receiverName.isBlank() || receiverPhone.isBlank()) {
+                            Toast.makeText(context, "Please enter receiver's name and phone number", Toast.LENGTH_SHORT).show()
+                            return@CompletePurchaseButton
+                        }
+
                         checkoutViewModel.placeOrder(
-                            fullName = "Phan Cao Minh Hieu",
-                            address = "123 Innovation Drive, Silicon Valley",
-                            phoneNumber = "0123456789",
+                            fullName = receiverName,
+                            address = "123 Innovation",
+                            phoneNumber = receiverPhone,
                             fromUserCart = true
                         )
                     },

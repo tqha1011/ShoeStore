@@ -79,10 +79,20 @@ fun EditProfileScreen(
         }
     )
 
+    // 1. Xử lý khi thành công
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
             Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_SHORT).show()
+            viewModel.clearSuccessState() // Xóa state thành công
             onBackClick()
+        }
+    }
+
+    // 2. Xử lý khi có lỗi
+    LaunchedEffect(uiState.errorMessage) {
+        if (!uiState.errorMessage.isNullOrEmpty()) {
+            Toast.makeText(context, uiState.errorMessage, Toast.LENGTH_SHORT).show()
+            viewModel.clearErrorMessage()
         }
     }
 

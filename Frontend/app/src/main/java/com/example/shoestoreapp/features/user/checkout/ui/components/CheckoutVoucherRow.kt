@@ -39,9 +39,10 @@ fun CheckoutVoucherRow(
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = "SHOE STORE VOUCHER",
+            fontSize = 11.sp,
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Black,
-            letterSpacing = 1.sp,
+            letterSpacing = 1.2.sp,
             modifier = Modifier.padding(bottom = 12.dp)
         )
 

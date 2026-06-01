@@ -31,9 +31,10 @@ import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewM
 import com.example.shoestoreapp.features.user.invoice.ui.UserInvoiceScreen
 import com.example.shoestoreapp.features.user.profile.ui.screens.ChangePasswordScreen
 import com.example.shoestoreapp.features.user.profile.ui.screens.EditProfileScreen
+import com.example.shoestoreapp.features.user.profile.ui.screens.ManageAddressScreen
 import com.example.shoestoreapp.features.user.profile.ui.screens.UserProfileScreen
 import com.example.shoestoreapp.features.admin.product.ui.screens.AdminProductListScreen
-import com.example.shoestoreapp.features.admin.settings.ui.AdminSettingsScreen
+import com.example.shoestoreapp.features.admin.profile.ui.AdminProfileScreen
 import com.example.shoestoreapp.features.admin.voucher.ui.screen.VoucherManagementScreen
 import com.example.shoestoreapp.features.admin.product.viewmodel.AdminProductListViewModel
 import com.example.shoestoreapp.features.admin.addproduct.ui.AdminProductCrudScreen
@@ -46,6 +47,7 @@ import com.example.shoestoreapp.features.auth.presentation.reset_password.create
 import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.admin.addproduct.viewmodel.AdminAddProductViewModel
 import com.example.shoestoreapp.features.admin.addproduct.viewmodel.FetchMasterDataViewModel
+import com.example.shoestoreapp.features.user.profile.ui.screens.CreateAddressScreen
 import com.example.shoestoreapp.features.user.voucher.ui.screens.MyVoucherScreen
 import kotlinx.coroutines.launch
 
@@ -65,12 +67,17 @@ private object Routes {
     const val USER_EDIT_PROFILE = "user_edit_profile"
     const val USER_CHANGE_PASSWORD = "user_change_password"
     const val USER_COLLECT_VOUCHERS = "user_collect_vouchers"
+    const val USER_MANAGE_ADDRESS = "user_manage_address"
+
+    const val USER_CREATE_ADDRESS = "user_create_address"
     const val ADMIN_PRODUCT_LIST = "admin_product_list"
     const val ADMIN_CRUD = "admin_crud"
     const val ADMIN_EDIT_PRODUCT = "admin_edit_product/{productId}"
     const val ADMIN_INVOICE_LIST = "admin_invoice_list"
-    const val ADMIN_SETTINGS = "admin_settings"
     const val ADMIN_VOUCHER_MANAGEMENT = "admin_voucher_management"
+    const val ADMIN_PROFILE = "admin_profile"
+    const val ADMIN_EDIT_PROFILE = "admin_edit_profile"
+    const val ADMIN_CHANGE_PASSWORD = "admin_change_password"
 
     const val USER_MY_VOUCHERS = "user_my_vouchers?isSelectionMode={isSelectionMode}&cartTotal={cartTotal}"
 
@@ -266,6 +273,7 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             onTabSelected = { tab -> handleUserProfileTabSelection(tab, navController) },
             onEditProfileClick = { navController.navigate(Routes.USER_EDIT_PROFILE) },
             onChangePasswordClick = { navController.navigate(Routes.USER_CHANGE_PASSWORD) },
+            onManageAddressClick = { navController.navigate(Routes.USER_MANAGE_ADDRESS) },
             onMyVouchersClick = {
                 navController.navigate(Routes.userMyVouchers(isSelectionMode = false, cartTotal = null))
             },
@@ -293,6 +301,23 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
     composable(Routes.USER_CHANGE_PASSWORD) {
         ChangePasswordScreen(
             onBackClick = { navController.popBackStack() }
+        )
+    }
+
+    composable(Routes.USER_MANAGE_ADDRESS) {
+        ManageAddressScreen(
+            onBackClick = { navController.popBackStack() },
+            onAddAddressClick = {
+                navController.navigate(Routes.USER_CREATE_ADDRESS)
+            }
+        )
+    }
+
+    composable(Routes.USER_CREATE_ADDRESS) {
+        CreateAddressScreen(
+            onBackClick = {
+                navController.popBackStack()
+            }
         )
     }
 
@@ -396,11 +421,13 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
         )
     }
 
-    composable(Routes.ADMIN_SETTINGS) {
+    composable(Routes.ADMIN_PROFILE) {
         val scope = rememberCoroutineScope()
 
-        AdminSettingsScreen(
-            onTabSelected = { tab -> handleAdminSettingsTabSelection(tab, navController) },
+        AdminProfileScreen(
+            onTabSelected = { tab -> handleAdminProfileTabSelection(tab, navController) },
+            onEditProfileClick = { navController.navigate(Routes.ADMIN_EDIT_PROFILE) },
+            onChangePasswordClick = { navController.navigate(Routes.ADMIN_CHANGE_PASSWORD) },
             onLogoutClick = {
                 scope.launch {
                     tokenManager.clearAuthInfo()
@@ -413,6 +440,18 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
     composable(Routes.ADMIN_VOUCHER_MANAGEMENT) {
         VoucherManagementScreen(
             onTabSelected = { tab -> handleAdminVoucherTabSelection(tab, navController) }
+        )
+    }
+
+    composable(Routes.ADMIN_EDIT_PROFILE) {
+        EditProfileScreen(
+            onBackClick = { navController.popBackStack() }
+        )
+    }
+
+    composable(Routes.ADMIN_CHANGE_PASSWORD) {
+        ChangePasswordScreen(
+            onBackClick = { navController.popBackStack() }
         )
     }
 }
@@ -447,7 +486,7 @@ private fun handleUserHomeTabSelection(tab: BottomNavTab, navController: NavHost
 
 private fun handleUserInvoiceTabSelection(tab: BottomNavTab, navController: NavHostController) {
     when (tab) {
-        BottomNavTab.HOME, BottomNavTab.SHOP -> {
+        BottomNavTab.SHOP -> {
             navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.USER_INVOICE_LIST)
         }
         BottomNavTab.PROFILE -> {
@@ -463,7 +502,7 @@ private fun handleUserInvoiceTabSelection(tab: BottomNavTab, navController: NavH
 
 private fun handleUserBagTabSelection(tab: BottomNavTab, navController: NavHostController) {
     when (tab) {
-        BottomNavTab.HOME, BottomNavTab.SHOP -> {
+        BottomNavTab.SHOP -> {
             navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CART)
         }
         BottomNavTab.PROFILE -> {
@@ -478,7 +517,7 @@ private fun handleUserBagTabSelection(tab: BottomNavTab, navController: NavHostC
 }
 private fun handleUserProfileTabSelection(tab: BottomNavTab, navController: NavHostController) {
     when (tab) {
-        BottomNavTab.HOME, BottomNavTab.SHOP -> {
+        BottomNavTab.SHOP -> {
             navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.USER_PROFILE)
         }
         BottomNavTab.BAG -> {
@@ -494,7 +533,7 @@ private fun handleUserProfileTabSelection(tab: BottomNavTab, navController: NavH
 
 private fun handleUserVoucherTabSelected(tab: BottomNavTab, navController: NavHostController) {
     when (tab) {
-        BottomNavTab.HOME, BottomNavTab.SHOP -> {
+        BottomNavTab.SHOP -> {
             navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CART)
         }
         BottomNavTab.BAG -> {
@@ -513,7 +552,7 @@ private fun handleAdminProductTabSelection(tab: AdminBottomNavTab, navController
         AdminBottomNavTab.ADMIN -> Unit
         AdminBottomNavTab.ORDERS -> navController.navigate(Routes.ADMIN_INVOICE_LIST)
         AdminBottomNavTab.VOUCHERS -> navController.navigate(Routes.ADMIN_VOUCHER_MANAGEMENT)
-        AdminBottomNavTab.SETTINGS -> navController.navigate(Routes.ADMIN_SETTINGS)
+        AdminBottomNavTab.PROFILE -> navController.navigate(Routes.ADMIN_PROFILE)
         else -> println("Admin Tab selected: $tab")
     }
 }
@@ -527,25 +566,25 @@ private fun handleAdminInvoiceTabSelection(tab: AdminBottomNavTab, navController
         AdminBottomNavTab.VOUCHERS -> {
             navController.navigateAndPopTo(Routes.ADMIN_VOUCHER_MANAGEMENT, Routes.ADMIN_INVOICE_LIST)
         }
-        AdminBottomNavTab.SETTINGS -> {
-            navController.navigateAndPopTo(Routes.ADMIN_SETTINGS, Routes.ADMIN_INVOICE_LIST)
+        AdminBottomNavTab.PROFILE -> {
+            navController.navigateAndPopTo(Routes.ADMIN_PROFILE, Routes.ADMIN_INVOICE_LIST)
         }
         else -> println("Admin Tab selected: $tab")
     }
 }
 
-private fun handleAdminSettingsTabSelection(tab: AdminBottomNavTab, navController: NavHostController) {
+private fun handleAdminProfileTabSelection(tab: AdminBottomNavTab, navController: NavHostController) {
     when (tab) {
         AdminBottomNavTab.ADMIN -> {
-            navController.navigateAndPopTo(Routes.ADMIN_PRODUCT_LIST, Routes.ADMIN_SETTINGS)
+            navController.navigateAndPopTo(Routes.ADMIN_PRODUCT_LIST, Routes.ADMIN_PROFILE)
         }
         AdminBottomNavTab.ORDERS -> {
-            navController.navigateAndPopTo(Routes.ADMIN_INVOICE_LIST, Routes.ADMIN_SETTINGS)
+            navController.navigateAndPopTo(Routes.ADMIN_INVOICE_LIST, Routes.ADMIN_PROFILE)
         }
         AdminBottomNavTab.VOUCHERS -> {
-            navController.navigateAndPopTo(Routes.ADMIN_VOUCHER_MANAGEMENT, Routes.ADMIN_SETTINGS)
+            navController.navigateAndPopTo(Routes.ADMIN_VOUCHER_MANAGEMENT, Routes.ADMIN_PROFILE)
         }
-        AdminBottomNavTab.SETTINGS -> Unit
+        AdminBottomNavTab.PROFILE -> Unit
         else -> println("Admin Tab selected: $tab")
     }
 }
@@ -559,8 +598,8 @@ private fun handleAdminVoucherTabSelection(tab: AdminBottomNavTab, navController
             navController.navigateAndPopTo(Routes.ADMIN_INVOICE_LIST, Routes.ADMIN_VOUCHER_MANAGEMENT)
         }
         AdminBottomNavTab.VOUCHERS -> Unit
-        AdminBottomNavTab.SETTINGS -> {
-            navController.navigateAndPopTo(Routes.ADMIN_SETTINGS, Routes.ADMIN_VOUCHER_MANAGEMENT)
+        AdminBottomNavTab.PROFILE -> {
+            navController.navigateAndPopTo(Routes.ADMIN_PROFILE, Routes.ADMIN_VOUCHER_MANAGEMENT)
         }
         else -> println("Admin Tab selected: $tab")
     }

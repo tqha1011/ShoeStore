@@ -39,15 +39,13 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * ProductListScreen: Composable screen hiển thị danh sách sản phẩm với Infinite Scroll
- * 
- * Features:
+ * * Features:
  * - Search bar + Filter chips
  * - LazyVerticalGrid hiển thị 2 columns
  * - Infinite scroll: Auto load trang tiếp theo khi scroll gần cuối
  * - Loading indicator khi đang load thêm
  * - Error handling
- * 
- * @param viewModel - ViewModel cung cấp dữ liệu và logic
+ * * @param viewModel - ViewModel cung cấp dữ liệu và logic
  * @param onNavigateToDetail - Callback khi click vào sản phẩm
  * @param onTopMenuClick - Callback khi click menu
  * @param onNavigateToShoppingBag - Callback khi click shopping bag
@@ -67,15 +65,17 @@ fun ProductListScreen(
     val isLoading = viewModel.isLoading.collectAsState()
     val isLoadingMore = viewModel.isLoadingMore.collectAsState()
     val errorMessage = viewModel.errorMessage.collectAsState()
+    val isLastPage = viewModel.isLastPage.collectAsState()
 
     val lazyGridState = rememberLazyGridState()
 
     SetupInfiniteScroll(
-        lazyGridState,
-        productList.value,
-        isLoading.value,
-        isLoadingMore.value,
-        viewModel
+        lazyGridState = lazyGridState,
+        productList = productList.value,
+        isLoading = isLoading.value,
+        isLoadingMore = isLoadingMore.value,
+        isLastPage = isLastPage.value,
+        viewModel = viewModel
     )
 
     Scaffold(
@@ -136,18 +136,24 @@ private fun SetupInfiniteScroll(
     productList: List<*>?,
     isLoading: Boolean,
     isLoadingMore: Boolean,
+    isLastPage: Boolean,
     viewModel: ProductListViewModel
 ) {
     val currentList by rememberUpdatedState(productList)
     val currentLoading by rememberUpdatedState(isLoading)
     val currentLoadingMore by rememberUpdatedState(isLoadingMore)
+    val currentIsLastPage by rememberUpdatedState(isLastPage)
 
     LaunchedEffect(lazyGridState) {
         snapshotFlow { lazyGridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
             .distinctUntilChanged()
             .collectLatest { lastVisibleIndex ->
                 val totalItems = currentList?.size ?: 0
-                if (totalItems == 0 || currentLoading || currentLoadingMore) return@collectLatest
+
+                if (totalItems == 0 || currentLoading || currentLoadingMore || currentIsLastPage) {
+                    return@collectLatest
+                }
+
                 if (lastVisibleIndex >= totalItems - 2) {
                     viewModel.loadNextPage()
                 }
@@ -162,7 +168,7 @@ private fun FilterChipsSection(
 ) {
     Box(modifier = Modifier.padding(vertical = 12.dp)) {
         FilterChips(
-            filters = listOf("All Shoes", "Air Max", "Dunk", "Pegasus", "Jordan"),
+            filters = listOf("All Shoes", "Running", "Men's shoes", "Women's shoes", "Kid's shoes"),
             selectedFilter = selectedFilter,
             onFilterSelected = onFilterSelected
         )

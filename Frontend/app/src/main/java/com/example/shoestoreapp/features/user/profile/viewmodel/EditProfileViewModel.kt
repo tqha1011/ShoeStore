@@ -20,6 +20,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import retrofit2.HttpException
+import org.json.JSONObject
 
 data class EditProfileUiState(
     val userName: String = "",
@@ -111,8 +113,29 @@ class EditProfileViewModel(
                     _uiState.update { it.copy(isLoading = false, isSuccess = true) }
                 }
                 .onFailure { throwable ->
+                    var realErrorMessage = "Update failed."
+                    if (throwable is HttpException) {
+                        try {
+                            val errorBodyString = throwable.response()?.errorBody()?.string()
+                            if (!errorBodyString.isNullOrEmpty()) {
+                                val jsonObject = JSONObject(errorBodyString)
+                                if (jsonObject.has("title")) {
+                                    realErrorMessage = jsonObject.getString("title")
+                                } else if (jsonObject.has("message")) {
+                                    realErrorMessage = jsonObject.getString("message")
+                                } else {
+                                    realErrorMessage = errorBodyString
+                                }
+                            }
+                        } catch (e: Exception) {
+                            realErrorMessage = "Server error: HTTP ${throwable.code()}"
+                        }
+                    } else {
+                        realErrorMessage = throwable.message ?: "Update failed."
+                    }
+
                     _uiState.update {
-                        it.copy(isLoading = false, errorMessage = throwable.message ?: "Update failed.")
+                        it.copy(isLoading = false, errorMessage = realErrorMessage)
                     }
                 }
         }
@@ -142,5 +165,23 @@ class EditProfileViewModel(
         } catch (e: Exception) {
             raw to ""
         }
+    }
+
+    // =========================================
+    // CÁC HÀM XÓA TRẠNG THÁI (CLEAR STATE) DÙNG CHO UI
+    // =========================================
+
+    /**
+     * Gọi hàm này bên UI sau khi Toast lỗi đã được hiển thị để tránh lặp Toast
+     */
+    fun clearErrorMessage() {
+        _uiState.update { it.copy(errorMessage = null) }
+    }
+
+    /**
+     * Gọi hàm này bên UI sau khi xử lý xong sự kiện thành công
+     */
+    fun clearSuccessState() {
+        _uiState.update { it.copy(isSuccess = false) }
     }
 }
