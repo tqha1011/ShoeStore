@@ -6,6 +6,7 @@ import com.example.shoestoreapp.features.admin.crud.data.remote.AdminProductCrud
 import com.example.shoestoreapp.features.admin.crud.data.remote.ProductUpdateDtoRequest
 import com.example.shoestoreapp.core.utils.Resource
 import com.example.shoestoreapp.features.admin.crud.data.remote.ProductCreateDtoRequest
+import com.example.shoestoreapp.features.admin.crud.data.remote.ProductCreateVariantDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -65,5 +66,24 @@ class ProductCrudRepository(
         }
     }.catch { e ->
         emit(Resource.Error("Không thể xóa: ${e.localizedMessage}"))
+    }.flowOn(Dispatchers.IO)
+
+    // 4. Add variant to an existing product
+    fun adminAddVariant(
+        productGuid: String,
+        request: ProductCreateVariantDto
+    ): Flow<Resource<Unit>> = flow {
+        emit(Resource.Loading)
+        val response = productCrudApi.adminAddVariant(productGuid, request)
+
+        if (response.isSuccessful) {
+            emit(Resource.Success(Unit))
+        } else {
+            val errorMsg = response.errorBody()?.string() ?: "Thêm biến thể thất bại"
+            emit(Resource.Error(errorMsg))
+        }
+    }.catch { e ->
+        Log.e("ProductRepo", "Add variant failed: ${e.message}")
+        emit(Resource.Error("Lỗi hệ thống: ${e.localizedMessage}"))
     }.flowOn(Dispatchers.IO)
 }

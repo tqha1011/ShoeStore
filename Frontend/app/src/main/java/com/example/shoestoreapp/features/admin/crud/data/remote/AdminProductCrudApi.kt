@@ -3,6 +3,7 @@ package com.example.shoestoreapp.features.admin.crud.data.remote
 import com.example.shoestoreapp.features.admin.crud.data.remote.master_data.CategoryDto
 import com.example.shoestoreapp.features.admin.crud.data.remote.master_data.ColorDto
 import com.example.shoestoreapp.features.admin.crud.data.remote.master_data.SizeDto
+import com.example.shoestoreapp.features.admin.crud.data.remote.ProductCreateVariantDto
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -28,5 +29,11 @@ interface AdminProductCrudApi {
     @POST("/api/admin/products")
     suspend fun adminCreateProduct(
         @Body request: ProductCreateDtoRequest
+    ): Response<Unit>
+
+    @POST("/api/products/{productGuid}/variants")
+    suspend fun adminAddVariant(
+        @Path("productGuid") productGuid: String,
+        @Body request: ProductCreateVariantDto
     ): Response<Unit>
 }
