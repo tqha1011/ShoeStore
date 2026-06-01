@@ -29,21 +29,31 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.user.voucher.data.models.VoucherUiModel
+import java.text.NumberFormat
+import java.util.Currency
+import java.util.Locale
 
 @Composable
 fun MyVoucherCard(
+    modifier: Modifier = Modifier,
     voucher: VoucherUiModel,
     isUsed: Boolean,
-    modifier: Modifier = Modifier,
+    cartTotal: Double? = null, // Dung nullable de tai su dung cho ca man hinh Vi (khong co gio hang)
     onUseClick: (String) -> Unit
 ) {
-    // Nếu voucher đã dùng thì làm mờ 50%
-    val cardAlpha = if (isUsed) 0.5f else 1f
+    // 1. Kiem tra dieu kien: Neu cartTotal = null (dang o man Vi) hoac lon hon minOrder thi cho phep
+    val isEligible = cartTotal == null || cartTotal >= voucher.minOrderPrice
+
+    // 2. Nut chi duoc bam khi chua dung va du dieu kien don hang
+    val isClickable = !isUsed && isEligible
+
+    // 3. Lam mo 50% neu da dung hoac khong du dieu kien
+    val cardAlpha = if (isClickable) 1f else 0.5f
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .alpha(cardAlpha), // Áp dụng độ mờ
+            .alpha(cardAlpha), // Ap dung do mo
         shape = RoundedCornerShape(12.dp),
         color = Color.White,
         border = BorderStroke(1.dp, Color(0xFFF1F1F1)),
@@ -54,7 +64,7 @@ fun MyVoucherCard(
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            // 1. Khối hiển thị mức giảm giá
+            // Khoi hien thi muc giam gia
             Surface(
                 color = Color(0xFFF9F9FF),
                 shape = RoundedCornerShape(8.dp),
@@ -84,7 +94,7 @@ fun MyVoucherCard(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 2. Khối nội dung Text
+            // Khoi noi dung Text
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -99,6 +109,19 @@ fun MyVoucherCard(
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color(0xFF9CA3AF)
                 )
+
+                // Hien thi canh bao neu khong du dieu kien (Chi hien thi khi o man Checkout)
+                if (!isEligible && cartTotal != null) {
+                    val missingAmount = voucher.minOrderPrice - cartTotal
+                    Text(
+                        text = "Buy ${formatMissingMoney(missingAmount)} more to apply",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFEF4444),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -121,13 +144,12 @@ fun MyVoucherCard(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 3. Nút Use Now
             Button(
-                onClick = { if (!isUsed) onUseClick(voucher.id) },
-                enabled = !isUsed,
+                onClick = { if (isClickable) onUseClick(voucher.id) },
+                enabled = isClickable,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isUsed) Color(0xFFE5E7EB) else Color.Black,
-                    contentColor = if (isUsed) Color(0xFF9CA3AF) else Color.White,
+                    containerColor = if (isClickable) Color.Black else Color(0xFFE5E7EB),
+                    contentColor = if (isClickable) Color.White else Color(0xFF9CA3AF),
                     disabledContainerColor = Color(0xFFE5E7EB),
                     disabledContentColor = Color(0xFF9CA3AF)
                 ),
@@ -138,7 +160,11 @@ fun MyVoucherCard(
                     .clip(RoundedCornerShape(6.dp))
             ) {
                 Text(
-                    text = if (isUsed) "USED" else "USE NOW",
+                    text = when {
+                        isUsed -> "USED"
+                        !isEligible -> "NOT ELIGIBLE"
+                        else -> "USE NOW"
+                    },
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 1.sp
@@ -146,4 +172,13 @@ fun MyVoucherCard(
             }
         }
     }
+}
+
+// Ham ho tro format tien te rieng cho text canh bao
+private fun formatMissingMoney(value: Double): String {
+    val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN")).apply {
+        currency = Currency.getInstance("VND")
+        maximumFractionDigits = 0
+    }
+    return formatter.format(value).replace("₫", "VND")
 }

@@ -12,5 +12,6 @@ data class VoucherUserDto(
     @SerializedName("voucherScope") val voucherScope: String?,
     @SerializedName("validTo") val validTo: String?,
     @SerializedName("savedAt") val savedAt: String?,
+    @SerializedName("minOrderPrice") val minOrderPrice: Double?,
     @SerializedName("isUsed") val isUsed: Boolean?
 )

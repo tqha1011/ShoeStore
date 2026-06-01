@@ -5,17 +5,11 @@ import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutApi
 import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutResponseDto
 import com.example.shoestoreapp.features.user.checkout.data.remote.InvoiceDto
 import com.example.shoestoreapp.features.user.checkout.data.remote.PlaceOrderRequestDto
-import com.example.shoestoreapp.features.user.checkout.data.remote.PrepareCheckOutRequestDto // Đã import DTO mới
+import com.example.shoestoreapp.features.user.checkout.data.remote.PrepareCheckOutRequestDto
+import retrofit2.HttpException
 
 interface CheckOutRepository {
-    /**
-     * Chuẩn bị dữ liệu checkout để gửi lên server
-     */
     suspend fun prepareCheckOut(request: PrepareCheckOutRequestDto): Result<CheckOutResponseDto>
-
-    /**
-     * Gửi yêu cầu đặt hàng đến server
-     */
     suspend fun placeOrder(fromUserCart: Boolean, request: PlaceOrderRequestDto): Result<InvoiceDto>
 }
 
@@ -31,17 +25,10 @@ class CheckoutRepositoryImpl(
                     Result.success(it)
                 } ?: Result.failure(Exception("Empty response body"))
             } else {
-                val errorMsg = when (response.code()) {
-                    401 -> "Unauthorized: user must be logged in with a valid JWT token."
-                    404 -> "Not Found: one or more product variants do not exist."
-                    421 -> "Too many requests: rate limit exceeded for this user."
-                    500 -> "Internal server error: an unexpected server error occurred."
-                    else -> "Unknown error: ${response.code()}"
-                }
-                Result.failure(Exception(errorMsg))
+                Result.failure(HttpException(response))
             }
-        } catch (_ : Exception) {
-            Result.failure(Exception("Unknown error"))
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
@@ -51,21 +38,12 @@ class CheckoutRepositoryImpl(
             if (response.isSuccessful) {
                 response.body()?.let {
                     Result.success(it)
-                } ?: Result.failure(Exception("Empty invoice data")) }
-            else {
-                val errorMessage = when (response.code()) {
-                    400 -> "Bad Request"
-                    401 -> "Unauthorized: user must be logged in with a valid JWT token."
-                    404 -> "Not Found: one or more product variants do not exist."
-                    409 -> "Conflict: the order already exists."
-                    429 -> "Too many requests: rate limit exceeded for this user."
-                    500 -> "Internal server error: an unexpected server error occurred."
-                    else -> "Unknown error: ${response.code()}"
-                }
-                Result.failure(Exception(errorMessage))
+                } ?: Result.failure(Exception("Empty invoice data"))
+            } else {
+                Result.failure(HttpException(response))
             }
         } catch (e: Exception) {
-            Result.failure(Exception("Unknown error"))
+            Result.failure(e)
         }
     }
 }

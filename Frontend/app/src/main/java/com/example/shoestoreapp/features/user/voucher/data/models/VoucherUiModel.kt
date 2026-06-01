@@ -9,5 +9,6 @@ data class VoucherUiModel(
     val description: String,
     val expiryDate: String,
     val isCollected: Boolean = false,
+    val minOrderPrice: Double,
     val isUsed: Boolean = false
 )

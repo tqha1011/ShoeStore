@@ -5,15 +5,26 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,11 +34,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.shoestoreapp.features.user.checkout.data.models.PaymentType
-import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutRequestDto
 import com.example.shoestoreapp.features.user.checkout.data.remote.InvoiceDto
 import com.example.shoestoreapp.features.user.checkout.ui.components.CheckoutTopAppBar
 import com.example.shoestoreapp.features.user.checkout.ui.components.CheckoutHeader
@@ -41,26 +54,6 @@ import com.example.shoestoreapp.features.user.checkout.viewmodel.CheckoutViewMod
 import com.example.shoestoreapp.features.user.checkout.viewmodel.PlaceOrderUiState
 import com.example.shoestoreapp.features.user.voucher.data.models.VoucherUiModel
 
-/**
- * CheckoutScreen: Main Checkout Screen.
- *
- * Architecture:
- * - MVVM Pattern: Uses CheckoutViewModel to manage state
- * - StateFlow: All states are observed from ViewModel
- * - Composable functions: UI is divided into separate components
- *
- * Structure:
- * 1. TopAppBar: Nike logo + Menu + Shopping Bag
- * 2. Content ScrollView:
- * - Checkout Header
- * - Delivery Address Section
- * - Payment Method Section
- * - Checkout Voucher Row (Replaced PromoCodeSection)
- * - Order Summary Section
- * 3. Bottom Actions:
- * - Complete Purchase Button
- * - Terms Disclaimer
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CheckoutScreen(
@@ -69,12 +62,10 @@ fun CheckoutScreen(
     onBackClick: () -> Unit = {},
     onShoppingBagClick: () -> Unit = {},
     onEditAddressClick: () -> Unit = {},
-    onNavigateToVoucherScreen: () -> Unit = {},
+    onNavigateToVoucherScreen: (Double) -> Unit = {},
     onNavigateToQRScreen: (InvoiceDto) -> Unit = {},
     onCompletePurchaseClick: () -> Unit = {}
 ) {
-
-    // Observe state from ViewModel
     val deliveryAddress = checkoutViewModel.deliveryAddress.collectAsState()
     val paymentMethod = checkoutViewModel.paymentMethod.collectAsState()
     val availablePaymentMethods = checkoutViewModel.availablePaymentMethods.collectAsState()
@@ -84,7 +75,6 @@ fun CheckoutScreen(
     val cartItemsList = checkoutViewModel.cartItems.collectAsState()
     val placeOrderState by checkoutViewModel.placeOrderState.collectAsState()
 
-    // Observe Voucher states
     val selectedProductVoucher by checkoutViewModel.selectedProductVoucher.collectAsState()
     val selectedShippingVoucher by checkoutViewModel.selectedShippingVoucher.collectAsState()
 
@@ -95,11 +85,9 @@ fun CheckoutScreen(
 
     LaunchedEffect(returnedVoucherJson) {
         returnedVoucherJson?.let { jsonString ->
-            // JSON -> OBJECT
             val voucher = com.google.gson.Gson().fromJson(jsonString, VoucherUiModel::class.java)
-            // Goi ham ap dung voucher
             checkoutViewModel.applyVoucher(voucher)
-            navBackStackEntry?.savedStateHandle?.remove<String>("selected_voucher_json")
+            navBackStackEntry.savedStateHandle.remove<String>("selected_voucher_json")
         }
     }
 
@@ -107,13 +95,9 @@ fun CheckoutScreen(
         when (placeOrderState) {
             is PlaceOrderUiState.Success -> {
                 val invoice = (placeOrderState as PlaceOrderUiState.Success).invoice
-
-                // Kiểm tra phương thức thanh toán hiện tại
                 if (paymentMethod.value.type == PaymentType.SePay) {
-                    // Nếu là SePay -> Qua màn hình QR
                     onNavigateToQRScreen(invoice)
                 } else {
-                    // Nếu là COD -> Qua màn hình thành công
                     onCompletePurchaseClick()
                 }
             }
@@ -125,6 +109,7 @@ fun CheckoutScreen(
         }
     }
 
+    // 1. GIAO DIỆN KHI ĐANG TẢI DỮ LIỆU
     if (isLoading) {
         Box(
             modifier = Modifier
@@ -140,28 +125,96 @@ fun CheckoutScreen(
         return
     }
 
+    // 2. GIAO DIỆN BÁO LỖI HỆ THỐNG
     if (errorMessage.isNotEmpty()) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
-                .padding(24.dp),
+                .padding(32.dp),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Surface(
+                    modifier = Modifier.size(80.dp),
+                    shape = CircleShape,
+                    color = Color(0xFFFEF2F2)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "System Error",
+                            tint = Color(0xFFEF4444),
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
                 Text(
-                    text = "Oops! Something went wrong while preparing your checkout.",
-                    color = Color.Gray
+                    text = "SOMETHING WENT WRONG",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.Black,
+                    letterSpacing = 0.5.sp,
+                    textAlign = TextAlign.Center
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
                 Text(
-                    text = errorMessage,
-                    color = Color.Red,
-                    modifier = Modifier.padding(top = 8.dp)
+                    text = "We encountered a technical issue while preparing your checkout session. Please check your connection and try again.",
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    lineHeight = 20.sp
                 )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Surface(
+                    color = Color(0xFFF9FAFB),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Error Log: $errorMessage",
+                        fontSize = 12.sp,
+                        color = Color(0xFF6B7280),
+                        modifier = Modifier.padding(14.dp),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(40.dp))
+
+                Button(
+                    onClick = { checkoutViewModel.prepareCheckoutSession() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "TRY AGAIN",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                }
             }
         }
         return
     }
+
+    // 3. GIAO DIỆN CHÍNH CỦA MÀN HÌNH CHECKOUT
     Scaffold(
         modifier = Modifier
             .fillMaxSize()
@@ -185,23 +238,19 @@ fun CheckoutScreen(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.Start
         ) {
-            // Main content area
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // Checkout Header
                 CheckoutHeader()
 
-                // Delivery Address Section
                 DeliveryAddressSection(
                     address = deliveryAddress.value,
                     onEditClick = onEditAddressClick
                 )
 
-                // Payment Method Section
                 PaymentMethodSection(
                     selectedPaymentMethod = paymentMethod.value,
                     availablePaymentMethods = availablePaymentMethods.value,
@@ -210,24 +259,24 @@ fun CheckoutScreen(
                     }
                 )
 
-                // Voucher Section
                 CheckoutVoucherRow(
                     selectedProductVoucher = selectedProductVoucher,
                     selectedShippingVoucher = selectedShippingVoucher,
-                    onClick = onNavigateToVoucherScreen
+                    onClick = {
+                        val currentCartTotal = orderSummary.value.subtotal
+                        onNavigateToVoucherScreen(currentCartTotal)
+                    }
                 )
 
-                // Order Summary Section
                 OrderSummarySection(
                     orderSummary = orderSummary.value,
                     cartItems = cartItemsList.value
                 )
 
-                // Complete Purchase Button
                 CompletePurchaseButton(
                     onCompletePurchaseClick = {
                         checkoutViewModel.placeOrder(
-                            fullName = "Phan Cao Minh Hieu", // Hardcoded for now
+                            fullName = "Phan Cao Minh Hieu",
                             address = "123 Innovation Drive, Silicon Valley",
                             phoneNumber = "0123456789",
                             fromUserCart = true
@@ -237,7 +286,6 @@ fun CheckoutScreen(
                     modifier = Modifier.padding(top = 8.dp)
                 )
 
-                // Terms Disclaimer
                 TermsDisclaimerText()
             }
         }

@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.json.JSONObject
+import retrofit2.HttpException
 
 sealed interface PlaceOrderUiState {
     object Idle : PlaceOrderUiState
@@ -80,14 +82,10 @@ class CheckoutViewModel(
 
     // ============ PUBLIC FUNCTIONS ============
 
-    /**
-     * Tự động lấy danh sách hàng và Voucher (ID dạng Int) để gọi API tính tiền
-     */
     fun prepareCheckoutSession() {
         val itemsToCheckout = CheckoutSession.pendingItems
         if (itemsToCheckout.isEmpty()) return
 
-        // Nhặt numericId để gửi lên BE
         val activeVoucherIds = listOfNotNull(
             _selectedProductVoucher.value?.numericId,
             _selectedShippingVoucher.value?.numericId
@@ -105,17 +103,22 @@ class CheckoutViewModel(
                 result.onSuccess { response ->
                     _orderSummary.value = response.summary.toOrderSummary()
                     _cartItems.value = response.items
+                    _errorMessage.value = ""
                     _isLoading.value = false
                 }.onFailure { exception ->
                     _isLoading.value = false
-                    val errorMsg = exception.message ?: "Unknown error during checkout preparation"
-                    _errorMessage.value = errorMsg
 
-                    // Nếu Backend từ chối Voucher, tự động gỡ ra và load lại bill gốc
-                    if (errorMsg.contains("Voucher", ignoreCase = true)) {
+                    // LỖI ÁP VOUCHER
+                    if (exception is HttpException && exception.code() == 400) {
+                        val parsedMessage = parseErrorMessage(exception)
+                        _placeOrderState.value = PlaceOrderUiState.Error(parsedMessage)
+
                         _selectedProductVoucher.value = null
                         _selectedShippingVoucher.value = null
                         prepareCheckoutSession()
+
+                    } else {
+                        _errorMessage.value = exception.message ?: "Unknown error during checkout preparation"
                     }
                 }
             } catch (e: Exception) {
@@ -131,16 +134,7 @@ class CheckoutViewModel(
         } else {
             _selectedProductVoucher.value = voucher
         }
-        prepareCheckoutSession() // Yêu cầu Backend tính lại tiền
-    }
-
-    fun removeVoucher(isShippingVoucher: Boolean) {
-        if (isShippingVoucher) {
-            _selectedShippingVoucher.value = null
-        } else {
-            _selectedProductVoucher.value = null
-        }
-        prepareCheckoutSession() // Yêu cầu Backend tính lại tiền
+        prepareCheckoutSession()
     }
 
     fun selectPaymentMethod(paymentMethod: PaymentMethod) {
@@ -167,7 +161,6 @@ class CheckoutViewModel(
                 return@launch
             }
 
-            // Đổi sang lấy numericId (Int)
             val activeVoucherIdsForPlaceOrder = listOfNotNull(
                 _selectedProductVoucher.value?.numericId,
                 _selectedShippingVoucher.value?.numericId
@@ -188,11 +181,33 @@ class CheckoutViewModel(
                     _placeOrderState.value = PlaceOrderUiState.Success(invoice)
                     CheckoutSession.pendingItems = emptyList()
                 }.onFailure { exception ->
-                    _placeOrderState.value = PlaceOrderUiState.Error(exception.message ?: "Unknown error during placing order")
+
+                    // LỖI KHI BẤM THANH TOÁN
+                    if (exception is HttpException && exception.code() == 400) {
+                        val parsedMessage = parseErrorMessage(exception)
+                        // Bắn lỗi vào State để hiện Toast
+                        _placeOrderState.value = PlaceOrderUiState.Error(parsedMessage)
+                    } else {
+                        // Lỗi khác
+                        _placeOrderState.value = PlaceOrderUiState.Error(exception.message ?: "Unknown error during placing order")
+                    }
                 }
             } catch (e: Exception) {
                 _placeOrderState.value = PlaceOrderUiState.Error(e.message ?: "Unknown error during placing order")
             }
         }
+    }
+
+    // Hàm phụ trợ dùng chung để bóc tách JSON lỗi từ Backend
+    private fun parseErrorMessage(exception: HttpException): String {
+        val errorString = exception.response()?.errorBody()?.string() ?: ""
+        var parsedMessage = "Dữ liệu không hợp lệ"
+        try {
+            val jsonObject = JSONObject(errorString)
+            parsedMessage = jsonObject.getString("message")
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+        }
+        return parsedMessage
     }
 }

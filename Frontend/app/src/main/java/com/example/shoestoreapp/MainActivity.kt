@@ -59,7 +59,7 @@ private object Routes {
     const val PRODUCT_DETAIL = "product_detail/{productGuid}?colorName={colorName}"
     const val CART = "cart"
     const val CHECKOUT = "checkout"
-    const val PAYMENT_QR = "payment_qr" // ROUTE MOI CHO MAN HINH QR
+    const val PAYMENT_QR = "payment_qr"
     const val USER_INVOICE_LIST = "user_invoice_list"
     const val USER_PROFILE = "user_profile"
     const val USER_EDIT_PROFILE = "user_edit_profile"
@@ -72,8 +72,16 @@ private object Routes {
     const val ADMIN_SETTINGS = "admin_settings"
     const val ADMIN_VOUCHER_MANAGEMENT = "admin_voucher_management"
 
-    const val USER_MY_VOUCHERS = "user_my_vouchers?isSelectionMode={isSelectionMode}"
-    fun userMyVouchers(isSelectionMode: Boolean = false): String = "user_my_vouchers?isSelectionMode=$isSelectionMode"
+    const val USER_MY_VOUCHERS = "user_my_vouchers?isSelectionMode={isSelectionMode}&cartTotal={cartTotal}"
+
+    fun userMyVouchers(isSelectionMode: Boolean = false, cartTotal: Double? = null): String {
+        return if (cartTotal != null) {
+            "user_my_vouchers?isSelectionMode=$isSelectionMode&cartTotal=$cartTotal"
+        } else {
+            "user_my_vouchers?isSelectionMode=$isSelectionMode"
+        }
+    }
+
     fun createNewPassword(email: String, otp: String): String = "create_new_password/$email/$otp"
     fun adminEditProduct(productId: String): String = "admin_edit_product/$productId"
 }
@@ -174,7 +182,6 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
         ProductListScreen(
             viewModel = remember { ProductListViewModel() },
             onNavigateToDetail = { productGuid, colorName ->
-                println("onNavigateToDetail called - productGuid: $productGuid")
                 val route = Routes.PRODUCT_DETAIL
                     .replace("{productGuid}", productGuid)
                     .replace("{colorName}", colorName)
@@ -200,12 +207,10 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             navController = navController,
             onBackClick = { navController.popBackStack() },
             onShoppingBagClick = { navController.navigateAndPopTo(Routes.CART, Routes.CHECKOUT) },
-            onNavigateToVoucherScreen = {
-                // Mo man hinh voucher o che do chon
-                navController.navigate(Routes.userMyVouchers(isSelectionMode = true))
+            onNavigateToVoucherScreen = { cartTotal ->
+                navController.navigate(Routes.userMyVouchers(isSelectionMode = true, cartTotal = cartTotal))
             },
             onNavigateToQRScreen = { invoice ->
-                // Nhet du lieu vao savedStateHandle roi chuyen trang
                 navController.currentBackStackEntry?.savedStateHandle?.apply {
                     set("orderCode", invoice.orderCode)
                     set("finalPrice", invoice.finalPrice ?: 0.0)
@@ -222,7 +227,6 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
     }
 
     composable(Routes.PAYMENT_QR) {
-        // Lay du lieu tu man hinh Checkout truyen sang
         val arguments = navController.previousBackStackEntry?.savedStateHandle
         val orderCode = arguments?.get<String>("orderCode") ?: ""
         val finalPrice = arguments?.get<Double>("finalPrice") ?: 0.0
@@ -236,8 +240,12 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             bankCode = bankCode,
             bankAccount = bankAccount,
             accountName = accountName,
+            onBackClick = {
+                navController.navigate(Routes.PRODUCT_LIST) {
+                    popUpTo(Routes.PRODUCT_LIST) { inclusive = true }
+                }
+            },
             onBackToHomeClick = {
-                // Xoa toan bo backstack tro ve trang chu
                 navController.navigate(Routes.PRODUCT_LIST) {
                     popUpTo(Routes.PRODUCT_LIST) { inclusive = true }
                 }
@@ -258,7 +266,9 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             onTabSelected = { tab -> handleUserProfileTabSelection(tab, navController) },
             onEditProfileClick = { navController.navigate(Routes.USER_EDIT_PROFILE) },
             onChangePasswordClick = { navController.navigate(Routes.USER_CHANGE_PASSWORD) },
-            onMyVouchersClick = {navController.navigate(Routes.userMyVouchers(isSelectionMode = false))},
+            onMyVouchersClick = {
+                navController.navigate(Routes.userMyVouchers(isSelectionMode = false, cartTotal = null))
+            },
             onLogoutClick = {
                 scope.launch {
                     tokenManager.clearAuthInfo()
@@ -292,17 +302,24 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             navArgument("isSelectionMode") {
                 type = NavType.BoolType
                 defaultValue = false
+            },
+            navArgument("cartTotal") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
             }
         )
     ) { backStackEntry ->
         val isSelectionMode = backStackEntry.arguments?.getBoolean("isSelectionMode") ?: false
+        val cartTotalString = backStackEntry.arguments?.getString("cartTotal")
+        val cartTotal = cartTotalString?.toDoubleOrNull()
 
         MyVoucherScreen(
             isSelectionMode = isSelectionMode,
+            cartTotal = cartTotal,
             onBackClick = { navController.popBackStack() },
             onApplyVoucher = { voucherUiModel ->
                 val voucherJson = com.google.gson.Gson().toJson(voucherUiModel)
-
                 navController.previousBackStackEntry?.savedStateHandle?.set("selected_voucher_json", voucherJson)
                 navController.popBackStack()
             },

@@ -18,6 +18,7 @@ fun VoucherDto.toUiModel(): VoucherUiModel {
         description = description ?: "Apply this voucher to get discounts.",
         expiryDate = formatExpiryDate(validTo),
         isCollected = false,
+        minOrderPrice = minOrderPrice ?: 0.0,
         isUsed = false
     )
 }
@@ -32,6 +33,7 @@ fun VoucherUserDto.toUiModel(): VoucherUiModel {
         description = description ?: "Apply this voucher to get discounts.",
         expiryDate = formatExpiryDate(validTo),
         isCollected = true,
+        minOrderPrice = minOrderPrice ?: 0.0,
         isUsed = isUsed ?: false
     )
 }

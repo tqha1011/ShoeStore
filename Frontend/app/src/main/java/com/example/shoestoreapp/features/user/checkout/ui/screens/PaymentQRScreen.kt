@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -42,22 +43,21 @@ data class PaymentNotificationDto(
 fun PaymentQRScreen(
     orderCode: String,
     finalPrice: Double,
-    bankCode: String,     // Nhận từ Backend
-    bankAccount: String,  // Nhận từ Backend
-    accountName: String,  // Nhận từ Backend
+    bankCode: String,
+    bankAccount: String,
+    accountName: String,
+    onBackClick: () -> Unit,
     onBackToHomeClick: () -> Unit
 ) {
     var isPaymentSuccess by remember { mutableStateOf(false) }
     var countdownTime by remember { mutableStateOf(5) }
-    val coroutineScope = rememberCoroutineScope() // Dùng để chuyển luồng
+    val coroutineScope = rememberCoroutineScope()
 
-    // 1. Chuẩn bị nội dung mã QR
     val rawDescription = if (bankCode.uppercase() == "VIETINBANK") "SEVQR $orderCode" else orderCode
     val encodedDes = URLEncoder.encode(rawDescription, StandardCharsets.UTF_8.toString())
     val amount = finalPrice.toLong()
     val formattedAmount = NumberFormat.getNumberInstance(Locale("vi", "VN")).format(amount)
 
-    // 2. Lắp ghép đường link nhúng SePay
     val sePayQrUrl = "https://qr.sepay.vn/img" +
             "?acc=$bankAccount" +
             "&bank=$bankCode" +
@@ -65,18 +65,15 @@ fun PaymentQRScreen(
             "&des=$encodedDes" +
             "&template=qronly"
 
-    // 3. TÍCH HỢP SIGNALR LẮNG NGHE THANH TOÁN
+    // TÍCH HỢP SIGNALR
     DisposableEffect(orderCode) {
-        val hubUrl = "https://deploy-service-h6acgba9dkc0gvcw.eastasia-01.azurewebsites.net/hubs/notify\n" +
-                "deploy-service-h6acgba9dkc0gvcw.eastasia-01.azurewebsites.net"
+        val hubUrl = "https://deploy-service-h6acgba9dkc0gvcw.eastasia-01.azurewebsites.net/paymentHub"
 
         val hubConnection = HubConnectionBuilder
             .create(hubUrl)
             .build()
 
-        // Đăng ký lắng nghe sự kiện
         hubConnection.on("ReceivePaymentNotification", { dto ->
-            // Đẩy data về luồng chính (Main Thread) để không bị crash
             coroutineScope.launch(Dispatchers.Main) {
                 if (dto.isSuccess && dto.orderCode == orderCode) {
                     isPaymentSuccess = true
@@ -85,15 +82,12 @@ fun PaymentQRScreen(
         }, PaymentNotificationDto::class.java)
 
         try {
-            // Khởi động kết nối
             hubConnection.start().blockingAwait()
-            // Bắt buộc Join Group ngay khi start thành công
             hubConnection.invoke("JoinInvoiceGroup", orderCode)
         } catch (e: Exception) {
             e.printStackTrace()
         }
 
-        // Dọn dẹp khi thoát khỏi màn hình
         onDispose {
             try {
                 if (hubConnection.connectionState == HubConnectionState.CONNECTED) {
@@ -106,22 +100,31 @@ fun PaymentQRScreen(
         }
     }
 
-    // 4. LOGIC ĐẾM NGƯỢC KHI THÀNH CÔNG
     if (isPaymentSuccess) {
-        LaunchedEffect(isPaymentSuccess) {
+        LaunchedEffect(true) {
             while (countdownTime > 0) {
                 delay(1000)
                 countdownTime--
             }
-            onBackToHomeClick() // Đếm xong 5s thì tự động nhảy về trang chủ
+            onBackToHomeClick()
         }
     }
 
-    // 5. GIAO DIỆN
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Order Payment", fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    // Ẩn nút Back đi nếu thanh toán đã thành công để tránh khách ấn nhầm lúc đếm ngược
+                    if (!isPaymentSuccess) {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
             )
         },
@@ -133,10 +136,9 @@ fun PaymentQRScreen(
                 .padding(paddingValues)
                 .padding(24.dp)
         ) {
-            // Hiệu ứng chuyển cảnh mượt mà giữa QR và màn hình Thành công
             AnimatedContent(targetState = isPaymentSuccess, label = "payment_transition") { success ->
                 if (success) {
-                    // --- MÀN HÌNH THANH TOÁN THÀNH CÔNG ---
+                    // MÀN HÌNH THANH TOÁN THÀNH CÔNG
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -197,7 +199,7 @@ fun PaymentQRScreen(
                         )
                     }
                 } else {
-                    // --- MÀN HÌNH QUÉT MÃ QR ---
+                    // MÀN HÌNH QUÉT MÃ QR
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -213,7 +215,6 @@ fun PaymentQRScreen(
                         Spacer(modifier = Modifier.height(4.dp))
 
                         Text(
-                            // Bọc lót nếu Backend trả về rỗng
                             text = "Account Holder: ${accountName.ifEmpty { "Shoe Store Official" }}",
                             fontSize = 14.sp,
                             color = Color.DarkGray,
@@ -222,7 +223,6 @@ fun PaymentQRScreen(
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        // Hiển thị ảnh QR Code động
                         AsyncImage(
                             model = sePayQrUrl,
                             contentDescription = "SePay VietQR Code",
@@ -234,7 +234,6 @@ fun PaymentQRScreen(
 
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        // Bảng tóm tắt thông tin
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFFF9FAFB))

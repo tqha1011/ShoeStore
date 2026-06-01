@@ -36,6 +36,7 @@ fun MyVoucherScreen(
     modifier: Modifier = Modifier,
     viewModel: MyVoucherViewModel = viewModel(),
     isSelectionMode: Boolean = false,
+    cartTotal: Double? = null,
     onBackClick: () -> Unit,
     onApplyVoucher: (VoucherUiModel) -> Unit = {},
     onShopNowClick: () -> Unit = {}
@@ -115,6 +116,7 @@ fun MyVoucherScreen(
                     MyVoucherCard(
                         voucher = voucher,
                         isUsed = voucher.isUsed,
+                        cartTotal = cartTotal,
                         onUseClick = { _ ->
                             if (isSelectionMode) {
                                 onApplyVoucher(voucher)
