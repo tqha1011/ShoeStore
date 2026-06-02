@@ -43,14 +43,16 @@ public static class ProductQueryExtensions
             // Giả sử ApplySearch là một extension method bạn đã viết
             query = query.ApplySearch(request.KeyWord);
 
-        return query;
-    }
+        public static IQueryable<Product> ApplyCategoryId(this IQueryable<Product> query, int? categoryId)
+        {
+            if (!categoryId.HasValue) return query;
+            return query.Where(p => p.CategoryId == categoryId.Value);
+        }
 
-    public static IQueryable<Product> ApplySizeId(this IQueryable<Product> query, List<int?>? sizeIds)
-    {
-        if (sizeIds == null || !sizeIds.Any()) return query;
-        return query.Where(p => p.ProductVariants.Any(v => sizeIds.Contains(v.SizeId)));
-    }
+        public static IQueryable<Product> ApplyPriceRange(this IQueryable<Product> query, decimal? min, decimal? max)
+        {
+            if (min.HasValue && max.HasValue && min > max)
+                return query;
 
     public static IQueryable<Product> ApplyColorId(this IQueryable<Product> query, List<int?>? colorIds)
     {

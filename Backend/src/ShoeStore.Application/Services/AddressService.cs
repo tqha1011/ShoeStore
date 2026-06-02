@@ -11,7 +11,6 @@ namespace ShoeStore.Application.Services;
 public class AddressService(
     IUserRepository userRepository,
     IAddressRepository addressRepository,
-    IProvinceApiService provinceApiService,
     IUnitOfWork uow) : IAddressService
 {
     public async Task<ErrorOr<Created>> CreateAddressAsync(Guid userGuid, CreateAddressDto dto,
@@ -21,19 +20,13 @@ public class AddressService(
         if (userId is null)
             return Error.NotFound("User.NotFound", $"User with id '{userGuid}' was not found.");
 
-        var locationResult = await ValidateLocationAsync(dto.ProvinceId, dto.WardId, token);
-        if (locationResult.IsError)
-            return locationResult.Errors;
-
-        var (provinceName, wardName) = locationResult.Value;
-
         if (dto.IsDefault)
             await UnsetCurrentDefaultAsync(userId.Value, token);
 
         addressRepository.Add(new UserAddress
         {
             UserId = userId.Value,
-            Address = BuildAddressString(dto.DetailAddress, wardName, provinceName),
+            Address = BuildAddressString(dto.DetailAddress, dto.Ward, dto.District, dto.Province),
             CreatedAt = DateTime.UtcNow,
             IsDefault = dto.IsDefault
         });
@@ -59,16 +52,10 @@ public class AddressService(
         if (address.UserId != userId.Value)
             return Error.Forbidden("Address.Forbidden", "You do not have permission to update this address.");
 
-        var locationResult = await ValidateLocationAsync(dto.ProvinceId, dto.WardId, token);
-        if (locationResult.IsError)
-            return locationResult.Errors;
-
-        var (provinceName, wardName) = locationResult.Value;
-
         if (dto.IsDefault && !address.IsDefault)
             await UnsetCurrentDefaultAsync(userId.Value, token);
 
-        address.Address = BuildAddressString(dto.DetailAddress, wardName, provinceName);
+        address.Address = BuildAddressString(dto.DetailAddress, dto.Ward, dto.District, dto.Province);
         address.IsDefault = dto.IsDefault;
 
         addressRepository.Update(address);
@@ -136,26 +123,9 @@ public class AddressService(
         addressRepository.Update(current);
     }
 
-    private async Task<ErrorOr<(string ProvinceName, string WardName)>> ValidateLocationAsync(
-        int provinceId, int wardId, CancellationToken token)
-    {
-        var (provinceValid, provinceName) = await provinceApiService.GetProvinceAsync(provinceId, token);
-        if (!provinceValid)
-            return Error.Validation("Address.InvalidProvince", $"Province with code '{provinceId}' does not exist.");
-
-        var (wardValid, wardName, wardProvinceCode) = await provinceApiService.GetWardAsync(wardId, token);
-        if (!wardValid)
-            return Error.Validation("Address.InvalidWard", $"Ward with code '{wardId}' does not exist.");
-
-        if (wardProvinceCode != provinceId)
-            return Error.Validation("Address.WardProvinceMismatch",
-                $"Ward '{wardId}' does not belong to province '{provinceId}'.");
-
-        return (provinceName, wardName);
-    }
-
-    private static string BuildAddressString(string detailAddress, string wardName, string provinceName)
-        => $"{detailAddress}, {wardName}, {provinceName}";
+    private static string BuildAddressString(string detailAddress, string ward, string district, string province)
+        => string.Join(", ", new[] { detailAddress, ward, district, province }
+            .Where(part => !string.IsNullOrWhiteSpace(part)));
 
     private static AddressResponseDto MapToResponse(UserAddress address)
         => new() { Id = address.Id, Address = address.Address, IsDefault = address.IsDefault };
