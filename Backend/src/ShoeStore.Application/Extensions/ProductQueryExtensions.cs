@@ -1,4 +1,4 @@
-﻿using ShoeStore.Domain.Entities;
+﻿﻿using ShoeStore.Domain.Entities;
 using ShoeStore.Application.DTOs.ProductDTOs;
 
 namespace ShoeStore.Application.Extensions
@@ -10,7 +10,7 @@ namespace ShoeStore.Application.Extensions
             if (string.IsNullOrEmpty(keyWord)) return query;
 
             return query.Where(p =>
-                p.ProductName.Contains(keyWord)
+                p.ProductName.ToLower().Trim().Contains(keyWord.ToLower().Trim())
             );
         }
 
