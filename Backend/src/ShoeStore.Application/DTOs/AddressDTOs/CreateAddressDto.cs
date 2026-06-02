@@ -2,9 +2,9 @@ namespace ShoeStore.Application.DTOs.AddressDTOs;
 
 public class CreateAddressDto
 {
-    public int ProvinceId { get; set; }
-    public int DistrictId { get; set; }
-    public int WardId { get; set; }
+    public string Province { get; set; } = string.Empty;
+    public string District { get; set; } = string.Empty;
+    public string Ward { get; set; } = string.Empty;
     public string DetailAddress { get; set; } = string.Empty;
     public bool IsDefault { get; set; } = false;
 }
