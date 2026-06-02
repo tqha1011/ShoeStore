@@ -66,6 +66,12 @@ namespace ShoeStore.Application.Extensions
             return query.Where(p => p.Id == productId.Value);
         }
 
+        public static IQueryable<Product> ApplyCategoryId(this IQueryable<Product> query, int? categoryId)
+        {
+            if (!categoryId.HasValue) return query;
+            return query.Where(p => p.CategoryId == categoryId.Value);
+        }
+
         public static IQueryable<Product> ApplyPriceRange(this IQueryable<Product> query, decimal? min, decimal? max)
         {
             if (min.HasValue && max.HasValue && min > max)
