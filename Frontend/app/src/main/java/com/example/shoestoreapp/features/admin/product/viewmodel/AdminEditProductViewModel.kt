@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 sealed class AdminEditProductUiEvent {
@@ -87,9 +88,13 @@ class AdminEditProductViewModel(
         fetchMasterData()
     }
 
+    fun hideBanner() {
+        _uiState.update { it.copy(showBanner = false) }
+    }
+
     fun loadProductDetails(productId: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             val result = repository.getProductById(productId)
             result.onSuccess { dto ->
                 val imageUrl = dto.variants.firstOrNull { !it.imageUrl.isNullOrBlank() }?.imageUrl
@@ -97,45 +102,61 @@ class AdminEditProductViewModel(
                     ?: Category(dto.categoryId, dto.categoryName)
                 val activeVariants = dto.variants.filterNot { it.isDelete }
 
-                _uiState.value = _uiState.value.copy(
-                    productName = dto.productName,
-                    brand = dto.brand,
-                    selectedCategory = category,
-                    imageUrl = imageUrl,
-                    variants = activeVariants,
-                    isLoading = false,
-                    errorMessage = null
-                )
+                _uiState.update {
+                    it.copy(
+                        productName = dto.productName,
+                        brand = dto.brand,
+                        selectedCategory = category,
+                        imageUrl = imageUrl,
+                        variants = activeVariants,
+                        isLoading = false,
+                        errorMessage = null
+                    )
+                }
             }.onFailure { throwable ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = throwable.message
-                )
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = throwable.message
+                    )
+                }
             }
         }
     }
 
     fun onNameChange(value: String) {
-        _uiState.value = _uiState.value.copy(productName = value)
+        _uiState.update { it.copy(productName = value) }
     }
 
     fun onBrandChange(value: String) {
-        _uiState.value = _uiState.value.copy(brand = value)
+        _uiState.update { it.copy(brand = value) }
     }
 
     fun onCategoryChange(category: Category) {
-        _uiState.value = _uiState.value.copy(selectedCategory = category)
+        _uiState.update { it.copy(selectedCategory = category) }
     }
 
     fun onSaveClick(productId: String) {
         val current = _uiState.value
         if (current.productName.isBlank() || current.brand.isBlank()) {
-            _uiEvent.trySend(AdminEditProductUiEvent.ShowError("Product name and brand are required."))
+            _uiState.update {
+                it.copy(
+                    bannerMessage = "Product name and brand are required.",
+                    isBannerSuccess = false,
+                    showBanner = true
+                )
+            }
             return
         }
         val selectedCategory = current.selectedCategory
         if (selectedCategory == null) {
-            _uiEvent.trySend(AdminEditProductUiEvent.ShowError("Please select a category."))
+            _uiState.update {
+                it.copy(
+                    bannerMessage = "Please select a category.",
+                    isBannerSuccess = false,
+                    showBanner = true
+                )
+            }
             return
         }
 
@@ -146,20 +167,29 @@ class AdminEditProductViewModel(
         )
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
                 val result = repository.updateProduct(productId, dto)
                 result.onSuccess {
+                    _uiState.update {
+                        it.copy(
+                            bannerMessage = "Update product success",
+                            isBannerSuccess = true,
+                            showBanner = true
+                        )
+                    }
                     _uiEvent.send(AdminEditProductUiEvent.UpdateSuccess)
                 }.onFailure { throwable ->
-                    _uiEvent.send(
-                        AdminEditProductUiEvent.ShowError(
-                            throwable.message ?: "Update failed."
+                    _uiState.update {
+                        it.copy(
+                            bannerMessage = throwable.message ?: "Update failed.",
+                            isBannerSuccess = false,
+                            showBanner = true
                         )
-                    )
+                    }
                 }
             } finally {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }
@@ -176,20 +206,29 @@ class AdminEditProductViewModel(
         _showDeleteConfirmation.value = false
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
                 val result = repository.deleteProduct(productId)
                 result.onSuccess {
+                    _uiState.update {
+                        it.copy(
+                            bannerMessage = "Delete product success",
+                            isBannerSuccess = true,
+                            showBanner = true
+                        )
+                    }
                     _uiEvent.send(AdminEditProductUiEvent.DeleteSuccess)
                 }.onFailure { throwable ->
-                    _uiEvent.send(
-                        AdminEditProductUiEvent.ShowError(
-                            throwable.message ?: "Delete failed."
+                    _uiState.update {
+                        it.copy(
+                            bannerMessage = throwable.message ?: "Delete failed.",
+                            isBannerSuccess = false,
+                            showBanner = true
                         )
-                    )
+                    }
                 }
             } finally {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }
@@ -224,21 +263,30 @@ class AdminEditProductViewModel(
         _variantToDelete.value = null
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
                 val result = repository.deleteVariant(productId, variantId)
                 result.onSuccess {
                     loadProductDetails(productId)
+                    _uiState.update {
+                        it.copy(
+                            bannerMessage = "Variant deleted",
+                            isBannerSuccess = true,
+                            showBanner = true
+                        )
+                    }
                     _uiEvent.send(AdminEditProductUiEvent.VariantDeleteSuccess)
                 }.onFailure { throwable ->
-                    _uiEvent.send(
-                        AdminEditProductUiEvent.ShowError(
-                            throwable.message ?: "Delete variant failed."
+                    _uiState.update {
+                        it.copy(
+                            bannerMessage = throwable.message ?: "Delete variant failed.",
+                            isBannerSuccess = false,
+                            showBanner = true
                         )
-                    )
+                    }
                 }
             } finally {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }
@@ -273,7 +321,7 @@ class AdminEditProductViewModel(
         _localImageUri.value = uri
 
         viewModelScope.launch(Dispatchers.IO) {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             val result = try {
                 val file = context.applicationContext.uriToTempFile(uri)
                 imageRepository.uploadImage(file)
@@ -283,12 +331,16 @@ class AdminEditProductViewModel(
 
             result.onSuccess { response ->
                 _uploadedImageUrl.value = response.imageUrl
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                _uiState.update { it.copy(isLoading = false) }
             }.onFailure { throwable ->
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = throwable.message
-                )
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        bannerMessage = throwable.message ?: "Unable to upload image.",
+                        isBannerSuccess = false,
+                        showBanner = true
+                    )
+                }
             }
         }
     }
@@ -311,11 +363,13 @@ class AdminEditProductViewModel(
                 )
             }.onFailure { throwable ->
                 _variantDraft.value = _variantDraft.value.copy(isUploadingImage = false)
-                _uiEvent.trySend(
-                    AdminEditProductUiEvent.ShowError(
-                        throwable.message ?: "Unable to upload image right now."
+                _uiState.update {
+                    it.copy(
+                        bannerMessage = throwable.message ?: "Unable to upload image right now.",
+                        isBannerSuccess = false,
+                        showBanner = true
                     )
-                )
+                }
             }
         }
     }
@@ -325,34 +379,54 @@ class AdminEditProductViewModel(
         val size = draft.selectedSize
         val color = draft.selectedColor
         if (size == null || color == null) {
-            _uiEvent.trySend(AdminEditProductUiEvent.ShowError("Please select size and color."))
+            _uiState.update {
+                it.copy(
+                    bannerMessage = "Please select size and color.",
+                    isBannerSuccess = false,
+                    showBanner = true
+                )
+            }
             return
         }
 
         val priceValue = draft.price.toDoubleOrNull()
         if (priceValue == null || priceValue <= 0.0) {
-            _uiEvent.trySend(AdminEditProductUiEvent.ShowError("Please enter a valid price."))
+            _uiState.update {
+                it.copy(
+                    bannerMessage = "Please enter a valid price.",
+                    isBannerSuccess = false,
+                    showBanner = true
+                )
+            }
             return
         }
 
         val stockValue = draft.stock.toIntOrNull()
         if (stockValue == null || stockValue < 0) {
-            _uiEvent.trySend(AdminEditProductUiEvent.ShowError("Please enter a valid stock."))
+            _uiState.update {
+                it.copy(
+                    bannerMessage = "Please enter a valid stock.",
+                    isBannerSuccess = false,
+                    showBanner = true
+                )
+            }
             return
         }
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
                 val imageFile = draft.imageUri?.let { uri ->
                     try {
                         context.applicationContext.uriToTempFile(uri)
                     } catch (e: Exception) {
-                        _uiEvent.send(
-                            AdminEditProductUiEvent.ShowError(
-                                e.message ?: "Unable to prepare image right now."
+                        _uiState.update {
+                            it.copy(
+                                bannerMessage = e.message ?: "Unable to prepare image right now.",
+                                isBannerSuccess = false,
+                                showBanner = true
                             )
-                        )
+                        }
                         return@launch
                     }
                 }
@@ -385,24 +459,34 @@ class AdminEditProductViewModel(
                     _isAddVariantSheetVisible.value = false
                     _variantDraft.value = VariantUiState()
                     loadProductDetails(productId)
+                    val message = if (draft.variantId == null) "Create variant success" else "Update variant success"
+                    _uiState.update {
+                        it.copy(
+                            bannerMessage = message,
+                            isBannerSuccess = true,
+                            showBanner = true
+                        )
+                    }
                     if (draft.variantId == null) {
                         _uiEvent.send(AdminEditProductUiEvent.VariantCreateSuccess)
                     } else {
                         _uiEvent.send(AdminEditProductUiEvent.VariantUpdateSuccess)
                     }
                 }.onFailure { throwable ->
-                    _uiEvent.send(
-                        AdminEditProductUiEvent.ShowError(
-                            throwable.message ?: if (draft.variantId == null) {
+                    _uiState.update {
+                        it.copy(
+                            bannerMessage = throwable.message ?: if (draft.variantId == null) {
                                 "Create variant failed."
                             } else {
                                 "Update variant failed."
-                            }
+                            },
+                            isBannerSuccess = false,
+                            showBanner = true
                         )
-                    )
+                    }
                 }
             } finally {
-                _uiState.value = _uiState.value.copy(isLoading = false)
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }
@@ -420,7 +504,13 @@ class AdminEditProductViewModel(
                         }
                     }
                     is Resource.Error -> {
-                        _uiEvent.trySend(AdminEditProductUiEvent.ShowError(resource.message))
+                        _uiState.update {
+                            it.copy(
+                                bannerMessage = resource.message,
+                                isBannerSuccess = false,
+                                showBanner = true
+                            )
+                        }
                     }
                     Resource.Loading -> Unit
                 }
@@ -441,7 +531,13 @@ class AdminEditProductViewModel(
                         }
                     }
                     is Resource.Error -> {
-                        _uiEvent.trySend(AdminEditProductUiEvent.ShowError(resource.message))
+                        _uiState.update {
+                            it.copy(
+                                bannerMessage = resource.message,
+                                isBannerSuccess = false,
+                                showBanner = true
+                            )
+                        }
                     }
                     Resource.Loading -> Unit
                 }
@@ -461,7 +557,13 @@ class AdminEditProductViewModel(
                         }
                     }
                     is Resource.Error -> {
-                        _uiEvent.trySend(AdminEditProductUiEvent.ShowError(resource.message))
+                        _uiState.update {
+                            it.copy(
+                                bannerMessage = resource.message,
+                                isBannerSuccess = false,
+                                showBanner = true
+                            )
+                        }
                     }
                     Resource.Loading -> Unit
                 }

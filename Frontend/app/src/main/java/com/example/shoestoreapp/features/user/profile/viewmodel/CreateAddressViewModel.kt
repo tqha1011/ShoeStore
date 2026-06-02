@@ -27,6 +27,10 @@ class CreateAddressViewModel(
     private val addressRepository: AddressRepository = AddressRepositoryImpl()
 ) : ViewModel() {
 
+    // --- BIẾN TRẠNG THÁI CHẾ ĐỘ SỬA/THÊM ---
+    private var currentAddressId: String? = null
+    val isEditMode: Boolean get() = currentAddressId != null
+
     // Luồng dữ liệu theo dõi giá trị nhập liệu của người dùng
     private val _selectedCity = MutableStateFlow("")
     val selectedCity = _selectedCity.asStateFlow()
@@ -59,8 +63,82 @@ class CreateAddressViewModel(
     private val _uiState = MutableStateFlow<CreateAddressUiState>(CreateAddressUiState.Idle)
     val uiState: StateFlow<CreateAddressUiState> = _uiState.asStateFlow()
 
+    // Banner properties
+    private val _bannerMessage = MutableStateFlow("")
+    val bannerMessage = _bannerMessage.asStateFlow()
+
+    private val _isBannerSuccess = MutableStateFlow(true)
+    val isBannerSuccess = _isBannerSuccess.asStateFlow()
+
+    private val _showBanner = MutableStateFlow(false)
+    val showBanner = _showBanner.asStateFlow()
+
     init {
         fetchProvinces()
+    }
+
+    // --- HÀM KHỞI TẠO DỮ LIỆU TỪ MÀN HÌNH ---
+    fun initData(addressId: String?) {
+        if (addressId != null && currentAddressId != addressId) {
+            currentAddressId = addressId
+            loadAddressForEdit(addressId)
+        }
+    }
+
+    private fun loadAddressForEdit(addressId: String) {
+        viewModelScope.launch {
+            _uiState.value = CreateAddressUiState.Loading
+
+            val addresses = addressRepository.getAllAddresses().getOrNull() ?: emptyList()
+            val addressDto = addresses.find { it.id == addressId }
+
+            if (addressDto != null) {
+                _isDefault.value = addressDto.isDefault
+
+                val parts = addressDto.address.split(",").map { it.trim() }
+
+                // Quy tắc: Từ phải qua trái -> Tỉnh, Huyện, Xã, Địa chỉ chi tiết
+                if (parts.size >= 4) {
+                    _selectedCity.value = parts[parts.size - 1]     // Phần tử cuối là Tỉnh
+                    _selectedDistrict.value = parts[parts.size - 2] // Kế cuối là Huyện
+                    _selectedWard.value = parts[parts.size - 3]     // Cách 2 vị trí là Xã
+
+                    // Gom tất cả các phần tử còn lại ở phía trước làm địa chỉ chi tiết
+                    _exactAddress.value = parts.dropLast(3).joinToString(", ")
+                } else if (parts.size == 3) {
+                    // Trường hợp chuỗi chỉ có 3 thành phần (Thiếu xã hoặc huyện)
+                    _selectedCity.value = parts[parts.size - 1]
+                    _selectedDistrict.value = parts[parts.size - 2]
+                    _selectedWard.value = ""
+                    _exactAddress.value = parts[0]
+                } else {
+                    // Trường hợp xấu nhất: Chuỗi không tuân thủ cấu trúc, đổ hết vào ô nhập chi tiết
+                    _exactAddress.value = addressDto.address
+                }
+
+                val provList = repository.getProvinces().getOrNull() ?: emptyList()
+                _provinces.value = provList
+                val prov = provList.find { it.name.equals(_selectedCity.value, ignoreCase = true) }
+
+                if (prov != null) {
+                    _selectedProvinceId.value = prov.code
+                    val distList = repository.getDistricts(prov.code).getOrNull() ?: emptyList()
+                    _districts.value = distList
+                    val dist = distList.find { it.name.equals(_selectedDistrict.value, ignoreCase = true) }
+
+                    if (dist != null) {
+                        _selectedDistrictId.value = dist.code
+                        val wardList = repository.getWards(dist.code).getOrNull() ?: emptyList()
+                        _wards.value = wardList
+                        val wrd = wardList.find { it.name.equals(_selectedWard.value, ignoreCase = true) }
+                        if (wrd != null) {
+                            _selectedWardId.value = wrd.code
+                        }
+                    }
+                }
+            }
+            _uiState.value = CreateAddressUiState.Idle
+        }
     }
 
     private fun fetchProvinces() {
@@ -132,34 +210,57 @@ class CreateAddressViewModel(
         _isDefault.value = isDefault
     }
 
+    fun hideBanner() {
+        _showBanner.value = false
+    }
+
+    // --- HÀM LƯU: TỰ ĐỘNG NHẬN DIỆN THÊM MỚI HAY CẬP NHẬT ---
     fun saveAddress() {
-        val provinceId = _selectedProvinceId.value
-        val districtId = _selectedDistrictId.value
-        val wardId = _selectedWardId.value
+        val provinceName = _selectedCity.value.trim()
+        val districtName = _selectedDistrict.value.trim()
+        val wardName = _selectedWard.value.trim()
         val detailAddress = _exactAddress.value.trim()
 
-        if (provinceId == null || districtId == null || wardId == null || detailAddress.isBlank()) {
-            _uiState.value = CreateAddressUiState.Error("Please complete all address fields.")
+        if (provinceName.isBlank() || districtName.isBlank() || wardName.isBlank() || detailAddress.isBlank()) {
+            _bannerMessage.value = "Please complete all address fields."
+            _isBannerSuccess.value = false
+            _showBanner.value = true
             return
         }
 
         _uiState.value = CreateAddressUiState.Loading
+
         viewModelScope.launch {
             val dto = CreateAddressDto(
                 detailAddress = detailAddress,
-                districtId = districtId,
+                district = districtName,
                 isDefault = _isDefault.value,
-                provinceId = provinceId,
-                wardId = wardId
+                province = provinceName,
+                ward = wardName
             )
 
-            addressRepository.createAddress(dto)
-                .onSuccess { _uiState.value = CreateAddressUiState.Success }
-                .onFailure { error ->
-                    _uiState.value = CreateAddressUiState.Error(
-                        error.message ?: "Failed to create address."
-                    )
+            // Dùng cờ isEditMode để quyết định rẽ nhánh gọi API nào
+            val result = if (isEditMode) {
+                addressRepository.updateAddress(currentAddressId!!, dto)
+            } else {
+                addressRepository.createAddress(dto)
+            }
+
+            result.fold(
+                onSuccess = {
+                    _bannerMessage.value = if (isEditMode) "Address updated successfully" else "Address created successfully"
+                    _isBannerSuccess.value = true
+                    _showBanner.value = true
+                    _uiState.value = CreateAddressUiState.Success
+                },
+                onFailure = { error ->
+                    val errorMsg = error.message ?: "Failed to save address."
+                    _bannerMessage.value = errorMsg
+                    _isBannerSuccess.value = false
+                    _showBanner.value = true
+                    _uiState.value = CreateAddressUiState.Error(errorMsg)
                 }
+            )
         }
     }
 }

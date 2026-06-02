@@ -1,6 +1,5 @@
 package com.example.shoestoreapp.features.user.voucher.ui.components
 
-import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.LinearEasing
@@ -39,7 +38,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -54,7 +52,6 @@ fun CollectVoucherCard(
     modifier: Modifier = Modifier,
     onCollect: (voucherId: String, onSuccess: () -> Unit, onError: (String) -> Unit) -> Unit
 ) {
-    val context = LocalContext.current
     val initialState = if (voucher.isCollected) CollectState.Collected else CollectState.Idle
     var collectState by remember(voucher.isCollected) { mutableStateOf(initialState) }
     val coroutineScope = rememberCoroutineScope()
@@ -71,7 +68,6 @@ fun CollectVoucherCard(
                 .fillMaxWidth()
                 .padding(20.dp)
         ) {
-            // 1. Khối hiển thị mức giảm giá
             Surface(
                 color = Color(0xFFF9F9FF),
                 shape = RoundedCornerShape(8.dp),
@@ -101,7 +97,6 @@ fun CollectVoucherCard(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 2. Khối nội dung Text
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -138,7 +133,6 @@ fun CollectVoucherCard(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 3. Nút Collect
             CollectButton(
                 state = collectState,
                 modifier = Modifier.fillMaxWidth(),
@@ -156,11 +150,7 @@ fun CollectVoucherCard(
                         },
                         {
                             collectState = CollectState.Idle
-                            Toast.makeText(
-                                context,
-                                "Failed to collect voucher",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            // Toast removed, handled by ViewModel banner state
                         }
                     )
                 }

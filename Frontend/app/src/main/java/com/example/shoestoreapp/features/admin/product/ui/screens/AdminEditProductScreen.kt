@@ -52,6 +52,7 @@ import com.example.shoestoreapp.features.admin.product.ui.components.PhotoAction
 import com.example.shoestoreapp.features.admin.product.ui.components.ProductFormSection
 import com.example.shoestoreapp.features.admin.product.ui.components.VariantActionBottomSheet
 import com.example.shoestoreapp.features.admin.product.ui.components.VariantManagementSection
+import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
 import java.io.File
 
 @Composable
@@ -118,211 +119,209 @@ fun AdminEditProductScreen(
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
-                is AdminEditProductUiEvent.ShowError -> {
-                    android.widget.Toast.makeText(context, event.message, android.widget.Toast.LENGTH_SHORT).show()
-                }
-                AdminEditProductUiEvent.UpdateSuccess -> {
-                    android.widget.Toast.makeText(context, "Update product success", android.widget.Toast.LENGTH_SHORT).show()
-                    onBackClick()
+                is AdminEditProductUiEvent.UpdateSuccess -> {
+                    // Success is now handled by TopBanner in ViewModel state
                 }
                 AdminEditProductUiEvent.DeleteSuccess -> {
-                    android.widget.Toast.makeText(context, "Delete product success", android.widget.Toast.LENGTH_SHORT).show()
                     onBackClick()
                 }
-                AdminEditProductUiEvent.VariantCreateSuccess -> {
-                    android.widget.Toast.makeText(context, "Create variant success", android.widget.Toast.LENGTH_SHORT).show()
-                }
-                AdminEditProductUiEvent.VariantUpdateSuccess -> {
-                    android.widget.Toast.makeText(context, "Update variant success", android.widget.Toast.LENGTH_SHORT).show()
-                }
-                AdminEditProductUiEvent.VariantDeleteSuccess -> {
-                    android.widget.Toast.makeText(context, "Variant deleted", android.widget.Toast.LENGTH_SHORT).show()
-                }
+                else -> Unit
             }
         }
     }
 
-    Scaffold(
-        topBar = {
-            EditProductTopBar(onBackClick = onBackClick)
-        },
-        bottomBar = {
-            Surface(
-                shadowElevation = 6.dp,
-                color = Color.White
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                EditProductTopBar(onBackClick = onBackClick)
+            },
+            bottomBar = {
+                Surface(
+                    shadowElevation = 6.dp,
+                    color = Color.White
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Button(
+                            onClick = { viewModel.onSaveClick(productId) },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Text(
+                                text = "SAVE CHANGES",
+                                color = Color.White,
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedButton(
+                            onClick = viewModel::onDeleteClicked,
+                            modifier = Modifier.fillMaxWidth(),
+                            border = BorderStroke(1.dp, Color(0xFFB00020)),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFB00020))
+                        ) {
+                            Text(
+                                text = "DELETE PRODUCT",
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
+                    }
+                }
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(paddingValues)
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 16.dp, vertical = 24.dp)
             ) {
-                Column(
+                val imageModel = localImageUri ?: uiState.imageUrl
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .height(220.dp)
+                        .background(Color(0xFFF5F5F5))
+                        .clickable { showBottomSheet = true },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Button(
-                        onClick = { viewModel.onSaveClick(productId) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                        shape = MaterialTheme.shapes.medium
-                    ) {
-                        Text(
-                            text = "SAVE CHANGES",
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                    if (imageModel != null) {
+                        AsyncImage(
+                            model = imageModel,
+                            contentDescription = "Product image",
+                            modifier = Modifier.fillMaxSize()
                         )
-                    }
-                    Spacer(modifier = Modifier.height(12.dp))
-                    OutlinedButton(
-                        onClick = viewModel::onDeleteClicked,
-                        modifier = Modifier.fillMaxWidth(),
-                        border = BorderStroke(1.dp, Color(0xFFB00020)),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFB00020))
-                    ) {
-                        Text(
-                            text = "DELETE PRODUCT",
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.AddAPhoto,
+                            contentDescription = "Add photo",
+                            tint = Color(0xFF9E9E9E),
+                            modifier = Modifier.size(48.dp)
                         )
                     }
                 }
-            }
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White)
-                .padding(paddingValues)
-                .verticalScroll(scrollState)
-                .padding(horizontal = 16.dp, vertical = 24.dp)
-        ) {
-            val imageModel = localImageUri ?: uiState.imageUrl
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(220.dp)
-                    .background(Color(0xFFF5F5F5))
-                    .clickable { showBottomSheet = true },
-                contentAlignment = Alignment.Center
-            ) {
-                if (imageModel != null) {
-                    AsyncImage(
-                        model = imageModel,
-                        contentDescription = "Product image",
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    Icon(
-                        imageVector = Icons.Default.AddAPhoto,
-                        contentDescription = "Add photo",
-                        tint = Color(0xFF9E9E9E),
-                        modifier = Modifier.size(48.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-            ProductFormSection(
-                name = uiState.productName,
-                brand = uiState.brand,
-                selectedCategory = uiState.selectedCategory,
-                categories = categories,
-                onNameChange = viewModel::onNameChange,
-                onBrandChange = viewModel::onBrandChange,
-                onCategoryChange = viewModel::onCategoryChange
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            VariantManagementSection(
-                variants = uiState.variants,
-                onAddClick = viewModel::onAddVariantClick,
-                onEditClick = viewModel::onEditVariantClick,
-                onDeleteClick = viewModel::onDeleteVariantClick
-            )
-        }
-    }
-
-    if (showBottomSheet) {
-        PhotoActionBottomSheet(
-            onDismiss = { showBottomSheet = false },
-            onTakePhotoClick = {
-                val uri = createTempImageUri(context)
-                pendingCameraUri = uri
-                showBottomSheet = false
-                cameraLauncher.launch(uri)
-            },
-            onChooseFromGalleryClick = {
-                showBottomSheet = false
-                galleryLauncher.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                Spacer(modifier = Modifier.height(24.dp))
+                ProductFormSection(
+                    name = uiState.productName,
+                    brand = uiState.brand,
+                    selectedCategory = uiState.selectedCategory,
+                    categories = categories,
+                    onNameChange = viewModel::onNameChange,
+                    onBrandChange = viewModel::onBrandChange,
+                    onCategoryChange = viewModel::onCategoryChange
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                VariantManagementSection(
+                    variants = uiState.variants,
+                    onAddClick = viewModel::onAddVariantClick,
+                    onEditClick = viewModel::onEditVariantClick,
+                    onDeleteClick = viewModel::onDeleteVariantClick
                 )
             }
-        )
-    }
+        }
 
-    if (isAddVariantSheetVisible) {
-        VariantActionBottomSheet(
-            state = variantDraft,
-            sizes = sizes,
-            colors = colors,
-            onDismiss = viewModel::onDismissVariantSheet,
-            onImageClick = { showVariantPhotoSheet = true },
-            onSizeSelected = { viewModel.updateVariantDraft(size = it) },
-            onColorSelected = { viewModel.updateVariantDraft(color = it) },
-            onPriceChange = { viewModel.updateVariantDraft(price = it) },
-            onStockChange = { viewModel.updateVariantDraft(stock = it) },
-            onSaveClick = { viewModel.onSaveVariant(context, productId) }
-        )
-    }
+        if (showBottomSheet) {
+            PhotoActionBottomSheet(
+                onDismiss = { showBottomSheet = false },
+                onTakePhotoClick = {
+                    val uri = createTempImageUri(context)
+                    pendingCameraUri = uri
+                    showBottomSheet = false
+                    cameraLauncher.launch(uri)
+                },
+                onChooseFromGalleryClick = {
+                    showBottomSheet = false
+                    galleryLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                }
+            )
+        }
 
-    if (showVariantPhotoSheet) {
-        PhotoActionBottomSheet(
-            onDismiss = { showVariantPhotoSheet = false },
-            onTakePhotoClick = {
-                val uri = createTempImageUri(context)
-                pendingVariantCameraUri = uri
-                showVariantPhotoSheet = false
-                variantCameraLauncher.launch(uri)
-            },
-            onChooseFromGalleryClick = {
-                showVariantPhotoSheet = false
-                variantGalleryLauncher.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                )
-            }
-        )
-    }
+        if (isAddVariantSheetVisible) {
+            VariantActionBottomSheet(
+                state = variantDraft,
+                sizes = sizes,
+                colors = colors,
+                onDismiss = viewModel::onDismissVariantSheet,
+                onImageClick = { showVariantPhotoSheet = true },
+                onSizeSelected = { viewModel.updateVariantDraft(size = it) },
+                onColorSelected = { viewModel.updateVariantDraft(color = it) },
+                onPriceChange = { viewModel.updateVariantDraft(price = it) },
+                onStockChange = { viewModel.updateVariantDraft(stock = it) },
+                onSaveClick = { viewModel.onSaveVariant(context, productId) }
+            )
+        }
 
-    if (showDeleteConfirmation) {
-        AlertDialog(
-            onDismissRequest = viewModel::onDismissDeleteDialog,
-            title = { Text(text = "Delete product") },
-            text = {
-                Text(text = "Are you sure you want to delete this product? This action cannot be undone.")
-            },
-            confirmButton = {
-                TextButton(onClick = { viewModel.confirmDelete(productId) }) {
-                    Text(text = "Delete")
+        if (showVariantPhotoSheet) {
+            PhotoActionBottomSheet(
+                onDismiss = { showVariantPhotoSheet = false },
+                onTakePhotoClick = {
+                    val uri = createTempImageUri(context)
+                    pendingVariantCameraUri = uri
+                    showVariantPhotoSheet = false
+                    variantCameraLauncher.launch(uri)
+                },
+                onChooseFromGalleryClick = {
+                    showVariantPhotoSheet = false
+                    variantGalleryLauncher.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::onDismissDeleteDialog) {
-                    Text(text = "Cancel")
-                }
-            }
-        )
-    }
+            )
+        }
 
-    if (variantToDelete != null) {
-        AlertDialog(
-            onDismissRequest = viewModel::onDismissDeleteVariantDialog,
-            title = { Text(text = "Delete Variant?") },
-            text = { Text(text = "Delete Variant? This action cannot be undone.") },
-            confirmButton = {
-                TextButton(onClick = { viewModel.confirmDeleteVariant(productId) }) {
-                    Text(text = "Delete")
+        if (showDeleteConfirmation) {
+            AlertDialog(
+                onDismissRequest = viewModel::onDismissDeleteDialog,
+                title = { Text(text = "Delete product") },
+                text = {
+                    Text(text = "Are you sure you want to delete this product? This action cannot be undone.")
+                },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.confirmDelete(productId) }) {
+                        Text(text = "Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = viewModel::onDismissDeleteDialog) {
+                        Text(text = "Cancel")
+                    }
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::onDismissDeleteVariantDialog) {
-                    Text(text = "Cancel")
+            )
+        }
+
+        if (variantToDelete != null) {
+            AlertDialog(
+                onDismissRequest = viewModel::onDismissDeleteVariantDialog,
+                title = { Text(text = "Delete Variant?") },
+                text = { Text(text = "Delete Variant? This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.confirmDeleteVariant(productId) }) {
+                        Text(text = "Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = viewModel::onDismissDeleteVariantDialog) {
+                        Text(text = "Cancel")
+                    }
                 }
-            }
-        )
+            )
+        }
+
+        Box(modifier = Modifier.align(Alignment.TopCenter)) {
+            TopBanner(
+                message = uiState.bannerMessage,
+                isSuccess = uiState.isBannerSuccess,
+                isVisible = uiState.showBanner,
+                onDismiss = { viewModel.hideBanner() }
+            )
+        }
     }
 }
 

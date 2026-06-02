@@ -1,9 +1,11 @@
 package com.example.shoestoreapp.features.user.product.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,14 +27,19 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator // Thêm thư viện này
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,10 +49,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
 import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.roundToLong
+import com.example.shoestoreapp.R
+import androidx.compose.ui.window.DialogProperties
 
 @Composable
 fun AddToBagBottomSheetContent(
@@ -63,12 +74,14 @@ fun AddToBagBottomSheetContent(
     quantity: Int,
     onDecreaseQuantity: () -> Unit,
     onIncreaseQuantity: () -> Unit,
-    onSizeGuideClick: () -> Unit,
     onClose: () -> Unit,
     onConfirm: () -> Unit,
     isConfirmEnabled: Boolean,
     isLoading: Boolean = false
 ) {
+    // 1. BIẾN QUẢN LÝ TRẠNG THÁI HIỂN THỊ CỦA DIALOG
+    var showSizeGuideDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -175,7 +188,11 @@ fun AddToBagBottomSheetContent(
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                TextButton(onClick = onSizeGuideClick) {
+                TextButton(
+                    onClick = {
+                        showSizeGuideDialog = true
+                    }
+                ) {
                     Text(
                         text = "SIZE GUIDE",
                         style = MaterialTheme.typography.labelSmall,
@@ -252,7 +269,6 @@ fun AddToBagBottomSheetContent(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-
         Button(
             onClick = onConfirm,
             enabled = isConfirmEnabled && !isLoading,
@@ -283,6 +299,58 @@ fun AddToBagBottomSheetContent(
                     text = "CONFIRM ADD TO BAG",
                     fontWeight = FontWeight.Black
                 )
+            }
+        }
+    }
+
+    // 2. KHAI BÁO DIALOG
+    if (showSizeGuideDialog) {
+        Dialog(
+            onDismissRequest = { showSizeGuideDialog = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White,
+                modifier = Modifier
+                    .fillMaxWidth(0.95f)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Header chứa nút đóng
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Shoe Size Guide",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            modifier = Modifier.padding(start = 16.dp)
+                        )
+                        IconButton(
+                            onClick = { showSizeGuideDialog = false }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close"
+                            )
+                        }
+                    }
+
+                    Image(
+                        painter = androidx.compose.ui.res.painterResource(id = R.drawable.size_guide), // Gọi ảnh từ drawable
+                        contentDescription = "Size Chart",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 24.dp),
+                        contentScale = ContentScale.FillWidth
+                    )
+                }
             }
         }
     }

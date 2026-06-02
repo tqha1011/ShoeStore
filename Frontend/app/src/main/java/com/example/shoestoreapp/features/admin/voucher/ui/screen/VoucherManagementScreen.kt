@@ -2,6 +2,7 @@ package com.example.shoestoreapp.features.admin.voucher.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,9 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavBar
@@ -27,6 +28,7 @@ import com.example.shoestoreapp.features.admin.voucher.ui.components.VoucherHead
 import com.example.shoestoreapp.features.admin.voucher.ui.components.VoucherTopAppBar
 import com.example.shoestoreapp.features.admin.voucher.viewmodel.VoucherUiEvent
 import com.example.shoestoreapp.features.admin.voucher.viewmodel.VoucherViewModel
+import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -39,131 +41,137 @@ fun VoucherManagementScreen(
     val isEditSheetVisible by viewModel.isEditSheetVisible.collectAsState()
     val voucherToDelete by viewModel.voucherToDelete.collectAsState()
     val showDeleteExpiredDialog by viewModel.showDeleteExpiredDialog.collectAsState()
-    val context = LocalContext.current
 
     LaunchedEffect(viewModel) {
         viewModel.uiEvent.collectLatest { event ->
             when (event) {
-                is VoucherUiEvent.ShowSuccess -> {
-                    android.widget.Toast.makeText(context, event.message, android.widget.Toast.LENGTH_SHORT).show()
-                }
-                is VoucherUiEvent.ShowError -> {
-                    android.widget.Toast.makeText(context, event.message, android.widget.Toast.LENGTH_SHORT).show()
-                }
+                is VoucherUiEvent.ShowSuccess -> { }
+                is VoucherUiEvent.ShowError -> { }
             }
         }
     }
 
-    Scaffold(
-        topBar = { VoucherTopAppBar() },
-        bottomBar = {
-            AdminBottomNavBar(
-                selectedTab = AdminBottomNavTab.VOUCHERS,
-                onTabSelected = onTabSelected
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = { VoucherTopAppBar() },
+            bottomBar = {
+                AdminBottomNavBar(
+                    selectedTab = AdminBottomNavTab.VOUCHERS,
+                    onTabSelected = onTabSelected
+                )
+            }
+        ) { paddingValues ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .background(Color.White)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
+                    VoucherHeader()
+                }
+                item {
+                    VoucherFormCard(
+                        uiState = uiState,
+                        onVoucherNameChange = viewModel::updateVoucherName,
+                        onDescriptionChange = viewModel::updateDescription,
+                        onTargetApplicationChange = viewModel::updateTargetApplication,
+                        onDiscountStyleChange = viewModel::updateDiscountStyle,
+                        onReleaseTypeChange = viewModel::onReleaseTypeChanged,
+                        onDiscountValueChange = viewModel::updateDiscountValue,
+                        onMaxReductionChange = viewModel::updateMaxReduction,
+                        onMinOrderChange = viewModel::updateMinOrder,
+                        onTotalQuantityChange = viewModel::updateTotalQuantity,
+                        onMaxUsagePerUserChange = viewModel::updateMaxUsagePerUser,
+                        onValidFromChange = viewModel::updateValidFrom,
+                        onValidToChange = viewModel::updateValidTo,
+                        onInitializeCampaign = viewModel::onCreateVoucherClick
+                    )
+                }
+                item {
+                    ActiveCampaignsList(
+                        vouchers = vouchers,
+                        onEditVoucherClick = viewModel::onEditVoucherClick,
+                        onDeleteClick = viewModel::onDeleteIconClick,
+                        onClearExpiredClick = viewModel::onClearExpiredClick
+                    )
+                }
+            }
+        }
+
+        if (isEditSheetVisible) {
+            EditVoucherBottomSheet(
+                uiState = uiState,
+                onDismiss = viewModel::onDismissEditSheet,
+                onVoucherNameChange = viewModel::updateVoucherName,
+                onDescriptionChange = viewModel::updateDescription,
+                onTargetApplicationChange = viewModel::updateTargetApplication,
+                onDiscountStyleChange = viewModel::updateDiscountStyle,
+                onReleaseTypeChange = viewModel::onReleaseTypeChanged,
+                onDiscountValueChange = viewModel::updateDiscountValue,
+                onMaxReductionChange = viewModel::updateMaxReduction,
+                onMinOrderChange = viewModel::updateMinOrder,
+                onTotalQuantityChange = viewModel::updateTotalQuantity,
+                onMaxUsagePerUserChange = viewModel::updateMaxUsagePerUser,
+                onValidFromChange = viewModel::updateValidFrom,
+                onValidToChange = viewModel::updateValidTo,
+                onUpdateCampaign = viewModel::onUpdateVoucherClick
             )
         }
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(Color.White)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item {
-                VoucherHeader()
-            }
-            item {
-                VoucherFormCard(
-                    uiState = uiState,
-                    onVoucherNameChange = viewModel::updateVoucherName,
-                    onDescriptionChange = viewModel::updateDescription,
-                    onTargetApplicationChange = viewModel::updateTargetApplication,
-                    onDiscountStyleChange = viewModel::updateDiscountStyle,
-                    onReleaseTypeChange = viewModel::onReleaseTypeChanged,
-                    onDiscountValueChange = viewModel::updateDiscountValue,
-                    onMaxReductionChange = viewModel::updateMaxReduction,
-                    onMinOrderChange = viewModel::updateMinOrder,
-                    onTotalQuantityChange = viewModel::updateTotalQuantity,
-                    onMaxUsagePerUserChange = viewModel::updateMaxUsagePerUser,
-                    onValidFromChange = viewModel::updateValidFrom,
-                    onValidToChange = viewModel::updateValidTo,
-                    onInitializeCampaign = viewModel::onCreateVoucherClick
-                )
-            }
-            item {
-                ActiveCampaignsList(
-                    vouchers = vouchers,
-                    onEditVoucherClick = viewModel::onEditVoucherClick,
-                    onDeleteClick = viewModel::onDeleteIconClick,
-                    onClearExpiredClick = viewModel::onClearExpiredClick
-                )
-            }
+
+        if (voucherToDelete != null) {
+            AlertDialog(
+                onDismissRequest = viewModel::onDismissDeleteDialog,
+                title = { Text("Delete Campaign") },
+                text = {
+                    Text(
+                        "Are you sure you want to delete this voucher? This action cannot be undone."
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = viewModel::confirmDeleteVoucher) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = viewModel::onDismissDeleteDialog) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
-    }
 
-    if (isEditSheetVisible) {
-        EditVoucherBottomSheet(
-            uiState = uiState,
-            onDismiss = viewModel::onDismissEditSheet,
-            onVoucherNameChange = viewModel::updateVoucherName,
-            onDescriptionChange = viewModel::updateDescription,
-            onTargetApplicationChange = viewModel::updateTargetApplication,
-            onDiscountStyleChange = viewModel::updateDiscountStyle,
-            onReleaseTypeChange = viewModel::onReleaseTypeChanged,
-            onDiscountValueChange = viewModel::updateDiscountValue,
-            onMaxReductionChange = viewModel::updateMaxReduction,
-            onMinOrderChange = viewModel::updateMinOrder,
-            onTotalQuantityChange = viewModel::updateTotalQuantity,
-            onMaxUsagePerUserChange = viewModel::updateMaxUsagePerUser,
-            onValidFromChange = viewModel::updateValidFrom,
-            onValidToChange = viewModel::updateValidTo,
-            onUpdateCampaign = viewModel::onUpdateVoucherClick
-        )
-    }
+        if (showDeleteExpiredDialog) {
+            AlertDialog(
+                onDismissRequest = viewModel::onDismissDeleteExpiredDialog,
+                title = { Text("Clear Expired Vouchers") },
+                text = {
+                    Text(
+                        "Are you sure you want to delete all expired vouchers from the system? This action cannot be undone."
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = viewModel::confirmDeleteExpiredVouchers) {
+                        Text("Delete")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = viewModel::onDismissDeleteExpiredDialog) {
+                        Text("Cancel")
+                    }
+                }
+            )
+        }
 
-    if (voucherToDelete != null) {
-        AlertDialog(
-            onDismissRequest = viewModel::onDismissDeleteDialog,
-            title = { Text("Delete Campaign") },
-            text = {
-                Text(
-                    "Are you sure you want to delete this voucher? This action cannot be undone."
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = viewModel::confirmDeleteVoucher) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::onDismissDeleteDialog) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    if (showDeleteExpiredDialog) {
-        AlertDialog(
-            onDismissRequest = viewModel::onDismissDeleteExpiredDialog,
-            title = { Text("Clear Expired Vouchers") },
-            text = {
-                Text(
-                    "Are you sure you want to delete all expired vouchers from the system? This action cannot be undone."
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = viewModel::confirmDeleteExpiredVouchers) {
-                    Text("Delete")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::onDismissDeleteExpiredDialog) {
-                    Text("Cancel")
-                }
-            }
-        )
+        Box(modifier = Modifier.align(Alignment.TopCenter)) {
+            TopBanner(
+                message = uiState.bannerMessage,
+                isSuccess = uiState.isBannerSuccess,
+                isVisible = uiState.showBanner,
+                onDismiss = { viewModel.hideBanner() }
+            )
+        }
     }
 }

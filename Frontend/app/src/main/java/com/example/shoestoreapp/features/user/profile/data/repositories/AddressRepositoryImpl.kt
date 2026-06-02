@@ -33,4 +33,43 @@ class AddressRepositoryImpl(
             Result.failure(e)
         }
     }
+
+    override suspend fun updateAddress(id: String, dto: CreateAddressDto): Result<Unit> {
+        return try {
+            val response = api.updateAddress(id, dto)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Update address failed (HTTP ${response.code()})"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun deleteAddress(id: String): Result<Unit> {
+        return try {
+            val response = api.deleteAddress(id)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Delete address failed (HTTP ${response.code()})"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getAddressById(id: String): Result<AddressResponseDto> {
+        return try {
+            val response = api.getAddressById(id)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Lấy địa chỉ thất bại (HTTP ${response.code()})"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

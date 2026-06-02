@@ -1,6 +1,5 @@
 package com.example.shoestoreapp.features.user.product.ui.product_detail
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,6 +38,7 @@ import com.example.shoestoreapp.features.user.product.ui.components.ExpandableSe
 import com.example.shoestoreapp.features.user.product.ui.components.ProductDetailTopAppBar
 import com.example.shoestoreapp.features.user.product.ui.components.ProductHeaderInfo
 import com.example.shoestoreapp.features.user.product.ui.components.ProductHeroImage
+import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
 import com.example.shoestoreapp.features.user.product.viewmodel.AddToCartUiState
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
 import kotlinx.coroutines.launch
@@ -55,7 +55,6 @@ fun ProductDetailScreen(
     val productDetail by viewModel.productDetail.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // Hứng các State liên quan đến Màu và Ảnh từ ViewModel
     val selectedColor by viewModel.selectedColor.collectAsState()
     val selectedImageUrl by viewModel.selectedImageUrl.collectAsState()
 
@@ -72,24 +71,26 @@ fun ProductDetailScreen(
     var quantity by rememberSaveable(productGuid) { mutableIntStateOf(1) }
 
     val context = LocalContext.current
+    val bannerMessage by viewModel.bannerMessage.collectAsState()
+    val isBannerSuccess by viewModel.isBannerSuccess.collectAsState()
+    val showBanner by viewModel.showBanner.collectAsState()
 
     LaunchedEffect(productGuid) {
         viewModel.loadProductDetail(productGuid, passedColorName)
     }
 
     LaunchedEffect(addToCartState) {
-        when (val state = addToCartState) {
+        when (addToCartState) {
             is AddToCartUiState.Success -> {
                 if (showAddToBagSheet) {
                     sheetState.hide()
                     showAddToBagSheet = false
                 }
-                Toast.makeText(context, "Added to cart successfully", Toast.LENGTH_SHORT).show()
+                kotlinx.coroutines.delay(1500)
                 onNavigateToCart()
                 viewModel.resetAddToCartState()
             }
             is AddToCartUiState.Error -> {
-                Toast.makeText(context, state.message, Toast.LENGTH_SHORT).show()
                 viewModel.resetAddToCartState()
             }
             else -> Unit
@@ -170,7 +171,6 @@ fun ProductDetailScreen(
                 onShoppingBagClick = { onNavigateToCart() }
             )
 
-            // Ảnh chính của sản phẩm (Hiển thị theo ảnh của màu đang được chọn)
             ProductHeroImage(
                 imageUrl = selectedImageUrl ?: defaultVariant?.imageUrl,
                 contentDescription = productDetail?.productName,
@@ -248,7 +248,6 @@ fun ProductDetailScreen(
                 containerColor = Color.White
             ) {
                 AddToBagBottomSheetContent(
-                    // Truyền ảnh của màu đang chọn vào BottomSheet
                     imageUrl = selectedImageUrl ?: defaultVariant?.imageUrl,
                     title = productDetail?.productName.orEmpty(),
                     category = productDetail?.categoryName ?: "Category",
@@ -257,11 +256,8 @@ fun ProductDetailScreen(
                     selectedColor = selectedColor,
                     onColorSelected = { color: String ->
                         val normalizedColor = color.trim()
-
-                        // Gọi ViewModel để cập nhật cả Màu và tự đổi Ảnh
                         viewModel.selectColor(normalizedColor)
 
-                        // Recompute sizes for the newly selected color
                         val validSizesForColor = selectableVariants
                             .asSequence()
                             .filter { variant ->
@@ -288,9 +284,6 @@ fun ProductDetailScreen(
                     onIncreaseQuantity = {
                         quantity += 1
                     },
-                    onSizeGuideClick = {
-                        // TODO: Navigate to Size Guide screen.
-                    },
                     onClose = {
                         if (!isAddToCartLoading) {
                             coroutineScope.launch {
@@ -308,6 +301,15 @@ fun ProductDetailScreen(
                     isConfirmEnabled = selectedVariantForCart != null && !isAddToCartLoading
                 )
             }
+        }
+
+        Box(modifier = Modifier.align(Alignment.TopCenter)) {
+            TopBanner(
+                message = bannerMessage,
+                isSuccess = isBannerSuccess,
+                isVisible = showBanner,
+                onDismiss = { viewModel.hideBanner() }
+            )
         }
     }
 }

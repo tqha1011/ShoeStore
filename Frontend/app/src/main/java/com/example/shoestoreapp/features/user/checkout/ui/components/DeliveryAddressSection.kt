@@ -1,6 +1,7 @@
 package com.example.shoestoreapp.features.user.checkout.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,13 +35,12 @@ import com.example.shoestoreapp.features.user.checkout.data.models.DeliveryAddre
  */
 @Composable
 fun DeliveryAddressSection(
-    address: com.example.shoestoreapp.features.user.checkout.data.models.DeliveryAddress,
+    address: DeliveryAddress,
     onEditClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
         // Header với nút Edit
         Row(
@@ -49,7 +48,7 @@ fun DeliveryAddressSection(
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "DELIVERY ADDRESS",
@@ -59,18 +58,16 @@ fun DeliveryAddressSection(
                 color = Color(0xFF181C22)
             )
 
-            TextButton(
-                onClick = onEditClick,
-                modifier = Modifier.padding(0.dp)
-            ) {
-                Text(
-                    text = "Edit",
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.8.sp,
-                    color = Color.Black
-                )
-            }
+            Text(
+                text = "Edit",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.8.sp,
+                color = Color.Black,
+                modifier = Modifier
+                    .clickable { onEditClick() }
+                    .padding(4.dp)
+            )
         }
 
         // Address Card
@@ -80,9 +77,9 @@ fun DeliveryAddressSection(
                 .background(
                     color = Color.White,
                     shape = RoundedCornerShape(12.dp)
-                )
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             // Location Icon
             Box(
@@ -109,22 +106,13 @@ fun DeliveryAddressSection(
                     .weight(1f)
             ) {
                 Text(
-                    text = address.fullName,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-
-                Text(
-                    text = address.getFullAddress(),
+                    text = address.fullAddress,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Normal,
                     color = Color(0xFF4C4546),
-                    modifier = Modifier.padding(top = 8.dp),
                     lineHeight = 20.sp
                 )
             }
         }
     }
 }
-

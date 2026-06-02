@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.admin.addproduct.ui
+package com.example.shoestoreapp.features.admin.addproduct.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -8,6 +8,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
 import com.example.shoestoreapp.features.admin.addproduct.viewmodel.AddProductUiState
 import com.example.shoestoreapp.features.admin.addproduct.viewmodel.AdminAddProductViewModel
 import com.example.shoestoreapp.features.admin.addproduct.viewmodel.FetchMasterDataViewModel
@@ -19,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.shoestoreapp.features.admin.addproduct.ui.components.*
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminFormField
+import kotlinx.coroutines.delay
 
 /**
  * Admin Product CRUD Screen
@@ -49,7 +51,7 @@ fun AdminProductCrudScreen(
     LaunchedEffect(isActionSuccess) {
         if (isActionSuccess) {
             navController.previousBackStackEntry?.savedStateHandle?.set("refresh_list", true)
-            kotlinx.coroutines.delay(3000)
+            delay(3000)
             addProductViewModel.resetState()
             navController.popBackStack()
         }
@@ -135,7 +137,7 @@ fun AdminProductCrudScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .align(androidx.compose.ui.Alignment.TopCenter)
+                        .align(Alignment.TopCenter)
                         .padding(top = 16.dp)
                 ) {
                     AdminMessageBanner(
@@ -150,7 +152,7 @@ fun AdminProductCrudScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .align(androidx.compose.ui.Alignment.TopCenter)
+                        .align(Alignment.TopCenter)
                         .padding(top = 16.dp)
                 ) {
                     AdminMessageBanner(

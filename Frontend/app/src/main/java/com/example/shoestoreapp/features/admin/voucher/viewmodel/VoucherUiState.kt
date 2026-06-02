@@ -13,5 +13,8 @@ data class VoucherUiState(
     val maxUsagePerUser: String = "",
     val validFrom: String = "",
     val validTo: String = "",
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val bannerMessage: String = "",
+    val isBannerSuccess: Boolean = true,
+    val showBanner: Boolean = false
 )

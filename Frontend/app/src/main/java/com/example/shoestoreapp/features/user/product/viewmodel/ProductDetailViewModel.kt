@@ -29,7 +29,7 @@ class ProductDetailViewModel(
     private val _productDetail = MutableStateFlow<Product?>(null)
     val productDetail = _productDetail.asStateFlow()
 
-    // ============ STATE QUẢN LÝ MÀU VÀ HÌNH ẢNH ĐƯỢC CHỌN (MỚI THÊM) ============
+    // ============ STATE QUẢN LÝ MÀU VÀ HÌNH ẢNH ĐƯỢC CHỌN ============
     private val _selectedColor = MutableStateFlow<String?>(null)
     val selectedColor = _selectedColor.asStateFlow()
 
@@ -53,6 +53,16 @@ class ProductDetailViewModel(
     private val _addToCartState = MutableStateFlow<AddToCartUiState>(AddToCartUiState.Idle)
     val addToCartState = _addToCartState.asStateFlow()
 
+    // Banner properties
+    private val _bannerMessage = MutableStateFlow("")
+    val bannerMessage = _bannerMessage.asStateFlow()
+
+    private val _isBannerSuccess = MutableStateFlow(true)
+    val isBannerSuccess = _isBannerSuccess.asStateFlow()
+
+    private val _showBanner = MutableStateFlow(false)
+    val showBanner = _showBanner.asStateFlow()
+
     // ============ HÀM LOAD CHI TIẾT SẢN PHẨM ============
     fun loadProductDetail(productGuid: String, passedColorName: String? = null) {
         viewModelScope.launch {
@@ -62,7 +72,6 @@ class ProductDetailViewModel(
                 _productDetail.value = product
                 
                 if (product?.variants?.isNotEmpty() ?: false) {
-                    // Match by colorName (ignore case for safety)
                     val matchedVariant = if (!passedColorName.isNullOrEmpty()) {
                         product?.variants?.firstOrNull {
                             it.colorName?.trim()?.equals(passedColorName.trim(), ignoreCase = true) == true
@@ -102,6 +111,10 @@ class ProductDetailViewModel(
         _selectedSize.value = size
     }
 
+    fun hideBanner() {
+        _showBanner.value = false
+    }
+
     private fun isVariantAvailable(variant: ProductVariant): Boolean {
         return variant.isSelling && !variant.isDelete && variant.stock > 0
     }
@@ -131,16 +144,17 @@ class ProductDetailViewModel(
 
             result.onSuccess { cartItem ->
                 _addToCartState.value = AddToCartUiState.Success(cartItem)
+                _bannerMessage.value = "Added to cart successfully"
+                _isBannerSuccess.value = true
+                _showBanner.value = true
             }.onFailure { throwable ->
-                _addToCartState.value = AddToCartUiState.Error(
-                    throwable.message ?: "Unable to add item to cart."
-                )
+                val errorMsg = throwable.message ?: "Unable to add item to cart."
+                _addToCartState.value = AddToCartUiState.Error(errorMsg)
+                _bannerMessage.value = errorMsg
+                _isBannerSuccess.value = false
+                _showBanner.value = true
             }
         }
-    }
-
-    fun addToCart(variantId: String, quantity: Int) {
-        addCartItem(variantId, quantity)
     }
 
     fun resetAddToCartState() {

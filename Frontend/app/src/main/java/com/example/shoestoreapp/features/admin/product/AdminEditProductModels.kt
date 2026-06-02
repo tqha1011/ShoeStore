@@ -21,7 +21,10 @@ data class EditProductUiState(
     val imageUrl: String?,
     val variants: List<ProductVariantResponseDto>,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val bannerMessage: String = "",
+    val isBannerSuccess: Boolean = true,
+    val showBanner: Boolean = false
 )
 
 data class ShoeSize(

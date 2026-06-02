@@ -14,16 +14,9 @@ package com.example.shoestoreapp.features.user.checkout.data.models
  */
 data class DeliveryAddress(
     val id: String = "",
-    val fullName: String = "Jordan Smith",
-    val street: String = "123 Innovation Drive, Silicon Valley",
-    val city: String = "San Francisco",
-    val state: String = "CA",
-    val postalCode: String = "94103",
-    val country: String = "United States",
+    val fullAddress: String = " ",
     val isDefault: Boolean = true
 ) {
-    fun getFullAddress(): String {
-        return "$street\n$city, $state $postalCode\n$country"
-    }
+
 }
 

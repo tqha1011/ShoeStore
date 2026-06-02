@@ -17,7 +17,10 @@ data class ChangePasswordUiState(
     val confirmPassword: String = "",
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val bannerMessage: String = "",
+    val isBannerSuccess: Boolean = true,
+    val showBanner: Boolean = false
 )
 
 class ChangePasswordViewModel(
@@ -48,18 +51,40 @@ class ChangePasswordViewModel(
         _uiState.update { it.copy(confirmPassword = value) }
     }
 
+    fun hideBanner() {
+        _uiState.update { it.copy(showBanner = false) }
+    }
+
     fun onChangePasswordClicked() {
         val current = _uiState.value
         if (current.oldPassword.isBlank() || current.newPassword.isBlank() || current.confirmPassword.isBlank()) {
-            _uiState.update { it.copy(errorMessage = "Please fill all fields") }
+            _uiState.update {
+                it.copy(
+                    bannerMessage = "Please fill all fields",
+                    isBannerSuccess = false,
+                    showBanner = true
+                )
+            }
             return
         }
         if (!isPasswordValid.value) {
-            _uiState.update { it.copy(errorMessage = "Password must be at least 8 characters and include 1 uppercase letter and 1 digit") }
+            _uiState.update {
+                it.copy(
+                    bannerMessage = "Password must be at least 8 characters and include 1 uppercase letter and 1 digit",
+                    isBannerSuccess = false,
+                    showBanner = true
+                )
+            }
             return
         }
         if (current.newPassword != current.confirmPassword) {
-            _uiState.update { it.copy(errorMessage = "New passwords do not match") }
+            _uiState.update {
+                it.copy(
+                    bannerMessage = "New passwords do not match",
+                    isBannerSuccess = false,
+                    showBanner = true
+                )
+            }
             return
         }
         if (current.isLoading) return
@@ -73,13 +98,23 @@ class ChangePasswordViewModel(
             )
             repository.changePassword(dto)
                 .onSuccess {
-                    _uiState.update { it.copy(isLoading = false, isSuccess = true) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isSuccess = true,
+                            bannerMessage = "Password changed successfully",
+                            isBannerSuccess = true,
+                            showBanner = true
+                        )
+                    }
                 }
                 .onFailure { throwable ->
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = throwable.message ?: "Change password failed."
+                            bannerMessage = throwable.message ?: "Change password failed.",
+                            isBannerSuccess = false,
+                            showBanner = true
                         )
                     }
                 }

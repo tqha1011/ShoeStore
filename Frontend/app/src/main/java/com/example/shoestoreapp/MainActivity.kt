@@ -22,7 +22,7 @@ import com.example.shoestoreapp.core.utils.JwtUtils
 import com.example.shoestoreapp.core.utils.SignalRManager
 import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.admin.addproduct.data.repositories.MasterDataRepository
-import com.example.shoestoreapp.features.admin.addproduct.ui.AdminProductCrudScreen
+import com.example.shoestoreapp.features.admin.addproduct.ui.screens.AdminProductCrudScreen
 import com.example.shoestoreapp.features.admin.addproduct.viewmodel.AdminAddProductViewModel
 import com.example.shoestoreapp.features.admin.addproduct.viewmodel.FetchMasterDataViewModel
 import com.example.shoestoreapp.features.admin.ai_assistant.ui.AiStrategyScreen
@@ -86,8 +86,10 @@ private object Routes {
     const val USER_EDIT_PROFILE = "user_edit_profile"
     const val USER_CHANGE_PASSWORD = "user_change_password"
     const val USER_COLLECT_VOUCHERS = "user_collect_vouchers"
-    const val USER_MANAGE_ADDRESS = "user_manage_address"
-    const val USER_CREATE_ADDRESS = "user_create_address"
+    const val USER_MANAGE_ADDRESS_BASE = "user_manage_address"
+    const val USER_MANAGE_ADDRESS = "$USER_MANAGE_ADDRESS_BASE?isSelectionMode={isSelectionMode}"
+    const val USER_CREATE_ADDRESS_BASE = "user_create_address"
+    const val USER_CREATE_ADDRESS = "$USER_CREATE_ADDRESS_BASE?addressId={addressId}"
     const val ADMIN_PRODUCT_LIST = "admin_product_list"
     const val ADMIN_CRUD = "admin_crud"
     const val ADMIN_EDIT_PRODUCT = "admin_edit_product/{productId}"
@@ -105,6 +107,16 @@ private object Routes {
     const val USER_AI_ASSISTANT_BASE = "user_ai_assistant"
     const val USER_AI_ASSISTANT = "$USER_AI_ASSISTANT_BASE?isGenerateProduct={isGeneratingProduct}"
 
+    fun userManageAddress(isSelectionMode: Boolean = false): String {
+        return "$USER_MANAGE_ADDRESS_BASE?isSelectionMode=$isSelectionMode"
+    }
+    fun userCreateAddress(addressId: String? = null): String {
+        return if (addressId != null) {
+            "$USER_CREATE_ADDRESS_BASE?addressId=$addressId"
+        } else {
+            USER_CREATE_ADDRESS_BASE
+        }
+    }
     fun userMyVouchers(isSelectionMode: Boolean = false, cartTotal: Double? = null): String {
         return if (cartTotal != null) {
             "user_my_vouchers?isSelectionMode=$isSelectionMode&cartTotal=$cartTotal"
@@ -287,6 +299,9 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
                 }
                 navController.navigate(Routes.PAYMENT_QR)
             },
+            onEditAddressClick = {
+                navController.navigate("user_manage_address?isSelectionMode=true")
+            },
             onCompletePurchaseClick = {
                 navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CHECKOUT)
             }
@@ -354,7 +369,7 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             onTabSelected = { tab -> handleUserProfileTabSelection(tab, navController) },
             onEditProfileClick = { navController.navigate(Routes.USER_EDIT_PROFILE) },
             onChangePasswordClick = { navController.navigate(Routes.USER_CHANGE_PASSWORD) },
-            onManageAddressClick = { navController.navigate(Routes.USER_MANAGE_ADDRESS) },
+            onManageAddressClick = { navController.navigate(Routes.userManageAddress(isSelectionMode = false)) },
             onMyVouchersClick = {
                 navController.navigate(Routes.userMyVouchers(isSelectionMode = false, cartTotal = null))
             },
@@ -386,17 +401,43 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
         )
     }
 
-    composable(Routes.USER_MANAGE_ADDRESS) {
+    composable(
+        route = Routes.USER_MANAGE_ADDRESS,
+        arguments = listOf(
+            navArgument("isSelectionMode") {
+                type = NavType.BoolType
+                defaultValue = false
+            }
+        )
+    ) { backStackEntry ->
+        val isSelectionMode = backStackEntry.arguments?.getBoolean("isSelectionMode") ?: false
+
         ManageAddressScreen(
+            isSelectionMode = isSelectionMode,
             onBackClick = { navController.popBackStack() },
-            onAddAddressClick = {
-                navController.navigate(Routes.USER_CREATE_ADDRESS)
+            onAddAddressClick = { navController.navigate(Routes.userCreateAddress(null)) },
+            onEditAddressClick = { addressId -> navController.navigate(Routes.userCreateAddress(addressId)) },
+            onAddressSelected = { selectedId ->
+                navController.previousBackStackEntry?.savedStateHandle?.set("selected_address_id", selectedId)
+                navController.popBackStack()
             }
         )
     }
 
-    composable(Routes.USER_CREATE_ADDRESS) {
+    composable(
+        route = Routes.USER_CREATE_ADDRESS,
+        arguments = listOf(
+            navArgument("addressId") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            }
+        )
+    ) { backStackEntry ->
+        val addressId = backStackEntry.arguments?.getString("addressId")
+
         CreateAddressScreen(
+            addressId = addressId,
             onBackClick = {
                 navController.popBackStack()
             }

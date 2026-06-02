@@ -31,7 +31,10 @@ data class EditProfileUiState(
     val dateOfBirthIso: String = "",
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val bannerMessage: String = "",
+    val isBannerSuccess: Boolean = true,
+    val showBanner: Boolean = false
 )
 
 class EditProfileViewModel(
@@ -85,6 +88,10 @@ class EditProfileViewModel(
         }
     }
 
+    fun hideBanner() {
+        _uiState.update { it.copy(showBanner = false) }
+    }
+
     fun onSaveClicked(context: Context) {
         if (_uiState.value.isLoading) return
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
@@ -94,8 +101,14 @@ class EditProfileViewModel(
                 val file = context.uriToTempFile(uri)
                 imageRepository.uploadImage(file)
                     .getOrElse {
+                        val errorMsg = it.message ?: "Unable to upload image."
                         _uiState.update { state ->
-                            state.copy(isLoading = false, errorMessage = it.message ?: "Unable to upload image.")
+                            state.copy(
+                                isLoading = false,
+                                bannerMessage = errorMsg,
+                                isBannerSuccess = false,
+                                showBanner = true
+                            )
                         }
                         return@launch
                     }
@@ -110,7 +123,15 @@ class EditProfileViewModel(
 
             repository.updateProfile(dto)
                 .onSuccess {
-                    _uiState.update { it.copy(isLoading = false, isSuccess = true) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isSuccess = true,
+                            bannerMessage = "Profile updated successfully",
+                            isBannerSuccess = true,
+                            showBanner = true
+                        )
+                    }
                 }
                 .onFailure { throwable ->
                     var realErrorMessage = "Update failed."
@@ -135,7 +156,12 @@ class EditProfileViewModel(
                     }
 
                     _uiState.update {
-                        it.copy(isLoading = false, errorMessage = realErrorMessage)
+                        it.copy(
+                            isLoading = false,
+                            bannerMessage = realErrorMessage,
+                            isBannerSuccess = false,
+                            showBanner = true
+                        )
                     }
                 }
         }
@@ -146,8 +172,13 @@ class EditProfileViewModel(
             repository.getUserProfile()
                 .onSuccess { initData(it) }
                 .onFailure { throwable ->
+                    val errorMsg = throwable.message ?: "Unable to load profile."
                     _uiState.update { state ->
-                        state.copy(errorMessage = throwable.message ?: "Unable to load profile.")
+                        state.copy(
+                            bannerMessage = errorMsg,
+                            isBannerSuccess = false,
+                            showBanner = true
+                        )
                     }
                 }
         }
@@ -165,23 +196,5 @@ class EditProfileViewModel(
         } catch (e: Exception) {
             raw to ""
         }
-    }
-
-    // =========================================
-    // CÁC HÀM XÓA TRẠNG THÁI (CLEAR STATE) DÙNG CHO UI
-    // =========================================
-
-    /**
-     * Gọi hàm này bên UI sau khi Toast lỗi đã được hiển thị để tránh lặp Toast
-     */
-    fun clearErrorMessage() {
-        _uiState.update { it.copy(errorMessage = null) }
-    }
-
-    /**
-     * Gọi hàm này bên UI sau khi xử lý xong sự kiện thành công
-     */
-    fun clearSuccessState() {
-        _uiState.update { it.copy(isSuccess = false) }
     }
 }

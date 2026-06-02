@@ -1,8 +1,8 @@
 package com.example.shoestoreapp.features.user.profile.ui.screens
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -37,11 +37,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
 import com.example.shoestoreapp.features.user.profile.ui.components.AddressDropdownField
 import com.example.shoestoreapp.features.user.profile.viewmodel.CreateAddressUiState
 import com.example.shoestoreapp.features.user.profile.viewmodel.CreateAddressViewModel
@@ -49,10 +49,10 @@ import com.example.shoestoreapp.features.user.profile.viewmodel.CreateAddressVie
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateAddressScreen(
+    addressId: String? = null,
     viewModel: CreateAddressViewModel = viewModel(),
     onBackClick: () -> Unit = {}
 ) {
-    val context = LocalContext.current
     val selectedCity by viewModel.selectedCity.collectAsState()
     val selectedDistrict by viewModel.selectedDistrict.collectAsState()
     val selectedWard by viewModel.selectedWard.collectAsState()
@@ -62,18 +62,22 @@ fun CreateAddressScreen(
     val districts by viewModel.districts.collectAsState()
     val wards by viewModel.wards.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
+    val bannerMessage by viewModel.bannerMessage.collectAsState()
+    val isBannerSuccess by viewModel.isBannerSuccess.collectAsState()
+    val showBanner by viewModel.showBanner.collectAsState()
+
+    // Initialize data for Edit Mode if addressId is provided
+    LaunchedEffect(addressId) {
+        viewModel.initData(addressId)
+    }
+
+    val isEditMode = viewModel.isEditMode
 
     LaunchedEffect(uiState) {
-        when (uiState) {
-            is CreateAddressUiState.Success -> {
-                Toast.makeText(context, "Address created successfully", Toast.LENGTH_SHORT).show()
-                onBackClick()
-            }
-            is CreateAddressUiState.Error -> {
-                val message = (uiState as CreateAddressUiState.Error).message
-                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-            }
-            else -> Unit
+        if (uiState is CreateAddressUiState.Success) {
+            kotlinx.coroutines.delay(1500)
+            viewModel.hideBanner()
+            onBackClick()
         }
     }
 
@@ -83,142 +87,157 @@ fun CreateAddressScreen(
             selectedWard.isNotEmpty() &&
             exactAddress.isNotBlank()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.Black
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
-            )
-        },
-        containerColor = Color.White
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White)
-                .padding(paddingValues)
-                .padding(horizontal = 24.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            // Phần tiêu đề màn hình
-            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                Text(
-                    text = "ADD ADDRESS",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = (-1).sp,
-                    color = Color.Black
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = Color.Black
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Create a new delivery location",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF4C4546)
-                )
-            }
-
-            // 1. Ô lựa chọn Thành phố / Tỉnh
-            AddressDropdownField(
-                label = "City / Province",
-                selectedValue = selectedCity,
-                options = provinces.map { it.name },
-                onOptionSelected = { viewModel.onCitySelected(it) }
-            )
-
-            // 2. Ô lựa chọn Quận / Huyện (Chỉ kích hoạt mở khóa khi cấp trên đã được chọn)
-            AddressDropdownField(
-                label = "District",
-                selectedValue = selectedDistrict,
-                options = districts.map { it.name },
-                onOptionSelected = { viewModel.onDistrictSelected(it) },
-                enabled = selectedCity.isNotEmpty()
-            )
-
-            // 3. Ô lựa chọn Phường / Xã (Chỉ kích hoạt mở khóa khi cấp trên đã được chọn)
-            AddressDropdownField(
-                label = "Ward / Commune",
-                selectedValue = selectedWard,
-                options = wards.map { it.name },
-                onOptionSelected = { viewModel.onWardSelected(it) },
-                enabled = selectedDistrict.isNotEmpty()
-            )
-
-            // 4. Ô nhập văn bản địa chỉ chính xác chi tiết
-            OutlinedTextField(
-                value = exactAddress,
-                onValueChange = { viewModel.onExactAddressChanged(it) },
-                label = { Text("Street Address Details") },
-                placeholder = { Text("e.g. 123 Air Max Boulevard, Apt 4B") },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Black,
-                    unfocusedBorderColor = Color(0xFFE5E7EB),
-                    focusedLabelColor = Color.Black,
-                    unfocusedLabelColor = Color.Gray
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            // 5. Cụm lựa chọn cấu hình địa chỉ mặc định
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = isDefault,
-                    onClick = { viewModel.onDefaultChanged(!isDefault) },
-                    colors = RadioButtonDefaults.colors(
-                        selectedColor = Color.Black,
-                        unselectedColor = Color.Gray
-                    )
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Set as default delivery address",
-                    fontSize = 14.sp,
-                    color = Color.Black,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 6. Nút xác nhận thực thi
-            Button(
-                onClick = { viewModel.saveAddress() },
+            },
+            containerColor = Color.White
+        ) { paddingValues ->
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                shape = RoundedCornerShape(50),
-                enabled = isFormValid && !isLoading
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(paddingValues)
+                    .padding(horizontal = 24.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
-                } else {
+                // Header Section dynamically changes based on mode
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
                     Text(
-                        text = "SAVE ADDRESS",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
+                        text = if (isEditMode) "EDIT ADDRESS" else "ADD ADDRESS",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = (-1).sp,
+                        color = Color.Black
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (isEditMode) "Update your delivery location" else "Create a new delivery location",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF4C4546)
                     )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+                // 1. City / Province
+                AddressDropdownField(
+                    label = "City / Province",
+                    selectedValue = selectedCity,
+                    options = provinces.map { it.name },
+                    onOptionSelected = { viewModel.onCitySelected(it) }
+                )
+
+                // 2. District
+                AddressDropdownField(
+                    label = "District",
+                    selectedValue = selectedDistrict,
+                    options = districts.map { it.name },
+                    onOptionSelected = { viewModel.onDistrictSelected(it) },
+                    enabled = selectedCity.isNotEmpty()
+                )
+
+                // 3. Ward / Commune
+                AddressDropdownField(
+                    label = "Ward / Commune",
+                    selectedValue = selectedWard,
+                    options = wards.map { it.name },
+                    onOptionSelected = { viewModel.onWardSelected(it) },
+                    enabled = selectedDistrict.isNotEmpty()
+                )
+
+                // 4. Street Address Details
+                OutlinedTextField(
+                    value = exactAddress,
+                    onValueChange = { viewModel.onExactAddressChanged(it) },
+                    label = { Text("Street Address Details") },
+                    placeholder = { Text("e.g. 123 Air Max Boulevard, Apt 4B") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color.Black,
+                        unfocusedBorderColor = Color(0xFFE5E7EB),
+                        focusedLabelColor = Color.Black,
+                        unfocusedLabelColor = Color.Gray
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // 5. Default Address Configuration
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    RadioButton(
+                        selected = isDefault,
+                        onClick = { viewModel.onDefaultChanged(!isDefault) },
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = Color.Black,
+                            unselectedColor = Color.Gray
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Set as default delivery address",
+                        fontSize = 14.sp,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 6. Submit Button
+                Button(
+                    onClick = { viewModel.saveAddress() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                    shape = RoundedCornerShape(50),
+                    enabled = isFormValid && !isLoading
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = if (isEditMode) "UPDATE ADDRESS" else "SAVE ADDRESS",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+
+        Box(modifier = Modifier.align(Alignment.TopCenter)) {
+            TopBanner(
+                message = bannerMessage,
+                isSuccess = isBannerSuccess,
+                isVisible = showBanner,
+                onDismiss = { viewModel.hideBanner() }
+            )
         }
     }
 }

@@ -1,6 +1,5 @@
 package com.example.shoestoreapp.features.user.checkout.ui.screens
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,7 +38,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -59,6 +57,7 @@ import com.example.shoestoreapp.features.user.checkout.ui.components.PaymentMeth
 import com.example.shoestoreapp.features.user.checkout.ui.components.TermsDisclaimerText
 import com.example.shoestoreapp.features.user.checkout.viewmodel.CheckoutViewModel
 import com.example.shoestoreapp.features.user.checkout.viewmodel.PlaceOrderUiState
+import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
 import com.example.shoestoreapp.features.user.voucher.data.models.VoucherUiModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,18 +80,28 @@ fun CheckoutScreen(
     val errorMessage by checkoutViewModel.errorMessage.collectAsState()
     val cartItemsList = checkoutViewModel.cartItems.collectAsState()
     val placeOrderState by checkoutViewModel.placeOrderState.collectAsState()
+    val bannerMessage by checkoutViewModel.bannerMessage.collectAsState()
+    val isBannerSuccess by checkoutViewModel.isBannerSuccess.collectAsState()
+    val showBanner by checkoutViewModel.showBanner.collectAsState()
 
     val selectedProductVoucher by checkoutViewModel.selectedProductVoucher.collectAsState()
     val selectedShippingVoucher by checkoutViewModel.selectedShippingVoucher.collectAsState()
 
-    // Khai báo state lưu trữ Tên và Số điện thoại do người dùng nhập
     var receiverName by remember { mutableStateOf("") }
     var receiverPhone by remember { mutableStateOf("") }
 
-    val context = LocalContext.current
-
     val navBackStackEntry = navController.currentBackStackEntry
     val returnedVoucherJson = navBackStackEntry?.savedStateHandle?.get<String>("selected_voucher_json")
+
+    val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
+    val selectedAddressId by savedStateHandle?.getStateFlow<String?>("selected_address_id", null)?.collectAsState(initial = null) ?: remember { mutableStateOf(null) }
+
+    LaunchedEffect(selectedAddressId) {
+        selectedAddressId?.let { id ->
+            checkoutViewModel.onAddressSelected(id)
+            savedStateHandle?.remove<String>("selected_address_id")
+        }
+    }
 
     LaunchedEffect(returnedVoucherJson) {
         returnedVoucherJson?.let { jsonString ->
@@ -112,15 +121,10 @@ fun CheckoutScreen(
                     onCompletePurchaseClick()
                 }
             }
-            is PlaceOrderUiState.Error -> {
-                val errorMsg = (placeOrderState as PlaceOrderUiState.Error).message
-                Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-            }
             else -> { }
         }
     }
 
-    // 1. GIAO DIỆN KHI ĐANG TẢI DỮ LIỆU
     if (isLoading) {
         Box(
             modifier = Modifier
@@ -136,7 +140,6 @@ fun CheckoutScreen(
         return
     }
 
-    // 2. GIAO DIỆN BÁO LỖI HỆ THỐNG
     if (errorMessage.isNotEmpty()) {
         Box(
             modifier = Modifier
@@ -225,129 +228,140 @@ fun CheckoutScreen(
         return
     }
 
-    // 3. GIAO DIỆN CHÍNH CỦA MÀN HÌNH CHECKOUT
-    Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White),
-        topBar = {
-            CheckoutTopAppBar(
-                onBackClick = onBackClick,
-                onShoppingBagClick = onShoppingBagClick
-            )
-        },
-        containerColor = Color.White,
-        contentColor = Color.Black
-    ) { paddingValues ->
-        Column(
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
-                .padding(paddingValues)
-                .padding(bottom = 24.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.Start
-        ) {
+                .background(Color.White),
+            topBar = {
+                CheckoutTopAppBar(
+                    onBackClick = onBackClick,
+                    onShoppingBagClick = onShoppingBagClick
+                )
+            },
+            containerColor = Color.White,
+            contentColor = Color.Black
+        ) { paddingValues ->
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(paddingValues)
+                    .padding(bottom = 24.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.Top,
+                horizontalAlignment = Alignment.Start
             ) {
-                CheckoutHeader()
-
-                DeliveryAddressSection(
-                    address = deliveryAddress.value,
-                    onEditClick = onEditAddressClick
-                )
-
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                    Text(
-                        text = "RECEIVER INFORMATION",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.2.sp
+                    CheckoutHeader()
+
+                    DeliveryAddressSection(
+                        address = deliveryAddress.value,
+                        onEditClick = onEditAddressClick
                     )
 
-                    OutlinedTextField(
-                        value = receiverName,
-                        onValueChange = { receiverName = it },
-                        label = { Text("Full Name") },
-                        placeholder = { Text("Enter receiver's name") },
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Black,
-                            unfocusedBorderColor = Color(0xFFE5E7EB),
-                            focusedLabelColor = Color.Black,
-                            unfocusedLabelColor = Color.Gray
-                        ),
-                        singleLine = true
-                    )
-
-                    OutlinedTextField(
-                        value = receiverPhone,
-                        onValueChange = { receiverPhone = it },
-                        label = { Text("Phone Number") },
-                        placeholder = { Text("Enter phone number") },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color.Black,
-                            unfocusedBorderColor = Color(0xFFE5E7EB),
-                            focusedLabelColor = Color.Black,
-                            unfocusedLabelColor = Color.Gray
-                        ),
-                        singleLine = true
-                    )
-                }
-
-                PaymentMethodSection(
-                    selectedPaymentMethod = paymentMethod.value,
-                    availablePaymentMethods = availablePaymentMethods.value,
-                    onPaymentMethodSelected = { method ->
-                        checkoutViewModel.selectPaymentMethod(method)
-                    }
-                )
-
-                CheckoutVoucherRow(
-                    selectedProductVoucher = selectedProductVoucher,
-                    selectedShippingVoucher = selectedShippingVoucher,
-                    onClick = {
-                        val currentCartTotal = orderSummary.value.subtotal
-                        onNavigateToVoucherScreen(currentCartTotal)
-                    }
-                )
-
-                OrderSummarySection(
-                    orderSummary = orderSummary.value,
-                    cartItems = cartItemsList.value
-                )
-
-                CompletePurchaseButton(
-                    onCompletePurchaseClick = {
-                        // Validate nhẹ trước khi gọi API (tránh trường hợp bỏ trống)
-                        if (receiverName.isBlank() || receiverPhone.isBlank()) {
-                            Toast.makeText(context, "Please enter receiver's name and phone number", Toast.LENGTH_SHORT).show()
-                            return@CompletePurchaseButton
-                        }
-
-                        checkoutViewModel.placeOrder(
-                            fullName = receiverName,
-                            address = "123 Innovation",
-                            phoneNumber = receiverPhone,
-                            fromUserCart = true
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = "RECEIVER INFORMATION",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.2.sp
                         )
-                    },
-                    isLoading = placeOrderState is PlaceOrderUiState.Loading,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
 
-                TermsDisclaimerText()
+                        OutlinedTextField(
+                            value = receiverName,
+                            onValueChange = { receiverName = it },
+                            label = { Text("Full Name") },
+                            placeholder = { Text("Enter receiver's name") },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color.Black,
+                                unfocusedBorderColor = Color(0xFFE5E7EB),
+                                focusedLabelColor = Color.Black,
+                                unfocusedLabelColor = Color.Gray
+                            ),
+                            singleLine = true
+                        )
+
+                        OutlinedTextField(
+                            value = receiverPhone,
+                            onValueChange = { receiverPhone = it },
+                            label = { Text("Phone Number") },
+                            placeholder = { Text("Enter phone number") },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color.Black,
+                                unfocusedBorderColor = Color(0xFFE5E7EB),
+                                focusedLabelColor = Color.Black,
+                                unfocusedLabelColor = Color.Gray
+                            ),
+                            singleLine = true
+                        )
+                    }
+
+                    PaymentMethodSection(
+                        selectedPaymentMethod = paymentMethod.value,
+                        availablePaymentMethods = availablePaymentMethods.value,
+                        onPaymentMethodSelected = { method ->
+                            checkoutViewModel.selectPaymentMethod(method)
+                        }
+                    )
+
+                    CheckoutVoucherRow(
+                        selectedProductVoucher = selectedProductVoucher,
+                        selectedShippingVoucher = selectedShippingVoucher,
+                        onClick = {
+                            val currentCartTotal = orderSummary.value.subtotal
+                            onNavigateToVoucherScreen(currentCartTotal)
+                        }
+                    )
+
+                    OrderSummarySection(
+                        orderSummary = orderSummary.value,
+                        cartItems = cartItemsList.value
+                    )
+
+                    CompletePurchaseButton(
+                        onCompletePurchaseClick = {
+                            if (deliveryAddress.value.fullAddress.isBlank()) {
+                                checkoutViewModel.showAddressWarning()
+                                return@CompletePurchaseButton
+                            }
+
+                            if (checkoutViewModel.validateReceiverInfo(receiverName, receiverPhone)) {
+                                checkoutViewModel.placeOrder(
+                                    fullName = receiverName,
+                                    address = deliveryAddress.value.fullAddress,
+                                    phoneNumber = receiverPhone,
+                                    fromUserCart = true
+                                )
+                            }
+                        },
+                        isLoading = placeOrderState is PlaceOrderUiState.Loading,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+
+                    TermsDisclaimerText()
+                }
             }
+        }
+
+        Box(modifier = Modifier.align(Alignment.TopCenter)) {
+            TopBanner(
+                message = bannerMessage,
+                isSuccess = isBannerSuccess,
+                isVisible = showBanner,
+                onDismiss = { checkoutViewModel.hideBanner() }
+            )
         }
     }
 }

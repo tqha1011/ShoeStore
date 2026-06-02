@@ -122,11 +122,13 @@ class ProductListViewModel(
             _isLoadingMore.value = true
             try {
                 val nextPage = _currentPage.value + 1
-                val brandFilter = if (_selectedFilter.value == "All Shoes") null else _selectedFilter.value
+
+                // Lấy ID chuẩn xác từ hàm helper
+                val categoryIdFilter = getCategoryIdFromName(_selectedFilter.value)
 
                 val request = ProductSearchRequest(
                     keyword = _searchText.value.ifEmpty { null },
-                    brand = brandFilter,
+                    categoryId = categoryIdFilter,
                     pageIndex = nextPage,
                     pageSize = DEFAULT_PAGE_SIZE
                 )
@@ -163,14 +165,16 @@ class ProductListViewModel(
             _isLastPage.value = false
 
             val searchTerm = searchText.value.ifEmpty { null }
-            val brandFilter = if (_selectedFilter.value == "All Shoes") null else _selectedFilter.value
+
+            val categoryIdFilter = getCategoryIdFromName(_selectedFilter.value)
 
             val request = ProductSearchRequest(
                 keyword = searchTerm,
-                brand = brandFilter,
+                categoryId = categoryIdFilter,
                 pageIndex = 1,
                 pageSize = DEFAULT_PAGE_SIZE
             )
+
             repository.searchProducts(request).collect { products ->
                 _products.value = products
                 _currentPage.value = 1
@@ -181,6 +185,20 @@ class ProductListViewModel(
 
                 _isLoading.value = false
             }
+        }
+    }
+
+    // ============ HELPER ============
+    /**
+     * Map tên category trên UI về đúng ID dưới database
+     */
+    private fun getCategoryIdFromName(name: String): String? {
+        return when (name) {
+            "Running" -> "1"
+            "Men's shoes" -> "2"
+            "Women's shoes" -> "3"
+            "Kid's shoes" -> "4"
+            else -> null // Tương đương với "All Shoes"
         }
     }
 }
