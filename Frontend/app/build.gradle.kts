@@ -84,6 +84,7 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.lifecycle.runtime.ktx)
     implementation("androidx.compose.material:material-icons-extended")
+    implementation("com.github.jeziellago:compose-markdown:0.5.4") // mark down for AI
     implementation(libs.activity.compose)
     implementation(platform(libs.compose.bom))
     implementation(libs.ui)
@@ -91,6 +92,11 @@ dependencies {
     implementation(libs.ui.tooling.preview)
     implementation(libs.material3)
     implementation(libs.coil.compose)
+    // WebSocker SignalR library
+    implementation("com.microsoft.signalr:signalr:8.0.0")
+    // RxJava is library attached with SignalR
+    implementation("io.reactivex.rxjava3:rxjava:3.1.8")
+    implementation("com.google.code.gson:gson:2.10.1")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.8.5")
     implementation(libs.foundation) // Icons Library
@@ -102,6 +108,8 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("com.microsoft.signalr:signalr:8.0.0")
+    implementation("com.facebook.android:facebook-login:17.0.0")
+    implementation(libs.androidx.foundation.layout)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

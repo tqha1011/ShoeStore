@@ -102,6 +102,7 @@ public class ProductService(
                     CategoryName = productEntity.Category?.Name ?? string.Empty,
                     CategoryId = productEntity.CategoryId,
                     Variants = productEntity.ProductVariants
+                        .Where(v => !v.IsDeleted)
                         .Select(v => new ProductVariantResponseDto
                         {
                             PublicId = v.PublicId,
@@ -128,36 +129,18 @@ public class ProductService(
 
     public async Task<ErrorOr<Guid>> AddProductAsync(CreateProductDto dto, CancellationToken token)
     {
-        // Create new Product entity
+        // Create new Product entity with only Name and Category
         var product = new Product
         {
-            ProductName = dto.ProductName,
-            Brand = dto.Brand ?? string.Empty,
-            CategoryId = dto.CategoryId,
-            ProductVariants = new List<ProductVariant>()
+            ProductName = dto.ProductName ?? string.Empty,
+            CategoryId = dto.CategoryId ?? 0,
+            Brand = dto.Brand ?? string.Empty
         };
-
-        foreach (var v in dto.Variants)
-        {
-            var newVariant = new ProductVariant
-            {
-                SizeId = v.SizeId,
-                ColorId = v.ColorId,
-                Stock = v.Stock,
-                Price = v.Price,
-                ImageUrl = v.ImageUrl,
-                IsSelling = v.IsSelling,
-                Product = product,
-                ProductId = product.Id,
-                IsDeleted = false
-            };
-
-            product.ProductVariants.Add(newVariant);
-        }
 
         // Add product to repository and save
         productRepository.Add(product);
         await uow.SaveChangesAsync(token);
+
         try
         {
             await cache.RemoveByTagAsync(CacheTag.Product, token);
@@ -179,60 +162,13 @@ public class ProductService(
             return Error.NotFound("Product.NotFound", $"Product with ID '{productGuid}' was not found.");
 
         // Update basic product information
-        product.ProductName = dto.ProductName;
-        product.Brand = dto.Brand ?? string.Empty;
-        product.CategoryId = dto.CategoryId;
+        product.ProductName = dto.ProductName ?? product.ProductName;
+        product.Brand = dto.Brand ?? product.Brand;
+        product.CategoryId = dto.CategoryId ?? product.CategoryId;
 
-        // Get existing variants for comparison
-        var existingVariants = product.ProductVariants.ToList();
-
-        // Process variants: update existing, add new, delete removed
-        foreach (var variantDto in dto.Variants)
-        {
-            var existingVariant = existingVariants.FirstOrDefault(v => v.PublicId == variantDto.PublicId);
-
-            if (existingVariant != null)
-            {
-                // Update existing variant
-                existingVariant.SizeId = variantDto.SizeId;
-                existingVariant.ColorId = variantDto.ColorId;
-                existingVariant.Stock = variantDto.Stock;
-                existingVariant.IsSelling = variantDto.IsSelling;
-                existingVariant.ImageUrl = variantDto.ImageUrl;
-                existingVariant.Price = variantDto.Price;
-                existingVariant.UpdatedAt = DateTime.UtcNow;
-            }
-            else
-            {
-                // if existing variant is null , it means a new product variant is added, so we will add it to the product
-                var newProductVariant = new ProductVariant
-                {
-                    SizeId = variantDto.SizeId,
-                    ColorId = variantDto.ColorId,
-                    Stock = variantDto.Stock,
-                    Price = variantDto.Price,
-                    ImageUrl = variantDto.ImageUrl,
-                    IsSelling = variantDto.IsSelling,
-                    ProductId = product.Id
-                };
-                product.ProductVariants.Add(newProductVariant);
-            }
-        }
-
-        var dtoPublicIds = dto.Variants
-            .Select(v => v.PublicId)
-            .ToHashSet();
-
-        var variantsToRemove = existingVariants
-            .Where(v => !dtoPublicIds.Contains(v.PublicId))
-            .ToList();
-
-        // soft delete
-        foreach (var variant in variantsToRemove) variant.IsDeleted = true;
-
-        // Update product in repository and save
         productRepository.Update(product);
         await uow.SaveChangesAsync(token);
+
         try
         {
             await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
@@ -240,7 +176,7 @@ public class ProductService(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error while updating product.");
+            logger.LogError(ex, "Error while updating product cache.");
         }
 
         return Result.Updated;
@@ -256,7 +192,15 @@ public class ProductService(
             return Error.NotFound("Product.NotFound", $"Product with ID {productGuid} not found.");
 
         // Soft delete: mark all variants as deleted
-        foreach (var variant in product.ProductVariants) variant.IsDeleted = true;
+        foreach (var variant in product.ProductVariants)
+        {
+            variant.IsDeleted = true;
+            variant.IsSelling = false; // Also mark as not selling to prevent it from showing up in searches
+        }
+
+        product.IsDeleted = true;
+
+        productRepository.Update(product);
         await uow.SaveChangesAsync(token);
         try
         {
@@ -271,34 +215,34 @@ public class ProductService(
         return Result.Deleted;
     }
 
-    public async Task<ErrorOr<PageResult<ProductAdminRespone>>> GetProductsAdminAsync(ProductAdminRequestDto request, CancellationToken token)
+    public async Task<ErrorOr<PageResult<ProductAdminResponse>>> GetProductsAdminAsync(ProductAdminRequestDto request,
+        CancellationToken token)
     {
         var query = productRepository.GetAll().ApplyStock(request).AsNoTracking();
 
         var totalCount = await query.CountAsync(token);
 
-        var products = await query.Select(p => new ProductAdminRespone
-        {
-            PublicID = p.PublicId,
-            ProductName = p.ProductName,
-            Variants = p.ProductVariants
+        var products = await query
+            .ApplyPaging(request.PageIndex, request.PageSize)
+            .Select(p => new ProductAdminResponse
+            {
+                PublicId = p.PublicId,
+                ProductName = p.ProductName,
+                Variants = p.ProductVariants
                     .Where(v => v.IsSelling && !v.IsDeleted)
-                    .Select(v => new ProductVariantAdminResponeDto
+                    .Select(v => new ProductVariantAdminResponseDto
                     {
-                        imgUrl = v.ImageUrl,
+                        ImgUrl = v.ImageUrl ?? string.Empty,
                         Price = v.Price,
                         Stock = v.Stock,
                         StockStatus = v.Stock <= 0 ? "Out of Stock" :
-                              v.Stock < 10 ? "Low Stock" : "In Stock"
+                            v.Stock < 10 ? "Low Stock" : "In Stock"
                     })
                     .ToList()
-        }).ToListAsync(token);
-
-        if (products == null || products.Count == 0)
-            return Error.NotFound("Product not found");
-        var pageResult = new PageResult<ProductAdminRespone>
+            }).ToListAsync(token);
+        var pageResult = new PageResult<ProductAdminResponse>
         {
-            Items = products,
+            Items = products.Count == 0 ? [] : products,
             TotalCount = totalCount,
             PageNumber = request.PageIndex,
             PageSize = request.PageSize

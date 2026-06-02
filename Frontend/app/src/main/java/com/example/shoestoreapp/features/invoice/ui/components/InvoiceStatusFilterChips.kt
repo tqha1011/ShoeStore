@@ -26,7 +26,7 @@ private val defaultFilters = listOf(
     InvoiceStatus.PAID,
     InvoiceStatus.DELIVERING,
     InvoiceStatus.DELIVERED,
-    InvoiceStatus.CANCELED
+    InvoiceStatus.CANCELLED
 )
 
 data class InvoiceStatusFilterChipDimensions(

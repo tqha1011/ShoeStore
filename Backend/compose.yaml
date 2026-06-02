@@ -1,44 +1,95 @@
 ﻿services:
-  shoestore.api:
-    image: hatranquang2006/shoestore-api:${TAG:-latest}
-    container_name: ShoeStore_api
-    build:
-      context: .
-      dockerfile: src/ShoeStore.Api/Dockerfile
-    
-    environment:
-      - ConnectionStrings__DefaultConnection=${DEFAULT_CONNECTION}
-      - Jwt__Key=${JWT_KEY}
-      - Jwt__Issuer=${JWT_ISSUER}
-      - Jwt__Audience=${JWT_AUDIENCE}
-      - GoogleAuthentication__ClientId=${GOOGLEAUTHENTICATION_CLIENTID}
-      - FacebookAuthentication__Url=${FACEBOOKAUTHENTICATION_URL}
-      - GoogleAuthentication__AppPassword=${GOOGLEAUTHENTICATION_APPPASSWORD}
-      - Cloudinary__CloudName=${CLOUDINARY_CLOUDNAME}
-      - Cloudinary__ApiKey=${CLOUDINARY_APIKEY}
-      - Cloudinary__ApiSecret=${CLOUDINARY_APISECRET}
-      - Cloudinary__UploadPreset=${CLOUDINARY_UPLOADPRESET}
-      - Sepay__ApiKey=${SEPAY_APIKEY}
-      - ConnectionStrings__RedisConnection=${REDIS_CONNECTION}
-    
-    ports:
-      - "8080:8080"
-    networks:
-      - frontend
-      - backend
+#  shoestore.api:
+#    image: hatranquang2006/shoestore-api:${TAG:-latest}
+#    container_name: ShoeStore_api
+#    build:
+#      context: .
+#      dockerfile: src/ShoeStore.Api/Dockerfile
+#    
+#    env_file:
+#      - .env
+#    
+#    environment:
+#      - ASPNETCORE_URLS=http://+:8080
+#    #      - ASPNETCORE_ENVIRONMENT=Development
+#
+#    networks:
+#      - shoestore-frontend
+#      - shoestore-backend
+#    
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
+  
+  #    develop:
+  #      watch:
+  #        - action: sync
+  #          path: ./src
+  #          target: ./src
   
   cache:
     image: redis:8.6.1-alpine
     container_name: shoestore_cache
-    ports:
-      - "6379:6379"
     networks:
-      - backend
-
+      - shoestore-backend
+    
+    volumes:
+      - redis_shoestore_data:/data
+    command:
+      redis-server --requirepass ${ConnectionStrings__RedisPassword}
+  
+  redis_exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: shoestore_redis_exporter
+    networks:
+      - shoestore-backend
+    environment:
+      - REDIS_ADDR=redis://shoestore_cache:6379
+      - REDIS_PASSWORD=${ConnectionStrings__RedisPassword}
+  
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: shoestore_prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+      - shoestore-backend
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-remote-write-receiver'
+  
+  grafana:
+    image: grafana/grafana:latest
+    container_name: shoestore_grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring
+      - shoestore-backend
+    environment:
+      - GF_SECURITY_ADMIN_USER=${Grafana__Admin__User:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${Grafana__Admin__Password:-admin}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
 
 networks:
-  frontend:
+  shoestore-frontend:
     driver: bridge
-  backend:
+  shoestore-backend:
     driver: bridge
+  monitoring:
+    driver: bridge
+
+volumes:
+  redis_shoestore_data:
+  grafana_data:
+  prometheus_data:
+  
 

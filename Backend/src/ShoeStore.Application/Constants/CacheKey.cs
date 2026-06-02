@@ -47,6 +47,11 @@ public static class CacheKey
         return $"shoestore:product:details:{productGuid}";
     }
 
+    public static string GenerateStatisticsCacheKey(DateTime date, string type)
+    {
+        return $"shoestore:statistics:{type}:{date:yyyyMMdd}";
+    }
+
     private static string GenerateMd5Hash(string input)
     {
         var inputBytes = Encoding.UTF8.GetBytes(input);

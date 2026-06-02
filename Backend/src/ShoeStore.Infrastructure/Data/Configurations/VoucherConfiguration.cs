@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ShoeStore.Domain.Entities;
+using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Infrastructure.Data.Configurations;
 
@@ -35,7 +36,7 @@ public class VoucherConfiguration : IEntityTypeConfiguration<Voucher>
             .HasColumnType("timestamp with time zone");
 
         builder.Property(c => c.Discount)
-            .HasColumnType("numeric(5,4)")
+            .HasColumnType("numeric(18,2)")
             .HasDefaultValue(0)
             .IsRequired();
 
@@ -61,5 +62,11 @@ public class VoucherConfiguration : IEntityTypeConfiguration<Voucher>
 
         builder.Property(c => c.MaxPriceDiscount)
             .HasColumnType("numeric(18,2)");
+
+        builder.Property<uint>("Version")
+            .IsRowVersion();
+
+        builder.Property(c => c.ReleaseType)
+            .HasDefaultValue(ReleaseType.AutoAssign);
     }
 }

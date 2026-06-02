@@ -1,0 +1,138 @@
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
+using Moq;
+using ShoeStore.Application.DTOs.ChatBotDTOs;
+using ShoeStore.Application.Interface.ChatBotInterface;
+using ShoeStore.Application.Interface.Common;
+using ShoeStore.Application.Interface.StatisticsInterface;
+using ShoeStore.Application.Interface.UserInterface;
+using ShoeStore.Application.Services;
+using ShoeStore.Domain.Enum;
+using ChatMessage = ShoeStore.Domain.Entities.ChatMessage;
+
+namespace ShoeStore.Tests.Unit.Services.ChatBotServiceTests;
+
+public class ChatAskAboutProductsAsyncTests
+{
+    private readonly Mock<IChatCompletionService> _chatCompletionService = new();
+    private readonly Mock<IChatMessageRepository> _chatMessageRepository = new();
+    private readonly Mock<IChatSessionRepository> _chatSessionRepository = new();
+    private readonly Kernel _kernel = Kernel.CreateBuilder().Build();
+    private readonly Mock<IMasterDataPluginService> _masterDataPluginService = new();
+    private readonly Mock<IProductPluginService> _productPluginService = new();
+    private readonly Mock<IUpdateTitleQueue> _queue = new();
+    private readonly ChatBotService _service;
+    private readonly Mock<IStatisticsService> _statisticsService = new();
+    private readonly IStoreAssistantPluginService _storeAssistantPluginService = new FakeStoreAssistantPluginService();
+    private readonly Mock<IUnitOfWork> _unitOfWork = new();
+    private readonly Mock<IUserRepository> _userRepository = new();
+
+    public ChatAskAboutProductsAsyncTests()
+    {
+        _service = new ChatBotService(
+            _statisticsService.Object,
+            _chatCompletionService.Object,
+            _chatMessageRepository.Object,
+            _chatSessionRepository.Object,
+            _unitOfWork.Object,
+            _userRepository.Object,
+            _queue.Object,
+            _kernel,
+            _productPluginService.Object,
+            _masterDataPluginService.Object,
+            _storeAssistantPluginService);
+    }
+
+    [Fact]
+    public async Task ChatAskAboutProductsAsync_WhenSessionNotFound_ReturnsNotFound()
+    {
+        // Arrange
+        var request = new ChatMessageRequestDto("What shoes are trending?");
+        var publicUserId = Guid.NewGuid();
+        _userRepository
+            .Setup(r => r.GetUserIdByPublicIdAsync(publicUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+        _chatSessionRepository
+            .Setup(r => r.GetChatSessionIdByPublicIdAsync(It.IsAny<Guid>(), It.IsAny<int>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync((int?)null);
+
+        // Act
+        var result =
+            await _service.ChatAskAboutProductsAsync(Guid.NewGuid(), request, publicUserId, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsError);
+        Assert.Equal("ChatSession.NotFound", result.FirstError.Code);
+        _chatMessageRepository.Verify(r => r.Add(It.IsAny<ChatMessage>()), Times.Never);
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ChatAskAboutProductsAsync_WhenValidRequest_ReturnsStreamAndPersistsMessages()
+    {
+        // Arrange
+        var request = new ChatMessageRequestDto("Any shoes available?");
+        var sessionPublicId = Guid.NewGuid();
+        var publicUserId = Guid.NewGuid();
+        const int sessionId = 33;
+
+        _userRepository
+            .Setup(r => r.GetUserIdByPublicIdAsync(publicUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(1);
+        _chatSessionRepository
+            .Setup(r => r.GetChatSessionIdByPublicIdAsync(sessionPublicId, It.IsAny<int>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(sessionId);
+        _chatMessageRepository
+            .Setup(r => r.GetHistoryChatMessageAsync(sessionId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ChatMessage>());
+        _chatCompletionService
+            .Setup(s => s.GetStreamingChatMessageContentsAsync(
+                It.IsAny<ChatHistory>(),
+                It.IsAny<PromptExecutionSettings>(),
+                It.IsAny<Kernel>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(BuildStreamingResponse("No ", "products"));
+
+        // Act
+        var result =
+            await _service.ChatAskAboutProductsAsync(sessionPublicId, request, publicUserId, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsError);
+
+        var output = string.Empty;
+        await foreach (var chunk in result.Value)
+        {
+            output += chunk;
+            if (output == "No products") break;
+        }
+
+        Assert.Equal("No products", output);
+        _chatMessageRepository.Verify(r => r.Add(It.Is<ChatMessage>(m =>
+            m.Role == ChatBotRole.User && m.Content == request.Content && m.SessionId == sessionId)), Times.Once);
+        _chatMessageRepository.Verify(r => r.Add(It.Is<ChatMessage>(m =>
+            m.Role == ChatBotRole.Assistant && m.SessionId == sessionId)), Times.Once);
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    private static async IAsyncEnumerable<StreamingChatMessageContent> BuildStreamingResponse(
+        params string[] chunks)
+    {
+        foreach (var chunk in chunks)
+        {
+            yield return new StreamingChatMessageContent(AuthorRole.Assistant, chunk);
+            await Task.Yield();
+        }
+    }
+
+    private sealed class FakeStoreAssistantPluginService : IStoreAssistantPluginService
+    {
+        [KernelFunction("search-store-inventory")]
+        public Task<string> SearchInventory(string keyword, CancellationToken token)
+        {
+            return Task.FromResult(string.Empty);
+        }
+    }
+}

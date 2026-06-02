@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.SignalR;
@@ -27,6 +28,7 @@ namespace ShoeStore.Api.Controllers;
 [Route("api/payment")]
 [ApiController]
 [EnableRateLimiting("limit-per-user")]
+[ApiVersion(1)]
 public class PaymentController(
     IConfiguration configuration,
     IPaymentService paymentService,
@@ -125,7 +127,7 @@ public class PaymentController(
                 $"Payment of {amount:#,##0} VND for order #{orderCode} has been successfully received.";
             var paymentNotification = new PaymentNotificationDto(message, amount, orderCode, true, DateTime.UtcNow);
 
-            await hubContext.Clients.Group(orderCode).ReceiveNotification(paymentNotification);
+            await hubContext.Clients.Group(orderCode).ReceivePaymentNotification(paymentNotification);
         }
 
         return Ok(new

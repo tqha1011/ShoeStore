@@ -2,12 +2,18 @@ using System.Reflection;
 using FluentValidation;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.AddressInterface;
 using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Interface.CartItemInterface;
+using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.CheckoutInterface;
+using ShoeStore.Application.Interface.InvoiceInterface;
 using ShoeStore.Application.Interface.MasterDataInterface;
 using ShoeStore.Application.Interface.ProductInterface;
+using ShoeStore.Application.Interface.ProfileInterface;
 using ShoeStore.Application.Interface.StatisticsInterface;
+using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Application.Services;
 
 namespace ShoeStore.Application.DependencyInjection;
@@ -27,6 +33,17 @@ public static class DependencyInjection
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IStatisticsService, StatisticsService>();
         services.AddScoped<IMasterDataService, MasterDataService>();
+        services.AddScoped<IUserVoucherService, UserVoucherService>();
+        services.AddScoped<IChatBotService, ChatBotService>();
+        services.AddScoped<IChatSessionService, ChatSessionService>();
+        services.AddScoped<IProductEmbeddingService, ProductEmbeddingService>();
+        services.AddScoped<IProfileService, ProfileService>();
+        services.AddScoped<IInvoiceService, InvoiceService>();
+        services.AddScoped<IVoucherService, VoucherService>();
+        services.AddScoped<ICurrentUser, CurrentUser>();
+        services.AddScoped<IAddressService, AddressService>();
+        services.AddScoped<IChatMessageService, ChatMessageService>();
+        services.AddSingleton<IUpdateTitleQueue, UpdateTitleService>();
         return services;
     }
 }

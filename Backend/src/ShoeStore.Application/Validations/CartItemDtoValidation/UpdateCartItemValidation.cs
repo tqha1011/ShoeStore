@@ -14,9 +14,5 @@ public class UpdateCartItemValidation : AbstractValidator<UpdateCartItemDto>
         RuleFor(x => x.Quantity)
             .NotEmpty().WithMessage("Quantity is required.")
             .GreaterThanOrEqualTo(0).WithMessage("Quantity must be greater than or equal to 0.");
-
-        RuleFor(x => x.NewProductVariantId)
-            .NotEmpty()
-            .WithMessage("NewProductVariantId is required.");
     }
 }

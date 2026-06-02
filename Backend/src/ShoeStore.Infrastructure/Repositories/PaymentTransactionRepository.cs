@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using ShoeStore.Application.Interface;
+using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Infrastructure.Data;
 
@@ -12,5 +12,10 @@ public class PaymentTransactionRepository(AppDbContext context)
         CancellationToken token)
     {
         return await DbSet.Where(p => p.OrderCode == orderCode).ToListAsync(token);
+    }
+
+    public Task<bool> CheckPaymentTransactionExistsAsync(string orderCode, decimal finalPrice, CancellationToken token)
+    {
+        return DbSet.AnyAsync(p => p.OrderCode == orderCode && p.Amount >= finalPrice, token);
     }
 }

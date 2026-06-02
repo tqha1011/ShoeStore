@@ -1,17 +1,21 @@
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using Asp.Versioning;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using ShoeStore.Api.Hubs;
 using ShoeStore.Api.JsonSerialize;
 using ShoeStore.Api.Middlewares;
 using ShoeStore.Application.DependencyInjection;
+using ShoeStore.Application.Interface.Hub;
 using ShoeStore.Infrastructure.Cloudinary;
 using ShoeStore.Infrastructure.DependencyInjection;
 using ShoeStore.Infrastructure.Worker;
@@ -21,7 +25,19 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi("v1", options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Info.Title = "Shoe Store API v1";
+        document.Servers?.Clear();
+        document.Servers?.Add(new OpenApiServer
+        {
+            Url = "/"
+        });
+        return Task.CompletedTask;
+    });
+});
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -29,6 +45,7 @@ builder.Services.AddControllers()
         // force .NET not to use Reflection
         // Use source generator to generate serialization code at compile time, which can improve performance and reduce memory usage
         options.JsonSerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializeContext.Default);
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
 builder.Services.AddHttpClient();
@@ -61,7 +78,14 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>(); // register glob
 builder.Services.AddApplicationServices(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHostedService<OrderCancellationService>();
-builder.Services.AddSignalR();
+builder.Services.AddHostedService<NotifyNewVoucherService>();
+builder.Services.AddHostedService<DeleteVoucherExpiredService>();
+builder.Services.AddHostedService<UpdateTitleSessionService>();
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+});
+builder.Services.AddScoped<INotifyBotResponse,NotifyBotResponse>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -113,7 +137,7 @@ builder.Services.AddRateLimiter(options =>
                 userId,
                 _ => new TokenBucketRateLimiterOptions
                 {
-                    TokenLimit = 10,
+                    TokenLimit = 15,
                     TokensPerPeriod = 3,
                     ReplenishmentPeriod = TimeSpan.FromMinutes(1)
                 });
@@ -122,7 +146,7 @@ builder.Services.AddRateLimiter(options =>
             httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
             _ => new FixedWindowRateLimiterOptions
             {
-                PermitLimit = 10,
+                PermitLimit = 15,
                 Window = TimeSpan.FromMinutes(1),
                 QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                 QueueLimit = 0
@@ -141,6 +165,21 @@ builder.Services.AddHybridCache(options =>
         Expiration = TimeSpan.FromMinutes(10)
     };
 });
+
+builder.Services.AddApiVersioning(opt =>
+    {
+        opt.AssumeDefaultVersionWhenUnspecified = true;
+        opt.DefaultApiVersion = new ApiVersion(1);
+        opt.ReportApiVersions = true;
+    })
+    .AddApiExplorer(opt =>
+    {
+        opt.GroupNameFormat = "'v'VVV";
+        opt.SubstituteApiVersionInUrl = true;
+    });
+
+
+builder.Services.AddChatBotInfrastructure(builder.Configuration);
 builder.Services.AddDistributedMemoryCache();
 /*
 var redisConnectionString = builder.Configuration.GetConnectionString("RedisConnection") ??
@@ -152,10 +191,23 @@ var app = builder.Build();
 app.UseExceptionHandler(); // use GlobalExceptionHandler middleware to handle exceptions globally
 app.UseCors("AllowAll");
 app.MapOpenApi();
-app.MapScalarApiReference();
+app.MapScalarApiReference(options =>
+{
+    options.WithTitle("Shoe Store Enterprise API");
+
+    options.WithTheme(ScalarTheme.BluePlanet);
+
+    options.WithDefaultHttpClient(ScalarTarget.Kotlin, ScalarClient.OkHttp);
+
+    options.Servers?.Add(new ScalarServer
+    (
+        "/"
+    ));
+});
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();
 app.MapHub<NotifyHub>("/hubs/notify");
+app.MapHub<NotifyBotHub>("hubs/agent/notify");
 app.Run();

@@ -1,5 +1,6 @@
 package com.example.shoestoreapp.core.networks
 import android.content.Context
+import com.example.shoestoreapp.core.utils.JwtUtils
 import com.example.shoestoreapp.core.utils.TokenManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -16,10 +17,21 @@ class AuthInterceptor(private val context: Context) : Interceptor {
         }
 
         val requestBuilder = chain.request().newBuilder()
-        token?.let {
-            requestBuilder.addHeader("Authorization", "Bearer $it")
+        val normalizedToken = JwtUtils.normalizeToken(token)
+        val isExpired = normalizedToken?.let { JwtUtils.isTokenExpired(it) } == true
+
+        if (isExpired) {
+            runBlocking { tokenManager.clearAuthInfo() }
+        } else {
+            normalizedToken?.let {
+                requestBuilder.header("Authorization", "Bearer $it")
+            }
         }
 
-        return chain.proceed(requestBuilder.build())
+        val response = chain.proceed(requestBuilder.build())
+        if (response.code == 401) {
+            runBlocking { tokenManager.clearAuthInfo() }
+        }
+        return response
     }
 }

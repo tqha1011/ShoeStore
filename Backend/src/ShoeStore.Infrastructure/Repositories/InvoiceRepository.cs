@@ -130,7 +130,9 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
 
     public async Task<Invoice?> GetByPublicIdAsync(Guid publicId, CancellationToken token)
     {
-        return await DbSet.Where(inv => inv.PublicId == publicId).Include(inv => inv.User)
+        return await DbSet.Where(inv => inv.PublicId == publicId)
+            .Include(inv => inv.User)
+            .Include(inv => inv.PaymentTransactions)
             .FirstOrDefaultAsync(token);
     }
 }

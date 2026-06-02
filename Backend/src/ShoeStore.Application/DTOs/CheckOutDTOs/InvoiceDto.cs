@@ -1,4 +1,3 @@
-using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Application.DTOs.CheckOutDTOs;
@@ -13,6 +12,8 @@ public sealed record InvoiceDto(
     decimal ShippingFee,
     decimal FinalPrice,
     DateTime CreatedAt,
-    List<Voucher?> Vouchers,
-    List<InvoiceDetail> Details
+    int PaymentId,
+    string? ShopBankCode,
+    string? ShopBankAccount,
+    string? ShopAccountName
 );

@@ -8,4 +8,6 @@ public interface ISizeRepository : IGenericRepository<ProductSize, int>
     Task<List<ProductSize>> GetProductSizesAsync(CancellationToken token);
 
     Task<bool> ProductSizeExistsAsync(decimal size, CancellationToken token);
+
+    Task<int?> GetProductSizesIdAsync(decimal size, CancellationToken token);
 }

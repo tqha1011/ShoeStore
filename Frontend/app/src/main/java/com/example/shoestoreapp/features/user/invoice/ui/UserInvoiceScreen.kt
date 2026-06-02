@@ -1,53 +1,76 @@
 package com.example.shoestoreapp.features.user.invoice.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import java.text.NumberFormat
-import java.util.Locale
-import kotlin.math.roundToLong
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
-import com.example.shoestoreapp.features.invoice.model.PaymentMethod
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipColors
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipDimensions
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipStyle
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipTypography
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChips
+import com.example.shoestoreapp.features.user.invoice.ui.components.UserInvoiceDetailsBottomSheet
+import com.example.shoestoreapp.features.user.invoice.ui.components.UserOrderCard
 import com.example.shoestoreapp.features.user.invoice.viewmodel.UserInvoiceViewModel
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
 
 @Composable
 fun UserInvoiceScreen(
-    viewModel: UserInvoiceViewModel = UserInvoiceViewModel(),
+    viewModel: UserInvoiceViewModel,
+    initialStatus: InvoiceStatus? = null,
     onTabSelected: (BottomNavTab) -> Unit = {}
 ) {
-    val selectedStatus by viewModel.selectedStatus.collectAsState()
-    val invoices by viewModel.visibleInvoices.collectAsState()
+    val state = viewModel.state
+    // Hosts transient success/error messages.
+    val snackbarHostState = remember { SnackbarHostState() }
+    // Holds the card selected for cancel confirmation.
+    var invoiceToConfirmCancel by remember { mutableStateOf<Invoice?>(null) }
+
+    LaunchedEffect(initialStatus) {
+        // Apply route filter when screen is first opened.
+        viewModel.applyInitialFilter(initialStatus)
+    }
+
+    LaunchedEffect(state.error, state.successMessage) {
+        // Consume one-time messages from ViewModel state.
+        state.error?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearTransientMessage()
+        }
+        state.successMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearTransientMessage()
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             BottomNavBar(
                 selectedTab = BottomNavTab.BAG,
@@ -58,34 +81,117 @@ fun UserInvoiceScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .background(Color.White)
-                .padding(horizontal = 16.dp)
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
                 text = "My Orders",
-                modifier = Modifier.padding(top = 16.dp, bottom = 12.dp),
                 color = Color.Black,
-                fontWeight = FontWeight.Black,
-                fontSize = 28.sp
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold
             )
 
             UserInvoiceFilterRow(
-                selectedStatus = selectedStatus,
-                onFilterSelected = viewModel::onFilterChange
+                selectedStatus = state.selectedStatus,
+                onFilterSelected = viewModel::onFilterSelected
             )
 
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(invoices) { invoice ->
-                    UserInvoiceCard(invoice = invoice)
+            when {
+                state.isLoading -> {
+                    Text(
+                        text = "Loading orders...",
+                        color = Color(0xFF666666),
+                        fontSize = 14.sp
+                    )
+                }
+
+                state.error != null && state.invoices.isEmpty() -> {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(
+                            text = state.error,
+                            color = Color(0xFFB3261E),
+                            fontSize = 14.sp
+                        )
+                        Button(
+                            onClick = viewModel::loadInvoices,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color.Black,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text("Retry")
+                        }
+                    }
+                }
+
+                viewModel.filteredInvoices.isEmpty() -> {
+                    Text(
+                        text = "No orders found for this status.",
+                        color = Color(0xFF666666),
+                        fontSize = 14.sp
+                    )
+                }
+
+                else -> {
+                    // Main list with per-item actions.
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        items(
+                            items = viewModel.filteredInvoices,
+                            key = { invoice -> invoice.publicId }
+                        ) { invoice ->
+                            UserOrderCard(
+                                invoice = invoice,
+                                isCancelling = state.isCancelling && state.cancellingInvoicePublicId == invoice.publicId,
+                                onCancelClick = {
+                                    // Show confirm before firing cancel API.
+                                    invoiceToConfirmCancel = invoice
+                                },
+                                onDetailsClick = {
+                                    viewModel.openInvoiceDetails(invoice)
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
+    }
+
+    if (state.selectedInvoice != null) {
+        // Details sheet is driven by selectedInvoice presence.
+        UserInvoiceDetailsBottomSheet(
+            state = state,
+            onDismissRequest = viewModel::clearDetails
+        )
+    }
+
+    invoiceToConfirmCancel?.let { targetInvoice ->
+        // Confirm dialog for list-level cancel action.
+        AlertDialog(
+            onDismissRequest = { invoiceToConfirmCancel = null },
+            title = { Text(text = "Confirm cancellation") },
+            text = { Text(text = "Are you sure you want to cancel this order?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        invoiceToConfirmCancel = null
+                        viewModel.cancelInvoice(targetInvoice)
+                    }
+                ) {
+                    Text("Confirm")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { invoiceToConfirmCancel = null }) {
+                    Text("Keep order")
+                }
+            }
+        )
     }
 }
 
@@ -113,73 +219,4 @@ private fun UserInvoiceFilterRow(
             showSelectedBorder = true
         )
     )
-}
-
-@Composable
-private fun UserInvoiceCard(invoice: Invoice) {
-    Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE5E5E5))
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column {
-                    Text(
-                        text = invoice.orderCode,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                        color = Color(0xFF9D9D9D)
-                    )
-                    Text(
-                        text = invoice.createdAt,
-                        fontSize = 12.sp,
-                        color = Color(0xFF6A6A6A)
-                    )
-                    Text(
-                        text = if (invoice.paymentMethod == PaymentMethod.ONLINE) "ONLINE" else "COD",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 11.sp,
-                        color = Color(0xFF777777)
-                    )
-                }
-                Text(
-                    text = formatVnd(invoice.finalPrice),
-                    color = Color.Black,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 18.sp
-                )
-            }
-
-            Text(
-                text = invoice.shippingAddress,
-                modifier = Modifier.padding(top = 8.dp),
-                color = Color(0xFF555555),
-                fontSize = 12.sp
-            )
-
-            Text(
-                text = "Status: ${invoice.status.name}",
-                modifier = Modifier.padding(top = 6.dp),
-                color = when (invoice.status) {
-                    InvoiceStatus.PENDING -> Color(0xFF666666)
-                    InvoiceStatus.PAID -> Color(0xFF1F5FAE)
-                    InvoiceStatus.DELIVERING -> Color.Black
-                    InvoiceStatus.DELIVERED -> Color(0xFF1E7D32)
-                    InvoiceStatus.CANCELED -> Color(0xFFB3261E)
-                },
-                fontWeight = FontWeight.Bold,
-                fontSize = 12.sp
-            )
-        }
-    }
-}
-
-private fun formatVnd(price: Double): String {
-    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
-    return "${formatter.format(price.roundToLong())} ₫"
 }

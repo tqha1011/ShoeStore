@@ -5,8 +5,8 @@ namespace ShoeStore.Application.Extensions;
 
 public static class InvoiceDtoMapping
 {
-    public static InvoiceDto MapToInvoiceDto(this Invoice invoice, List<Voucher?>? vouchers,
-        List<InvoiceDetail> details)
+    public static InvoiceDto MapToInvoiceDto(this Invoice invoice, string? shopBankCode = null,
+        string? shopBankAccount = null, string? shopAccountName = null)
     {
         return new InvoiceDto(
             invoice.PublicId,
@@ -18,8 +18,10 @@ public static class InvoiceDtoMapping
             invoice.ShippingFee,
             invoice.FinalPrice,
             invoice.CreatedAt,
-            vouchers ?? [],
-            details
+            invoice.PaymentId,
+            shopBankCode,
+            shopBankAccount,
+            shopAccountName
         );
     }
 }

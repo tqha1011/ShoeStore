@@ -9,7 +9,7 @@ import com.example.shoestoreapp.features.auth.data.remote.LoginRequest
 import com.example.shoestoreapp.features.auth.data.repository.AuthRepositoryImpl
 import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
 import com.example.shoestoreapp.features.auth.presentation.components.AuthUiEvent
-import com.example.shoestoreapp.features.auth.presentation.components.BaseAuthViewModel // Nhớ check lại đường dẫn package chỗ này nhé
+import com.example.shoestoreapp.features.auth.presentation.components.BaseAuthViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -20,7 +20,7 @@ class SignInViewModel(
     tokenManager: TokenManager
 ) : BaseAuthViewModel<SignInState>(repository, tokenManager, SignInState()) {
 
-    private val _uiEvent = Channel<AuthUiEvent>()
+    private val _uiEvent = Channel<AuthUiEvent>(Channel.BUFFERED)
     val uiEvent = _uiEvent.receiveAsFlow()
 
     override fun updateLoading(isLoading: Boolean) {
@@ -93,49 +93,49 @@ class SignInViewModel(
         viewModelScope.launch {
             val currentState = _state.value
 
-            // 1. Show loading
             _state.update { it.copy(isLoading = true) }
+            try {
+                val request = LoginRequest(
+                    email = currentState.email,
+                    password = currentState.password
+                )
 
-            // 2. Prepare DTO
-            val request = LoginRequest(
-                email = currentState.email,
-                password = currentState.password
-            )
+                val result = repository.login(request)
 
-            // 3. Call API via Repository
-            val result = repository.login(request)
+                result.fold(
+                    onSuccess = { response ->
+                        val token = response.token
+                        val role = JwtUtils.getRoleFromToken(token)
 
-            // 4. Hide loading
-            _state.update { it.copy(isLoading = false) }
+                        tokenManager.saveAuthInfo(token = token, role = role)
 
-            // 5. Handle Result
-            result.fold(
-                onSuccess = { response ->
-                    val token = response.token
-                    val role = JwtUtils.getRoleFromToken(token)
-
-                    // Save Token and Role to DataStore
-                    tokenManager.saveAuthInfo(token = token, role = role)
-
-                    // Navigate based on Role for standard login
-                    if (role.uppercase() == "ADMIN") {
-                        _uiEvent.send(AuthUiEvent.NavigateToAdminHome)
-                    } else {
-                        _uiEvent.send(AuthUiEvent.NavigateToUserHome)
+                        if (role.uppercase() == "ADMIN") {
+                            _uiEvent.trySend(AuthUiEvent.NavigateToAdminHome)
+                        } else {
+                            _uiEvent.trySend(AuthUiEvent.NavigateToUserHome)
+                        }
+                    },
+                    onFailure = { error ->
+                        _state.update {
+                            it.copy(
+                                emailError = error.message,
+                                passwordError = error.message,
+                                email = "",
+                                password = "",
+                            )
+                        }
                     }
-                },
-                onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            emailError = error.message,
-                            passwordError = error.message,
-                            email = "",
-                            password = "",
-                        )
-                    }
+                )
+            } catch (_: Exception) {
+                _state.update {
+                    it.copy(
+                        emailError = "Login failed. Please try again.",
+                        passwordError = "Login failed. Please try again."
+                    )
                 }
-            )
+            } finally {
+                _state.update { it.copy(isLoading = false) }
+            }
         }
     }
 }

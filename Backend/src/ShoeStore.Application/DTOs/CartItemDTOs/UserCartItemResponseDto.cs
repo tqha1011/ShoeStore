@@ -6,7 +6,7 @@ public sealed record UserCartItemResponseDto
 
     public Guid? ProductVariantId { get; set; }
 
-    public string? ProductName { get; set; }
+    public required string ProductName { get; set; }
 
     public string? Brand { get; set; }
 
@@ -22,6 +22,10 @@ public sealed record UserCartItemResponseDto
 
     public int ColorId { get; set; }
 
-    public string? ColorName { get; set; }
+    public required string ColorName { get; set; }
     public int Quantity { get; set; }
+    
+    public bool IsSelling { get; set; }
 }
+
+public sealed record CartItemResponseDto(List<UserCartItemResponseDto> Items,decimal ShippingFee);

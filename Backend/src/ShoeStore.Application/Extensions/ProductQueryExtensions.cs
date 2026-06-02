@@ -1,4 +1,4 @@
-﻿using ShoeStore.Domain.Entities;
+﻿﻿using ShoeStore.Domain.Entities;
 using ShoeStore.Application.DTOs.ProductDTOs;
 
 namespace ShoeStore.Application.Extensions
@@ -10,7 +10,7 @@ namespace ShoeStore.Application.Extensions
             if (string.IsNullOrEmpty(keyWord)) return query;
 
             return query.Where(p =>
-                p.ProductName.Contains(keyWord)
+                p.ProductName.ToLower().Trim().Contains(keyWord.ToLower().Trim())
             );
         }
 
@@ -64,6 +64,12 @@ namespace ShoeStore.Application.Extensions
         {
             if (!productId.HasValue) return query;
             return query.Where(p => p.Id == productId.Value);
+        }
+
+        public static IQueryable<Product> ApplyCategoryId(this IQueryable<Product> query, int? categoryId)
+        {
+            if (!categoryId.HasValue) return query;
+            return query.Where(p => p.CategoryId == categoryId.Value);
         }
 
         public static IQueryable<Product> ApplyPriceRange(this IQueryable<Product> query, decimal? min, decimal? max)

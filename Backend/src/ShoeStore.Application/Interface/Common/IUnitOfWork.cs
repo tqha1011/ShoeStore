@@ -11,5 +11,5 @@ public interface IUnitOfWork
 
     public Task RollbackTransactionAsync(CancellationToken token = default);
 
-    Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> action, CancellationToken token = default);
+    Task<T> ExecuteWithStrategyAsync<T>(Func<Task<T>> action, CancellationToken token = default);
 }

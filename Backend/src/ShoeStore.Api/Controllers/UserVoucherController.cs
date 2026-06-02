@@ -1,0 +1,129 @@
+using System.Security.Claims;
+using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using ShoeStore.Application.DTOs;
+using ShoeStore.Application.DTOs.VoucherDTOs;
+using ShoeStore.Application.Interface.VoucherInterface;
+
+namespace ShoeStore.Api.Controllers;
+
+/// <summary>
+///     Controller for managing user-specific voucher operations.
+///     Provides endpoints for users to retrieve their own vouchers.
+/// </summary>
+/// <param name="userVoucherService">Service for handling user-voucher relationship operations.</param>
+[ApiController]
+[Route("api/user/vouchers")]
+[Authorize(Roles = "User")]
+[ApiVersion(1)]
+public class UserVoucherController(IUserVoucherService userVoucherService) : ControllerBase
+{
+    /// <summary>
+    ///     Retrieves all active vouchers associated with a specific user.
+    /// </summary>
+    /// <remarks>
+    ///     Requires User role authorization.
+    ///     Returns a list of vouchers that are currently valid and assigned to the user.
+    /// </remarks>
+    /// <param name="token">Cancellation token for the request.</param>
+    /// <param name="pageIndex"></param>
+    /// <param name="pageSize"></param>
+    /// <response code="200">Vouchers retrieved successfully.</response>
+    /// <response code="401">Unauthorized; user must be authenticated with User role.</response>
+    /// <response code="404">Not found; no vouchers found for the specified user.</response>
+    /// <response code="500">Internal server error; an unexpected error occurred.</response>
+    /// <returns>An action result containing a paginated list of user vouchers on success, or an error response.</returns>
+    [ProducesResponseType(typeof(PageResult<ResponseVoucherUserDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
+    [HttpGet]
+    public async Task<IActionResult> GetVouchersForUser(CancellationToken token, [FromQuery] int pageIndex = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        var userGuidString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userGuidString) || !Guid.TryParse(userGuidString, out var userGuid))
+            return Unauthorized(new
+            {
+                message = "You are not authorized to access this resource. Please log in with a valid user account."
+            });
+
+        var result = await userVoucherService.GetAllVoucherForUserAsync(userGuid, token, pageIndex, pageSize);
+        return result.Match<IActionResult>(
+            vouchers => Ok(vouchers),
+            errors => errors[0].Code switch
+            {
+                "User.NotFound" => NotFound(new
+                {
+                    message = "User not found",
+                    detail = errors[0].Description
+                }),
+                _ => BadRequest(new
+                {
+                    message = "Failed to retrieve vouchers for user",
+                    detail = errors[0].Description
+                })
+            });
+    }
+
+    /// <summary>
+    ///     Claims a voucher for the current authenticated user.
+    /// </summary>
+    /// <remarks>
+    ///     Requires User role authorization.
+    ///     The voucher is identified by its public GUID and assigned to the current user if valid.
+    /// </remarks>
+    /// <param name="publicVoucherId">Public identifier of the voucher to claim.</param>
+    /// <param name="token">Cancellation token.</param>
+    /// <response code="201">Voucher claimed successfully.</response>
+    /// <response code="400">Voucher is not valid or cannot be claimed.</response>
+    /// <response code="401">Unauthorized; user must be authenticated with User role.</response>
+    /// <response code="404">User not found.</response>
+    /// <response code="500">Internal server error; claim failed.</response>
+    /// <returns>An <see cref="IActionResult" /> indicating success or failure.</returns>
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
+    [HttpPost("claim-voucher")]
+    public async Task<IActionResult> ClaimUserVoucher([FromQuery] Guid publicVoucherId, CancellationToken token)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId) || !Guid.TryParse(userId, out var publicUserId)) return Unauthorized();
+
+        var result = await userVoucherService.ClaimUserVoucherAsync(publicUserId, publicVoucherId, token);
+        var response = result.Match<IActionResult>(
+            _ => Created(),
+            errors => errors[0].Code switch
+            {
+                "User.NotFound" => NotFound(new
+                {
+                    message = "User not found",
+                    detail = errors[0].Description
+                }),
+                "Voucher.NotValid" => BadRequest(new
+                {
+                    message = "Voucher is not valid",
+                    detail = errors[0].Description
+                }),
+                "Voucher.AlreadyClaimed" => Conflict(new
+                {
+                    message = "Voucher already claimed",
+                    detail = errors[0].Description
+                }),
+                "Voucher.ClaimedFailed" => Conflict(new
+                {
+                    message = "Voucher claimed failed",
+                    detail = errors[0].Description
+                }),
+                _ => StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "Some thing went wrong, please try again later!",
+                    detail = errors[0].Description
+                })
+            });
+        return response;
+    }
+}

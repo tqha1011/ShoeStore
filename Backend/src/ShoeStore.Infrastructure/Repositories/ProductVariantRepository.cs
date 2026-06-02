@@ -10,7 +10,8 @@ public class ProductVariantRepository(AppDbContext context)
 {
     public async Task<ProductVariant?> GetByGuidAsync(Guid productGuid, CancellationToken token)
     {
-        return await DbSet.Include(x => x.Size)
+        return await DbSet.Where(v => !v.IsDeleted)
+            .Include(x => x.Size)
             .Include(x => x.Color)
             .Include(x => x.Product)
             .FirstOrDefaultAsync(x => x.PublicId == productGuid, token);
@@ -18,12 +19,20 @@ public class ProductVariantRepository(AppDbContext context)
 
     public async Task<List<ProductVariant>> GetListVariantsAsync(List<Guid> productVariantIds, CancellationToken token)
     {
-        var variantLists = await DbSet.Where(x => productVariantIds.Contains(x.PublicId))
+        var variantLists = await DbSet.Where(x => !x.IsDeleted && productVariantIds.Contains(x.PublicId))
             .Distinct()
             .Include(x => x.Size)
             .Include(x => x.Color)
             .Include(x => x.Product)
             .ToListAsync(token);
         return variantLists;
+    }
+
+    public async Task<ProductVariant?> GetByIdWithIncludesAsync(int id, CancellationToken token)
+    {
+        return await DbSet.Include(x => x.Size)
+            .Include(x => x.Color)
+            .Include(x => x.Product)
+            .FirstOrDefaultAsync(x => x.Id == id, token);
     }
 }

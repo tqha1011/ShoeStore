@@ -1,0 +1,14 @@
+﻿using ErrorOr;
+using ShoeStore.Application.DTOs;
+using ShoeStore.Application.DTOs.VoucherDTOs;
+
+namespace ShoeStore.Application.Interface.VoucherInterface;
+
+public interface IUserVoucherService
+{
+    Task<ErrorOr<PageResult<ResponseVoucherUserDto>>> GetAllVoucherForUserAsync(Guid userGuid,
+        CancellationToken token,
+        int pageIndex = 1, int pageSize = 10);
+
+    Task<ErrorOr<Created>> ClaimUserVoucherAsync(Guid userId, Guid voucherId, CancellationToken token);
+}

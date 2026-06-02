@@ -1,69 +1,75 @@
 package com.example.shoestoreapp.features.invoice.model
 
-enum class InvoiceStatus {
-    PENDING,
-    PAID,
-    DELIVERING,
-    DELIVERED,
-    CANCELED
-}
 
-enum class PaymentMethod {
-    ONLINE,
-    COD
+enum class InvoiceStatus(val id: Int){
+    PENDING(1),
+    PAID(2),
+    CANCELLED(3),
+    DELIVERING(4),
+    DELIVERED(5)
 }
-
-data class InvoiceDetail(
-    val id: Int,
-    val publicId: String,
-    val invoiceId: Int,
-    val productVariantId: Int,
-    val quantity: Int,
-    val unitPrice: Double
-)
 
 data class Invoice(
-    val id: Int,
     val publicId: String,
-    val userId: Int,
-    val fullName: String,
-    val status: InvoiceStatus,
-    val paymentMethod: PaymentMethod,
-    val paymentId: Int,
     val orderCode: String,
-    val shippingFee: Double,
-    val finalPrice: Double,
-    val shippingAddress: String,
-    val phone: String,
-    val createdAtMillis: Long,
-    val createdAt: String,
-    val updatedAt: String,
-    val invoiceDetails: List<InvoiceDetail>
+    val userName: String,
+    val paymentMethod: String?,
+    val status: InvoiceStatus?,
+    val createdAt: String?,
+    val finalPrice: String?,
+    val address: String?,
+    val phones: String?,
+)
+// Data Details
+data class Detail (
+    val color: String,
+    val imageUrl: String,
+    val productName: String,
+    val quantity: Int,
+    val size: Int,
+    val unitPrice: Int
 )
 
-private const val ONLINE_PAYMENT_TIMEOUT_MILLIS = 30L * 60L * 1000L
-
-fun Invoice.shouldAutoCancel(nowMillis: Long = System.currentTimeMillis()): Boolean {
-    return paymentMethod == PaymentMethod.ONLINE &&
-        status == InvoiceStatus.PENDING &&
-        nowMillis - createdAtMillis >= ONLINE_PAYMENT_TIMEOUT_MILLIS
+fun InvoiceStatus.displayName(): String {
+    return when (this) {
+        InvoiceStatus.PENDING -> "Pending"
+        InvoiceStatus.PAID -> "Paid"
+        InvoiceStatus.CANCELLED -> "Cancelled"
+        InvoiceStatus.DELIVERING -> "Delivering"
+        InvoiceStatus.DELIVERED -> "Delivered"
+    }
 }
 
 fun Invoice.nextWorkflowStatus(): InvoiceStatus? {
-    return when (paymentMethod) {
-        PaymentMethod.ONLINE -> when (status) {
-            InvoiceStatus.PENDING -> InvoiceStatus.PAID
+    val currentStatus = status ?: return null
+    return when (paymentMethod?.trim()?.uppercase()) {
+        "SEPAY" -> when (currentStatus) {
+            // Paid must come from payment callback/webhook, not manual update.
+            InvoiceStatus.PENDING -> null
             InvoiceStatus.PAID -> InvoiceStatus.DELIVERING
             InvoiceStatus.DELIVERING -> InvoiceStatus.DELIVERED
-            InvoiceStatus.DELIVERED, InvoiceStatus.CANCELED -> null
+            InvoiceStatus.DELIVERED, InvoiceStatus.CANCELLED -> null
         }
 
-        PaymentMethod.COD -> when (status) {
+        "COD" -> when (currentStatus) {
             InvoiceStatus.PENDING -> InvoiceStatus.DELIVERING
             InvoiceStatus.DELIVERING -> InvoiceStatus.PAID
             InvoiceStatus.PAID -> InvoiceStatus.DELIVERED
-            InvoiceStatus.DELIVERED, InvoiceStatus.CANCELED -> null
+            InvoiceStatus.DELIVERED, InvoiceStatus.CANCELLED -> null
         }
+
+        else -> null
+    }
+}
+
+fun String?.toInvoiceStatus(): InvoiceStatus {
+    return when (this?.trim()?.uppercase()) {
+        "PENDING" -> InvoiceStatus.PENDING
+        "PAID" -> InvoiceStatus.PAID
+        "CANCELED", "CANCELLED" -> InvoiceStatus.CANCELLED
+        "DELIVERING" -> InvoiceStatus.DELIVERING
+        "DELIVERED" -> InvoiceStatus.DELIVERED
+        else -> InvoiceStatus.PENDING
     }
 }
 
