@@ -9,6 +9,8 @@ public class CreateVoucherDto
     public decimal? Discount { get; set; }
     public VoucherScope VoucherScope { get; set; } = VoucherScope.Product;
     public DiscountType DiscountType { get; set; } = DiscountType.Percentage;
+
+    public ReleaseType ReleaseType { get; set; }
     public decimal MaxPriceDiscount { get; set; }
 
     public DateTime? ValidFrom { get; set; }

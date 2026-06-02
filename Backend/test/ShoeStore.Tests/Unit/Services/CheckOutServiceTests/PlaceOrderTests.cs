@@ -8,9 +8,11 @@ using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
 using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Application.Interface.UserInterface;
+using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Application.Services;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
+using Microsoft.Extensions.Configuration;
 
 namespace ShoeStore.Tests.Unit.Services.CheckOutServiceTests;
 
@@ -27,11 +29,15 @@ public class PlaceOrderTests
     private readonly Mock<IDbTransaction> _transaction = new();
 
     private readonly Mock<IUserRepository> _userRepository = new();
+    
+    private readonly Mock<IVoucherRepository> _voucherRepository = new();
+    private readonly Mock<IConfiguration> _configuration = new();
 
     public PlaceOrderTests()
     {
         _checkOutService = new CheckOutService(_productVariantRepository.Object, _mockUow.Object,
-            _cartItemRepository.Object, _invoiceRepository.Object, _userRepository.Object);
+            _cartItemRepository.Object, _invoiceRepository.Object, _userRepository.Object,
+            _voucherRepository.Object, _configuration.Object);
     }
 
     [Fact]
@@ -202,6 +208,10 @@ public class PlaceOrderTests
             .ReturnsAsync([variant]);
         _invoiceRepository.Setup(x => x.Add(It.IsAny<Invoice>()))
             .Callback<Invoice>(invoice => addedInvoice = invoice);
+
+        _configuration.SetupGet(c => c["ShopBank:BankCode"]).Returns("VCB");
+        _configuration.SetupGet(c => c["ShopBank:BankAccount"]).Returns("0123456789");
+        _configuration.SetupGet(c => c["ShopBank:BankName"]).Returns("Vietcombank");
 
         // Act
         var result = await _checkOutService.PlaceOrderAsync(request, fakeUserId, true, CancellationToken.None);

@@ -5,8 +5,10 @@ using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
 using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Application.Interface.UserInterface;
+using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Application.Services;
 using ShoeStore.Domain.Entities;
+using Microsoft.Extensions.Configuration;
 
 namespace ShoeStore.Tests.Unit.Services.CheckOutServiceTests;
 
@@ -22,11 +24,15 @@ public class PrepareCheckOutTests
     private readonly Mock<IProductVariantRepository> _productVariantRepository = new();
 
     private readonly Mock<IUserRepository> _userRepository = new();
+    
+    private readonly Mock<IVoucherRepository> _voucherRepository = new();
+    private readonly Mock<IConfiguration> _configuration = new();
 
     public PrepareCheckOutTests()
     {
         _checkOutService = new CheckOutService(_productVariantRepository.Object, _mockUow.Object,
-            _cartItemRepository.Object, _invoiceRepository.Object, _userRepository.Object);
+            _cartItemRepository.Object, _invoiceRepository.Object, _userRepository.Object,
+            _voucherRepository.Object, _configuration.Object);
     }
 
     [Fact]
@@ -43,8 +49,12 @@ public class PrepareCheckOutTests
         _productVariantRepository
             .Setup(x => x.GetListVariantsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(fakeProductVariants);
+        _userRepository
+            .Setup(x => x.GetUserDefaultAddressAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
 
-        var result = await _checkOutService.PrepareCheckOutAsync(fakeRequest,Guid.NewGuid(),CancellationToken.None);
+        var result = await _checkOutService.PrepareCheckOutAsync(fakeRequest, Guid.NewGuid(), [],
+            CancellationToken.None);
 
         Assert.True(result.IsError);
         Assert.Equal("Variant.NotFound", result.FirstError.Code);
@@ -79,8 +89,12 @@ public class PrepareCheckOutTests
         _productVariantRepository
             .Setup(x => x.GetListVariantsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(fakeProductVariants);
+        _userRepository
+            .Setup(x => x.GetUserDefaultAddressAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
 
-        var result = await _checkOutService.PrepareCheckOutAsync(fakeRequest,Guid.NewGuid(),CancellationToken.None);
+        var result = await _checkOutService.PrepareCheckOutAsync(fakeRequest, Guid.NewGuid(), [],
+            CancellationToken.None);
 
         Assert.False(result.IsError);
         var item = Assert.Single(result.Value.Items);
@@ -116,13 +130,18 @@ public class PrepareCheckOutTests
         _productVariantRepository
             .Setup(x => x.GetListVariantsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(fakeProductVariants);
+        _userRepository
+            .Setup(x => x.GetUserDefaultAddressAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string?)null);
 
-        var result = await _checkOutService.PrepareCheckOutAsync(fakeRequest,Guid.NewGuid() ,CancellationToken.None);
+        var result = await _checkOutService.PrepareCheckOutAsync(fakeRequest, Guid.NewGuid(), [],
+            CancellationToken.None);
 
         Assert.False(result.IsError);
 
         Assert.Equal(100, result.Value.Summary.TotalPrice);
         Assert.Equal(100, result.Value.Summary.FinalPrice);
+        Assert.Equal(40000, result.Value.Summary.ShippingFee);
 
         var item = Assert.Single(result.Value.Items);
         Assert.Equal(fakeVariantId, item.VariantId);

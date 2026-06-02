@@ -7,6 +7,7 @@ import androidx.compose.ui.platform.PlatformTextInputSessionScope
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import coil.compose.AsyncImagePainter
+import com.example.shoestoreapp.core.utils.SignalRManager
 import com.example.shoestoreapp.features.agent_intelligent.data.remote.ChatSessionResponseDto
 import com.example.shoestoreapp.features.agent_intelligent.data.repository.AiChatRepository
 import com.example.shoestoreapp.features.agent_intelligent.viewmodel.ChatMessage
@@ -33,11 +34,17 @@ data class AIChatState(
 
 abstract class BaseAIViewModel(
     protected val repository: AiChatRepository,
+    protected val signalRManager: SignalRManager,
     protected val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     var state by mutableStateOf(AIChatState())
         protected set
-
+    init {
+        // Cắm ống SignalR khi mở màn hình
+        viewModelScope.launch(ioDispatcher) {
+            signalRManager.startConnection()
+        }
+    }
     // Subclasses MUST implement this to define which specific API endpoint to stream from
     protected abstract fun getStreamFlow(
         sessionId: String,

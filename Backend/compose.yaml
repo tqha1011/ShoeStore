@@ -1,33 +1,30 @@
 ﻿services:
-  shoestore.api:
-    image: hatranquang2006/shoestore-api:${TAG:-latest}
-    container_name: ShoeStore_api
-    build:
-      context: .
-      dockerfile: src/ShoeStore.Api/Dockerfile
-      target: build
-    
-    command:
-      dotnet watch run --no-hot-reload
-    
-    env_file:
-      - .env
-    
-    environment:
-      - ASPNETCORE_URLS=http://+:8080
-
-    networks:
-      - shoestore-frontend
-      - shoestore-backend
-    
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    
-    develop:
-      watch:
-        - action: sync
-          path: ./src
-          target: ./src
+#  shoestore.api:
+#    image: hatranquang2006/shoestore-api:${TAG:-latest}
+#    container_name: ShoeStore_api
+#    build:
+#      context: .
+#      dockerfile: src/ShoeStore.Api/Dockerfile
+#    
+#    env_file:
+#      - .env
+#    
+#    environment:
+#      - ASPNETCORE_URLS=http://+:8080
+#    #      - ASPNETCORE_ENVIRONMENT=Development
+#
+#    networks:
+#      - shoestore-frontend
+#      - shoestore-backend
+#    
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
+  
+  #    develop:
+  #      watch:
+  #        - action: sync
+  #          path: ./src
+  #          target: ./src
   
   cache:
     image: redis:8.6.1-alpine
@@ -39,7 +36,7 @@
       - redis_shoestore_data:/data
     command:
       redis-server --requirepass ${ConnectionStrings__RedisPassword}
-    
+  
   redis_exporter:
     image: oliver006/redis_exporter:latest
     container_name: shoestore_redis_exporter
@@ -48,7 +45,7 @@
     environment:
       - REDIS_ADDR=redis://shoestore_cache:6379
       - REDIS_PASSWORD=${ConnectionStrings__RedisPassword}
-    
+  
   prometheus:
     image: prom/prometheus:latest
     container_name: shoestore_prometheus
@@ -81,33 +78,6 @@
       - grafana_data:/var/lib/grafana
     depends_on:
       - prometheus
-  
-  nginx:
-    image: nginx:1.31.0-alpine
-    container_name: shoestore_nginx
-    depends_on:
-      - shoestore.api
-    
-    ports:
-      - "8080:80"
-    environment:
-      - BACKEND_HOST=shoestore.api
-      - BACKEND_PORT=8080
-
-    networks:
-      - shoestore-backend
-      - shoestore-frontend
-    
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro # ro = read-only for security
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-    
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nginx", "-t"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
 networks:
   shoestore-frontend:
@@ -116,7 +86,7 @@ networks:
     driver: bridge
   monitoring:
     driver: bridge
-    
+
 volumes:
   redis_shoestore_data:
   grafana_data:

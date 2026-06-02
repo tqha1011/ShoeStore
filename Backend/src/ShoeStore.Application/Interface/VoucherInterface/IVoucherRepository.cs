@@ -11,4 +11,6 @@ public interface IVoucherRepository : IGenericRepository<Voucher, int>
     Task<Voucher?> CheckVoucherValidateAsync(Guid voucherGuid, CancellationToken token);
 
     IQueryable<Voucher> GetValidVouchers();
+
+    Task<Dictionary<int, Voucher>> GetVouchersByIdsAsync(List<int> voucherGuids, CancellationToken token);
 }
