@@ -134,25 +134,10 @@ class EditProfileViewModel(
                     }
                 }
                 .onFailure { throwable ->
-                    var realErrorMessage = "Update failed."
-                    if (throwable is HttpException) {
-                        try {
-                            val errorBodyString = throwable.response()?.errorBody()?.string()
-                            if (!errorBodyString.isNullOrEmpty()) {
-                                val jsonObject = JSONObject(errorBodyString)
-                                if (jsonObject.has("title")) {
-                                    realErrorMessage = jsonObject.getString("title")
-                                } else if (jsonObject.has("message")) {
-                                    realErrorMessage = jsonObject.getString("message")
-                                } else {
-                                    realErrorMessage = errorBodyString
-                                }
-                            }
-                        } catch (e: Exception) {
-                            realErrorMessage = "Server error: HTTP ${throwable.code()}"
-                        }
+                    val realErrorMessage = if (throwable is HttpException) {
+                        parseValidationError(throwable)
                     } else {
-                        realErrorMessage = throwable.message ?: "Update failed."
+                        throwable.message ?: "Update failed."
                     }
 
                     _uiState.update {
@@ -195,6 +180,42 @@ class EditProfileViewModel(
             }
         } catch (e: Exception) {
             raw to ""
+        }
+    }
+
+    // Hàm phụ trợ lấy lỗi chi tiết
+    private fun parseValidationError(exception: HttpException): String {
+        return try {
+            val errorString = exception.response()?.errorBody()?.string()
+            if (!errorString.isNullOrEmpty()) {
+                val jsonObject = JSONObject(errorString)
+
+                // Ưu tiên 1: Vào mảng errors để lấy lỗi chi tiết
+                if (jsonObject.has("errors")) {
+                    val errorsObj = jsonObject.getJSONObject("errors")
+                    val keys = errorsObj.keys()
+                    if (keys.hasNext()) {
+                        val firstKey = keys.next()
+                        val errorArray = errorsObj.getJSONArray(firstKey)
+                        if (errorArray.length() > 0) {
+                            return errorArray.getString(0)
+                        }
+                    }
+                }
+
+                // Ưu tiên 2: Nếu không có mảng errors thì lấy title
+                if (jsonObject.has("title")) {
+                    return jsonObject.getString("title")
+                }
+
+                // Ưu tiên 3: Lấy message thông thường
+                if (jsonObject.has("message")) {
+                    return jsonObject.getString("message")
+                }
+            }
+            "Update failed (HTTP ${exception.code()})"
+        } catch (e: Exception) {
+            "Update failed (HTTP ${exception.code()})"
         }
     }
 }

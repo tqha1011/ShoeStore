@@ -6,10 +6,12 @@ import com.example.shoestoreapp.features.user.profile.data.remote.UpdateProfileD
 import com.example.shoestoreapp.features.user.profile.data.remote.ChangePasswordDto
 import com.example.shoestoreapp.features.user.profile.data.remote.toUserProfile
 import com.example.shoestoreapp.features.user.profile.data.models.UserProfile
+import retrofit2.HttpException
 
 class ProfileRepositoryImpl(
     private val api: ProfileApi = RetrofitInstance.profileApi
 ) : ProfileRepository {
+
     override suspend fun getUserProfile(): Result<UserProfile> {
         return try {
             val response = api.getUserProfile()
@@ -17,7 +19,7 @@ class ProfileRepositoryImpl(
                 response.body()?.let { Result.success(it.toUserProfile()) }
                     ?: Result.failure(Exception("Empty response body."))
             } else {
-                Result.failure(Exception("Fetch profile failed (HTTP ${response.code()})"))
+                Result.failure(HttpException(response))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -30,7 +32,7 @@ class ProfileRepositoryImpl(
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("Update profile failed (HTTP ${response.code()})"))
+                Result.failure(HttpException(response))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -43,7 +45,7 @@ class ProfileRepositoryImpl(
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("Change password failed (HTTP ${response.code()})"))
+                Result.failure(HttpException(response))
             }
         } catch (e: Exception) {
             Result.failure(e)
