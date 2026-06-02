@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -54,6 +55,12 @@ fun BottomNavBar(
             onClick = { onTabSelected(BottomNavTab.VOUCHER) }
         )
 
+        BottomNavItem(
+            icon = Icons.Filled.ShoppingBag,
+            label = "Bag",
+            isSelected = selectedTab == BottomNavTab.BAG,
+            onClick = { onTabSelected(BottomNavTab.BAG) }
+        )
 
         BottomNavItem(
             icon = Icons.Filled.Person,

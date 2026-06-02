@@ -107,7 +107,6 @@ dependencies {
     implementation(libs.androidx.foundation.layout)
     implementation(libs.androidx.material3)
     implementation("io.coil-kt:coil-compose:2.6.0")
-    implementation("com.microsoft.signalr:signalr:8.0.0")
     implementation("com.facebook.android:facebook-login:17.0.0")
     implementation(libs.androidx.foundation.layout)
     testImplementation(libs.junit)

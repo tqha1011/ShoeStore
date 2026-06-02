@@ -1,9 +1,11 @@
 package com.example.shoestoreapp
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
@@ -16,39 +18,55 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.shoestoreapp.core.networks.RetrofitInstance
-import com.example.shoestoreapp.features.user.product.ui.product_detail.ProductDetailScreen
-import com.example.shoestoreapp.features.user.product.ui.product_list.ProductListScreen
-import com.example.shoestoreapp.features.user.cart.ui.screens.CartScreen
-import com.example.shoestoreapp.features.user.cart.viewmodel.CartViewModel
-import com.example.shoestoreapp.features.user.checkout.ui.screens.CheckoutScreen
-import com.example.shoestoreapp.features.user.checkout.ui.screens.PaymentQRScreen
-import com.example.shoestoreapp.features.user.voucher.ui.screens.CollectVoucherScreen
+import com.example.shoestoreapp.core.utils.JwtUtils
+import com.example.shoestoreapp.core.utils.SignalRManager
+import com.example.shoestoreapp.core.utils.TokenManager
+import com.example.shoestoreapp.features.admin.addproduct.data.repositories.MasterDataRepository
+import com.example.shoestoreapp.features.admin.addproduct.ui.AdminProductCrudScreen
+import com.example.shoestoreapp.features.admin.addproduct.viewmodel.AdminAddProductViewModel
+import com.example.shoestoreapp.features.admin.addproduct.viewmodel.FetchMasterDataViewModel
+import com.example.shoestoreapp.features.admin.ai_assistant.ui.AiStrategyScreen
+import com.example.shoestoreapp.features.admin.ai_assistant.viewmodel.AiStrategyViewmodel
+import com.example.shoestoreapp.features.admin.analytics.data.AnalyticsRepository
+import com.example.shoestoreapp.features.admin.analytics.ui.AdminAnalyticsScreen
+import com.example.shoestoreapp.features.admin.analytics.viewmodel.AdminAnalyticsViewModel
+import com.example.shoestoreapp.features.admin.invoice.data.AdminInvoiceRepository
 import com.example.shoestoreapp.features.admin.invoice.ui.AdminInvoiceScreen
+import com.example.shoestoreapp.features.admin.invoice.viewmodel.AdminInvoiceViewmodel
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
-import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
-import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
-import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewModel
-import com.example.shoestoreapp.features.user.invoice.ui.UserInvoiceScreen
-import com.example.shoestoreapp.features.user.profile.ui.screens.ChangePasswordScreen
-import com.example.shoestoreapp.features.user.profile.ui.screens.EditProfileScreen
-import com.example.shoestoreapp.features.user.profile.ui.screens.ManageAddressScreen
-import com.example.shoestoreapp.features.user.profile.ui.screens.UserProfileScreen
 import com.example.shoestoreapp.features.admin.product.ui.screens.AdminProductListScreen
+import com.example.shoestoreapp.features.admin.product.viewmodel.AdminProductListViewModel
 import com.example.shoestoreapp.features.admin.profile.ui.AdminProfileScreen
 import com.example.shoestoreapp.features.admin.voucher.ui.screen.VoucherManagementScreen
-import com.example.shoestoreapp.features.admin.product.viewmodel.AdminProductListViewModel
-import com.example.shoestoreapp.features.admin.addproduct.ui.AdminProductCrudScreen
-import com.example.shoestoreapp.features.admin.addproduct.data.repositories.MasterDataRepository
+import com.example.shoestoreapp.features.agent_intelligent.data.repository.AiChatRepository
+import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.CreateNewPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenContent
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
 import com.example.shoestoreapp.features.auth.presentation.welcome.WelcomeScreen
-import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.CreateNewPasswordScreen
-import com.example.shoestoreapp.core.utils.TokenManager
-import com.example.shoestoreapp.features.admin.addproduct.viewmodel.AdminAddProductViewModel
-import com.example.shoestoreapp.features.admin.addproduct.viewmodel.FetchMasterDataViewModel
+import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
+import com.example.shoestoreapp.features.user.ai_assistant.ui.AiProductScreen
+import com.example.shoestoreapp.features.user.ai_assistant.viewmodel.AiProductViewmodel
+import com.example.shoestoreapp.features.user.cart.ui.screens.CartScreen
+import com.example.shoestoreapp.features.user.cart.viewmodel.CartViewModel
+import com.example.shoestoreapp.features.user.checkout.ui.screens.CheckoutScreen
+import com.example.shoestoreapp.features.user.checkout.ui.screens.PaymentQRScreen
+import com.example.shoestoreapp.features.user.invoice.data.UserInvoiceRepository
+import com.example.shoestoreapp.features.user.invoice.ui.UserInvoiceScreen
+import com.example.shoestoreapp.features.user.invoice.viewmodel.UserInvoiceViewModel
+import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
+import com.example.shoestoreapp.features.user.product.ui.product_detail.ProductDetailScreen
+import com.example.shoestoreapp.features.user.product.ui.product_list.ProductListScreen
+import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
+import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewModel
+import com.example.shoestoreapp.features.user.profile.ui.screens.ChangePasswordScreen
 import com.example.shoestoreapp.features.user.profile.ui.screens.CreateAddressScreen
+import com.example.shoestoreapp.features.user.profile.ui.screens.EditProfileScreen
+import com.example.shoestoreapp.features.user.profile.ui.screens.ManageAddressScreen
+import com.example.shoestoreapp.features.user.profile.ui.screens.UserProfileScreen
+import com.example.shoestoreapp.features.user.voucher.ui.screens.CollectVoucherScreen
 import com.example.shoestoreapp.features.user.voucher.ui.screens.MyVoucherScreen
+import com.facebook.login.LoginManager
 import kotlinx.coroutines.launch
 
 private object Routes {
@@ -62,24 +80,30 @@ private object Routes {
     const val CART = "cart"
     const val CHECKOUT = "checkout"
     const val PAYMENT_QR = "payment_qr"
-    const val USER_INVOICE_LIST = "user_invoice_list"
+    const val USER_INVOICE_LIST_BASE = "user_invoice_list"
+    const val USER_INVOICE_LIST = "$USER_INVOICE_LIST_BASE?status={status}"
     const val USER_PROFILE = "user_profile"
     const val USER_EDIT_PROFILE = "user_edit_profile"
     const val USER_CHANGE_PASSWORD = "user_change_password"
     const val USER_COLLECT_VOUCHERS = "user_collect_vouchers"
     const val USER_MANAGE_ADDRESS = "user_manage_address"
-
     const val USER_CREATE_ADDRESS = "user_create_address"
     const val ADMIN_PRODUCT_LIST = "admin_product_list"
     const val ADMIN_CRUD = "admin_crud"
     const val ADMIN_EDIT_PRODUCT = "admin_edit_product/{productId}"
     const val ADMIN_INVOICE_LIST = "admin_invoice_list"
+    const val ADMIN_ANALYTICS = "admin_analytics"
     const val ADMIN_VOUCHER_MANAGEMENT = "admin_voucher_management"
     const val ADMIN_PROFILE = "admin_profile"
     const val ADMIN_EDIT_PROFILE = "admin_edit_profile"
     const val ADMIN_CHANGE_PASSWORD = "admin_change_password"
 
     const val USER_MY_VOUCHERS = "user_my_vouchers?isSelectionMode={isSelectionMode}&cartTotal={cartTotal}"
+
+    const val ADMIN_AI_ASSISTANT_BASE = "admin_ai_assistant"
+    const val ADMIN_AI_ASSISTANT = "$ADMIN_AI_ASSISTANT_BASE?isGeneratingCampaign={isGeneratingCampaign}"
+    const val USER_AI_ASSISTANT_BASE = "user_ai_assistant"
+    const val USER_AI_ASSISTANT = "$USER_AI_ASSISTANT_BASE?isGenerateProduct={isGeneratingProduct}"
 
     fun userMyVouchers(isSelectionMode: Boolean = false, cartTotal: Double? = null): String {
         return if (cartTotal != null) {
@@ -91,10 +115,22 @@ private object Routes {
 
     fun createNewPassword(email: String, otp: String): String = "create_new_password/$email/$otp"
     fun adminEditProduct(productId: String): String = "admin_edit_product/$productId"
+
+    fun userInvoiceList(status: InvoiceStatus? = null): String {
+        return if (status == null) USER_INVOICE_LIST_BASE else "$USER_INVOICE_LIST_BASE?status=${status.name}"
+    }
+
+    fun adminAiAssistant(isGeneratingCampaign: Boolean = false): String {
+        return "$ADMIN_AI_ASSISTANT_BASE?isGeneratingCampaign=$isGeneratingCampaign"
+    }
+    fun userAiAssistant(isGeneratingProduct: Boolean = false): String {
+        return "$USER_AI_ASSISTANT_BASE?isGenerateProduct=$isGeneratingProduct"
+    }
 }
 
 @Suppress("DEPRECATION")
 class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         RetrofitInstance.init(this)
         super.onCreate(savedInstanceState)
@@ -107,11 +143,28 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavHost() {
     val navController = rememberNavController()
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
+    val token by tokenManager.getToken.collectAsState(initial = "LOADING")
+
+    LaunchedEffect(token) {
+        if (token == "LOADING") return@LaunchedEffect
+        if (token.isNullOrBlank()) {
+            val currentRoute = navController.currentDestination?.route
+            if (currentRoute != Routes.SIGN_IN && currentRoute != Routes.WELCOME) {
+                navController.navigateAfterLogout()
+            }
+            return@LaunchedEffect
+        }
+        if (JwtUtils.isTokenExpired(token)) {
+            tokenManager.clearAuthInfo()
+            navController.navigateAfterLogout()
+        }
+    }
 
     NavHost(
         navController = navController,
@@ -130,6 +183,13 @@ private fun NavGraphBuilder.authGraph(navController: NavHostController, tokenMan
 
         LaunchedEffect(token, role) {
             if (token == "LOADING") return@LaunchedEffect
+
+            if (!token.isNullOrBlank() && JwtUtils.isTokenExpired(token)) {
+                tokenManager.clearAuthInfo()
+                navController.navigateAndPopTo(Routes.SIGN_IN, Routes.WELCOME)
+                return@LaunchedEffect
+            }
+
             val destination = resolveWelcomeDestination(token, role)
             navController.navigateAndPopTo(destination, Routes.WELCOME)
         }
@@ -184,6 +244,7 @@ private fun NavGraphBuilder.authGraph(navController: NavHostController, tokenMan
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenManager: TokenManager) {
     composable(Routes.PRODUCT_LIST) {
         ProductListScreen(
@@ -194,7 +255,6 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
                     .replace("{colorName}", colorName)
                 navController.navigate(route)
             },
-            onTopMenuClick = { println("Menu clicked") },
             onNavigateToShoppingBag = { navController.navigate(Routes.CART) },
             onBottomTabSelected = { tab -> handleUserHomeTabSelection(tab, navController) }
         )
@@ -260,14 +320,35 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
         )
     }
 
-    composable(Routes.USER_INVOICE_LIST) {
+    composable(
+        route = Routes.USER_INVOICE_LIST,
+        arguments = listOf(
+            navArgument("status") {
+                type = NavType.StringType
+                nullable = true
+                defaultValue = null
+            }
+        )
+    ) { backStackEntry ->
+        val statusArg = backStackEntry.arguments?.getString("status")
+        val initialStatus = statusArg?.let { raw ->
+            runCatching { InvoiceStatus.valueOf(raw) }.getOrNull()
+        }
+        val userInvoiceViewModel = remember {
+            UserInvoiceViewModel(UserInvoiceRepository(RetrofitInstance.invoiceApi))
+        }
         UserInvoiceScreen(
+            viewModel = userInvoiceViewModel,
+            initialStatus = initialStatus,
             onTabSelected = { tab -> handleUserInvoiceTabSelection(tab, navController) }
         )
     }
 
     composable(Routes.USER_PROFILE) {
         val scope = rememberCoroutineScope()
+        val userInvoiceViewModel = remember {
+            UserInvoiceViewModel(UserInvoiceRepository(RetrofitInstance.invoiceApi))
+        }
 
         UserProfileScreen(
             onTabSelected = { tab -> handleUserProfileTabSelection(tab, navController) },
@@ -280,9 +361,10 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             onLogoutClick = {
                 scope.launch {
                     tokenManager.clearAuthInfo()
+                    LoginManager.getInstance().logOut()
                     navController.navigateAfterLogout()
                 }
-            }
+            },
         )
     }
 
@@ -375,8 +457,43 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             onNavigateToCart = { navController.navigate(Routes.CART) }
         )
     }
+
+    composable(
+        route = "${Routes.USER_AI_ASSISTANT_BASE}?isGenerateProduct={isGeneratingProduct}",
+        arguments = listOf(
+            navArgument("isGeneratingProduct"){
+                type = NavType.BoolType
+                defaultValue = false
+            }
+        )
+    ){ backStackEntry ->
+        val context = LocalContext.current
+        val signalRManager = remember { SignalRManager(tokenManager) }
+        val isGeneratingProduct = backStackEntry.arguments?.getBoolean("isGeneratingProduct") ?: false
+        val initialPrompt = if (isGeneratingProduct) {
+            """Generate product recommendation based on user's purchase history and preferences
+            """.trimIndent()
+        }
+        else {
+            null
+        }
+        val aiProductViewmodel = remember {
+            AiProductViewmodel(
+                repository = AiChatRepository(
+                    sessionApi = RetrofitInstance.chatSessionApi,
+                    okHttpClient = RetrofitInstance.okHttpClient
+                ),
+                signalRManager = signalRManager
+            )
+        }
+        AiProductScreen (
+            viewModel = aiProductViewmodel,
+            onBackClick = { navController.popBackStack() }
+        )
+    }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenManager: TokenManager) {
     composable(Routes.ADMIN_PRODUCT_LIST) {
         AdminProductListScreen(
@@ -417,7 +534,63 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
 
     composable(Routes.ADMIN_INVOICE_LIST) {
         AdminInvoiceScreen(
+            viewModel = remember {
+                AdminInvoiceViewmodel(
+                    repository = AdminInvoiceRepository(RetrofitInstance.invoiceApi)
+                )
+            },
             onTabSelected = { tab -> handleAdminInvoiceTabSelection(tab, navController) }
+        )
+    }
+
+    composable(Routes.ADMIN_ANALYTICS) {
+        AdminAnalyticsScreen(
+            viewModel = remember {
+                AdminAnalyticsViewModel(
+                    repository = AnalyticsRepository(RetrofitInstance.analyticsApi)
+                )
+            },
+            // Tích hợp AI từ GitHub
+            onAiClick = { navController.navigate(Routes.adminAiAssistant(isGeneratingCampaign = false)) },
+            onGenerateCampaignClick = {navController.navigate(Routes.adminAiAssistant(isGeneratingCampaign = true)) },
+            onTabSelected = { tab -> handleAdminAnalyticsTabSelection(tab, navController) }
+        )
+    }
+
+    // Tích hợp AI từ GitHub
+    composable(
+        route = "${Routes.ADMIN_AI_ASSISTANT_BASE}?isGeneratingCampaign={isGeneratingCampaign}",
+        arguments = listOf(
+            navArgument("isGeneratingCampaign") {
+                type = NavType.BoolType
+                defaultValue = false
+            }
+        )
+    ) { backStackEntry ->
+        val context = LocalContext.current
+        val signalRManager = remember { SignalRManager(tokenManager) }
+        val isGeneratingCampaign = backStackEntry.arguments?.getBoolean("isGeneratingCampaign") ?: false
+        val initialPrompt = if (isGeneratingCampaign) {
+            """
+            Generate campaign to improve shop's revenue with the data based on shop's statistics
+            """.trimIndent()
+        } else {
+            null
+        }
+
+        val aiStrategyViewmodel = remember {
+            AiStrategyViewmodel(
+                repository = AiChatRepository(
+                    sessionApi = RetrofitInstance.chatSessionApi,
+                    okHttpClient = RetrofitInstance.okHttpClient
+                ),
+                signalRManager = signalRManager
+            )
+        }
+        AiStrategyScreen (
+            viewModel = aiStrategyViewmodel,
+            initialPrompt = initialPrompt,
+            onBackClick = { navController.popBackStack() }
         )
     }
 
@@ -487,13 +660,13 @@ private fun handleUserHomeTabSelection(tab: BottomNavTab, navController: NavHost
 private fun handleUserInvoiceTabSelection(tab: BottomNavTab, navController: NavHostController) {
     when (tab) {
         BottomNavTab.SHOP -> {
-            navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.USER_INVOICE_LIST)
+            navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.USER_INVOICE_LIST_BASE)
         }
         BottomNavTab.PROFILE -> {
-            navController.navigateAndPopTo(Routes.USER_PROFILE, Routes.USER_INVOICE_LIST)
+            navController.navigateAndPopTo(Routes.USER_PROFILE, Routes.USER_INVOICE_LIST_BASE)
         }
         BottomNavTab.VOUCHER -> {
-            navController.navigateAndPopTo(Routes.USER_COLLECT_VOUCHERS, Routes.USER_INVOICE_LIST)
+            navController.navigateAndPopTo(Routes.USER_COLLECT_VOUCHERS, Routes.USER_INVOICE_LIST_BASE)
         }
         BottomNavTab.BAG -> Unit
         else -> println("User Tab selected: $tab")
@@ -589,6 +762,15 @@ private fun handleAdminProfileTabSelection(tab: AdminBottomNavTab, navController
     }
 }
 
+private fun handleAdminAnalyticsTabSelection(tab: AdminBottomNavTab, navController: NavHostController) {
+    when (tab) {
+        AdminBottomNavTab.ADMIN -> navController.navigateAndPopTo(Routes.ADMIN_PRODUCT_LIST, Routes.ADMIN_ANALYTICS)
+        AdminBottomNavTab.ORDERS -> navController.navigateAndPopTo(Routes.ADMIN_INVOICE_LIST, Routes.ADMIN_ANALYTICS)
+        AdminBottomNavTab.VOUCHERS -> navController.navigateAndPopTo(Routes.ADMIN_VOUCHER_MANAGEMENT, Routes.ADMIN_ANALYTICS)
+        AdminBottomNavTab.PROFILE -> navController.navigateAndPopTo(Routes.ADMIN_PROFILE, Routes.ADMIN_ANALYTICS)
+        else -> Unit
+    }
+}
 private fun handleAdminVoucherTabSelection(tab: AdminBottomNavTab, navController: NavHostController) {
     when (tab) {
         AdminBottomNavTab.ADMIN -> {
