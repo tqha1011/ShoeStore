@@ -64,10 +64,11 @@ fun CheckoutTopAppBar(
                 )
             }
         },
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+        colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.White,
-            titleContentColor = Color.Black,
+            scrolledContainerColor = Color.Unspecified,
             navigationIconContentColor = Color.Black,
+            titleContentColor = Color.Black,
             actionIconContentColor = Color.Black
         ),
         modifier = Modifier

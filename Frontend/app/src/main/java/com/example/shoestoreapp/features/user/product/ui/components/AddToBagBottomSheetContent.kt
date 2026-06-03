@@ -51,33 +51,48 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import com.example.shoestoreapp.R
 import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.roundToLong
-import com.example.shoestoreapp.R
-import androidx.compose.ui.window.DialogProperties
+
+// 1. Gom nhóm thông tin sản phẩm
+data class AddToBagProductInfo(
+    val imageUrl: String?,
+    val title: String,
+    val category: String,
+    val price: Double,
+    val colorOptions: List<String>,
+    val sizeOptions: List<Int>
+)
+
+// 2. Gom nhóm các trạng thái lựa chọn
+data class AddToBagSelectionState(
+    val selectedColor: String?,
+    val selectedSize: Int?,
+    val quantity: Int,
+    val isConfirmEnabled: Boolean,
+    val isLoading: Boolean = false
+)
+
+// 3. Gom nhóm các hành động (callbacks)
+data class AddToBagActions(
+    val onColorSelected: (String) -> Unit,
+    val onSizeSelected: (Int) -> Unit,
+    val onDecreaseQuantity: () -> Unit,
+    val onIncreaseQuantity: () -> Unit,
+    val onClose: () -> Unit,
+    val onConfirm: () -> Unit
+)
 
 @Composable
 fun AddToBagBottomSheetContent(
     modifier: Modifier = Modifier,
-    imageUrl: String?,
-    title: String,
-    category: String,
-    price: Double,
-    colorOptions: List<String>,
-    selectedColor: String?,
-    onColorSelected: (String) -> Unit,
-    sizeOptions: List<Int>,
-    selectedSize: Int?,
-    onSizeSelected: (Int) -> Unit,
-    quantity: Int,
-    onDecreaseQuantity: () -> Unit,
-    onIncreaseQuantity: () -> Unit,
-    onClose: () -> Unit,
-    onConfirm: () -> Unit,
-    isConfirmEnabled: Boolean,
-    isLoading: Boolean = false
+    productInfo: AddToBagProductInfo,
+    state: AddToBagSelectionState,
+    actions: AddToBagActions
 ) {
     // 1. BIẾN QUẢN LÝ TRẠNG THÁI HIỂN THỊ CỦA DIALOG
     var showSizeGuideDialog by remember { mutableStateOf(false) }
@@ -100,8 +115,8 @@ fun AddToBagBottomSheetContent(
                     .border(1.dp, Color(0xFFEAEAEA), RoundedCornerShape(12.dp))
             ) {
                 AsyncImage(
-                    model = imageUrl,
-                    contentDescription = title,
+                    model = productInfo.imageUrl,
+                    contentDescription = productInfo.title,
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(RoundedCornerShape(12.dp)),
@@ -115,25 +130,25 @@ fun AddToBagBottomSheetContent(
                     .padding(start = 12.dp)
             ) {
                 Text(
-                    text = title,
+                    text = productInfo.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Black
                 )
                 Text(
-                    text = category,
+                    text = productInfo.category,
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFF757575),
                     modifier = Modifier.padding(top = 2.dp)
                 )
                 Text(
-                    text = formatVnd(price),
+                    text = formatVnd(productInfo.price),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
 
-            IconButton(onClick = onClose) {
+            IconButton(onClick = actions.onClose) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Close"
@@ -154,8 +169,8 @@ fun AddToBagBottomSheetContent(
                 fontWeight = FontWeight.Bold
             )
             Row(modifier = Modifier.padding(top = 12.dp)) {
-                colorOptions.forEach { colorName ->
-                    val isSelected = selectedColor == colorName
+                productInfo.colorOptions.forEach { colorName ->
+                    val isSelected = state.selectedColor == colorName
                     val borderColor = if (isSelected) Color.Black else Color(0xFFE0E0E0)
 
                     Box(
@@ -169,7 +184,7 @@ fun AddToBagBottomSheetContent(
                                 ),
                                 shape = CircleShape
                             )
-                            .clickable { onColorSelected(colorName) }
+                            .clickable { actions.onColorSelected(colorName) }
                             .padding(4.dp)
                             .background(color = colorNameToSwatch(colorName), shape = CircleShape)
                     )
@@ -204,10 +219,10 @@ fun AddToBagBottomSheetContent(
             }
 
             Row(modifier = Modifier.fillMaxWidth()) {
-                sizeOptions.forEach { size ->
-                    val isSelected = selectedSize == size
+                productInfo.sizeOptions.forEach { size ->
+                    val isSelected = state.selectedSize == size
                     OutlinedButton(
-                        onClick = { onSizeSelected(size) },
+                        onClick = { actions.onSizeSelected(size) },
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier
                             .weight(1f)
@@ -244,21 +259,21 @@ fun AddToBagBottomSheetContent(
                     .height(48.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onDecreaseQuantity) {
+                IconButton(onClick = actions.onDecreaseQuantity) {
                     Icon(
                         imageVector = Icons.Default.Remove,
                         contentDescription = "Decrease quantity"
                     )
                 }
                 Text(
-                    text = quantity.toString(),
+                    text = state.quantity.toString(),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.width(40.dp),
                     color = Color.Black,
                     textAlign = TextAlign.Center
                 )
-                IconButton(onClick = onIncreaseQuantity) {
+                IconButton(onClick = actions.onIncreaseQuantity) {
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "Increase quantity"
@@ -270,8 +285,8 @@ fun AddToBagBottomSheetContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = onConfirm,
-            enabled = isConfirmEnabled && !isLoading,
+            onClick = actions.onConfirm,
+            enabled = state.isConfirmEnabled && !state.isLoading,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -282,7 +297,7 @@ fun AddToBagBottomSheetContent(
                 disabledContainerColor = Color(0xFFBDBDBD)
             )
         ) {
-            if (isLoading) {
+            if (state.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
                     color = Color.DarkGray,
@@ -342,7 +357,7 @@ fun AddToBagBottomSheetContent(
                     }
 
                     Image(
-                        painter = androidx.compose.ui.res.painterResource(id = R.drawable.size_guide), // Gọi ảnh từ drawable
+                        painter = androidx.compose.ui.res.painterResource(id = R.drawable.size_guide),
                         contentDescription = "Size Chart",
                         modifier = Modifier
                             .fillMaxWidth()
@@ -377,6 +392,6 @@ private fun colorNameToSwatch(colorName: String): Color {
 }
 
 private fun formatVnd(price: Double): String {
-    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    val formatter = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
     return "${formatter.format(price.roundToLong())} ₫"
 }

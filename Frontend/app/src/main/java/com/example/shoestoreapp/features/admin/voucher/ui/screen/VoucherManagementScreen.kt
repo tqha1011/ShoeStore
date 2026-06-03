@@ -21,11 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavBar
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
-import com.example.shoestoreapp.features.admin.voucher.ui.components.ActiveCampaignsList
-import com.example.shoestoreapp.features.admin.voucher.ui.components.EditVoucherBottomSheet
-import com.example.shoestoreapp.features.admin.voucher.ui.components.VoucherFormCard
-import com.example.shoestoreapp.features.admin.voucher.ui.components.VoucherHeader
-import com.example.shoestoreapp.features.admin.voucher.ui.components.VoucherTopAppBar
+import com.example.shoestoreapp.features.admin.voucher.ui.components.*
 import com.example.shoestoreapp.features.admin.voucher.viewmodel.VoucherUiEvent
 import com.example.shoestoreapp.features.admin.voucher.viewmodel.VoucherViewModel
 import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
@@ -75,19 +71,21 @@ fun VoucherManagementScreen(
                 item {
                     VoucherFormCard(
                         uiState = uiState,
-                        onVoucherNameChange = viewModel::updateVoucherName,
-                        onDescriptionChange = viewModel::updateDescription,
-                        onTargetApplicationChange = viewModel::updateTargetApplication,
-                        onDiscountStyleChange = viewModel::updateDiscountStyle,
-                        onReleaseTypeChange = viewModel::onReleaseTypeChanged,
-                        onDiscountValueChange = viewModel::updateDiscountValue,
-                        onMaxReductionChange = viewModel::updateMaxReduction,
-                        onMinOrderChange = viewModel::updateMinOrder,
-                        onTotalQuantityChange = viewModel::updateTotalQuantity,
-                        onMaxUsagePerUserChange = viewModel::updateMaxUsagePerUser,
-                        onValidFromChange = viewModel::updateValidFrom,
-                        onValidToChange = viewModel::updateValidTo,
-                        onInitializeCampaign = viewModel::onCreateVoucherClick
+                        actions = VoucherFormActions(
+                            onVoucherNameChange = viewModel::updateVoucherName,
+                            onDescriptionChange = viewModel::updateDescription,
+                            onTargetApplicationChange = viewModel::updateTargetApplication,
+                            onDiscountStyleChange = viewModel::updateDiscountStyle,
+                            onReleaseTypeChange = viewModel::onReleaseTypeChanged,
+                            onDiscountValueChange = viewModel::updateDiscountValue,
+                            onMaxReductionChange = viewModel::updateMaxReduction,
+                            onMinOrderChange = viewModel::updateMinOrder,
+                            onTotalQuantityChange = viewModel::updateTotalQuantity,
+                            onMaxUsagePerUserChange = viewModel::updateMaxUsagePerUser,
+                            onValidFromChange = viewModel::updateValidFrom,
+                            onValidToChange = viewModel::updateValidTo,
+                            onInitializeCampaign = viewModel::onCreateVoucherClick
+                        )
                     )
                 }
                 item {
@@ -105,19 +103,21 @@ fun VoucherManagementScreen(
             EditVoucherBottomSheet(
                 uiState = uiState,
                 onDismiss = viewModel::onDismissEditSheet,
-                onVoucherNameChange = viewModel::updateVoucherName,
-                onDescriptionChange = viewModel::updateDescription,
-                onTargetApplicationChange = viewModel::updateTargetApplication,
-                onDiscountStyleChange = viewModel::updateDiscountStyle,
-                onReleaseTypeChange = viewModel::onReleaseTypeChanged,
-                onDiscountValueChange = viewModel::updateDiscountValue,
-                onMaxReductionChange = viewModel::updateMaxReduction,
-                onMinOrderChange = viewModel::updateMinOrder,
-                onTotalQuantityChange = viewModel::updateTotalQuantity,
-                onMaxUsagePerUserChange = viewModel::updateMaxUsagePerUser,
-                onValidFromChange = viewModel::updateValidFrom,
-                onValidToChange = viewModel::updateValidTo,
-                onUpdateCampaign = viewModel::onUpdateVoucherClick
+                actions = EditVoucherActions(
+                    onVoucherNameChange = viewModel::updateVoucherName,
+                    onDescriptionChange = viewModel::updateDescription,
+                    onTargetApplicationChange = viewModel::updateTargetApplication,
+                    onDiscountStyleChange = viewModel::updateDiscountStyle,
+                    onReleaseTypeChange = viewModel::onReleaseTypeChanged,
+                    onDiscountValueChange = viewModel::updateDiscountValue,
+                    onMaxReductionChange = viewModel::updateMaxReduction,
+                    onMinOrderChange = viewModel::updateMinOrder,
+                    onTotalQuantityChange = viewModel::updateTotalQuantity,
+                    onMaxUsagePerUserChange = viewModel::updateMaxUsagePerUser,
+                    onValidFromChange = viewModel::updateValidFrom,
+                    onValidToChange = viewModel::updateValidTo,
+                    onUpdateCampaign = viewModel::onUpdateVoucherClick
+                )
             )
         }
 

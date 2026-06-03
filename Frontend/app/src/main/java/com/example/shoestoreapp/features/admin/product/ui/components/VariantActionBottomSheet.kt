@@ -31,9 +31,19 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.shoestoreapp.features.admin.addproduct.data.remote.master_data.ColorDto
 import com.example.shoestoreapp.features.admin.addproduct.data.remote.master_data.SizeDto
-import com.example.shoestoreapp.features.admin.product.ShoeColor
-import com.example.shoestoreapp.features.admin.product.ShoeSize
-import com.example.shoestoreapp.features.admin.product.VariantUiState
+import com.example.shoestoreapp.features.admin.product.data.models.ShoeColor
+import com.example.shoestoreapp.features.admin.product.data.models.ShoeSize
+import com.example.shoestoreapp.features.admin.product.data.models.VariantUiState
+
+data class VariantBottomSheetActions(
+    val onDismiss: () -> Unit,
+    val onImageClick: () -> Unit,
+    val onSizeSelected: (ShoeSize) -> Unit,
+    val onColorSelected: (ShoeColor) -> Unit,
+    val onPriceChange: (String) -> Unit,
+    val onStockChange: (String) -> Unit,
+    val onSaveClick: () -> Unit
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,18 +51,12 @@ fun VariantActionBottomSheet(
     state: VariantUiState,
     sizes: List<ShoeSize>,
     colors: List<ShoeColor>,
-    onDismiss: () -> Unit,
-    onImageClick: () -> Unit,
-    onSizeSelected: (ShoeSize) -> Unit,
-    onColorSelected: (ShoeColor) -> Unit,
-    onPriceChange: (String) -> Unit,
-    onStockChange: (String) -> Unit,
-    onSaveClick: () -> Unit
+    actions: VariantBottomSheetActions
 ) {
     val sizeDtos = sizes.map { SizeDto(id = it.id.toString(), sizeValue = it.value) }
     val colorDtos = colors.map { ColorDto(id = it.id.toString(), colorName = it.name) }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(onDismissRequest = actions.onDismiss) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -62,7 +66,7 @@ fun VariantActionBottomSheet(
                 modifier = Modifier
                     .size(140.dp)
                     .background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp))
-                    .clickable(onClick = onImageClick),
+                    .clickable(onClick = actions.onImageClick),
                 contentAlignment = Alignment.Center
             ) {
                 val imageModel = state.imageUri ?: state.existingImageUrl
@@ -93,7 +97,7 @@ fun VariantActionBottomSheet(
                         selectedSize = state.selectedSize?.value.orEmpty(),
                         sizesList = sizeDtos,
                         onSizeSelected = { id, _ ->
-                            sizes.firstOrNull { it.id.toString() == id }?.let(onSizeSelected)
+                            sizes.firstOrNull { it.id.toString() == id }?.let(actions.onSizeSelected)
                         },
                         enabled = state.variantId == null
                     )
@@ -103,7 +107,7 @@ fun VariantActionBottomSheet(
                         selectedColor = state.selectedColor?.name.orEmpty(),
                         colorsList = colorDtos,
                         onColorSelected = { id, _ ->
-                            colors.firstOrNull { it.id.toString() == id }?.let(onColorSelected)
+                            colors.firstOrNull { it.id.toString() == id }?.let(actions.onColorSelected)
                         },
                         enabled = state.variantId == null
                     )
@@ -120,7 +124,7 @@ fun VariantActionBottomSheet(
                     AdminFormField(
                         label = "PRICE",
                         value = state.price,
-                        onValueChange = onPriceChange,
+                        onValueChange = actions.onPriceChange,
                         placeholder = "0",
                         keyboardType = KeyboardType.Number
                     )
@@ -129,7 +133,7 @@ fun VariantActionBottomSheet(
                     AdminFormField(
                         label = "STOCK",
                         value = state.stock,
-                        onValueChange = onStockChange,
+                        onValueChange = actions.onStockChange,
                         placeholder = "0",
                         keyboardType = KeyboardType.Number
                     )
@@ -139,7 +143,7 @@ fun VariantActionBottomSheet(
             Spacer(modifier = Modifier.height(20.dp))
 
             Button(
-                onClick = onSaveClick,
+                onClick = actions.onSaveClick,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
                 shape = MaterialTheme.shapes.medium

@@ -18,7 +18,6 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.File
 
 class AdminProductRepositoryImpl(
     private val adminApi: AdminProductApi = RetrofitInstance.adminApi
@@ -120,22 +119,17 @@ class AdminProductRepositoryImpl(
 
     override suspend fun createVariant(
         productId: String,
-        sizeId: Int,
-        colorId: Int,
-        stock: Int,
-        price: Double,
-        isSelling: Boolean,
-        imageFile: File?
+        params: CreateVariantParams
     ): Result<ProductVariantResponseDto> {
         val textMediaType = "text/plain".toMediaType()
-        val sizeBody: RequestBody = sizeId.toString().toRequestBody(textMediaType)
-        val colorBody: RequestBody = colorId.toString().toRequestBody(textMediaType)
-        val stockBody: RequestBody = stock.toString().toRequestBody(textMediaType)
-        val priceBody: RequestBody = price.toString().toRequestBody(textMediaType)
-        val sellingBody: RequestBody = isSelling.toString().toRequestBody(textMediaType)
+        val sizeBody: RequestBody = params.sizeId.toString().toRequestBody(textMediaType)
+        val colorBody: RequestBody = params.colorId.toString().toRequestBody(textMediaType)
+        val stockBody: RequestBody = params.stock.toString().toRequestBody(textMediaType)
+        val priceBody: RequestBody = params.price.toString().toRequestBody(textMediaType)
+        val sellingBody: RequestBody = params.isSelling.toString().toRequestBody(textMediaType)
         val imageUrlBody: RequestBody = "".toRequestBody(textMediaType)
 
-        val imagePart = imageFile?.let { file ->
+        val imagePart = params.imageFile?.let { file ->
             val imageRequest = file.asRequestBody("image/*".toMediaType())
             MultipartBody.Part.createFormData("image", file.name, imageRequest)
         }
@@ -164,23 +158,17 @@ class AdminProductRepositoryImpl(
     override suspend fun updateVariant(
         productId: String,
         variantId: String,
-        sizeId: Int,
-        colorId: Int,
-        stock: Int,
-        price: Double,
-        isSelling: Boolean,
-        imageUrl: String,
-        imageFile: File?
+        params: UpdateVariantParams
     ): Result<Unit> {
         val textMediaType = "text/plain".toMediaType()
-        val sizeBody: RequestBody = sizeId.toString().toRequestBody(textMediaType)
-        val colorBody: RequestBody = colorId.toString().toRequestBody(textMediaType)
-        val stockBody: RequestBody = stock.toString().toRequestBody(textMediaType)
-        val priceBody: RequestBody = price.toString().toRequestBody(textMediaType)
-        val sellingBody: RequestBody = isSelling.toString().toRequestBody(textMediaType)
-        val imageUrlBody: RequestBody = imageUrl.toRequestBody(textMediaType)
+        val sizeBody: RequestBody = params.sizeId.toString().toRequestBody(textMediaType)
+        val colorBody: RequestBody = params.colorId.toString().toRequestBody(textMediaType)
+        val stockBody: RequestBody = params.stock.toString().toRequestBody(textMediaType)
+        val priceBody: RequestBody = params.price.toString().toRequestBody(textMediaType)
+        val sellingBody: RequestBody = params.isSelling.toString().toRequestBody(textMediaType)
+        val imageUrlBody: RequestBody = params.imageUrl.toRequestBody(textMediaType)
 
-        val imagePart = imageFile?.let { file ->
+        val imagePart = params.imageFile?.let { file ->
             val imageRequest = file.asRequestBody("image/*".toMediaType())
             MultipartBody.Part.createFormData("image", file.name, imageRequest)
         }

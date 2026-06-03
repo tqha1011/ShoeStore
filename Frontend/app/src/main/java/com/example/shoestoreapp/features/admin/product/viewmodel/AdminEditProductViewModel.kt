@@ -7,11 +7,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.core.utils.Resource
 import com.example.shoestoreapp.core.utils.uriToTempFile
 import com.example.shoestoreapp.features.admin.addproduct.data.repositories.MasterDataRepository
-import com.example.shoestoreapp.features.admin.product.Category
-import com.example.shoestoreapp.features.admin.product.EditProductUiState
-import com.example.shoestoreapp.features.admin.product.ShoeColor
-import com.example.shoestoreapp.features.admin.product.ShoeSize
-import com.example.shoestoreapp.features.admin.product.VariantUiState
+import com.example.shoestoreapp.features.admin.product.data.models.Category
+import com.example.shoestoreapp.features.admin.product.data.models.EditProductUiState
+import com.example.shoestoreapp.features.admin.product.data.models.ShoeColor
+import com.example.shoestoreapp.features.admin.product.data.models.ShoeSize
+import com.example.shoestoreapp.features.admin.product.data.models.VariantUiState
 import com.example.shoestoreapp.features.admin.product.data.remote.ProductVariantResponseDto
 import com.example.shoestoreapp.features.admin.product.data.repositories.AdminProductRepository
 import com.example.shoestoreapp.features.admin.product.data.repositories.AdminProductRepositoryImpl
@@ -19,7 +19,8 @@ import com.example.shoestoreapp.features.admin.product.data.repositories.ImageRe
 import com.example.shoestoreapp.features.admin.product.data.repositories.ImageRepositoryException
 import com.example.shoestoreapp.features.admin.product.data.repositories.ImageRepositoryImpl
 import com.example.shoestoreapp.features.admin.product.data.remote.UpdateProductDto
-import kotlinx.coroutines.Dispatchers
+import com.example.shoestoreapp.features.admin.product.data.repositories.CreateVariantParams
+import com.example.shoestoreapp.features.admin.product.data.repositories.UpdateVariantParams
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -320,7 +321,7 @@ class AdminEditProductViewModel(
     fun uploadSelectedImage(context: Context, uri: Uri) {
         _localImageUri.value = uri
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             val result = try {
                 val file = context.applicationContext.uriToTempFile(uri)
@@ -348,7 +349,7 @@ class AdminEditProductViewModel(
     fun uploadVariantImage(context: Context, uri: Uri) {
         _variantDraft.value = _variantDraft.value.copy(imageUri = uri, isUploadingImage = true)
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             val result = try {
                 val file = context.applicationContext.uriToTempFile(uri)
                 imageRepository.uploadImage(file)
@@ -434,24 +435,28 @@ class AdminEditProductViewModel(
                 val result = if (draft.variantId == null) {
                     repository.createVariant(
                         productId = productId,
-                        sizeId = size.id,
-                        colorId = color.id,
-                        stock = stockValue,
-                        price = priceValue,
-                        isSelling = true,
-                        imageFile = imageFile
+                        params = CreateVariantParams(
+                            sizeId = size.id,
+                            colorId = color.id,
+                            stock = stockValue,
+                            price = priceValue,
+                            isSelling = true,
+                            imageFile = imageFile
+                        )
                     ).map { Unit }
                 } else {
                     repository.updateVariant(
                         productId = productId,
                         variantId = draft.variantId,
-                        sizeId = size.id,
-                        colorId = color.id,
-                        stock = stockValue,
-                        price = priceValue,
-                        isSelling = true,
-                        imageUrl = draft.existingImageUrl ?: "",
-                        imageFile = imageFile
+                        params = UpdateVariantParams(
+                            sizeId = size.id,
+                            colorId = color.id,
+                            stock = stockValue,
+                            price = priceValue,
+                            isSelling = true,
+                            imageUrl = draft.existingImageUrl ?: "",
+                            imageFile = imageFile
+                        )
                     )
                 }
 

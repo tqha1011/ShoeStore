@@ -73,7 +73,7 @@ class ProductDetailViewModel(
                 
                 if (product?.variants?.isNotEmpty() ?: false) {
                     val matchedVariant = if (!passedColorName.isNullOrEmpty()) {
-                        product?.variants?.firstOrNull {
+                        product.variants.firstOrNull {
                             it.colorName?.trim()?.equals(passedColorName.trim(), ignoreCase = true) == true
                         }
                     } else null

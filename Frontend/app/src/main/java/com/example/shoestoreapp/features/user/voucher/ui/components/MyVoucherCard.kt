@@ -176,7 +176,7 @@ fun MyVoucherCard(
 
 // Ham ho tro format tien te rieng cho text canh bao
 private fun formatMissingMoney(value: Double): String {
-    val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN")).apply {
+    val formatter = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("vi-VN")).apply {
         currency = Currency.getInstance("VND")
         maximumFractionDigits = 0
     }

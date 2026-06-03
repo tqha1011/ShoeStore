@@ -117,6 +117,6 @@ fun ProductHeaderInfo(
 }
 
 private fun formatVnd(price: Double): String {
-    val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+    val formatter = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
     return "${formatter.format(price.roundToLong())} ₫"
 }

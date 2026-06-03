@@ -3,7 +3,7 @@ package com.example.shoestoreapp.features.admin.product.data.repositories
 import com.example.shoestoreapp.features.admin.product.data.remote.ImageUploadResponseDto
 import java.io.File
 
-interface ImageRepository {
+fun interface ImageRepository {
     suspend fun uploadImage(imageFile: File): Result<ImageUploadResponseDto>
 }
 
@@ -18,4 +18,3 @@ private const val ERROR_BAD_REQUEST = "Invalid image file. Please try another im
 private const val ERROR_UNAUTHORIZED = "Unauthorized. Please sign in again."
 private const val ERROR_SERVER = "Server error. Please try again later."
 private const val ERROR_UNKNOWN = "Unable to upload image right now."
-

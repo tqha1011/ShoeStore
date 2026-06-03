@@ -26,22 +26,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.admin.voucher.viewmodel.VoucherUiState
 
+data class VoucherFormActions(
+    val onVoucherNameChange: (String) -> Unit,
+    val onDescriptionChange: (String) -> Unit,
+    val onTargetApplicationChange: (Int) -> Unit,
+    val onDiscountStyleChange: (Int) -> Unit,
+    val onReleaseTypeChange: (Int) -> Unit,
+    val onDiscountValueChange: (String) -> Unit,
+    val onMaxReductionChange: (String) -> Unit,
+    val onMinOrderChange: (String) -> Unit,
+    val onTotalQuantityChange: (String) -> Unit,
+    val onMaxUsagePerUserChange: (String) -> Unit,
+    val onValidFromChange: (String) -> Unit,
+    val onValidToChange: (String) -> Unit,
+    val onInitializeCampaign: () -> Unit
+)
+
 @Composable
 fun VoucherFormCard(
     uiState: VoucherUiState,
-    onVoucherNameChange: (String) -> Unit,
-    onDescriptionChange: (String) -> Unit,
-    onTargetApplicationChange: (Int) -> Unit,
-    onDiscountStyleChange: (Int) -> Unit,
-    onReleaseTypeChange: (Int) -> Unit,
-    onDiscountValueChange: (String) -> Unit,
-    onMaxReductionChange: (String) -> Unit,
-    onMinOrderChange: (String) -> Unit,
-    onTotalQuantityChange: (String) -> Unit,
-    onMaxUsagePerUserChange: (String) -> Unit,
-    onValidFromChange: (String) -> Unit,
-    onValidToChange: (String) -> Unit,
-    onInitializeCampaign: () -> Unit
+    actions: VoucherFormActions
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -58,38 +62,38 @@ fun VoucherFormCard(
             VoucherBasicInfoSection(
                 voucherName = uiState.voucherName,
                 description = uiState.description,
-                onVoucherNameChange = onVoucherNameChange,
-                onDescriptionChange = onDescriptionChange
+                onVoucherNameChange = actions.onVoucherNameChange,
+                onDescriptionChange = actions.onDescriptionChange
             )
             Divider(color = Color(0xFFE3E3E3))
             VoucherConfigSection(
                 uiState = uiState,
-                onTargetApplicationChange = onTargetApplicationChange,
-                onDiscountStyleChange = onDiscountStyleChange,
-                onReleaseTypeChange = onReleaseTypeChange,
-                onDiscountValueChange = onDiscountValueChange,
-                onMaxReductionChange = onMaxReductionChange,
-                onMinOrderChange = onMinOrderChange
+                onTargetApplicationChange = actions.onTargetApplicationChange,
+                onDiscountStyleChange = actions.onDiscountStyleChange,
+                onReleaseTypeChange = actions.onReleaseTypeChange,
+                onDiscountValueChange = actions.onDiscountValueChange,
+                onMaxReductionChange = actions.onMaxReductionChange,
+                onMinOrderChange = actions.onMinOrderChange
             )
             Divider(color = Color(0xFFE3E3E3))
             VoucherConditionSection(
                 totalQuantity = uiState.totalQuantity,
                 maxUsagePerUser = uiState.maxUsagePerUser,
-                onTotalQuantityChange = onTotalQuantityChange,
-                onMaxUsagePerUserChange = onMaxUsagePerUserChange
+                onTotalQuantityChange = actions.onTotalQuantityChange,
+                onMaxUsagePerUserChange = actions.onMaxUsagePerUserChange
             )
             VoucherDurationSection(
                 validFrom = uiState.validFrom,
                 validTo = uiState.validTo,
-                onValidFromChange = onValidFromChange,
-                onValidToChange = onValidToChange
+                onValidFromChange = actions.onValidFromChange,
+                onValidToChange = actions.onValidToChange
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
                 Button(
-                    onClick = onInitializeCampaign,
+                    onClick = actions.onInitializeCampaign,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Black,
                         contentColor = Color.White

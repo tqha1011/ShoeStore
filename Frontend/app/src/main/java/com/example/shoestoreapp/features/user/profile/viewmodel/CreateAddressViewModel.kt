@@ -95,49 +95,55 @@ class CreateAddressViewModel(
             if (addressDto != null) {
                 _isDefault.value = addressDto.isDefault
 
-                val parts = addressDto.address.split(",").map { it.trim() }
+                parseAddressString(addressDto.address)
 
-                // Quy tắc: Từ phải qua trái -> Tỉnh, Huyện, Xã, Địa chỉ chi tiết
-                if (parts.size >= 4) {
-                    _selectedCity.value = parts[parts.size - 1]     // Phần tử cuối là Tỉnh
-                    _selectedDistrict.value = parts[parts.size - 2] // Kế cuối là Huyện
-                    _selectedWard.value = parts[parts.size - 3]     // Cách 2 vị trí là Xã
-
-                    // Gom tất cả các phần tử còn lại ở phía trước làm địa chỉ chi tiết
-                    _exactAddress.value = parts.dropLast(3).joinToString(", ")
-                } else if (parts.size == 3) {
-                    // Trường hợp chuỗi chỉ có 3 thành phần (Thiếu xã hoặc huyện)
-                    _selectedCity.value = parts[parts.size - 1]
-                    _selectedDistrict.value = parts[parts.size - 2]
-                    _selectedWard.value = ""
-                    _exactAddress.value = parts[0]
-                } else {
-                    // Trường hợp xấu nhất: Chuỗi không tuân thủ cấu trúc, đổ hết vào ô nhập chi tiết
-                    _exactAddress.value = addressDto.address
-                }
-
-                val provList = repository.getProvinces().getOrNull() ?: emptyList()
-                _provinces.value = provList
-                val prov = provList.find { it.name.equals(_selectedCity.value, ignoreCase = true) }
-
-                if (prov != null) {
-                    _selectedProvinceId.value = prov.code
-                    val distList = repository.getDistricts(prov.code).getOrNull() ?: emptyList()
-                    _districts.value = distList
-                    val dist = distList.find { it.name.equals(_selectedDistrict.value, ignoreCase = true) }
-
-                    if (dist != null) {
-                        _selectedDistrictId.value = dist.code
-                        val wardList = repository.getWards(dist.code).getOrNull() ?: emptyList()
-                        _wards.value = wardList
-                        val wrd = wardList.find { it.name.equals(_selectedWard.value, ignoreCase = true) }
-                        if (wrd != null) {
-                            _selectedWardId.value = wrd.code
-                        }
-                    }
-                }
+                syncAdministrativeData()
             }
             _uiState.value = CreateAddressUiState.Idle
+        }
+    }
+
+    // --- HÀM PHỤ TRỢ 1: CHUYÊN XẺ CHUỖI ĐỊA CHỈ ---
+    private fun parseAddressString(fullAddress: String) {
+        val parts = fullAddress.split(",").map { it.trim() }
+
+        if (parts.size >= 4) {
+            _selectedCity.value = parts[parts.size - 1]
+            _selectedDistrict.value = parts[parts.size - 2]
+            _selectedWard.value = parts[parts.size - 3]
+            _exactAddress.value = parts.dropLast(3).joinToString(", ")
+        } else if (parts.size == 3) {
+            _selectedCity.value = parts[parts.size - 1]
+            _selectedDistrict.value = parts[parts.size - 2]
+            _selectedWard.value = ""
+            _exactAddress.value = parts[0]
+        } else {
+            _exactAddress.value = fullAddress
+        }
+    }
+
+    // --- HÀM PHỤ TRỢ 2: CHUYÊN ĐỒNG BỘ DỮ LIỆU TỈNH/HUYỆN/XÃ VỚI API ---
+    private suspend fun syncAdministrativeData() {
+        val provList = repository.getProvinces().getOrNull() ?: emptyList()
+        _provinces.value = provList
+        val prov = provList.find { it.name.equals(_selectedCity.value, ignoreCase = true) }
+
+        if (prov == null) return
+        _selectedProvinceId.value = prov.code
+
+        val distList = repository.getDistricts(prov.code).getOrNull() ?: emptyList()
+        _districts.value = distList
+        val dist = distList.find { it.name.equals(_selectedDistrict.value, ignoreCase = true) }
+
+        if (dist == null) return
+        _selectedDistrictId.value = dist.code
+
+        val wardList = repository.getWards(dist.code).getOrNull() ?: emptyList()
+        _wards.value = wardList
+        val wrd = wardList.find { it.name.equals(_selectedWard.value, ignoreCase = true) }
+
+        if (wrd != null) {
+            _selectedWardId.value = wrd.code
         }
     }
 
@@ -214,7 +220,7 @@ class CreateAddressViewModel(
         _showBanner.value = false
     }
 
-    // --- HÀM LƯU: TỰ ĐỘNG NHẬN DIỆN THÊM MỚI HAY CẬP NHẬT ---
+    // --- HÀM LƯU TỰ ĐỘNG NHẬN DIỆN THÊM MỚI HAY CẬP NHẬT ---
     fun saveAddress() {
         val provinceName = _selectedCity.value.trim()
         val districtName = _selectedDistrict.value.trim()
@@ -239,7 +245,6 @@ class CreateAddressViewModel(
                 ward = wardName
             )
 
-            // Dùng cờ isEditMode để quyết định rẽ nhánh gọi API nào
             val result = if (isEditMode) {
                 addressRepository.updateAddress(currentAddressId!!, dto)
             } else {

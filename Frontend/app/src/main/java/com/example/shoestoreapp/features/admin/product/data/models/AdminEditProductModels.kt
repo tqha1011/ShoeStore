@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.admin.product
+package com.example.shoestoreapp.features.admin.product.data.models
 
 import android.net.Uri
 import com.example.shoestoreapp.features.admin.product.data.remote.ProductVariantResponseDto

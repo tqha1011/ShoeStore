@@ -361,10 +361,6 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
 
     composable(Routes.USER_PROFILE) {
         val scope = rememberCoroutineScope()
-        val userInvoiceViewModel = remember {
-            UserInvoiceViewModel(UserInvoiceRepository(RetrofitInstance.invoiceApi))
-        }
-
         UserProfileScreen(
             onTabSelected = { tab -> handleUserProfileTabSelection(tab, navController) },
             onEditProfileClick = { navController.navigate(Routes.USER_EDIT_PROFILE) },
@@ -508,7 +504,6 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             }
         )
     ){ backStackEntry ->
-        val context = LocalContext.current
         val signalRManager = remember { SignalRManager(tokenManager) }
         val isGeneratingProduct = backStackEntry.arguments?.getBoolean("isGeneratingProduct") ?: false
         val initialPrompt = if (isGeneratingProduct) {
@@ -608,7 +603,6 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
             }
         )
     ) { backStackEntry ->
-        val context = LocalContext.current
         val signalRManager = remember { SignalRManager(tokenManager) }
         val isGeneratingCampaign = backStackEntry.arguments?.getBoolean("isGeneratingCampaign") ?: false
         val initialPrompt = if (isGeneratingCampaign) {

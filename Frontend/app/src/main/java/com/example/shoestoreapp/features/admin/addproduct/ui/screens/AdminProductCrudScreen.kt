@@ -9,7 +9,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
-import com.example.shoestoreapp.features.admin.addproduct.viewmodel.AddProductUiState
 import com.example.shoestoreapp.features.admin.addproduct.viewmodel.AdminAddProductViewModel
 import com.example.shoestoreapp.features.admin.addproduct.viewmodel.FetchMasterDataViewModel
 import androidx.compose.ui.Modifier
@@ -20,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.shoestoreapp.features.admin.addproduct.ui.components.*
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminFormField
+import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
 import kotlinx.coroutines.delay
 
 /**
@@ -39,14 +39,9 @@ fun AdminProductCrudScreen(
     val categoryName by viewModel.selectedCategoryName.collectAsState()
 
     val addUiState by addProductViewModel.uiState.collectAsState()
-    val isLoading = addUiState is AddProductUiState.Loading
-    val errorMessage = (addUiState as? AddProductUiState.Error)?.message
-    val successMessage = if (addUiState is AddProductUiState.Success) {
-        "Product created successfully."
-    } else {
-        null
-    }
-    val isActionSuccess = addUiState is AddProductUiState.Success
+
+    val isLoading = addUiState.isLoading
+    val isActionSuccess = addUiState.isSuccess
 
     LaunchedEffect(isActionSuccess) {
         if (isActionSuccess) {
@@ -56,7 +51,6 @@ fun AdminProductCrudScreen(
             navController.popBackStack()
         }
     }
-
 
     Scaffold(
         topBar = {
@@ -119,7 +113,7 @@ fun AdminProductCrudScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Action Buttons - Full width (size of 2 fields above)
+                // Action Buttons - Full width
                 AdminSaveButton(
                     onSaveClick = {
                         val categoryId = selectedCategoryId.toIntOrNull() ?: 0
@@ -132,35 +126,13 @@ fun AdminProductCrudScreen(
                 Spacer(modifier = Modifier.height(100.dp))
             }
 
-            // Error/Success Messages
-            errorMessage?.let { errorMsg ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                        .padding(top = 16.dp)
-                ) {
-                    AdminMessageBanner(
-                        message = errorMsg,
-                        isError = true,
-                        onDismiss = { addProductViewModel.resetState() }
-                    )
-                }
-            }
-
-            successMessage?.let { successMsg ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                        .padding(top = 16.dp)
-                ) {
-                    AdminMessageBanner(
-                        message = successMsg,
-                        isError = false,
-                        onDismiss = { addProductViewModel.resetState() }
-                    )
-                }
+            Box(modifier = Modifier.align(Alignment.TopCenter)) {
+                TopBanner(
+                    message = addUiState.bannerMessage,
+                    isSuccess = addUiState.isBannerSuccess,
+                    isVisible = addUiState.showBanner,
+                    onDismiss = { addProductViewModel.resetState() }
+                )
             }
         }
     }

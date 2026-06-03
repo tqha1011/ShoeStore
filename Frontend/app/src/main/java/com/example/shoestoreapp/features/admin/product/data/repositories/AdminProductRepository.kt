@@ -15,6 +15,25 @@ data class AdminProductPage(
     val hasNext: Boolean
 )
 
+data class CreateVariantParams(
+    val sizeId: Int,
+    val colorId: Int,
+    val stock: Int,
+    val price: Double,
+    val isSelling: Boolean,
+    val imageFile: File?
+)
+
+data class UpdateVariantParams(
+    val sizeId: Int,
+    val colorId: Int,
+    val stock: Int,
+    val price: Double,
+    val isSelling: Boolean,
+    val imageUrl: String,
+    val imageFile: File?
+)
+
 interface AdminProductRepository {
     fun searchProducts(
         keyword: String?,
@@ -33,24 +52,13 @@ interface AdminProductRepository {
 
     suspend fun createVariant(
         productId: String,
-        sizeId: Int,
-        colorId: Int,
-        stock: Int,
-        price: Double,
-        isSelling: Boolean,
-        imageFile: File?
+        params: CreateVariantParams
     ): Result<ProductVariantResponseDto>
 
     suspend fun updateVariant(
         productId: String,
         variantId: String,
-        sizeId: Int,
-        colorId: Int,
-        stock: Int,
-        price: Double,
-        isSelling: Boolean,
-        imageUrl: String,
-        imageFile: File?
+        params: UpdateVariantParams
     ): Result<Unit>
 
     suspend fun deleteVariant(productId: String, variantId: String): Result<Unit>

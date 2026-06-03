@@ -10,7 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -24,24 +24,28 @@ import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminFormField
 import com.example.shoestoreapp.features.admin.voucher.viewmodel.VoucherUiState
 
+data class EditVoucherActions(
+    val onVoucherNameChange: (String) -> Unit,
+    val onDescriptionChange: (String) -> Unit,
+    val onTargetApplicationChange: (Int) -> Unit,
+    val onDiscountStyleChange: (Int) -> Unit,
+    val onReleaseTypeChange: (Int) -> Unit,
+    val onDiscountValueChange: (String) -> Unit,
+    val onMaxReductionChange: (String) -> Unit,
+    val onMinOrderChange: (String) -> Unit,
+    val onTotalQuantityChange: (String) -> Unit,
+    val onMaxUsagePerUserChange: (String) -> Unit,
+    val onValidFromChange: (String) -> Unit,
+    val onValidToChange: (String) -> Unit,
+    val onUpdateCampaign: () -> Unit
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditVoucherBottomSheet(
     uiState: VoucherUiState,
     onDismiss: () -> Unit,
-    onVoucherNameChange: (String) -> Unit,
-    onDescriptionChange: (String) -> Unit,
-    onTargetApplicationChange: (Int) -> Unit,
-    onDiscountStyleChange: (Int) -> Unit,
-    onReleaseTypeChange: (Int) -> Unit,
-    onDiscountValueChange: (String) -> Unit,
-    onMaxReductionChange: (String) -> Unit,
-    onMinOrderChange: (String) -> Unit,
-    onTotalQuantityChange: (String) -> Unit,
-    onMaxUsagePerUserChange: (String) -> Unit,
-    onValidFromChange: (String) -> Unit,
-    onValidToChange: (String) -> Unit,
-    onUpdateCampaign: () -> Unit
+    actions: EditVoucherActions
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -66,43 +70,46 @@ fun EditVoucherBottomSheet(
             AdminFormField(
                 label = "Voucher Name",
                 value = uiState.voucherName,
-                onValueChange = onVoucherNameChange,
+                onValueChange = actions.onVoucherNameChange,
                 placeholder = "",
                 isEnabled = false
             )
             AdminFormField(
                 label = "Description",
                 value = uiState.description,
-                onValueChange = onDescriptionChange,
+                onValueChange = actions.onDescriptionChange,
                 placeholder = "",
                 singleLine = false,
                 minLines = 3
             )
-            Divider(color = Color(0xFFE3E3E3))
+            HorizontalDivider(color = Color(0xFFE3E3E3))
+
             VoucherConfigSection(
                 uiState = uiState,
-                onTargetApplicationChange = onTargetApplicationChange,
-                onDiscountStyleChange = onDiscountStyleChange,
-                onReleaseTypeChange = onReleaseTypeChange,
-                onDiscountValueChange = onDiscountValueChange,
-                onMaxReductionChange = onMaxReductionChange,
-                onMinOrderChange = onMinOrderChange
+                onTargetApplicationChange = actions.onTargetApplicationChange,
+                onDiscountStyleChange = actions.onDiscountStyleChange,
+                onReleaseTypeChange = actions.onReleaseTypeChange,
+                onDiscountValueChange = actions.onDiscountValueChange,
+                onMaxReductionChange = actions.onMaxReductionChange,
+                onMinOrderChange = actions.onMinOrderChange
             )
-            Divider(color = Color(0xFFE3E3E3))
+
+            HorizontalDivider(color = Color(0xFFE3E3E3))
+
             VoucherConditionSection(
                 totalQuantity = uiState.totalQuantity,
                 maxUsagePerUser = uiState.maxUsagePerUser,
-                onTotalQuantityChange = onTotalQuantityChange,
-                onMaxUsagePerUserChange = onMaxUsagePerUserChange
+                onTotalQuantityChange = actions.onTotalQuantityChange,
+                onMaxUsagePerUserChange = actions.onMaxUsagePerUserChange
             )
             VoucherDurationSection(
                 validFrom = uiState.validFrom,
                 validTo = uiState.validTo,
-                onValidFromChange = onValidFromChange,
-                onValidToChange = onValidToChange
+                onValidFromChange = actions.onValidFromChange,
+                onValidToChange = actions.onValidToChange
             )
             Button(
-                onClick = onUpdateCampaign,
+                onClick = actions.onUpdateCampaign,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.Black,
                     contentColor = Color.White

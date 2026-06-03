@@ -27,7 +27,7 @@ fun VoucherTopAppBar() {
                 color = Color.Black
             )
         },
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+        colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.White,
             titleContentColor = Color.Black
         ),

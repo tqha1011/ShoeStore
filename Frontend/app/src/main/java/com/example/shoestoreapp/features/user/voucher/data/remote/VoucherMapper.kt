@@ -49,7 +49,7 @@ private fun formatDiscountValue(discount: Double, discountType: String?): String
             "${discountFormat.format(actualPercent)}% OFF"
         }
         "FixedAmount" -> {
-            val formatter = java.text.NumberFormat.getCurrencyInstance(Locale("vi", "VN")).apply {
+            val formatter = java.text.NumberFormat.getCurrencyInstance(Locale.forLanguageTag("vi-VN")).apply {
                 currency = java.util.Currency.getInstance("VND")
                 maximumFractionDigits = 0
             }

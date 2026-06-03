@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Logout
+import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,7 +37,7 @@ fun LogoutButton(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Outlined.Logout,
+                imageVector = Icons.AutoMirrored.Outlined.Logout,
                 contentDescription = "Log Out",
                 tint = Color(0xFFB3261E)
             )
@@ -53,4 +53,3 @@ fun LogoutButton(
         }
     }
 }
-

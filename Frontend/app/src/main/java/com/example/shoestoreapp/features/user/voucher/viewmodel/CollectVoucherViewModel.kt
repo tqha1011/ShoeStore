@@ -55,41 +55,12 @@ class CollectVoucherViewModel(
             result.onSuccess { response ->
                 try {
                     val newItems = response.items.map { it.toUiModel() }
-                    _uiState.update { state ->
-                        val updatedList = if (isLoadMore) {
-                            state.vouchers + newItems
-                        } else {
-                            newItems
-                        }
-                        state.copy(
-                            vouchers = updatedList,
-                            isLoading = false,
-                            isLoadingMore = false,
-                            hasNextPage = response.hasNext,
-                            currentPage = if (response.hasNext) pageToLoad + 1 else pageToLoad
-                        )
-                    }
+                    handleFetchSuccess(newItems, isLoadMore, response.hasNext, pageToLoad)
                 } catch (e: Exception) {
-                    _uiState.update { state ->
-                        state.copy(
-                            isLoading = false,
-                            isLoadingMore = false,
-                            bannerMessage = "Data parsing error",
-                            isBannerSuccess = false,
-                            showBanner = true
-                        )
-                    }
+                    handleFetchError("Data parsing error")
                 }
             }.onFailure { throwable ->
-                _uiState.update { state ->
-                    state.copy(
-                        isLoading = false,
-                        isLoadingMore = false,
-                        bannerMessage = throwable.message ?: "Failed to fetch vouchers",
-                        isBannerSuccess = false,
-                        showBanner = true
-                    )
-                }
+                handleFetchError(throwable.message ?: "Failed to fetch vouchers")
             }
         }
     }
@@ -128,6 +99,44 @@ class CollectVoucherViewModel(
                 }
                 onError(errorMsg)
             }
+        }
+    }
+
+    // ==========================================
+    // CÁC HÀM PHỤ TRỢ ĐỂ GIẢM ĐỘ PHỨC TẠP
+    // ==========================================
+
+    private fun handleFetchSuccess(
+        newItems: List<VoucherUiModel>,
+        isLoadMore: Boolean,
+        hasNext: Boolean,
+        pageToLoad: Int
+    ) {
+        _uiState.update { state ->
+            val updatedList = if (isLoadMore) {
+                state.vouchers + newItems
+            } else {
+                newItems
+            }
+            state.copy(
+                vouchers = updatedList,
+                isLoading = false,
+                isLoadingMore = false,
+                hasNextPage = hasNext,
+                currentPage = if (hasNext) pageToLoad + 1 else pageToLoad
+            )
+        }
+    }
+
+    private fun handleFetchError(errorMessage: String) {
+        _uiState.update { state ->
+            state.copy(
+                isLoading = false,
+                isLoadingMore = false,
+                bannerMessage = errorMessage,
+                isBannerSuccess = false,
+                showBanner = true
+            )
         }
     }
 

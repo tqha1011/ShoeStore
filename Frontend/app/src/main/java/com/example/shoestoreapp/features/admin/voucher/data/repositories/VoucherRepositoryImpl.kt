@@ -5,6 +5,7 @@ import com.example.shoestoreapp.features.admin.voucher.data.remote.AdminVoucherA
 import com.example.shoestoreapp.features.admin.voucher.data.remote.CreateVoucherDto
 import com.example.shoestoreapp.features.admin.voucher.data.remote.UpdateVoucherDto
 import com.example.shoestoreapp.features.admin.voucher.data.remote.VoucherSearchResponseDto
+import retrofit2.HttpException
 
 class VoucherRepositoryImpl(
     private val api: AdminVoucherApi = RetrofitInstance.adminVoucherApi
@@ -15,7 +16,7 @@ class VoucherRepositoryImpl(
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("Create voucher failed (HTTP ${response.code()})"))
+                Result.failure(HttpException(response))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -28,7 +29,7 @@ class VoucherRepositoryImpl(
             if (response.isSuccessful) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Fetch vouchers failed (HTTP ${response.code()})"))
+                Result.failure(HttpException(response))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -41,7 +42,7 @@ class VoucherRepositoryImpl(
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("Update voucher failed (HTTP ${response.code()})"))
+                Result.failure(HttpException(response))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -54,7 +55,7 @@ class VoucherRepositoryImpl(
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("Delete voucher failed (HTTP ${response.code()})"))
+                Result.failure(HttpException(response))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -67,7 +68,7 @@ class VoucherRepositoryImpl(
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("Delete expired vouchers failed (HTTP ${response.code()})"))
+                Result.failure(HttpException(response))
             }
         } catch (e: Exception) {
             Result.failure(e)

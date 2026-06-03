@@ -66,7 +66,6 @@ fun CreateAddressScreen(
     val isBannerSuccess by viewModel.isBannerSuccess.collectAsState()
     val showBanner by viewModel.showBanner.collectAsState()
 
-    // Initialize data for Edit Mode if addressId is provided
     LaunchedEffect(addressId) {
         viewModel.initData(addressId)
     }
@@ -106,129 +105,28 @@ fun CreateAddressScreen(
             },
             containerColor = Color.White
         ) { paddingValues ->
-            Column(
+            CreateAddressFormContent(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White)
-                    .padding(paddingValues)
-                    .padding(horizontal = 24.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
-                // Header Section dynamically changes based on mode
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                ) {
-                    Text(
-                        text = if (isEditMode) "EDIT ADDRESS" else "ADD ADDRESS",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = (-1).sp,
-                        color = Color.Black
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = if (isEditMode) "Update your delivery location" else "Create a new delivery location",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF4C4546)
-                    )
-                }
-
-                // 1. City / Province
-                AddressDropdownField(
-                    label = "City / Province",
-                    selectedValue = selectedCity,
-                    options = provinces.map { it.name },
-                    onOptionSelected = { viewModel.onCitySelected(it) }
-                )
-
-                // 2. District
-                AddressDropdownField(
-                    label = "District",
-                    selectedValue = selectedDistrict,
-                    options = districts.map { it.name },
-                    onOptionSelected = { viewModel.onDistrictSelected(it) },
-                    enabled = selectedCity.isNotEmpty()
-                )
-
-                // 3. Ward / Commune
-                AddressDropdownField(
-                    label = "Ward / Commune",
-                    selectedValue = selectedWard,
-                    options = wards.map { it.name },
-                    onOptionSelected = { viewModel.onWardSelected(it) },
-                    enabled = selectedDistrict.isNotEmpty()
-                )
-
-                // 4. Street Address Details
-                OutlinedTextField(
-                    value = exactAddress,
-                    onValueChange = { viewModel.onExactAddressChanged(it) },
-                    label = { Text("Street Address Details") },
-                    placeholder = { Text("e.g. 123 Air Max Boulevard, Apt 4B") },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Black,
-                        unfocusedBorderColor = Color(0xFFE5E7EB),
-                        focusedLabelColor = Color.Black,
-                        unfocusedLabelColor = Color.Gray
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                // 5. Default Address Configuration
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = isDefault,
-                        onClick = { viewModel.onDefaultChanged(!isDefault) },
-                        colors = RadioButtonDefaults.colors(
-                            selectedColor = Color.Black,
-                            unselectedColor = Color.Gray
-                        )
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Set as default delivery address",
-                        fontSize = 14.sp,
-                        color = Color.Black,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // 6. Submit Button
-                Button(
-                    onClick = { viewModel.saveAddress() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                    shape = RoundedCornerShape(50),
-                    enabled = isFormValid && !isLoading
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text(
-                            text = if (isEditMode) "UPDATE ADDRESS" else "SAVE ADDRESS",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-            }
+                    .padding(paddingValues),
+                isEditMode = isEditMode,
+                selectedCity = selectedCity,
+                selectedDistrict = selectedDistrict,
+                selectedWard = selectedWard,
+                exactAddress = exactAddress,
+                isDefault = isDefault,
+                provinces = provinces.map { it.name },
+                districts = districts.map { it.name },
+                wards = wards.map { it.name },
+                isFormValid = isFormValid,
+                isLoading = isLoading,
+                onCitySelected = viewModel::onCitySelected,
+                onDistrictSelected = viewModel::onDistrictSelected,
+                onWardSelected = viewModel::onWardSelected,
+                onExactAddressChanged = viewModel::onExactAddressChanged,
+                onDefaultChanged = viewModel::onDefaultChanged,
+                onSaveClicked = viewModel::saveAddress
+            )
         }
 
         Box(modifier = Modifier.align(Alignment.TopCenter)) {
@@ -239,5 +137,149 @@ fun CreateAddressScreen(
                 onDismiss = { viewModel.hideBanner() }
             )
         }
+    }
+}
+
+@Composable
+fun CreateAddressFormContent(
+    modifier: Modifier = Modifier,
+    isEditMode: Boolean,
+    selectedCity: String,
+    selectedDistrict: String,
+    selectedWard: String,
+    exactAddress: String,
+    isDefault: Boolean,
+    provinces: List<String>,
+    districts: List<String>,
+    wards: List<String>,
+    isFormValid: Boolean,
+    isLoading: Boolean,
+    onCitySelected: (String) -> Unit,
+    onDistrictSelected: (String) -> Unit,
+    onWardSelected: (String) -> Unit,
+    onExactAddressChanged: (String) -> Unit,
+    onDefaultChanged: (Boolean) -> Unit,
+    onSaveClicked: () -> Unit
+) {
+    Column(
+        modifier = modifier
+            .background(Color.White)
+            .padding(horizontal = 24.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        // Header Section
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        ) {
+            Text(
+                text = if (isEditMode) "EDIT ADDRESS" else "ADD ADDRESS",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = (-1).sp,
+                color = Color.Black
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = if (isEditMode) "Update your delivery location" else "Create a new delivery location",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF4C4546)
+            )
+        }
+
+        // 1. City / Province
+        AddressDropdownField(
+            label = "City / Province",
+            selectedValue = selectedCity,
+            options = provinces,
+            onOptionSelected = onCitySelected
+        )
+
+        // 2. District
+        AddressDropdownField(
+            label = "District",
+            selectedValue = selectedDistrict,
+            options = districts,
+            onOptionSelected = onDistrictSelected,
+            enabled = selectedCity.isNotEmpty()
+        )
+
+        // 3. Ward / Commune
+        AddressDropdownField(
+            label = "Ward / Commune",
+            selectedValue = selectedWard,
+            options = wards,
+            onOptionSelected = onWardSelected,
+            enabled = selectedDistrict.isNotEmpty()
+        )
+
+        // 4. Street Address Details
+        OutlinedTextField(
+            value = exactAddress,
+            onValueChange = onExactAddressChanged,
+            label = { Text("Street Address Details") },
+            placeholder = { Text("e.g. 123 Air Max Boulevard, Apt 4B") },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color.Black,
+                unfocusedBorderColor = Color(0xFFE5E7EB),
+                focusedLabelColor = Color.Black,
+                unfocusedLabelColor = Color.Gray
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // 5. Default Address Configuration
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RadioButton(
+                selected = isDefault,
+                onClick = { onDefaultChanged(!isDefault) },
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = Color.Black,
+                    unselectedColor = Color.Gray
+                )
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Set as default delivery address",
+                fontSize = 14.sp,
+                color = Color.Black,
+                fontWeight = FontWeight.Medium
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 6. Submit Button
+        Button(
+            onClick = onSaveClicked,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+            shape = RoundedCornerShape(50),
+            enabled = isFormValid && !isLoading
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Text(
+                    text = if (isEditMode) "UPDATE ADDRESS" else "SAVE ADDRESS",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }

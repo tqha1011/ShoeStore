@@ -8,6 +8,8 @@ import com.example.shoestoreapp.features.admin.voucher.data.remote.ResponseVouch
 import com.example.shoestoreapp.features.admin.voucher.data.remote.UpdateVoucherDto
 import com.example.shoestoreapp.features.admin.voucher.data.repositories.VoucherRepository
 import com.example.shoestoreapp.features.admin.voucher.data.repositories.VoucherRepositoryImpl
+import org.json.JSONObject
+import retrofit2.HttpException
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -111,54 +113,23 @@ class VoucherViewModel(
 
         val voucherName = state.voucherName.trim()
         if (voucherName.isBlank()) {
-            _uiState.update { it.copy(bannerMessage = "Voucher name is required.", isBannerSuccess = false, showBanner = true) }
-            return
-        }
-        if (state.validFrom.isBlank() || state.validTo.isBlank()) {
-            _uiState.update { it.copy(bannerMessage = "Please select valid dates.", isBannerSuccess = false, showBanner = true) }
+            showErrorBanner("Voucher name is required.")
             return
         }
 
-        val discount = state.discountValue.trim().toDoubleOrNull()
-        if (discount == null || discount <= 0.0) {
-            _uiState.update { it.copy(bannerMessage = "Discount value is invalid.", isBannerSuccess = false, showBanner = true) }
-            return
-        }
+        if (!validateVoucherFields(state)) return
 
-        val minOrder = state.minOrder.trim().toDoubleOrNull()
-        if (minOrder == null || minOrder < 0.0) {
-            _uiState.update { it.copy(bannerMessage = "Minimum order value is invalid.", isBannerSuccess = false, showBanner = true) }
-            return
-        }
-
-        val totalQuantity = state.totalQuantity.trim().toIntOrNull()
-        if (totalQuantity == null || totalQuantity <= 0) {
-            _uiState.update { it.copy(bannerMessage = "Total quantity is invalid.", isBannerSuccess = false, showBanner = true) }
-            return
-        }
-
-        val maxUsagePerUser = state.maxUsagePerUser.trim().toIntOrNull()
-        if (maxUsagePerUser == null || maxUsagePerUser <= 0) {
-            _uiState.update { it.copy(bannerMessage = "Max usage per user is invalid.", isBannerSuccess = false, showBanner = true) }
-            return
-        }
-
-        val maxPriceDiscount = if (state.discountStyle == 2) {
-            val parsed = state.maxReduction.trim().toDoubleOrNull()
-            if (parsed == null || parsed <= 0.0) {
-                _uiState.update { it.copy(bannerMessage = "Max reduction is invalid.", isBannerSuccess = false, showBanner = true) }
-                return
-            }
-            parsed
-        } else {
-            0.0
-        }
+        val discount = state.discountValue.trim().toDouble()
+        val minOrder = state.minOrder.trim().toDouble()
+        val totalQuantity = state.totalQuantity.trim().toInt()
+        val maxUsagePerUser = state.maxUsagePerUser.trim().toInt()
+        val maxPriceDiscount = if (state.discountStyle == 2) state.maxReduction.trim().toDouble() else 0.0
 
         val formattedValidFrom = parseDateToIso(state.validFrom, endOfDay = false)
         val formattedValidTo = parseDateToIso(state.validTo, endOfDay = true)
 
         if (formattedValidFrom == null || formattedValidTo == null) {
-            _uiState.update { it.copy(bannerMessage = "Invalid date format. Please use MM/dd/yyyy or yyyy-MM-dd.", isBannerSuccess = false, showBanner = true) }
+            showErrorBanner("Invalid date format. Please use MM/dd/yyyy or yyyy-MM-dd.")
             return
         }
 
@@ -176,32 +147,26 @@ class VoucherViewModel(
             validFrom = formattedValidFrom,
             validTo = formattedValidTo
         )
-        
 
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             val result = repository.createVoucher(dto)
             _uiState.update { it.copy(isLoading = false) }
             result.onSuccess {
-                _uiState.update { 
+                _uiState.update {
                     it.copy(
                         bannerMessage = "Voucher created.",
                         isBannerSuccess = true,
                         showBanner = true,
-                        voucherName = "",
-                        description = "",
-                        discountValue = "",
-                        maxReduction = "",
-                        minOrder = "",
-                        totalQuantity = "",
-                        maxUsagePerUser = "",
-                        validFrom = "",
-                        validTo = ""
+                        voucherName = "", description = "", discountValue = "",
+                        maxReduction = "", minOrder = "", totalQuantity = "",
+                        maxUsagePerUser = "", validFrom = "", validTo = ""
                     )
                 }
                 loadVouchers(true)
             }.onFailure { error ->
-                _uiState.update { it.copy(bannerMessage = error.message ?: "Unable to create voucher.", isBannerSuccess = false, showBanner = true) }
+                val realErrorMessage = parseVoucherValidationError(error)
+                showErrorBanner(realErrorMessage)
             }
         }
     }
@@ -230,7 +195,7 @@ class VoucherViewModel(
                     currentPage = pageToLoad + 1
                 }
             }.onFailure { error ->
-                _uiState.update { it.copy(bannerMessage = error.message ?: "Unable to load vouchers.", isBannerSuccess = false, showBanner = true) }
+                showErrorBanner(error.message ?: "Unable to load vouchers.")
             }
             isLoadingList = false
         }
@@ -290,7 +255,7 @@ class VoucherViewModel(
                 _showDeleteExpiredDialog.value = false
                 loadVouchers(true)
             }.onFailure { error ->
-                _uiState.update { it.copy(bannerMessage = error.message ?: "Unable to clear expired vouchers.", isBannerSuccess = false, showBanner = true) }
+                showErrorBanner(error.message ?: "Unable to clear expired vouchers.")
             }
         }
     }
@@ -304,7 +269,7 @@ class VoucherViewModel(
                 _voucherToDelete.value = null
                 loadVouchers(true)
             }.onFailure { error ->
-                _uiState.update { it.copy(bannerMessage = error.message ?: "Unable to delete voucher.", isBannerSuccess = false, showBanner = true) }
+                showErrorBanner(error.message ?: "Unable to delete voucher.")
             }
         }
     }
@@ -314,51 +279,19 @@ class VoucherViewModel(
         val voucherId = _editingVoucherId.value ?: return
         if (state.isLoading) return
 
-        if (state.validFrom.isBlank() || state.validTo.isBlank()) {
-            _uiState.update { it.copy(bannerMessage = "Please select valid dates.", isBannerSuccess = false, showBanner = true) }
-            return
-        }
+        if (!validateVoucherFields(state)) return
 
-        val discount = state.discountValue.trim().toDoubleOrNull()
-        if (discount == null || discount <= 0.0) {
-            _uiState.update { it.copy(bannerMessage = "Discount value is invalid.", isBannerSuccess = false, showBanner = true) }
-            return
-        }
-
-        val minOrder = state.minOrder.trim().toDoubleOrNull()
-        if (minOrder == null || minOrder < 0.0) {
-            _uiState.update { it.copy(bannerMessage = "Minimum order value is invalid.", isBannerSuccess = false, showBanner = true) }
-            return
-        }
-
-        val totalQuantity = state.totalQuantity.trim().toIntOrNull()
-        if (totalQuantity == null || totalQuantity <= 0) {
-            _uiState.update { it.copy(bannerMessage = "Total quantity is invalid.", isBannerSuccess = false, showBanner = true) }
-            return
-        }
-
-        val maxUsagePerUser = state.maxUsagePerUser.trim().toIntOrNull()
-        if (maxUsagePerUser == null || maxUsagePerUser <= 0) {
-            _uiState.update { it.copy(bannerMessage = "Max usage per user is invalid.", isBannerSuccess = false, showBanner = true) }
-            return
-        }
-
-        val maxPriceDiscount = if (state.discountStyle == 2) {
-            val parsed = state.maxReduction.trim().toDoubleOrNull()
-            if (parsed == null || parsed <= 0.0) {
-                _uiState.update { it.copy(bannerMessage = "Max reduction is invalid.", isBannerSuccess = false, showBanner = true) }
-                return
-            }
-            parsed
-        } else {
-            0.0
-        }
+        val discount = state.discountValue.trim().toDouble()
+        val minOrder = state.minOrder.trim().toDouble()
+        val totalQuantity = state.totalQuantity.trim().toInt()
+        val maxUsagePerUser = state.maxUsagePerUser.trim().toInt()
+        val maxPriceDiscount = if (state.discountStyle == 2) state.maxReduction.trim().toDouble() else 0.0
 
         val formattedValidFrom = parseDateToIso(state.validFrom, endOfDay = false)
         val formattedValidTo = parseDateToIso(state.validTo, endOfDay = true)
 
         if (formattedValidFrom == null || formattedValidTo == null) {
-            _uiState.update { it.copy(bannerMessage = "Invalid date format. Please use MM/dd/yyyy or yyyy-MM-dd.", isBannerSuccess = false, showBanner = true) }
+            showErrorBanner("Invalid date format. Please use MM/dd/yyyy or yyyy-MM-dd.")
             return
         }
 
@@ -380,29 +313,99 @@ class VoucherViewModel(
             val result = repository.updateVoucher(voucherId, dto)
             _uiState.update { it.copy(isLoading = false) }
             result.onSuccess {
-                _uiState.update { 
+                _uiState.update {
                     it.copy(
                         bannerMessage = "Voucher updated.",
                         isBannerSuccess = true,
                         showBanner = true,
-                        voucherName = "",
-                        description = "",
-                        discountValue = "",
-                        maxReduction = "",
-                        minOrder = "",
-                        totalQuantity = "",
-                        maxUsagePerUser = "",
-                        validFrom = "",
-                        validTo = ""
+                        voucherName = "", description = "", discountValue = "",
+                        maxReduction = "", minOrder = "", totalQuantity = "",
+                        maxUsagePerUser = "", validFrom = "", validTo = ""
                     )
                 }
                 _isEditSheetVisible.value = false
                 _editingVoucherId.value = null
                 loadVouchers(true)
             }.onFailure { error ->
-                _uiState.update { it.copy(bannerMessage = error.message ?: "Unable to update voucher.", isBannerSuccess = false, showBanner = true) }
+                val realErrorMessage = parseVoucherValidationError(error)
+                showErrorBanner(realErrorMessage)
             }
         }
+    }
+
+    // ==================
+    // CÁC HÀM PHỤ TRỢ
+    // ==================
+
+    private fun parseVoucherValidationError(throwable: Throwable): String {
+        return try {
+            val errorString = when (throwable) {
+                is HttpException -> throwable.response()?.errorBody()?.string()
+                else -> throwable.message
+            }
+
+            if (!errorString.isNullOrEmpty() && errorString.startsWith("{")) {
+                val jsonObject = JSONObject(errorString)
+
+                if (jsonObject.has("errors")) {
+                    val errorsObj = jsonObject.getJSONObject("errors")
+                    val keys = errorsObj.keys()
+                    if (keys.hasNext()) {
+                        val firstKey = keys.next()
+                        val errorArray = errorsObj.getJSONArray(firstKey)
+                        if (errorArray.length() > 0) {
+                            return errorArray.getString(0)
+                        }
+                    }
+                }
+
+                if (jsonObject.has("title")) {
+                    return jsonObject.getString("title")
+                }
+            }
+            throwable.message ?: "Action failed."
+        } catch (e: Exception) {
+            "Action failed."
+        }
+    }
+
+    private fun validateVoucherFields(state: VoucherUiState): Boolean {
+        if (state.validFrom.isBlank() || state.validTo.isBlank()) {
+            showErrorBanner("Please select valid dates.")
+            return false
+        }
+        val discount = state.discountValue.trim().toDoubleOrNull()
+        if (discount == null || discount <= 0.0) {
+            showErrorBanner("Discount value is invalid.")
+            return false
+        }
+        val minOrder = state.minOrder.trim().toDoubleOrNull()
+        if (minOrder == null || minOrder < 0.0) {
+            showErrorBanner("Minimum order value is invalid.")
+            return false
+        }
+        val totalQuantity = state.totalQuantity.trim().toIntOrNull()
+        if (totalQuantity == null || totalQuantity <= 0) {
+            showErrorBanner("Total quantity is invalid.")
+            return false
+        }
+        val maxUsage = state.maxUsagePerUser.trim().toIntOrNull()
+        if (maxUsage == null || maxUsage <= 0) {
+            showErrorBanner("Max usage per user is invalid.")
+            return false
+        }
+        if (state.discountStyle == 2) {
+            val maxRed = state.maxReduction.trim().toDoubleOrNull()
+            if (maxRed == null || maxRed <= 0.0) {
+                showErrorBanner("Max reduction is invalid.")
+                return false
+            }
+        }
+        return true
+    }
+
+    private fun showErrorBanner(message: String) {
+        _uiState.update { it.copy(bannerMessage = message, isBannerSuccess = false, showBanner = true) }
     }
 
     private fun parseDateToIso(raw: String?, endOfDay: Boolean): String? {
@@ -410,7 +413,7 @@ class VoucherViewModel(
         if (input.isEmpty()) return null
 
         val patterns = listOf(
-            "yyyy-MM-dd",
+            DATE_FORMAT_YYYY_MM_DD,
             "MM/dd/yyyy",
             "dd/MM/yyyy",
             "yyyy/MM/dd",
@@ -448,7 +451,7 @@ class VoucherViewModel(
         val inputPatterns = listOf(
             "yyyy-MM-dd'T'HH:mm:ss'Z'",
             "yyyy-MM-dd'T'HH:mm:ss",
-            "yyyy-MM-dd"
+            DATE_FORMAT_YYYY_MM_DD
         )
         val parsed = inputPatterns.firstNotNullOfOrNull { pattern ->
             val sdf = SimpleDateFormat(pattern, Locale.US).apply { isLenient = false }
@@ -459,7 +462,7 @@ class VoucherViewModel(
             }
         } ?: return input
 
-        val outFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val outFormat = SimpleDateFormat(DATE_FORMAT_YYYY_MM_DD, Locale.US)
         return outFormat.format(parsed)
     }
 
@@ -479,5 +482,6 @@ class VoucherViewModel(
 
     companion object {
         private const val DEFAULT_PAGE_SIZE = 10
+        private const val DATE_FORMAT_YYYY_MM_DD = "yyyy-MM-dd"
     }
 }

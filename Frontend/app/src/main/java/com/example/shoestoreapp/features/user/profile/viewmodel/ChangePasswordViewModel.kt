@@ -32,10 +32,18 @@ class ChangePasswordViewModel(
     val uiState: StateFlow<ChangePasswordUiState> = _uiState.asStateFlow()
 
     private val passwordPattern = "^(?=.*[A-Z])(?=.*\\d).{8,}$".toRegex()
-    val hasMinLength = MutableStateFlow(false)
-    val hasUpperCase = MutableStateFlow(false)
-    val hasDigit = MutableStateFlow(false)
-    val isPasswordValid = MutableStateFlow(false)
+
+    private val _hasMinLength = MutableStateFlow(false)
+    val hasMinLength: StateFlow<Boolean> = _hasMinLength.asStateFlow()
+
+    private val _hasUpperCase = MutableStateFlow(false)
+    val hasUpperCase: StateFlow<Boolean> = _hasUpperCase.asStateFlow()
+
+    private val _hasDigit = MutableStateFlow(false)
+    val hasDigit: StateFlow<Boolean> = _hasDigit.asStateFlow()
+
+    private val _isPasswordValid = MutableStateFlow(false)
+    val isPasswordValid: StateFlow<Boolean> = _isPasswordValid.asStateFlow()
 
     fun onOldPasswordChanged(value: String) {
         _uiState.update { it.copy(oldPassword = value) }
@@ -43,10 +51,10 @@ class ChangePasswordViewModel(
 
     fun onNewPasswordChanged(value: String) {
         _uiState.update { it.copy(newPassword = value) }
-        hasMinLength.value = value.length >= 8
-        hasUpperCase.value = value.any { it.isUpperCase() }
-        hasDigit.value = value.any { it.isDigit() }
-        isPasswordValid.value = passwordPattern.matches(value)
+        _hasMinLength.value = value.length >= 8
+        _hasUpperCase.value = value.any { it.isUpperCase() }
+        _hasDigit.value = value.any { it.isDigit() }
+        _isPasswordValid.value = passwordPattern.matches(value)
     }
 
     fun onConfirmPasswordChanged(value: String) {
@@ -69,7 +77,7 @@ class ChangePasswordViewModel(
             }
             return
         }
-        if (!isPasswordValid.value) {
+        if (!_isPasswordValid.value) {
             _uiState.update {
                 it.copy(
                     bannerMessage = "Password must be at least 8 characters and include 1 uppercase letter and 1 digit",

@@ -15,10 +15,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.ListAlt
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -54,7 +54,7 @@ fun ActiveCampaignsList(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.Default.ListAlt,
+                    imageVector = Icons.AutoMirrored.Filled.ListAlt,
                     contentDescription = null,
                     tint = Color.Black,
                     modifier = Modifier.size(20.dp)
@@ -108,22 +108,7 @@ private fun VoucherItem(
         isProduct -> " Product"
         else -> " Product"
     }
-
-    val summary = buildString {
-        if (isPercentage) {
-            val percentageValue = (voucher.discount * 100).toInt()
-            append("${percentageValue}% off")
-        } else {
-            append("${formatMoney(voucher.discount)} off")
-        }
-        append(scopeLabel)
-        if (isPercentage && voucher.maxPriceDiscount > 0.0) {
-            append(" • Up to ${formatMoney(voucher.maxPriceDiscount)}")
-        }
-        if (voucher.minOrderPrice > 0.0) {
-            append(" • Min ${formatMoney(voucher.minOrderPrice)}")
-        }
-    }
+    val summary = buildVoucherSummary(voucher, isPercentage, scopeLabel)
 
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -138,35 +123,9 @@ private fun VoucherItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(Color(0xFFF6F6F6), CircleShape)
-                        .border(1.dp, Color(0xFFEDEDED), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isPercentage) {
-                        Text(
-                            text = "%",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
-                        )
-                    } else if (isShipping) {
-                        Icon(
-                            imageVector = Icons.Default.LocalShipping,
-                            contentDescription = null,
-                            tint = Color.Black
-                        )
-                    } else {
-                        Text(
-                            text = "₫",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
-                        )
-                    }
-                }
+                // Đã tách cục vẽ icon/badge ra hàm Composable riêng
+                VoucherBadge(isPercentage = isPercentage, isShipping = isShipping)
+
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
@@ -213,6 +172,63 @@ private fun VoucherItem(
     }
 }
 
+// Hàm phụ trợ vẽ Badge để giảm độ phức tạp cho VoucherItem
+@Composable
+private fun VoucherBadge(isPercentage: Boolean, isShipping: Boolean) {
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .background(Color(0xFFF6F6F6), CircleShape)
+            .border(1.dp, Color(0xFFEDEDED), CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        if (isPercentage) {
+            Text(
+                text = "%",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+        } else if (isShipping) {
+            Icon(
+                imageVector = Icons.Default.LocalShipping,
+                contentDescription = null,
+                tint = Color.Black
+            )
+        } else {
+            Text(
+                text = "₫",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+        }
+    }
+}
+
+// Hàm phụ trợ nối chuỗi để giảm độ phức tạp cho VoucherItem
+private fun buildVoucherSummary(
+    voucher: ResponseVoucherAdminDto,
+    isPercentage: Boolean,
+    scopeLabel: String
+): String {
+    return buildString {
+        if (isPercentage) {
+            val percentageValue = (voucher.discount * 100).toInt()
+            append("${percentageValue}% off")
+        } else {
+            append("${formatMoney(voucher.discount)} off")
+        }
+        append(scopeLabel)
+        if (isPercentage && voucher.maxPriceDiscount > 0.0) {
+            append(" • Up to ${formatMoney(voucher.maxPriceDiscount)}")
+        }
+        if (voucher.minOrderPrice > 0.0) {
+            append(" • Min ${formatMoney(voucher.minOrderPrice)}")
+        }
+    }
+}
+
 private fun formatDateDdMmYyyy(raw: String): String {
     val input = raw.trim()
     if (input.isEmpty()) return ""
@@ -236,7 +252,7 @@ private fun formatDateDdMmYyyy(raw: String): String {
 }
 
 private fun formatMoney(value: Double): String {
-    val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN")).apply {
+    val formatter = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("vi-VN")).apply {
         currency = Currency.getInstance("VND")
         maximumFractionDigits = 0
     }

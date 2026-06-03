@@ -8,27 +8,36 @@ import com.example.shoestoreapp.features.admin.product.data.remote.CreateProduct
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-sealed interface AddProductUiState {
-    data object Idle : AddProductUiState
-    data object Loading : AddProductUiState
-    data object Success : AddProductUiState
-    data class Error(val message: String) : AddProductUiState
-}
+data class AddProductUiState(
+    val isLoading: Boolean = false,
+    val isSuccess: Boolean = false,
+    val bannerMessage: String = "",
+    val isBannerSuccess: Boolean = true,
+    val showBanner: Boolean = false
+)
 
 class AdminAddProductViewModel(
     private val repository: AdminProductRepository = AdminProductRepositoryImpl()
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<AddProductUiState>(AddProductUiState.Idle)
+    private val _uiState = MutableStateFlow(AddProductUiState())
     val uiState: StateFlow<AddProductUiState> = _uiState.asStateFlow()
 
     fun saveProduct(productName: String, categoryId: Int) {
-        _uiState.value = AddProductUiState.Loading
+        _uiState.update { it.copy(isLoading = true, showBanner = false) }
 
         if (productName.isBlank()) {
-            _uiState.value = AddProductUiState.Error("Product name cannot be empty.")
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    bannerMessage = "Product name cannot be empty.",
+                    isBannerSuccess = false,
+                    showBanner = true
+                )
+            }
             return
         }
 
@@ -41,17 +50,30 @@ class AdminAddProductViewModel(
         viewModelScope.launch {
             repository.createProduct(dto)
                 .onSuccess {
-                    _uiState.value = AddProductUiState.Success
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isSuccess = true,
+                            bannerMessage = "Product created successfully.",
+                            isBannerSuccess = true,
+                            showBanner = true
+                        )
+                    }
                 }
                 .onFailure { exception ->
-                    _uiState.value = AddProductUiState.Error(
-                        exception.message ?: "Unable to create product."
-                    )
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            bannerMessage = exception.message ?: "Unable to create product.",
+                            isBannerSuccess = false,
+                            showBanner = true
+                        )
+                    }
                 }
         }
     }
 
     fun resetState() {
-        _uiState.value = AddProductUiState.Idle
+        _uiState.update { it.copy(showBanner = false) }
     }
 }

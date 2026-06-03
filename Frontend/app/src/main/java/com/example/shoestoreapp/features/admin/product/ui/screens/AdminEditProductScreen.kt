@@ -47,11 +47,7 @@ import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.example.shoestoreapp.features.admin.product.viewmodel.AdminEditProductUiEvent
 import com.example.shoestoreapp.features.admin.product.viewmodel.AdminEditProductViewModel
-import com.example.shoestoreapp.features.admin.product.ui.components.EditProductTopBar
-import com.example.shoestoreapp.features.admin.product.ui.components.PhotoActionBottomSheet
-import com.example.shoestoreapp.features.admin.product.ui.components.ProductFormSection
-import com.example.shoestoreapp.features.admin.product.ui.components.VariantActionBottomSheet
-import com.example.shoestoreapp.features.admin.product.ui.components.VariantManagementSection
+import com.example.shoestoreapp.features.admin.product.ui.components.*
 import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
 import java.io.File
 
@@ -120,10 +116,14 @@ fun AdminEditProductScreen(
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is AdminEditProductUiEvent.UpdateSuccess -> {
-                    // Success is now handled by TopBanner in ViewModel state
                 }
-                AdminEditProductUiEvent.DeleteSuccess -> {
+                is AdminEditProductUiEvent.DeleteSuccess -> {
+                    kotlinx.coroutines.delay(1500)
                     onBackClick()
+                }
+                is AdminEditProductUiEvent.VariantCreateSuccess,
+                is AdminEditProductUiEvent.VariantUpdateSuccess,
+                is AdminEditProductUiEvent.VariantDeleteSuccess -> {
                 }
                 else -> Unit
             }
@@ -248,13 +248,15 @@ fun AdminEditProductScreen(
                 state = variantDraft,
                 sizes = sizes,
                 colors = colors,
-                onDismiss = viewModel::onDismissVariantSheet,
-                onImageClick = { showVariantPhotoSheet = true },
-                onSizeSelected = { viewModel.updateVariantDraft(size = it) },
-                onColorSelected = { viewModel.updateVariantDraft(color = it) },
-                onPriceChange = { viewModel.updateVariantDraft(price = it) },
-                onStockChange = { viewModel.updateVariantDraft(stock = it) },
-                onSaveClick = { viewModel.onSaveVariant(context, productId) }
+                actions = VariantBottomSheetActions(
+                    onDismiss = viewModel::onDismissVariantSheet,
+                    onImageClick = { showVariantPhotoSheet = true },
+                    onSizeSelected = { viewModel.updateVariantDraft(size = it) },
+                    onColorSelected = { viewModel.updateVariantDraft(color = it) },
+                    onPriceChange = { viewModel.updateVariantDraft(price = it) },
+                    onStockChange = { viewModel.updateVariantDraft(stock = it) },
+                    onSaveClick = { viewModel.onSaveVariant(context, productId) }
+                )
             )
         }
 

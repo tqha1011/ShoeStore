@@ -32,13 +32,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.shoestoreapp.features.user.product.ui.components.ActionButtonsSection
-import com.example.shoestoreapp.features.user.product.ui.components.AddToBagBottomSheetContent
-import com.example.shoestoreapp.features.user.product.ui.components.ExpandableSection
-import com.example.shoestoreapp.features.user.product.ui.components.ProductDetailTopAppBar
-import com.example.shoestoreapp.features.user.product.ui.components.ProductHeaderInfo
-import com.example.shoestoreapp.features.user.product.ui.components.ProductHeroImage
-import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
+
+// Gom import lại để ăn được các Data Class mới (AddToBagProductInfo, AddToBagSelectionState, AddToBagActions)
+import com.example.shoestoreapp.features.user.product.ui.components.*
+
 import com.example.shoestoreapp.features.user.product.viewmodel.AddToCartUiState
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
 import kotlinx.coroutines.launch
@@ -70,7 +67,6 @@ fun ProductDetailScreen(
     var selectedSize by rememberSaveable(productGuid) { mutableStateOf<Int?>(null) }
     var quantity by rememberSaveable(productGuid) { mutableIntStateOf(1) }
 
-    val context = LocalContext.current
     val bannerMessage by viewModel.bannerMessage.collectAsState()
     val isBannerSuccess by viewModel.isBannerSuccess.collectAsState()
     val showBanner by viewModel.showBanner.collectAsState()
@@ -248,57 +244,63 @@ fun ProductDetailScreen(
                 containerColor = Color.White
             ) {
                 AddToBagBottomSheetContent(
-                    imageUrl = selectedImageUrl ?: defaultVariant?.imageUrl,
-                    title = productDetail?.productName.orEmpty(),
-                    category = productDetail?.categoryName ?: "Category",
-                    price = selectedVariantForCart?.price ?: defaultVariant?.price ?: 0.0,
-                    colorOptions = availableColors,
-                    selectedColor = selectedColor,
-                    onColorSelected = { color: String ->
-                        val normalizedColor = color.trim()
-                        viewModel.selectColor(normalizedColor)
+                    productInfo = AddToBagProductInfo(
+                        imageUrl = selectedImageUrl ?: defaultVariant?.imageUrl,
+                        title = productDetail?.productName.orEmpty(),
+                        category = productDetail?.categoryName ?: "Category",
+                        price = selectedVariantForCart?.price ?: defaultVariant?.price ?: 0.0,
+                        colorOptions = availableColors,
+                        sizeOptions = availableSizes
+                    ),
+                    state = AddToBagSelectionState(
+                        selectedColor = selectedColor,
+                        selectedSize = selectedSize,
+                        quantity = quantity,
+                        isConfirmEnabled = selectedVariantForCart != null && !isAddToCartLoading,
+                        isLoading = isAddToCartLoading
+                    ),
+                    actions = AddToBagActions(
+                        onColorSelected = { color: String ->
+                            val normalizedColor = color.trim()
+                            viewModel.selectColor(normalizedColor)
 
-                        val validSizesForColor = selectableVariants
-                            .asSequence()
-                            .filter { variant ->
-                                variant.colorName?.trim().equals(normalizedColor, ignoreCase = true)
-                            }
-                            .mapNotNull { it.size }
-                            .distinct()
-                            .toList()
+                            val validSizesForColor = selectableVariants
+                                .asSequence()
+                                .filter { variant ->
+                                    variant.colorName?.trim().equals(normalizedColor, ignoreCase = true)
+                                }
+                                .mapNotNull { it.size }
+                                .distinct()
+                                .toList()
 
-                        if (selectedSize !in validSizesForColor) {
-                            selectedSize = null
-                        }
-                    },
-                    sizeOptions = availableSizes,
-                    selectedSize = selectedSize,
-                    onSizeSelected = { size: Int ->
-                        selectedSize = size
-                        viewModel.selectSize(size)
-                    },
-                    quantity = quantity,
-                    onDecreaseQuantity = {
-                        if (quantity > 1) quantity -= 1
-                    },
-                    onIncreaseQuantity = {
-                        quantity += 1
-                    },
-                    onClose = {
-                        if (!isAddToCartLoading) {
-                            coroutineScope.launch {
-                                sheetState.hide()
-                                showAddToBagSheet = false
+                            if (selectedSize !in validSizesForColor) {
+                                selectedSize = null
+                            }
+                        },
+                        onSizeSelected = { size: Int ->
+                            selectedSize = size
+                            viewModel.selectSize(size)
+                        },
+                        onDecreaseQuantity = {
+                            if (quantity > 1) quantity -= 1
+                        },
+                        onIncreaseQuantity = {
+                            quantity += 1
+                        },
+                        onClose = {
+                            if (!isAddToCartLoading) {
+                                coroutineScope.launch {
+                                    sheetState.hide()
+                                    showAddToBagSheet = false
+                                }
+                            }
+                        },
+                        onConfirm = {
+                            selectedVariantForCart?.let { variant ->
+                                viewModel.addCartItem(variant.publicId, quantity)
                             }
                         }
-                    },
-                    isLoading = isAddToCartLoading,
-                    onConfirm = {
-                        selectedVariantForCart?.let { variant ->
-                            viewModel.addCartItem(variant.publicId, quantity)
-                        }
-                    },
-                    isConfirmEnabled = selectedVariantForCart != null && !isAddToCartLoading
+                    )
                 )
             }
         }
