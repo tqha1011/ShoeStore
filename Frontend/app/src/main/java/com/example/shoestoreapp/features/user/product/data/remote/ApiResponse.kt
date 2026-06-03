@@ -20,11 +20,11 @@ data class ProductSearchRequest(
     fun toMap(): Map<String, String> {
         val map = mutableMapOf<String, String>()
 
-        keyword?.let { if (it.isNotBlank()) map["KeyWord"] = it }
+        keyword?.let { if (it.isNotBlank()) map["Keyword"] = it }
 
-        categoryId?.let { if (it.isNotBlank()) map["categoryId"] = it }
+        categoryId?.let { if (it.isNotBlank()) map["CategoryId"] = it }
 
-        sort?.let { if (it.isNotBlank()) map["sortBy"] = it }
+        sort?.let { if (it.isNotBlank()) map["Sort"] = it }
 
         productId?.let { map["ProductId"] = it.toString() }
         minPrice?.let { map["MinPrice"] = it.toString() }
