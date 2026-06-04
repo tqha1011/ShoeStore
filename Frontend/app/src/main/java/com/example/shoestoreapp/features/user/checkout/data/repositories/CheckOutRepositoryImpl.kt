@@ -1,12 +1,12 @@
 package com.example.shoestoreapp.features.user.checkout.data.repositories
 
 import com.example.shoestoreapp.core.networks.RetrofitInstance
+import com.example.shoestoreapp.core.utils.ApiErrorHandler
 import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutApi
 import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutResponseDto
 import com.example.shoestoreapp.features.user.checkout.data.remote.InvoiceDto
 import com.example.shoestoreapp.features.user.checkout.data.remote.PlaceOrderRequestDto
 import com.example.shoestoreapp.features.user.checkout.data.remote.PrepareCheckOutRequestDto
-import org.json.JSONObject
 import retrofit2.Response
 
 class CheckoutRepositoryImpl(
@@ -48,8 +48,7 @@ class CheckoutRepositoryImpl(
     // ==================
 
     private fun <T> Response<T>.toRepositoryException(): CheckOutRepositoryException {
-        val rawMessage = errorBody()?.string()?.takeIf { it.isNotBlank() }
-        val backendMessage = parseBackendError(rawMessage)
+        val backendMessage = ApiErrorHandler.extractErrorMessage(this)
 
         return when (code()) {
             400 -> CheckOutRepositoryException.BadRequest(backendMessage ?: CheckOutRepositoryException.ERROR_BAD_REQUEST)
@@ -59,40 +58,6 @@ class CheckoutRepositoryImpl(
             else -> CheckOutRepositoryException.Unknown(
                 backendMessage ?: "${CheckOutRepositoryException.ERROR_UNKNOWN} (HTTP ${code()})"
             )
-        }
-    }
-
-    private fun parseBackendError(rawMessage: String?): String? {
-        if (rawMessage.isNullOrBlank()) return null
-
-        return try {
-            val jsonObject = JSONObject(rawMessage)
-
-            if (jsonObject.has("errors")) {
-                val errorsObj = jsonObject.getJSONObject("errors")
-                val errorMessages = mutableListOf<String>()
-                val keys = errorsObj.keys()
-
-                while (keys.hasNext()) {
-                    val key = keys.next()
-                    val errorArray = errorsObj.getJSONArray(key)
-                    for (i in 0 until errorArray.length()) {
-                        errorMessages.add(errorArray.getString(i))
-                    }
-                }
-
-                if (errorMessages.isNotEmpty()) {
-                    return errorMessages.joinToString("\n")
-                }
-            }
-
-            if (jsonObject.has("title")) {
-                return jsonObject.getString("title")
-            }
-
-            rawMessage
-        } catch (_: Exception) {
-            rawMessage
         }
     }
 }

@@ -8,6 +8,7 @@ import com.example.shoestoreapp.features.admin.product.data.remote.ProductRespon
 import com.example.shoestoreapp.features.admin.product.data.remote.ProductSearchDto
 import com.example.shoestoreapp.features.admin.product.data.remote.ProductVariantResponseDto
 import com.example.shoestoreapp.features.admin.product.data.remote.UpdateProductDto
+import com.example.shoestoreapp.core.utils.ApiErrorHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -18,7 +19,6 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
 import retrofit2.Response
 
 class AdminProductRepositoryImpl(
@@ -61,14 +61,8 @@ class AdminProductRepositoryImpl(
                 )
             )
         } else {
-            emit(
-                AdminProductPage(
-                    items = emptyList(),
-                    pageNumber = pageIndex ?: 1,
-                    totalPages = pageIndex ?: 1,
-                    hasNext = false
-                )
-            )
+            // Ném lỗi lên Flow để ViewModel xử lý thay vì im lặng trả về list rỗng
+            throw response.toRepositoryException()
         }
     }.catch { _ ->
         emit(
@@ -79,7 +73,6 @@ class AdminProductRepositoryImpl(
                 hasNext = false
             )
         )
-
     }.flowOn(Dispatchers.IO)
 
     override suspend fun getProductById(productId: String): Result<ProductResponseDto> {
@@ -239,8 +232,7 @@ class AdminProductRepositoryImpl(
     }
 
     internal fun <T> Response<T>.toRepositoryException(): AdminProductRepositoryException {
-        val rawMessage = errorBody()?.string()?.takeIf { it.isNotBlank() }
-        val backendMessage = parseBackendError(rawMessage)
+        val backendMessage = ApiErrorHandler.extractErrorMessage(this)
 
         return when (code()) {
             400 -> AdminProductRepositoryException.BadRequest(backendMessage ?: ERROR_BAD_REQUEST)
@@ -250,40 +242,6 @@ class AdminProductRepositoryImpl(
             else -> AdminProductRepositoryException.Unknown(
                 backendMessage ?: "$ERROR_UNKNOWN (HTTP ${code()})"
             )
-        }
-    }
-
-    private fun parseBackendError(rawMessage: String?): String? {
-        if (rawMessage.isNullOrBlank()) return null
-
-        return try {
-            val jsonObject = JSONObject(rawMessage)
-
-            if (jsonObject.has("errors")) {
-                val errorsObj = jsonObject.getJSONObject("errors")
-                val errorMessages = mutableListOf<String>()
-                val keys = errorsObj.keys()
-
-                while (keys.hasNext()) {
-                    val key = keys.next()
-                    val errorArray = errorsObj.getJSONArray(key)
-                    for (i in 0 until errorArray.length()) {
-                        errorMessages.add(errorArray.getString(i))
-                    }
-                }
-
-                if (errorMessages.isNotEmpty()) {
-                    return errorMessages.joinToString("\n")
-                }
-            }
-
-            if (jsonObject.has("title")) {
-                return jsonObject.getString("title")
-            }
-
-            rawMessage
-        } catch (_: Exception) {
-            rawMessage
         }
     }
 }

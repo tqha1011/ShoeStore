@@ -1,12 +1,12 @@
 package com.example.shoestoreapp.features.admin.product.data.repositories
 
 import com.example.shoestoreapp.core.networks.RetrofitInstance
+import com.example.shoestoreapp.core.utils.ApiErrorHandler
 import com.example.shoestoreapp.features.admin.product.data.remote.ImageApi
 import com.example.shoestoreapp.features.admin.product.data.remote.ImageUploadResponseDto
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
-import org.json.JSONObject
 import retrofit2.Response
 import java.io.File
 
@@ -35,9 +35,7 @@ class ImageRepositoryImpl(
     }
 
     private fun <T> Response<T>.toRepositoryException(): ImageRepositoryException {
-        val rawMessage = errorBody()?.string()?.takeIf { it.isNotBlank() }
-        val backendMessage = parseBackendError(rawMessage)
-
+        val backendMessage = ApiErrorHandler.extractErrorMessage(this)
         return when (code()) {
             400 -> ImageRepositoryException.BadRequest(backendMessage ?: ImageRepositoryException.ERROR_BAD_REQUEST)
             401 -> ImageRepositoryException.Unauthorized(backendMessage ?: ImageRepositoryException.ERROR_UNAUTHORIZED)
@@ -48,28 +46,4 @@ class ImageRepositoryImpl(
         }
     }
 
-    private fun parseBackendError(rawMessage: String?): String? {
-        if (rawMessage.isNullOrBlank()) return null
-        return try {
-            val jsonObject = JSONObject(rawMessage)
-
-            if (jsonObject.has("errors")) {
-                val errorsObj = jsonObject.getJSONObject("errors")
-                val errorMessages = mutableListOf<String>()
-                val keys = errorsObj.keys()
-                while (keys.hasNext()) {
-                    val key = keys.next()
-                    val errorArray = errorsObj.getJSONArray(key)
-                    for (i in 0 until errorArray.length()) {
-                        errorMessages.add(errorArray.getString(i))
-                    }
-                }
-                if (errorMessages.isNotEmpty()) return errorMessages.joinToString("\n")
-            }
-            if (jsonObject.has("title")) return jsonObject.getString("title")
-            rawMessage
-        } catch (e: Exception) {
-            rawMessage
-        }
-    }
 }

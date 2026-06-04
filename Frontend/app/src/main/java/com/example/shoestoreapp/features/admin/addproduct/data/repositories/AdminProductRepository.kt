@@ -3,7 +3,7 @@ package com.example.shoestoreapp.features.admin.addproduct.data.repositories
 import com.example.shoestoreapp.core.networks.RetrofitInstance
 import com.example.shoestoreapp.features.admin.product.data.remote.AdminProductApi
 import com.example.shoestoreapp.features.admin.product.data.remote.CreateProductDto
-import org.json.JSONObject
+import com.example.shoestoreapp.core.utils.ApiErrorHandler
 import retrofit2.Response
 
 fun interface AdminProductRepository {
@@ -39,8 +39,7 @@ class AdminProductRepositoryImpl(
     }
 
     private fun <T> Response<T>.toRepositoryException(): AdminProductRepositoryException {
-        val rawMessage = errorBody()?.string()?.takeIf { it.isNotBlank() }
-        val backendMessage = parseBackendError(rawMessage)
+        val backendMessage = ApiErrorHandler.extractErrorMessage(this)
 
         return when (code()) {
             400 -> AdminProductRepositoryException.BadRequest(backendMessage ?: ERROR_BAD_REQUEST)
@@ -49,31 +48,6 @@ class AdminProductRepositoryImpl(
             else -> AdminProductRepositoryException.Unknown(
                 backendMessage ?: "$ERROR_UNKNOWN (HTTP ${code()})"
             )
-        }
-    }
-
-    private fun parseBackendError(rawMessage: String?): String? {
-        if (rawMessage.isNullOrBlank()) return null
-
-        return try {
-            val jsonObject = JSONObject(rawMessage)
-            if (jsonObject.has("errors")) {
-                val errorsObj = jsonObject.getJSONObject("errors")
-                val errorMessages = mutableListOf<String>()
-                val keys = errorsObj.keys()
-                while (keys.hasNext()) {
-                    val key = keys.next()
-                    val errorArray = errorsObj.getJSONArray(key)
-                    for (i in 0 until errorArray.length()) {
-                        errorMessages.add(errorArray.getString(i))
-                    }
-                }
-                if (errorMessages.isNotEmpty()) return errorMessages.joinToString("\n")
-            }
-            if (jsonObject.has("title")) return jsonObject.getString("title")
-            rawMessage
-        } catch (_: Exception) {
-            rawMessage
         }
     }
 }

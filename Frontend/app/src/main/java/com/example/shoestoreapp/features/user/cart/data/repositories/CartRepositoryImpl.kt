@@ -1,13 +1,13 @@
 package com.example.shoestoreapp.features.user.cart.data.repositories
 
 import com.example.shoestoreapp.core.networks.RetrofitInstance
+import com.example.shoestoreapp.core.utils.ApiErrorHandler
 import com.example.shoestoreapp.features.user.cart.data.remote.AddCartItemRequest
 import com.example.shoestoreapp.features.user.cart.data.remote.CartApi
 import com.example.shoestoreapp.features.user.cart.data.remote.CartItemResponseDto
 import com.example.shoestoreapp.features.user.cart.data.remote.CartResponseDto
 import com.example.shoestoreapp.features.user.cart.data.remote.UpdateCartItemRequest
 import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutRequestDto
-import org.json.JSONObject
 import retrofit2.Response
 
 /**
@@ -102,8 +102,7 @@ class CartRepositoryImpl(
     }
 
     private fun <T> Response<T>.toRepositoryException(isFetch: Boolean = false): CartRepositoryException {
-        val rawMessage = errorBody()?.string()?.takeIf { it.isNotBlank() }
-        val backendMessage = parseBackendError(rawMessage)
+        val backendMessage = ApiErrorHandler.extractErrorMessage(this)
 
         return when (code()) {
             400 -> CartRepositoryException.BadRequest(backendMessage ?: CartRepositoryException.ERROR_BAD_REQUEST)
@@ -119,33 +118,6 @@ class CartRepositoryImpl(
             else -> CartRepositoryException.Unknown(
                 backendMessage ?: if (isFetch) "${CartRepositoryException.FETCH_ERROR_UNKNOWN} (HTTP ${code()})" else "${CartRepositoryException.ERROR_UNKNOWN} (HTTP ${code()})"
             )
-        }
-    }
-
-    private fun parseBackendError(rawMessage: String?): String? {
-        if (rawMessage.isNullOrBlank()) return null
-        return try {
-            val jsonObject = JSONObject(rawMessage)
-            if (jsonObject.has("errors")) {
-                val errorsObj = jsonObject.getJSONObject("errors")
-                val errorMessages = mutableListOf<String>()
-                val keys = errorsObj.keys()
-                while (keys.hasNext()) {
-                    val key = keys.next()
-                    val errorArray = errorsObj.getJSONArray(key)
-                    for (i in 0 until errorArray.length()) {
-                        errorMessages.add(errorArray.getString(i))
-                    }
-                }
-                if (errorMessages.isNotEmpty()) return errorMessages.joinToString("\n")
-            }
-            if (jsonObject.has("detail")) return jsonObject.getString("detail")
-            if (jsonObject.has("message")) return jsonObject.getString("message")
-            if (jsonObject.has("title")) return jsonObject.getString("title")
-
-            rawMessage
-        } catch (_: Exception) {
-            rawMessage
         }
     }
 }

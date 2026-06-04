@@ -1,11 +1,11 @@
 package com.example.shoestoreapp.features.user.voucher.data.repositories
 
 import com.example.shoestoreapp.core.networks.RetrofitInstance
+import com.example.shoestoreapp.core.utils.ApiErrorHandler
 import com.example.shoestoreapp.features.user.voucher.data.remote.PaginatedResponse
 import com.example.shoestoreapp.features.user.voucher.data.remote.VoucherApi
 import com.example.shoestoreapp.features.user.voucher.data.remote.VoucherDto
 import com.example.shoestoreapp.features.user.voucher.data.remote.VoucherUserDto
-import org.json.JSONObject
 import retrofit2.Response
 
 class VoucherRepositoryImpl(
@@ -64,8 +64,7 @@ class VoucherRepositoryImpl(
     // ================
 
     private fun <T> Response<T>.toRepositoryException(): UserVoucherRepositoryException {
-        val rawMessage = errorBody()?.string()?.takeIf { it.isNotBlank() }
-        val backendMessage = parseBackendError(rawMessage)
+        val backendMessage = ApiErrorHandler.extractErrorMessage(this)
 
         return when (code()) {
             400 -> UserVoucherRepositoryException.BadRequest(backendMessage ?: UserVoucherRepositoryException.ERROR_BAD_REQUEST)
@@ -73,33 +72,6 @@ class VoucherRepositoryImpl(
             404 -> UserVoucherRepositoryException.NotFound(backendMessage ?: UserVoucherRepositoryException.ERROR_NOT_FOUND)
             500 -> UserVoucherRepositoryException.ServerError(backendMessage ?: UserVoucherRepositoryException.ERROR_SERVER)
             else -> UserVoucherRepositoryException.Unknown(backendMessage ?: "${UserVoucherRepositoryException.ERROR_UNKNOWN} (HTTP ${code()})")
-        }
-    }
-
-    private fun parseBackendError(rawMessage: String?): String? {
-        if (rawMessage.isNullOrBlank()) return null
-        return try {
-            val jsonObject = JSONObject(rawMessage)
-
-            if (jsonObject.has("errors")) {
-                val errorsObj = jsonObject.getJSONObject("errors")
-                val errorMessages = mutableListOf<String>()
-                val keys = errorsObj.keys()
-                while (keys.hasNext()) {
-                    val key = keys.next()
-                    val errorArray = errorsObj.getJSONArray(key)
-                    for (i in 0 until errorArray.length()) {
-                        errorMessages.add(errorArray.getString(i))
-                    }
-                }
-                if (errorMessages.isNotEmpty()) return errorMessages.joinToString("\n")
-            }
-            if (jsonObject.has("title")) return jsonObject.getString("title")
-            if (jsonObject.has("message")) return jsonObject.getString("message")
-
-            rawMessage
-        } catch (_: Exception) {
-            rawMessage
         }
     }
 }
