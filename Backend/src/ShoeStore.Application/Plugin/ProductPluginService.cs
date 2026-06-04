@@ -46,6 +46,7 @@ public class ProductPluginService(
             return new SearchResultDto("UserNotValid", "User is not valid", []);
         }
 
+        Console.WriteLine($"[LLM CALL] Function: search-product | User: {currentUser.Id} | Keyword: {keyword}");
         var productKeywords = new ProductSearchRequest
         {
             Keyword = keyword
@@ -56,7 +57,7 @@ public class ProductPluginService(
                 p.PublicId,
                 p.ProductName,
                 p.Brand ?? "Nike",
-                p.Category!.Name))
+                p.Category != null ? p.Category.Name : "No contains category"))
             .Take(20)
             .ToListAsync(token);
         var response = products.Count switch
