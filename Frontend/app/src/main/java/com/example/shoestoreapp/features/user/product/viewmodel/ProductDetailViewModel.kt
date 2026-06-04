@@ -8,9 +8,10 @@ import com.example.shoestoreapp.features.user.cart.data.repositories.CartReposit
 import com.example.shoestoreapp.features.user.product.data.models.Product
 import com.example.shoestoreapp.features.user.product.data.models.ProductVariant
 import com.example.shoestoreapp.features.user.product.data.repositories.ProductRepository
+import com.example.shoestoreapp.features.user.product.data.repositories.ProductRepositoryImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 sealed interface AddToCartUiState {
@@ -21,7 +22,7 @@ sealed interface AddToCartUiState {
 }
 
 class ProductDetailViewModel(
-    private val productRepository: ProductRepository = ProductRepository(),
+    private val productRepository: ProductRepository = ProductRepositoryImpl(),
     private val cartRepository: CartRepository = CartRepositoryImpl()
 ) : ViewModel() {
 
@@ -68,23 +69,32 @@ class ProductDetailViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val product = productRepository.getProductDetail(productGuid).first()
-                _productDetail.value = product
-                
-                if (product?.variants?.isNotEmpty() ?: false) {
-                    val matchedVariant = if (!passedColorName.isNullOrEmpty()) {
-                        product.variants.firstOrNull {
-                            it.colorName?.trim()?.equals(passedColorName.trim(), ignoreCase = true) == true
-                        }
-                    } else null
+                val product = productRepository.getProductDetail(productGuid).firstOrNull()
 
-                    val defaultVariant = matchedVariant ?: product.variants.first()
-                    
-                    _selectedColor.value = defaultVariant.colorName?.trim()
-                    _selectedImageUrl.value = defaultVariant.imageUrl
+                if (product != null) {
+                    _productDetail.value = product
+
+                    if (product.variants.isNotEmpty()) {
+                        val matchedVariant = if (!passedColorName.isNullOrEmpty()) {
+                            product.variants.firstOrNull {
+                                it.colorName?.trim()?.equals(passedColorName.trim(), ignoreCase = true) == true
+                            }
+                        } else null
+
+                        val defaultVariant = matchedVariant ?: product.variants.first()
+
+                        _selectedColor.value = defaultVariant.colorName?.trim()
+                        _selectedImageUrl.value = defaultVariant.imageUrl
+                    }
+                } else {
+                    _bannerMessage.value = "Product details not found."
+                    _isBannerSuccess.value = false
+                    _showBanner.value = true
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                _bannerMessage.value = e.message ?: "Failed to load product details."
+                _isBannerSuccess.value = false
+                _showBanner.value = true
             } finally {
                 _isLoading.value = false
             }

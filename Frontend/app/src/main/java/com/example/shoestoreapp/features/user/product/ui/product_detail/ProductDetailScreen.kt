@@ -229,6 +229,9 @@ fun ProductDetailScreen(
                 .padding(bottom = 24.dp)
         )
 
+        // ==========================================
+        // BOTTOM SHEET CÓ CHỨA BANNER
+        // ==========================================
         if (showAddToBagSheet) {
             ModalBottomSheet(
                 onDismissRequest = {
@@ -239,73 +242,86 @@ fun ProductDetailScreen(
                 sheetState = sheetState,
                 containerColor = Color.White
             ) {
-                AddToBagBottomSheetContent(
-                    productInfo = AddToBagProductInfo(
-                        imageUrl = selectedImageUrl ?: defaultVariant?.imageUrl,
-                        title = productDetail?.productName.orEmpty(),
-                        category = productDetail?.categoryName ?: "Category",
-                        price = selectedVariantForCart?.price ?: defaultVariant?.price ?: 0.0,
-                        colorOptions = availableColors,
-                        sizeOptions = availableSizes
-                    ),
-                    state = AddToBagSelectionState(
-                        selectedColor = selectedColor,
-                        selectedSize = selectedSize,
-                        quantity = quantity,
-                        isConfirmEnabled = selectedVariantForCart != null && !isAddToCartLoading,
-                        isLoading = isAddToCartLoading
-                    ),
-                    actions = AddToBagActions(
-                        onColorSelected = { color: String ->
-                            val normalizedColor = color.trim()
-                            viewModel.selectColor(normalizedColor)
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    AddToBagBottomSheetContent(
+                        productInfo = AddToBagProductInfo(
+                            imageUrl = selectedImageUrl ?: defaultVariant?.imageUrl,
+                            title = productDetail?.productName.orEmpty(),
+                            category = productDetail?.categoryName ?: "Category",
+                            price = selectedVariantForCart?.price ?: defaultVariant?.price ?: 0.0,
+                            colorOptions = availableColors,
+                            sizeOptions = availableSizes
+                        ),
+                        state = AddToBagSelectionState(
+                            selectedColor = selectedColor,
+                            selectedSize = selectedSize,
+                            quantity = quantity,
+                            isConfirmEnabled = selectedVariantForCart != null && !isAddToCartLoading,
+                            isLoading = isAddToCartLoading
+                        ),
+                        actions = AddToBagActions(
+                            onColorSelected = { color: String ->
+                                val normalizedColor = color.trim()
+                                viewModel.selectColor(normalizedColor)
 
-                            val validSizesForColor = selectableVariants
-                                .asSequence()
-                                .filter { variant ->
-                                    variant.colorName?.trim().equals(normalizedColor, ignoreCase = true)
-                                }
-                                .mapNotNull { it.size }
-                                .distinct()
-                                .toList()
+                                val validSizesForColor = selectableVariants
+                                    .asSequence()
+                                    .filter { variant ->
+                                        variant.colorName?.trim().equals(normalizedColor, ignoreCase = true)
+                                    }
+                                    .mapNotNull { it.size }
+                                    .distinct()
+                                    .toList()
 
-                            if (selectedSize !in validSizesForColor) {
-                                selectedSize = null
-                            }
-                        },
-                        onSizeSelected = { size: Int ->
-                            selectedSize = size
-                            viewModel.selectSize(size)
-                        },
-                        onDecreaseQuantity = {
-                            if (quantity > 1) quantity -= 1
-                        },
-                        onIncreaseQuantity = {
-                            quantity += 1
-                        },
-                        onClose = {
-                            if (!isAddToCartLoading) {
-                                coroutineScope.launch {
-                                    sheetState.hide()
-                                    showAddToBagSheet = false
+                                if (selectedSize !in validSizesForColor) {
+                                    selectedSize = null
+                                }
+                            },
+                            onSizeSelected = { size: Int ->
+                                selectedSize = size
+                                viewModel.selectSize(size)
+                            },
+                            onDecreaseQuantity = {
+                                if (quantity > 1) quantity -= 1
+                            },
+                            onIncreaseQuantity = {
+                                quantity += 1
+                            },
+                            onClose = {
+                                if (!isAddToCartLoading) {
+                                    coroutineScope.launch {
+                                        sheetState.hide()
+                                        showAddToBagSheet = false
+                                    }
+                                }
+                            },
+                            onConfirm = {
+                                selectedVariantForCart?.let { variant ->
+                                    viewModel.addCartItem(variant.publicId, quantity)
                                 }
                             }
-                        },
-                        onConfirm = {
-                            selectedVariantForCart?.let { variant ->
-                                viewModel.addCartItem(variant.publicId, quantity)
-                            }
-                        }
+                        )
                     )
-                )
+
+                    // TopBanner trong Bottom Sheet
+                    Box(modifier = Modifier.align(Alignment.TopCenter)) {
+                        TopBanner(
+                            message = bannerMessage,
+                            isSuccess = isBannerSuccess,
+                            isVisible = showBanner,
+                            onDismiss = { viewModel.hideBanner() }
+                        )
+                    }
+                }
             }
         }
 
+        // TopBanner bên ngoài này vẫn giữ để báo lỗi ở màn hình chính (khi không mở Bottom Sheet)
         Box(modifier = Modifier.align(Alignment.TopCenter)) {
             TopBanner(
                 message = bannerMessage,
                 isSuccess = isBannerSuccess,
-                isVisible = showBanner,
+                isVisible = showBanner && !showAddToBagSheet, // Chỉ hiện khi Bottom Sheet đang ĐÓNG
                 onDismiss = { viewModel.hideBanner() }
             )
         }

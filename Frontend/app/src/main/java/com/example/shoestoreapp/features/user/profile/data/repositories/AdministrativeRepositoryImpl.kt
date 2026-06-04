@@ -1,26 +1,27 @@
 package com.example.shoestoreapp.features.user.profile.data.repositories
 
-import android.util.Log
+import com.example.shoestoreapp.core.utils.ApiErrorHandler
 import com.example.shoestoreapp.features.user.profile.data.remote.AdministrativeApi
 import com.example.shoestoreapp.features.user.profile.data.remote.AdministrativeApiService
 import com.example.shoestoreapp.features.user.profile.data.remote.DistrictDto
 import com.example.shoestoreapp.features.user.profile.data.remote.ProvinceDto
 import com.example.shoestoreapp.features.user.profile.data.remote.WardDto
+import retrofit2.Response
 
 class AdministrativeRepositoryImpl(
     private val api: AdministrativeApi = AdministrativeApiService.api
 ) : AdministrativeRepository {
+
     override suspend fun getProvinces(): Result<List<ProvinceDto>> {
         return try {
             val response = api.getProvinces()
             if (response.isSuccessful) {
                 Result.success(response.body().orEmpty())
             } else {
-                Result.failure(Exception("Fetch provinces failed (HTTP ${response.code()})"))
+                Result.failure(response.toRepositoryException())
             }
         } catch (e: Exception) {
-            Log.e("API_ERROR", "Lỗi kéo API: ${e.message}", e)
-            Result.failure(e)
+            Result.failure(AdministrativeRepositoryException.Unknown(e.message ?: AdministrativeRepositoryException.ERROR_UNKNOWN))
         }
     }
 
@@ -30,10 +31,10 @@ class AdministrativeRepositoryImpl(
             if (response.isSuccessful) {
                 Result.success(response.body()?.districts.orEmpty())
             } else {
-                Result.failure(Exception("Fetch districts failed (HTTP ${response.code()})"))
+                Result.failure(response.toRepositoryException())
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(AdministrativeRepositoryException.Unknown(e.message ?: AdministrativeRepositoryException.ERROR_UNKNOWN))
         }
     }
 
@@ -43,11 +44,28 @@ class AdministrativeRepositoryImpl(
             if (response.isSuccessful) {
                 Result.success(response.body()?.wards.orEmpty())
             } else {
-                Result.failure(Exception("Fetch wards failed (HTTP ${response.code()})"))
+                Result.failure(response.toRepositoryException())
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(AdministrativeRepositoryException.Unknown(e.message ?: AdministrativeRepositoryException.ERROR_UNKNOWN))
+        }
+    }
+
+    // ================
+    // LOGIC PARSE LỖI
+    // ================
+
+    private fun <T> Response<T>.toRepositoryException(): AdministrativeRepositoryException {
+        val backendMessage = ApiErrorHandler.extractErrorMessage(this)
+
+        return when (code()) {
+            400 -> AdministrativeRepositoryException.BadRequest(backendMessage ?: AdministrativeRepositoryException.ERROR_BAD_REQUEST)
+            401 -> AdministrativeRepositoryException.Unauthorized(backendMessage ?: AdministrativeRepositoryException.ERROR_UNAUTHORIZED)
+            404 -> AdministrativeRepositoryException.NotFound(backendMessage ?: AdministrativeRepositoryException.ERROR_NOT_FOUND)
+            500 -> AdministrativeRepositoryException.ServerError(backendMessage ?: AdministrativeRepositoryException.ERROR_SERVER)
+            else -> AdministrativeRepositoryException.Unknown(
+                backendMessage ?: "${AdministrativeRepositoryException.ERROR_UNKNOWN} (HTTP ${code()})"
+            )
         }
     }
 }
-

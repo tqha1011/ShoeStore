@@ -38,6 +38,7 @@ class ManageAddressViewModel(
     fun hideBanner() {
         _showBanner.value = false
     }
+
     init {
         fetchAddresses()
     }
@@ -66,9 +67,6 @@ class ManageAddressViewModel(
     fun removeAddress(id: String) {
         val currentState = _uiState.value
         if (currentState !is ManageAddressUiState.Success) return
-
-        _uiState.value = ManageAddressUiState.Loading
-
         viewModelScope.launch {
             repository.deleteAddress(id)
                 .onSuccess {
@@ -81,8 +79,6 @@ class ManageAddressViewModel(
                     _bannerMessage.value = error.message ?: "Failed to delete address"
                     _isBannerSuccess.value = false
                     _showBanner.value = true
-
-                    _uiState.value = ManageAddressUiState.Success(currentState.addresses)
                 }
         }
     }
@@ -133,7 +129,6 @@ class ManageAddressViewModel(
                     _bannerMessage.value = error.message ?: "Failed to set default address"
                     _isBannerSuccess.value = false
                     _showBanner.value = true
-                    _uiState.value = ManageAddressUiState.Success(currentState.addresses)
                 }
         }
     }

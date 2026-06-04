@@ -77,7 +77,7 @@ fun AdminProductCrudScreen(
                 // Header
                 Column(modifier = Modifier.padding(bottom = 24.dp)) {
                     Text(
-                        text = "ADD/EDIT PRODUCT",
+                        text = "ADD PRODUCT",
                         fontSize = 28.sp,
                         fontWeight = FontWeight.Bold,
                         color = AdminCrudColors.onSurface

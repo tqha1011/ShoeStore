@@ -8,6 +8,7 @@ import com.example.shoestoreapp.features.admin.product.data.remote.ProductRespon
 import com.example.shoestoreapp.features.admin.product.data.remote.ProductSearchDto
 import com.example.shoestoreapp.features.admin.product.data.remote.ProductVariantResponseDto
 import com.example.shoestoreapp.features.admin.product.data.remote.UpdateProductDto
+import com.example.shoestoreapp.core.utils.ApiErrorHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -18,6 +19,7 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import retrofit2.Response
 
 class AdminProductRepositoryImpl(
     private val adminApi: AdminProductApi = RetrofitInstance.adminApi
@@ -59,14 +61,8 @@ class AdminProductRepositoryImpl(
                 )
             )
         } else {
-            emit(
-                AdminProductPage(
-                    items = emptyList(),
-                    pageNumber = pageIndex ?: 1,
-                    totalPages = pageIndex ?: 1,
-                    hasNext = false
-                )
-            )
+            // Ném lỗi lên Flow để ViewModel xử lý thay vì im lặng trả về list rỗng
+            throw response.toRepositoryException()
         }
     }.catch { _ ->
         emit(
@@ -77,7 +73,6 @@ class AdminProductRepositoryImpl(
                 hasNext = false
             )
         )
-
     }.flowOn(Dispatchers.IO)
 
     override suspend fun getProductById(productId: String): Result<ProductResponseDto> {
@@ -234,5 +229,19 @@ class AdminProductRepositoryImpl(
             stock = totalStock,
             variantsCount = variantsCount
         )
+    }
+
+    internal fun <T> Response<T>.toRepositoryException(): AdminProductRepositoryException {
+        val backendMessage = ApiErrorHandler.extractErrorMessage(this)
+
+        return when (code()) {
+            400 -> AdminProductRepositoryException.BadRequest(backendMessage ?: ERROR_BAD_REQUEST)
+            401 -> AdminProductRepositoryException.Unauthorized(backendMessage ?: ERROR_UNAUTHORIZED)
+            404 -> AdminProductRepositoryException.NotFound(backendMessage ?: ERROR_NOT_FOUND)
+            500 -> AdminProductRepositoryException.ServerError(backendMessage ?: ERROR_SERVER)
+            else -> AdminProductRepositoryException.Unknown(
+                backendMessage ?: "$ERROR_UNKNOWN (HTTP ${code()})"
+            )
+        }
     }
 }

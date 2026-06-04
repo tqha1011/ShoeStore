@@ -1,6 +1,7 @@
 package com.example.shoestoreapp.features.admin.product.data.repositories
 
 import com.example.shoestoreapp.core.networks.RetrofitInstance
+import com.example.shoestoreapp.core.utils.ApiErrorHandler
 import com.example.shoestoreapp.features.admin.product.data.remote.ImageApi
 import com.example.shoestoreapp.features.admin.product.data.remote.ImageUploadResponseDto
 import okhttp3.MediaType.Companion.toMediaType
@@ -8,11 +9,6 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import retrofit2.Response
 import java.io.File
-
-private const val ERROR_BAD_REQUEST = "Invalid image file. Please try another image."
-private const val ERROR_UNAUTHORIZED = "Unauthorized. Please sign in again."
-private const val ERROR_SERVER = "Server error. Please try again later."
-private const val ERROR_UNKNOWN = "Unable to upload image right now."
 
 class ImageRepositoryImpl(
     private val api: ImageApi = RetrofitInstance.imageApi
@@ -34,20 +30,20 @@ class ImageRepositoryImpl(
                 Result.failure(response.toRepositoryException())
             }
         } catch (e: Exception) {
-            Result.failure(ImageRepositoryException.Unknown(e.message ?: ERROR_UNKNOWN))
+            Result.failure(ImageRepositoryException.Unknown(e.message ?: ImageRepositoryException.ERROR_UNKNOWN))
         }
     }
 
     private fun <T> Response<T>.toRepositoryException(): ImageRepositoryException {
-        val backendMessage = errorBody()?.string()?.takeIf { it.isNotBlank() }
-
+        val backendMessage = ApiErrorHandler.extractErrorMessage(this)
         return when (code()) {
-            400 -> ImageRepositoryException.BadRequest(backendMessage ?: ERROR_BAD_REQUEST)
-            401 -> ImageRepositoryException.Unauthorized(backendMessage ?: ERROR_UNAUTHORIZED)
-            500 -> ImageRepositoryException.ServerError(backendMessage ?: ERROR_SERVER)
+            400 -> ImageRepositoryException.BadRequest(backendMessage ?: ImageRepositoryException.ERROR_BAD_REQUEST)
+            401 -> ImageRepositoryException.Unauthorized(backendMessage ?: ImageRepositoryException.ERROR_UNAUTHORIZED)
+            500 -> ImageRepositoryException.ServerError(backendMessage ?: ImageRepositoryException.ERROR_SERVER)
             else -> ImageRepositoryException.Unknown(
-                backendMessage ?: "$ERROR_UNKNOWN (HTTP ${code()})"
+                backendMessage ?: "${ImageRepositoryException.ERROR_UNKNOWN} (HTTP ${code()})"
             )
         }
     }
+
 }
