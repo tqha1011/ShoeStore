@@ -58,7 +58,6 @@ import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.roundToLong
 
-// 1. Gom nhóm thông tin sản phẩm
 data class AddToBagProductInfo(
     val imageUrl: String?,
     val title: String,
@@ -68,7 +67,6 @@ data class AddToBagProductInfo(
     val sizeOptions: List<Int>
 )
 
-// 2. Gom nhóm các trạng thái lựa chọn
 data class AddToBagSelectionState(
     val selectedColor: String?,
     val selectedSize: Int?,
@@ -77,7 +75,6 @@ data class AddToBagSelectionState(
     val isLoading: Boolean = false
 )
 
-// 3. Gom nhóm các hành động (callbacks)
 data class AddToBagActions(
     val onColorSelected: (String) -> Unit,
     val onSizeSelected: (Int) -> Unit,
@@ -94,7 +91,6 @@ fun AddToBagBottomSheetContent(
     state: AddToBagSelectionState,
     actions: AddToBagActions
 ) {
-    // 1. BIẾN QUẢN LÝ TRẠNG THÁI HIỂN THỊ CỦA DIALOG
     var showSizeGuideDialog by remember { mutableStateOf(false) }
 
     Column(
@@ -104,57 +100,7 @@ fun AddToBagBottomSheetContent(
             .padding(bottom = 24.dp)
             .fillMaxHeight(0.95f)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.Top
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(88.dp)
-                    .background(Color(0xFFF7F7F7), RoundedCornerShape(12.dp))
-                    .border(1.dp, Color(0xFFEAEAEA), RoundedCornerShape(12.dp))
-            ) {
-                AsyncImage(
-                    model = productInfo.imageUrl,
-                    contentDescription = productInfo.title,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 12.dp)
-            ) {
-                Text(
-                    text = productInfo.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Black
-                )
-                Text(
-                    text = productInfo.category,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color(0xFF757575),
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-                Text(
-                    text = formatVnd(productInfo.price),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-
-            IconButton(onClick = actions.onClose) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Close"
-                )
-            }
-        }
+        ProductHeaderSection(productInfo, actions.onClose)
 
         Column(
             modifier = Modifier
@@ -163,209 +109,320 @@ fun AddToBagBottomSheetContent(
         ) {
             Spacer(modifier = Modifier.height(20.dp))
 
-            Text(
-                text = "COLOR",
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold
+            ColorSelectionSection(
+                colorOptions = productInfo.colorOptions,
+                selectedColor = state.selectedColor,
+                onColorSelected = actions.onColorSelected
             )
-            Row(modifier = Modifier.padding(top = 12.dp)) {
-                productInfo.colorOptions.forEach { colorName ->
-                    val isSelected = state.selectedColor == colorName
-                    val borderColor = if (isSelected) Color.Black else Color(0xFFE0E0E0)
-
-                    Box(
-                        modifier = Modifier
-                            .padding(end = 12.dp)
-                            .size(44.dp)
-                            .border(
-                                BorderStroke(
-                                    width = if (isSelected) 2.dp else 1.dp,
-                                    color = borderColor
-                                ),
-                                shape = CircleShape
-                            )
-                            .clickable { actions.onColorSelected(colorName) }
-                            .padding(4.dp)
-                            .background(color = colorNameToSwatch(colorName), shape = CircleShape)
-                    )
-                }
-            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "SIZE",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                TextButton(
-                    onClick = {
-                        showSizeGuideDialog = true
-                    }
-                ) {
-                    Text(
-                        text = "SIZE GUIDE",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFF616161),
-                        fontWeight = FontWeight.Bold,
-                        textDecoration = TextDecoration.Underline
-                    )
-                }
-            }
-
-            Row(modifier = Modifier.fillMaxWidth()) {
-                productInfo.sizeOptions.forEach { size ->
-                    val isSelected = state.selectedSize == size
-                    OutlinedButton(
-                        onClick = { actions.onSizeSelected(size) },
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 6.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (isSelected) Color.Black else Color.White,
-                            contentColor = if (isSelected) Color.White else Color.Black
-                        ),
-                        border = BorderStroke(
-                            width = 1.dp,
-                            color = if (isSelected) Color.Black else Color(0xFFE0E0E0)
-                        )
-                    ) {
-                        Text(
-                            text = size.toString(),
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-            }
+            SizeSelectionSection(
+                sizeOptions = productInfo.sizeOptions,
+                selectedSize = state.selectedSize,
+                onSizeSelected = actions.onSizeSelected,
+                onShowSizeGuide = { showSizeGuideDialog = true }
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                text = "QUANTITY",
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold
+            QuantitySelectionSection(
+                quantity = state.quantity,
+                onDecrease = actions.onDecreaseQuantity,
+                onIncrease = actions.onIncreaseQuantity
             )
-
-            Row(
-                modifier = Modifier
-                    .padding(top = 12.dp)
-                    .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(8.dp))
-                    .height(48.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = actions.onDecreaseQuantity) {
-                    Icon(
-                        imageVector = Icons.Default.Remove,
-                        contentDescription = "Decrease quantity"
-                    )
-                }
-                Text(
-                    text = state.quantity.toString(),
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.width(40.dp),
-                    color = Color.Black,
-                    textAlign = TextAlign.Center
-                )
-                IconButton(onClick = actions.onIncreaseQuantity) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Increase quantity"
-                    )
-                }
-            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
-            onClick = actions.onConfirm,
-            enabled = state.isConfirmEnabled && !state.isLoading,
+        ConfirmButtonSection(
+            isConfirmEnabled = state.isConfirmEnabled,
+            isLoading = state.isLoading,
+            onConfirm = actions.onConfirm
+        )
+    }
+
+    if (showSizeGuideDialog) {
+        SizeGuideDialog(onDismiss = { showSizeGuideDialog = false })
+    }
+}
+
+@Composable
+private fun ProductHeaderSection(
+    productInfo: AddToBagProductInfo,
+    onClose: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.Top
+    ) {
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(999.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Black,
-                contentColor = Color.White,
-                disabledContainerColor = Color(0xFFBDBDBD)
-            )
+                .size(88.dp)
+                .background(Color(0xFFF7F7F7), RoundedCornerShape(12.dp))
+                .border(1.dp, Color(0xFFEAEAEA), RoundedCornerShape(12.dp))
         ) {
-            if (state.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = Color.DarkGray,
-                    strokeWidth = 2.dp
+            AsyncImage(
+                model = productInfo.imageUrl,
+                contentDescription = productInfo.title,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 12.dp)
+        ) {
+            Text(
+                text = productInfo.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Black
+            )
+            Text(
+                text = productInfo.category,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color(0xFF757575),
+                modifier = Modifier.padding(top = 2.dp)
+            )
+            Text(
+                text = formatVnd(productInfo.price),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+
+        IconButton(onClick = onClose) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Close"
+            )
+        }
+    }
+}
+
+@Composable
+private fun ColorSelectionSection(
+    colorOptions: List<String>,
+    selectedColor: String?,
+    onColorSelected: (String) -> Unit
+) {
+    Text(
+        text = "COLOR",
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Bold
+    )
+    Row(modifier = Modifier.padding(top = 12.dp)) {
+        colorOptions.forEach { colorName ->
+            val isSelected = selectedColor == colorName
+            val borderColor = if (isSelected) Color.Black else Color(0xFFE0E0E0)
+
+            Box(
+                modifier = Modifier
+                    .padding(end = 12.dp)
+                    .size(44.dp)
+                    .border(
+                        BorderStroke(
+                            width = if (isSelected) 2.dp else 1.dp,
+                            color = borderColor
+                        ),
+                        shape = CircleShape
+                    )
+                    .clickable { onColorSelected(colorName) }
+                    .padding(4.dp)
+                    .background(color = colorNameToSwatch(colorName), shape = CircleShape)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SizeSelectionSection(
+    sizeOptions: List<Int>,
+    selectedSize: Int?,
+    onSizeSelected: (Int) -> Unit,
+    onShowSizeGuide: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "SIZE",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        TextButton(
+            onClick = onShowSizeGuide
+        ) {
+            Text(
+                text = "SIZE GUIDE",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color(0xFF616161),
+                fontWeight = FontWeight.Bold,
+                textDecoration = TextDecoration.Underline
+            )
+        }
+    }
+
+    Row(modifier = Modifier.fillMaxWidth()) {
+        sizeOptions.forEach { size ->
+            val isSelected = selectedSize == size
+            OutlinedButton(
+                onClick = { onSizeSelected(size) },
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 6.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = if (isSelected) Color.Black else Color.White,
+                    contentColor = if (isSelected) Color.White else Color.Black
+                ),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = if (isSelected) Color.Black else Color(0xFFE0E0E0)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+            ) {
                 Text(
-                    text = "PROCESSING...",
-                    fontWeight = FontWeight.Black,
-                    color = Color.DarkGray
-                )
-            } else {
-                Text(
-                    text = "CONFIRM ADD TO BAG",
-                    fontWeight = FontWeight.Black
+                    text = size.toString(),
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
     }
+}
 
-    // 2. KHAI BÁO DIALOG
-    if (showSizeGuideDialog) {
-        Dialog(
-            onDismissRequest = { showSizeGuideDialog = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
+@Composable
+private fun QuantitySelectionSection(
+    quantity: Int,
+    onDecrease: () -> Unit,
+    onIncrease: () -> Unit
+) {
+    Text(
+        text = "QUANTITY",
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Bold
+    )
+
+    Row(
+        modifier = Modifier
+            .padding(top = 12.dp)
+            .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(8.dp))
+            .height(48.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onDecrease) {
+            Icon(
+                imageVector = Icons.Default.Remove,
+                contentDescription = "Decrease quantity"
+            )
+        }
+        Text(
+            text = quantity.toString(),
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.width(40.dp),
+            color = Color.Black,
+            textAlign = TextAlign.Center
+        )
+        IconButton(onClick = onIncrease) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Increase quantity"
+            )
+        }
+    }
+}
+
+@Composable
+private fun ConfirmButtonSection(
+    isConfirmEnabled: Boolean,
+    isLoading: Boolean,
+    onConfirm: () -> Unit
+) {
+    Button(
+        onClick = onConfirm,
+        enabled = isConfirmEnabled && !isLoading,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        shape = RoundedCornerShape(999.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Black,
+            contentColor = Color.White,
+            disabledContainerColor = Color(0xFFBDBDBD)
+        )
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                color = Color.DarkGray,
+                strokeWidth = 2.dp
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "PROCESSING...",
+                fontWeight = FontWeight.Black,
+                color = Color.DarkGray
+            )
+        } else {
+            Text(
+                text = "CONFIRM ADD TO BAG",
+                fontWeight = FontWeight.Black
+            )
+        }
+    }
+}
+
+@Composable
+private fun SizeGuideDialog(onDismiss: () -> Unit) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color.White,
+            modifier = Modifier
+                .fillMaxWidth(0.95f)
         ) {
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = Color.White,
-                modifier = Modifier
-                    .fillMaxWidth(0.95f)
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Header chứa nút đóng
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Shoe Size Guide",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            modifier = Modifier.padding(start = 16.dp)
-                        )
-                        IconButton(
-                            onClick = { showSizeGuideDialog = false }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Close"
-                            )
-                        }
-                    }
-
-                    Image(
-                        painter = androidx.compose.ui.res.painterResource(id = R.drawable.size_guide),
-                        contentDescription = "Size Chart",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 24.dp),
-                        contentScale = ContentScale.FillWidth
+                    Text(
+                        text = "Shoe Size Guide",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        modifier = Modifier.padding(start = 16.dp)
                     )
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close"
+                        )
+                    }
                 }
+
+                Image(
+                    painter = androidx.compose.ui.res.painterResource(id = R.drawable.size_guide),
+                    contentDescription = "Size Chart",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 24.dp),
+                    contentScale = ContentScale.FillWidth
+                )
             }
         }
     }

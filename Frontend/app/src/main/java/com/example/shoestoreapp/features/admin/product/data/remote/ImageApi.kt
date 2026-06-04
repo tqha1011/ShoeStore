@@ -6,7 +6,7 @@ import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
 
-interface ImageApi {
+fun interface ImageApi {
     @Multipart
     @POST("/api/Image/image")
     suspend fun uploadImage(@Part file: MultipartBody.Part): Response<ImageUploadResponseDto>

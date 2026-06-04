@@ -5,7 +5,7 @@ import com.example.shoestoreapp.features.admin.product.data.remote.AdminProductA
 import com.example.shoestoreapp.features.admin.product.data.remote.CreateProductDto
 import retrofit2.Response
 
-interface AdminProductRepository {
+fun interface AdminProductRepository {
     suspend fun createProduct(dto: CreateProductDto): Result<Unit>
 }
 

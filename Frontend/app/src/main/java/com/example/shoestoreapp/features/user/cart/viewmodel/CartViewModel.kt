@@ -57,7 +57,6 @@ class CartViewModel(
     val updatingItemIds: StateFlow<Set<String>> = _updatingItemIds.asStateFlow()
 
     private val _shippingFee = MutableStateFlow(0.0)
-    val shippingFee: StateFlow<Double> = _shippingFee.asStateFlow()
 
     private val _cartDtos = MutableStateFlow<List<CartItemResponseDto>>(emptyList())
 
@@ -104,12 +103,11 @@ class CartViewModel(
 
     private fun buildSummary(items: List<CartItem>, shippingFee: Double): CartSummary {
         val subtotal = items.sumOf { it.price * it.quantity }
-        val shipping = shippingFee
         val tax = subtotal * 0.1
 
         return CartSummary(
             subtotal = subtotal,
-            shippingCost = shipping,
+            shippingCost = shippingFee,
             tax = tax,
             itemCount = items.size
         )
@@ -213,7 +211,7 @@ class CartViewModel(
         // 1. Map danh sách CartItemResponseDto sang CheckOutRequestDto
         val checkoutItems = _cartDtos.value.map { dto ->
             CheckOutRequestDto(
-                variantId = dto.productVariantId ?: "",
+                variantId = dto.productVariantId,
                 quantity = dto.quantity
             )
         }

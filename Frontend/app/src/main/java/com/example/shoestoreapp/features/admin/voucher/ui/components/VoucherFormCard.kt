@@ -15,7 +15,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.DividerDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -65,7 +66,7 @@ fun VoucherFormCard(
                 onVoucherNameChange = actions.onVoucherNameChange,
                 onDescriptionChange = actions.onDescriptionChange
             )
-            Divider(color = Color(0xFFE3E3E3))
+            HorizontalDivider(Modifier, DividerDefaults.Thickness, color = Color(0xFFE3E3E3))
             VoucherConfigSection(
                 uiState = uiState,
                 onTargetApplicationChange = actions.onTargetApplicationChange,
@@ -75,7 +76,7 @@ fun VoucherFormCard(
                 onMaxReductionChange = actions.onMaxReductionChange,
                 onMinOrderChange = actions.onMinOrderChange
             )
-            Divider(color = Color(0xFFE3E3E3))
+            HorizontalDivider(Modifier, DividerDefaults.Thickness, color = Color(0xFFE3E3E3))
             VoucherConditionSection(
                 totalQuantity = uiState.totalQuantity,
                 maxUsagePerUser = uiState.maxUsagePerUser,

@@ -37,6 +37,12 @@ data class PaymentNotificationDto(
     val createdAt: String
 )
 
+private data class QrPaymentData(
+    val sePayQrUrl: String,
+    val formattedAmount: String,
+    val rawDescription: String
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentQRScreen(
@@ -49,64 +55,16 @@ fun PaymentQRScreen(
     onBackToHomeClick: () -> Unit
 ) {
     var isPaymentSuccess by remember { mutableStateOf(false) }
-    var countdownTime by remember { mutableIntStateOf(5) }
-    val coroutineScope = rememberCoroutineScope()
 
-    val rawDescription = if (bankCode.uppercase(Locale.ROOT) == "VIETINBANK") "SEVQR $orderCode" else orderCode
-    val encodedDes = URLEncoder.encode(rawDescription, StandardCharsets.UTF_8.toString())
-    val amount = finalPrice.toLong()
-    val formattedAmount = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).format(amount)
+    // 1. Logic SignalR
+    ObservePaymentSignalR(
+        orderCode = orderCode,
+        onPaymentSuccess = { isPaymentSuccess = true }
+    )
 
-    val sePayQrUrl = "https://qr.sepay.vn/img" +
-            "?acc=$bankAccount" +
-            "&bank=$bankCode" +
-            "&amount=$amount" +
-            "&des=$encodedDes" +
-            "&template=qronly"
-
-    // TÍCH HỢP SIGNALR
-    DisposableEffect(orderCode) {
-        val hubUrl = "https://deploy-service-h6acgba9dkc0gvcw.eastasia-01.azurewebsites.net/paymentHub"
-
-        val hubConnection = HubConnectionBuilder
-            .create(hubUrl)
-            .build()
-
-        hubConnection.on("ReceivePaymentNotification", { dto ->
-            coroutineScope.launch {
-                if (dto.isSuccess && dto.orderCode == orderCode) {
-                    isPaymentSuccess = true
-                }
-            }
-        }, PaymentNotificationDto::class.java)
-
-        try {
-            hubConnection.start().blockingAwait()
-            hubConnection.invoke("JoinInvoiceGroup", orderCode)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        onDispose {
-            try {
-                if (hubConnection.connectionState == HubConnectionState.CONNECTED) {
-                    hubConnection.invoke("LeaveInvoiceGroup", orderCode)
-                    hubConnection.stop()
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    if (isPaymentSuccess) {
-        LaunchedEffect(true) {
-            while (countdownTime > 0) {
-                delay(1000)
-                countdownTime--
-            }
-            onBackToHomeClick()
-        }
+    // 2. Logic tạo QR
+    val qrData = remember(orderCode, finalPrice, bankCode, bankAccount) {
+        generateQrData(orderCode, finalPrice, bankCode, bankAccount)
     }
 
     Scaffold(
@@ -136,13 +94,13 @@ fun PaymentQRScreen(
         ) {
             AnimatedContent(targetState = isPaymentSuccess, label = "payment_transition") { success ->
                 if (success) {
-                    PaymentSuccessView(countdownTime = countdownTime)
+                    PaymentSuccessView(onBackToHomeClick = onBackToHomeClick)
                 } else {
                     PaymentScanQrView(
                         accountName = accountName,
-                        sePayQrUrl = sePayQrUrl,
-                        formattedAmount = formattedAmount,
-                        rawDescription = rawDescription,
+                        sePayQrUrl = qrData.sePayQrUrl,
+                        formattedAmount = qrData.formattedAmount,
+                        rawDescription = qrData.rawDescription,
                         onBackToHomeClick = onBackToHomeClick
                     )
                 }
@@ -151,9 +109,81 @@ fun PaymentQRScreen(
     }
 }
 
-// UI Thanh toán thành công
+// Hàm Helper để tính toán các giá trị QR
+private fun generateQrData(
+    orderCode: String,
+    finalPrice: Double,
+    bankCode: String,
+    bankAccount: String
+): QrPaymentData {
+    val rawDescription = if (bankCode.uppercase(Locale.ROOT) == "VIETINBANK") "SEVQR $orderCode" else orderCode
+    val encodedDes = URLEncoder.encode(rawDescription, StandardCharsets.UTF_8.toString())
+    val amount = finalPrice.toLong()
+    val formattedAmount = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).format(amount)
+
+    val sePayQrUrl = "https://qr.sepay.vn/img" +
+            "?acc=$bankAccount" +
+            "&bank=$bankCode" +
+            "&amount=$amount" +
+            "&des=$encodedDes" +
+            "&template=qronly"
+
+    return QrPaymentData(sePayQrUrl, formattedAmount, rawDescription)
+}
+
+// Custom Composable đóng gói toàn bộ logic của SignalR
 @Composable
-private fun PaymentSuccessView(countdownTime: Int) {
+private fun ObservePaymentSignalR(
+    orderCode: String,
+    onPaymentSuccess: () -> Unit
+) {
+    val coroutineScope = rememberCoroutineScope()
+
+    DisposableEffect(orderCode) {
+        val hubUrl = "https://deploy-service-h6acgba9dkc0gvcw.eastasia-01.azurewebsites.net/paymentHub"
+        val hubConnection = HubConnectionBuilder.create(hubUrl).build()
+
+        hubConnection.on("ReceivePaymentNotification", { dto ->
+            coroutineScope.launch {
+                if (dto.isSuccess && dto.orderCode == orderCode) {
+                    onPaymentSuccess()
+                }
+            }
+        }, PaymentNotificationDto::class.java)
+
+        try {
+            hubConnection.start().blockingAwait()
+            hubConnection.invoke("JoinInvoiceGroup", orderCode)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        onDispose {
+            try {
+                if (hubConnection.connectionState == HubConnectionState.CONNECTED) {
+                    hubConnection.invoke("LeaveInvoiceGroup", orderCode)
+                    hubConnection.stop()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+}
+
+// UI Thanh toán thành công (Bao gồm logic đếm ngược)
+@Composable
+private fun PaymentSuccessView(onBackToHomeClick: () -> Unit) {
+    var countdownTime by remember { mutableIntStateOf(5) }
+
+    LaunchedEffect(Unit) {
+        while (countdownTime > 0) {
+            delay(1000)
+            countdownTime--
+        }
+        onBackToHomeClick()
+    }
+
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,

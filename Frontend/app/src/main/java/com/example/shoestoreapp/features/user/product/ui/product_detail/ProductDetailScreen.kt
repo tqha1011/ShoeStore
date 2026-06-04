@@ -30,12 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-
-// Gom import lại để ăn được các Data Class mới (AddToBagProductInfo, AddToBagSelectionState, AddToBagActions)
 import com.example.shoestoreapp.features.user.product.ui.components.*
-
 import com.example.shoestoreapp.features.user.product.viewmodel.AddToCartUiState
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductDetailViewModel
 import kotlinx.coroutines.launch

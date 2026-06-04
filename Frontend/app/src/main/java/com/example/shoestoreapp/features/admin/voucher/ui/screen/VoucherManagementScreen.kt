@@ -11,7 +11,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -22,10 +21,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavBar
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
 import com.example.shoestoreapp.features.admin.voucher.ui.components.*
-import com.example.shoestoreapp.features.admin.voucher.viewmodel.VoucherUiEvent
 import com.example.shoestoreapp.features.admin.voucher.viewmodel.VoucherViewModel
 import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
-import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun VoucherManagementScreen(
@@ -37,15 +34,6 @@ fun VoucherManagementScreen(
     val isEditSheetVisible by viewModel.isEditSheetVisible.collectAsState()
     val voucherToDelete by viewModel.voucherToDelete.collectAsState()
     val showDeleteExpiredDialog by viewModel.showDeleteExpiredDialog.collectAsState()
-
-    LaunchedEffect(viewModel) {
-        viewModel.uiEvent.collectLatest { event ->
-            when (event) {
-                is VoucherUiEvent.ShowSuccess -> { }
-                is VoucherUiEvent.ShowError -> { }
-            }
-        }
-    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(

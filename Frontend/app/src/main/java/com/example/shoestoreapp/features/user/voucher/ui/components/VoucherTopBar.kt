@@ -43,9 +43,12 @@ fun VoucherTopBar(
                     }
                 }
             },
-            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+            colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.White,
-                titleContentColor = Color.Black
+                scrolledContainerColor = Color.Unspecified,
+                navigationIconContentColor = Color.Unspecified,
+                titleContentColor = Color.Black,
+                actionIconContentColor = Color.Unspecified
             )
         )
     }

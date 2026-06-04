@@ -58,6 +58,7 @@ private const val FETCH_ERROR_NOT_FOUND = "User not found. Unable to load cart i
 private const val FETCH_ERROR_SERVER = "Server error while loading cart items. Please try again."
 private const val FETCH_ERROR_UNKNOWN = "Unable to load cart items right now."
 private const val REMOVE_ERROR_EMPTY = "No cart items provided for removal."
+private const val EMPTY_RESPONSE_BODY = "Empty response body."
 
 /**
  * CartRepositoryImpl: Triển khai gọi API cho giỏ hàng.
@@ -84,7 +85,7 @@ class CartRepositoryImpl(
 
             if (response.isSuccessful) {
                 response.body()?.let { Result.success(it) }
-                    ?: Result.failure(CartRepositoryException.Unknown("Empty response body."))
+                    ?: Result.failure(CartRepositoryException.Unknown(EMPTY_RESPONSE_BODY))
             } else {
                 val backendMessage = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
                 val exception = when (response.code()) {
@@ -104,12 +105,10 @@ class CartRepositoryImpl(
 
     /**
      * Thêm sản phẩm vào giỏ hàng
-     * 
-     * Gọi API: POST /api/cart
+     * * Gọi API: POST /api/cart
      * Request: AddCartItemDto { userId, variantId, quantity }
      * Response: CartItemResponseDto
-     * 
-     * @param variantPublicId - GUID của product variant
+     * * @param variantPublicId - GUID của product variant
      * @param quantity - Số lượng sản phẩm
      * @return Result<CartItemResponseDto> - Chi tiết item hoặc lỗi đã map theo HTTP status
      */
@@ -131,7 +130,7 @@ class CartRepositoryImpl(
 
             if (response.isSuccessful) {
                 response.body()?.let { Result.success(it) }
-                    ?: Result.failure(CartRepositoryException.Unknown("Empty response body."))
+                    ?: Result.failure(CartRepositoryException.Unknown(EMPTY_RESPONSE_BODY))
             } else {
                 Result.failure(response.toRepositoryException())
             }
@@ -158,7 +157,7 @@ class CartRepositoryImpl(
 
             if (response.isSuccessful) {
                 response.body()?.let { Result.success(it) }
-                    ?: Result.failure(CartRepositoryException.Unknown("Empty response body."))
+                    ?: Result.failure(CartRepositoryException.Unknown(EMPTY_RESPONSE_BODY))
             } else {
                 Result.failure(response.toRepositoryException())
             }

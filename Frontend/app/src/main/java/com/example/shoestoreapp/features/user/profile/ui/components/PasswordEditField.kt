@@ -1,5 +1,6 @@
 package com.example.shoestoreapp.features.user.profile.ui.components
 
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -13,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 
@@ -36,6 +38,7 @@ fun PasswordEditField(
         } else {
             PasswordVisualTransformation()
         },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         trailingIcon = {
             val icon = if (isPasswordVisible) {
                 Icons.Outlined.VisibilityOff
@@ -49,4 +52,3 @@ fun PasswordEditField(
         }
     )
 }
-

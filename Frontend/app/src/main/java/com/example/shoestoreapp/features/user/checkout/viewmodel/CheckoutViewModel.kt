@@ -121,7 +121,7 @@ class CheckoutViewModel(
                     )
                     _isLoading.value = false
                 }
-                .onFailure { error ->
+                .onFailure { _ ->
                     _isLoading.value = false
                     _bannerMessage.value = "Failed to load selected address"
                     _isBannerSuccess.value = false

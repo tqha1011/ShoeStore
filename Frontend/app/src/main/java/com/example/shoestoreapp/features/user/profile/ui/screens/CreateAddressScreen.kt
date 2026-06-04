@@ -46,6 +46,29 @@ import com.example.shoestoreapp.features.user.profile.ui.components.AddressDropd
 import com.example.shoestoreapp.features.user.profile.viewmodel.CreateAddressUiState
 import com.example.shoestoreapp.features.user.profile.viewmodel.CreateAddressViewModel
 
+data class AddressFormState(
+    val isEditMode: Boolean,
+    val selectedCity: String,
+    val selectedDistrict: String,
+    val selectedWard: String,
+    val exactAddress: String,
+    val isDefault: Boolean,
+    val provinces: List<String>,
+    val districts: List<String>,
+    val wards: List<String>,
+    val isFormValid: Boolean,
+    val isLoading: Boolean
+)
+
+data class AddressFormActions(
+    val onCitySelected: (String) -> Unit,
+    val onDistrictSelected: (String) -> Unit,
+    val onWardSelected: (String) -> Unit,
+    val onExactAddressChanged: (String) -> Unit,
+    val onDefaultChanged: (Boolean) -> Unit,
+    val onSaveClicked: () -> Unit
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateAddressScreen(
@@ -109,23 +132,27 @@ fun CreateAddressScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-                isEditMode = isEditMode,
-                selectedCity = selectedCity,
-                selectedDistrict = selectedDistrict,
-                selectedWard = selectedWard,
-                exactAddress = exactAddress,
-                isDefault = isDefault,
-                provinces = provinces.map { it.name },
-                districts = districts.map { it.name },
-                wards = wards.map { it.name },
-                isFormValid = isFormValid,
-                isLoading = isLoading,
-                onCitySelected = viewModel::onCitySelected,
-                onDistrictSelected = viewModel::onDistrictSelected,
-                onWardSelected = viewModel::onWardSelected,
-                onExactAddressChanged = viewModel::onExactAddressChanged,
-                onDefaultChanged = viewModel::onDefaultChanged,
-                onSaveClicked = viewModel::saveAddress
+                state = AddressFormState(
+                    isEditMode = isEditMode,
+                    selectedCity = selectedCity,
+                    selectedDistrict = selectedDistrict,
+                    selectedWard = selectedWard,
+                    exactAddress = exactAddress,
+                    isDefault = isDefault,
+                    provinces = provinces.map { it.name },
+                    districts = districts.map { it.name },
+                    wards = wards.map { it.name },
+                    isFormValid = isFormValid,
+                    isLoading = isLoading
+                ),
+                actions = AddressFormActions(
+                    onCitySelected = viewModel::onCitySelected,
+                    onDistrictSelected = viewModel::onDistrictSelected,
+                    onWardSelected = viewModel::onWardSelected,
+                    onExactAddressChanged = viewModel::onExactAddressChanged,
+                    onDefaultChanged = viewModel::onDefaultChanged,
+                    onSaveClicked = viewModel::saveAddress
+                )
             )
         }
 
@@ -143,23 +170,8 @@ fun CreateAddressScreen(
 @Composable
 fun CreateAddressFormContent(
     modifier: Modifier = Modifier,
-    isEditMode: Boolean,
-    selectedCity: String,
-    selectedDistrict: String,
-    selectedWard: String,
-    exactAddress: String,
-    isDefault: Boolean,
-    provinces: List<String>,
-    districts: List<String>,
-    wards: List<String>,
-    isFormValid: Boolean,
-    isLoading: Boolean,
-    onCitySelected: (String) -> Unit,
-    onDistrictSelected: (String) -> Unit,
-    onWardSelected: (String) -> Unit,
-    onExactAddressChanged: (String) -> Unit,
-    onDefaultChanged: (Boolean) -> Unit,
-    onSaveClicked: () -> Unit
+    state: AddressFormState,
+    actions: AddressFormActions
 ) {
     Column(
         modifier = modifier
@@ -175,7 +187,7 @@ fun CreateAddressFormContent(
                 .padding(vertical = 8.dp)
         ) {
             Text(
-                text = if (isEditMode) "EDIT ADDRESS" else "ADD ADDRESS",
+                text = if (state.isEditMode) "EDIT ADDRESS" else "ADD ADDRESS",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Black,
                 letterSpacing = (-1).sp,
@@ -183,7 +195,7 @@ fun CreateAddressFormContent(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = if (isEditMode) "Update your delivery location" else "Create a new delivery location",
+                text = if (state.isEditMode) "Update your delivery location" else "Create a new delivery location",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF4C4546)
@@ -193,33 +205,33 @@ fun CreateAddressFormContent(
         // 1. City / Province
         AddressDropdownField(
             label = "City / Province",
-            selectedValue = selectedCity,
-            options = provinces,
-            onOptionSelected = onCitySelected
+            selectedValue = state.selectedCity,
+            options = state.provinces,
+            onOptionSelected = actions.onCitySelected
         )
 
         // 2. District
         AddressDropdownField(
             label = "District",
-            selectedValue = selectedDistrict,
-            options = districts,
-            onOptionSelected = onDistrictSelected,
-            enabled = selectedCity.isNotEmpty()
+            selectedValue = state.selectedDistrict,
+            options = state.districts,
+            onOptionSelected = actions.onDistrictSelected,
+            enabled = state.selectedCity.isNotEmpty()
         )
 
         // 3. Ward / Commune
         AddressDropdownField(
             label = "Ward / Commune",
-            selectedValue = selectedWard,
-            options = wards,
-            onOptionSelected = onWardSelected,
-            enabled = selectedDistrict.isNotEmpty()
+            selectedValue = state.selectedWard,
+            options = state.wards,
+            onOptionSelected = actions.onWardSelected,
+            enabled = state.selectedDistrict.isNotEmpty()
         )
 
         // 4. Street Address Details
         OutlinedTextField(
-            value = exactAddress,
-            onValueChange = onExactAddressChanged,
+            value = state.exactAddress,
+            onValueChange = actions.onExactAddressChanged,
             label = { Text("Street Address Details") },
             placeholder = { Text("e.g. 123 Air Max Boulevard, Apt 4B") },
             colors = OutlinedTextFieldDefaults.colors(
@@ -237,8 +249,8 @@ fun CreateAddressFormContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             RadioButton(
-                selected = isDefault,
-                onClick = { onDefaultChanged(!isDefault) },
+                selected = state.isDefault,
+                onClick = { actions.onDefaultChanged(!state.isDefault) },
                 colors = RadioButtonDefaults.colors(
                     selectedColor = Color.Black,
                     unselectedColor = Color.Gray
@@ -257,22 +269,22 @@ fun CreateAddressFormContent(
 
         // 6. Submit Button
         Button(
-            onClick = onSaveClicked,
+            onClick = actions.onSaveClicked,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(52.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
             shape = RoundedCornerShape(50),
-            enabled = isFormValid && !isLoading
+            enabled = state.isFormValid && !state.isLoading
         ) {
-            if (isLoading) {
+            if (state.isLoading) {
                 CircularProgressIndicator(
                     color = Color.White,
                     strokeWidth = 2.dp
                 )
             } else {
                 Text(
-                    text = if (isEditMode) "UPDATE ADDRESS" else "SAVE ADDRESS",
+                    text = if (state.isEditMode) "UPDATE ADDRESS" else "SAVE ADDRESS",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp

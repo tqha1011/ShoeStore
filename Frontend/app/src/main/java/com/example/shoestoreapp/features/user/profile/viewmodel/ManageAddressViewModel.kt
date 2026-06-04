@@ -99,7 +99,7 @@ class ManageAddressViewModel(
             var provinceName = ""
             var districtName = ""
             var wardName = ""
-            var detailAddress = ""
+            var detailAddress: String
 
             if (parts.size >= 4) {
                 provinceName = parts[parts.size - 1]

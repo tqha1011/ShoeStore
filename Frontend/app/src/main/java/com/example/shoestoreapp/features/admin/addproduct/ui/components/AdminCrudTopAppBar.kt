@@ -48,10 +48,12 @@ fun AdminCrudTopAppBar(
                 )
             }
         },
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+        colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.White,
+            scrolledContainerColor = Color.Unspecified,
+            navigationIconContentColor = AdminCrudColors.primary,
             titleContentColor = AdminCrudColors.primary,
-            navigationIconContentColor = AdminCrudColors.primary
+            actionIconContentColor = Color.Unspecified
         ),
         modifier = Modifier
             .fillMaxWidth()

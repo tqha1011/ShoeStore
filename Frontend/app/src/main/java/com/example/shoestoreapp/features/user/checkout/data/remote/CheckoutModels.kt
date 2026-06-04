@@ -69,13 +69,6 @@ data class InvoiceDto(
  * Hàm mở rộng giúp chuyển đổi từ DTO của Server sang Model của UI
  */
 fun CheckOutSummaryDto.toOrderSummary(): OrderSummary {
-    val totalBeforeDiscount = this.totalPrice + this.shippingFee
-    val calculatedDiscount = if (totalBeforeDiscount > this.finalPrice) {
-        totalBeforeDiscount - this.finalPrice
-    } else {
-        0.0
-    }
-
     return OrderSummary(
         subtotal = this.totalPrice,
         total = this.finalPrice,

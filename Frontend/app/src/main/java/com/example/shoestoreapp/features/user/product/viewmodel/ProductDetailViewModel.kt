@@ -78,7 +78,7 @@ class ProductDetailViewModel(
                         }
                     } else null
 
-                    val defaultVariant = matchedVariant ?: (product?.variants?.first() ?: return@launch)
+                    val defaultVariant = matchedVariant ?: product.variants.first()
                     
                     _selectedColor.value = defaultVariant.colorName?.trim()
                     _selectedImageUrl.value = defaultVariant.imageUrl

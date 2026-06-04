@@ -44,31 +44,47 @@ class MyVoucherViewModel(
             result.onSuccess { response ->
                 try {
                     val newItems = response.items.map { it.toUiModel() }
-                    _uiState.update { state ->
-                        val updatedList = if (isLoadMore) {
-                            state.vouchers + newItems
-                        } else {
-                            newItems
-                        }
-                        state.copy(
-                            vouchers = updatedList,
-                            isLoading = false,
-                            isLoadingMore = false,
-                            hasNextPage = response.hasNext,
-                            currentPage = if (response.hasNext) pageToLoad + 1 else pageToLoad
-                        )
-                    }
+                    handleFetchSuccess(newItems, isLoadMore, response.hasNext, pageToLoad)
                 } catch (e: Exception) {
-                    // Bắt lỗi rớt mạng hoặc lỗi Mapper
                     android.util.Log.e("MyVoucherVM", "Lỗi map dữ liệu", e)
-                    _uiState.update { it.copy(isLoading = false, isLoadingMore = false) }
+                    handleFetchError()
                 }
             }.onFailure { throwable ->
                 android.util.Log.e("MyVoucherVM", "Không gọi được API ", throwable)
-                _uiState.update { state ->
-                    state.copy(isLoading = false, isLoadingMore = false)
-                }
+                handleFetchError()
             }
+        }
+    }
+
+    // ==========================================
+    // CÁC HÀM PHỤ TRỢ (Helper Functions)
+    // ==========================================
+
+    private fun handleFetchSuccess(
+        newItems: List<VoucherUiModel>,
+        isLoadMore: Boolean,
+        hasNext: Boolean,
+        pageToLoad: Int
+    ) {
+        _uiState.update { state ->
+            val updatedList = if (isLoadMore) {
+                state.vouchers + newItems
+            } else {
+                newItems
+            }
+            state.copy(
+                vouchers = updatedList,
+                isLoading = false,
+                isLoadingMore = false,
+                hasNextPage = hasNext,
+                currentPage = if (hasNext) pageToLoad + 1 else pageToLoad
+            )
+        }
+    }
+
+    private fun handleFetchError() {
+        _uiState.update { state ->
+            state.copy(isLoading = false, isLoadingMore = false)
         }
     }
 
@@ -76,4 +92,3 @@ class MyVoucherViewModel(
         private const val DEFAULT_PAGE_SIZE = 10
     }
 }
-

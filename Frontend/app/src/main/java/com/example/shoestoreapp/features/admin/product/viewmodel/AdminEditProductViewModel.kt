@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 
 sealed class AdminEditProductUiEvent {
     data class ShowError(val message: String) : AdminEditProductUiEvent()
@@ -327,7 +328,7 @@ class AdminEditProductViewModel(
                 val file = context.applicationContext.uriToTempFile(uri)
                 imageRepository.uploadImage(file)
             } catch (e: Exception) {
-                Result.failure(ImageRepositoryException.Unknown(e.message ?: "Unable to upload image right now."))
+                Result.failure(ImageRepositoryException.Unknown(e.message ?: ERROR_UPLOAD_IMAGE))
             }
 
             result.onSuccess { response ->
@@ -354,7 +355,7 @@ class AdminEditProductViewModel(
                 val file = context.applicationContext.uriToTempFile(uri)
                 imageRepository.uploadImage(file)
             } catch (e: Exception) {
-                Result.failure(ImageRepositoryException.Unknown(e.message ?: "Unable to upload image right now."))
+                Result.failure(ImageRepositoryException.Unknown(e.message ?: ERROR_UPLOAD_IMAGE))
             }
 
             result.onSuccess { response ->
@@ -366,7 +367,7 @@ class AdminEditProductViewModel(
                 _variantDraft.value = _variantDraft.value.copy(isUploadingImage = false)
                 _uiState.update {
                     it.copy(
-                        bannerMessage = throwable.message ?: "Unable to upload image right now.",
+                        bannerMessage = throwable.message ?: ERROR_UPLOAD_IMAGE,
                         isBannerSuccess = false,
                         showBanner = true
                     )
@@ -377,42 +378,7 @@ class AdminEditProductViewModel(
 
     fun onSaveVariant(context: Context, productId: String) {
         val draft = _variantDraft.value
-        val size = draft.selectedSize
-        val color = draft.selectedColor
-        if (size == null || color == null) {
-            _uiState.update {
-                it.copy(
-                    bannerMessage = "Please select size and color.",
-                    isBannerSuccess = false,
-                    showBanner = true
-                )
-            }
-            return
-        }
-
-        val priceValue = draft.price.toDoubleOrNull()
-        if (priceValue == null || priceValue <= 0.0) {
-            _uiState.update {
-                it.copy(
-                    bannerMessage = "Please enter a valid price.",
-                    isBannerSuccess = false,
-                    showBanner = true
-                )
-            }
-            return
-        }
-
-        val stockValue = draft.stock.toIntOrNull()
-        if (stockValue == null || stockValue < 0) {
-            _uiState.update {
-                it.copy(
-                    bannerMessage = "Please enter a valid stock.",
-                    isBannerSuccess = false,
-                    showBanner = true
-                )
-            }
-            return
-        }
+        if (!validateVariantDraft(draft)) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
@@ -421,78 +387,107 @@ class AdminEditProductViewModel(
                     try {
                         context.applicationContext.uriToTempFile(uri)
                     } catch (e: Exception) {
-                        _uiState.update {
-                            it.copy(
-                                bannerMessage = e.message ?: "Unable to prepare image right now.",
-                                isBannerSuccess = false,
-                                showBanner = true
-                            )
-                        }
+                        showBannerError(e.message ?: "Unable to prepare image right now.")
                         return@launch
                     }
                 }
 
-                val result = if (draft.variantId == null) {
-                    repository.createVariant(
-                        productId = productId,
-                        params = CreateVariantParams(
-                            sizeId = size.id,
-                            colorId = color.id,
-                            stock = stockValue,
-                            price = priceValue,
-                            isSelling = true,
-                            imageFile = imageFile
-                        )
-                    ).map { Unit }
-                } else {
-                    repository.updateVariant(
-                        productId = productId,
-                        variantId = draft.variantId,
-                        params = UpdateVariantParams(
-                            sizeId = size.id,
-                            colorId = color.id,
-                            stock = stockValue,
-                            price = priceValue,
-                            isSelling = true,
-                            imageUrl = draft.existingImageUrl ?: "",
-                            imageFile = imageFile
-                        )
-                    )
-                }
+                val isCreate = draft.variantId == null
+                val result = executeVariantApi(productId, draft, imageFile)
 
                 result.onSuccess {
-                    _isAddVariantSheetVisible.value = false
-                    _variantDraft.value = VariantUiState()
-                    loadProductDetails(productId)
-                    val message = if (draft.variantId == null) "Create variant success" else "Update variant success"
-                    _uiState.update {
-                        it.copy(
-                            bannerMessage = message,
-                            isBannerSuccess = true,
-                            showBanner = true
-                        )
-                    }
-                    if (draft.variantId == null) {
-                        _uiEvent.send(AdminEditProductUiEvent.VariantCreateSuccess)
-                    } else {
-                        _uiEvent.send(AdminEditProductUiEvent.VariantUpdateSuccess)
-                    }
+                    handleSaveVariantSuccess(productId, isCreate)
                 }.onFailure { throwable ->
-                    _uiState.update {
-                        it.copy(
-                            bannerMessage = throwable.message ?: if (draft.variantId == null) {
-                                "Create variant failed."
-                            } else {
-                                "Update variant failed."
-                            },
-                            isBannerSuccess = false,
-                            showBanner = true
-                        )
-                    }
+                    val defaultMsg = if (isCreate) "Create variant failed." else "Update variant failed."
+                    showBannerError(throwable.message ?: defaultMsg)
                 }
             } finally {
                 _uiState.update { it.copy(isLoading = false) }
             }
+        }
+    }
+
+    // ==========================================
+    // CÁC HÀM PHỤ TRỢ (Helper Functions)
+    // ==========================================
+
+    private fun validateVariantDraft(draft: VariantUiState): Boolean {
+        if (draft.selectedSize == null || draft.selectedColor == null) {
+            showBannerError("Please select size and color.")
+            return false
+        }
+        val priceValue = draft.price.toDoubleOrNull()
+        if (priceValue == null || priceValue <= 0.0) {
+            showBannerError("Please enter a valid price.")
+            return false
+        }
+        val stockValue = draft.stock.toIntOrNull()
+        if (stockValue == null || stockValue < 0) {
+            showBannerError("Please enter a valid stock.")
+            return false
+        }
+        return true
+    }
+
+    private fun showBannerError(message: String) {
+        _uiState.update {
+            it.copy(bannerMessage = message, isBannerSuccess = false, showBanner = true)
+        }
+    }
+
+    private suspend fun executeVariantApi(
+        productId: String,
+        draft: VariantUiState,
+        imageFile: File?
+    ): Result<Unit> {
+        val sizeId = draft.selectedSize!!.id
+        val colorId = draft.selectedColor!!.id
+        val priceValue = draft.price.toDouble()
+        val stockValue = draft.stock.toInt()
+
+        return if (draft.variantId == null) {
+            repository.createVariant(
+                productId = productId,
+                params = CreateVariantParams(
+                    sizeId = sizeId,
+                    colorId = colorId,
+                    stock = stockValue,
+                    price = priceValue,
+                    isSelling = true,
+                    imageFile = imageFile
+                )
+            ).map { Unit }
+        } else {
+            repository.updateVariant(
+                productId = productId,
+                variantId = draft.variantId,
+                params = UpdateVariantParams(
+                    sizeId = sizeId,
+                    colorId = colorId,
+                    stock = stockValue,
+                    price = priceValue,
+                    isSelling = true,
+                    imageUrl = draft.existingImageUrl ?: "",
+                    imageFile = imageFile
+                )
+            )
+        }
+    }
+
+    private suspend fun handleSaveVariantSuccess(productId: String, isCreate: Boolean) {
+        _isAddVariantSheetVisible.value = false
+        _variantDraft.value = VariantUiState()
+        loadProductDetails(productId)
+
+        val message = if (isCreate) "Create variant success" else "Update variant success"
+        _uiState.update {
+            it.copy(bannerMessage = message, isBannerSuccess = true, showBanner = true)
+        }
+
+        if (isCreate) {
+            _uiEvent.send(AdminEditProductUiEvent.VariantCreateSuccess)
+        } else {
+            _uiEvent.send(AdminEditProductUiEvent.VariantUpdateSuccess)
         }
     }
 
@@ -574,5 +569,9 @@ class AdminEditProductViewModel(
                 }
             }
         }
+    }
+
+    companion object {
+        private const val ERROR_UPLOAD_IMAGE = "Unable to upload image right now."
     }
 }

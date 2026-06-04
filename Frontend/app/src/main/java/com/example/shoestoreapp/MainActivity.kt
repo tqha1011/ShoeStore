@@ -50,6 +50,7 @@ import com.example.shoestoreapp.features.user.ai_assistant.viewmodel.AiProductVi
 import com.example.shoestoreapp.features.user.cart.ui.screens.CartScreen
 import com.example.shoestoreapp.features.user.cart.viewmodel.CartViewModel
 import com.example.shoestoreapp.features.user.checkout.ui.screens.CheckoutScreen
+import com.example.shoestoreapp.features.user.checkout.ui.screens.CheckoutScreenActions
 import com.example.shoestoreapp.features.user.checkout.ui.screens.PaymentQRScreen
 import com.example.shoestoreapp.features.user.invoice.data.UserInvoiceRepository
 import com.example.shoestoreapp.features.user.invoice.ui.UserInvoiceScreen
@@ -284,27 +285,29 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
     composable(Routes.CHECKOUT) {
         CheckoutScreen(
             navController = navController,
-            onBackClick = { navController.popBackStack() },
-            onShoppingBagClick = { navController.navigateAndPopTo(Routes.CART, Routes.CHECKOUT) },
-            onNavigateToVoucherScreen = { cartTotal ->
-                navController.navigate(Routes.userMyVouchers(isSelectionMode = true, cartTotal = cartTotal))
-            },
-            onNavigateToQRScreen = { invoice ->
-                navController.currentBackStackEntry?.savedStateHandle?.apply {
-                    set("orderCode", invoice.orderCode)
-                    set("finalPrice", invoice.finalPrice ?: 0.0)
-                    set("bankCode", invoice.shopBankCode ?: "")
-                    set("bankAccount", invoice.shopBankAccount ?: "")
-                    set("accountName", invoice.shopAccountName ?: "")
+            actions = CheckoutScreenActions(
+                onBackClick = { navController.popBackStack() },
+                onShoppingBagClick = { navController.navigateAndPopTo(Routes.CART, Routes.CHECKOUT) },
+                onNavigateToVoucherScreen = { cartTotal ->
+                    navController.navigate(Routes.userMyVouchers(isSelectionMode = true, cartTotal = cartTotal))
+                },
+                onNavigateToQRScreen = { invoice ->
+                    navController.currentBackStackEntry?.savedStateHandle?.apply {
+                        set("orderCode", invoice.orderCode)
+                        set("finalPrice", invoice.finalPrice ?: 0.0)
+                        set("bankCode", invoice.shopBankCode ?: "")
+                        set("bankAccount", invoice.shopBankAccount ?: "")
+                        set("accountName", invoice.shopAccountName ?: "")
+                    }
+                    navController.navigate(Routes.PAYMENT_QR)
+                },
+                onEditAddressClick = {
+                    navController.navigate("user_manage_address?isSelectionMode=true")
+                },
+                onCompletePurchaseClick = {
+                    navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CHECKOUT)
                 }
-                navController.navigate(Routes.PAYMENT_QR)
-            },
-            onEditAddressClick = {
-                navController.navigate("user_manage_address?isSelectionMode=true")
-            },
-            onCompletePurchaseClick = {
-                navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CHECKOUT)
-            }
+            )
         )
     }
 

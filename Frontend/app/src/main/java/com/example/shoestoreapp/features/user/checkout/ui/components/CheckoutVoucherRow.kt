@@ -61,47 +61,12 @@ fun CheckoutVoucherRow(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                    Icon(
-                        imageVector = Icons.Outlined.ConfirmationNumber,
-                        contentDescription = "Voucher",
-                        tint = if (hasVoucher) Color.Black else Color.Gray,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    if (!hasVoucher) {
-                        Text(
-                            text = "Select or enter code",
-                            color = Color.Gray,
-                            fontSize = 14.sp
-                        )
-                    } else {
-                        // Hien thi cac voucher da chon
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            selectedProductVoucher?.let {
-                                Text(
-                                    text = "[Product] - ${it.discountValue}",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    color = Color(0xFF16A34A),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                            selectedShippingVoucher?.let {
-                                Text(
-                                    text = "[Shipping] - ${it.discountValue}",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 14.sp,
-                                    color = Color(0xFF0284C7),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                        }
-                    }
-                }
+                VoucherDetails(
+                    hasVoucher = hasVoucher,
+                    productVoucher = selectedProductVoucher,
+                    shippingVoucher = selectedShippingVoucher,
+                    modifier = Modifier.weight(1f)
+                )
 
                 Icon(
                     imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
@@ -109,6 +74,63 @@ fun CheckoutVoucherRow(
                     tint = Color.Gray
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun VoucherDetails(
+    hasVoucher: Boolean,
+    productVoucher: VoucherUiModel?,
+    shippingVoucher: VoucherUiModel?,
+    modifier: Modifier = Modifier
+) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
+        Icon(
+            imageVector = Icons.Outlined.ConfirmationNumber,
+            contentDescription = "Voucher",
+            tint = if (hasVoucher) Color.Black else Color.Gray,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+
+        if (!hasVoucher) {
+            Text(
+                text = "Select or enter code",
+                color = Color.Gray,
+                fontSize = 14.sp
+            )
+        } else {
+            AppliedVouchersList(productVoucher, shippingVoucher)
+        }
+    }
+}
+
+@Composable
+private fun AppliedVouchersList(
+    productVoucher: VoucherUiModel?,
+    shippingVoucher: VoucherUiModel?
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        productVoucher?.let {
+            Text(
+                text = "[Product] - ${it.discountValue}",
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = Color(0xFF16A34A),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        shippingVoucher?.let {
+            Text(
+                text = "[Shipping] - ${it.discountValue}",
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = Color(0xFF0284C7),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

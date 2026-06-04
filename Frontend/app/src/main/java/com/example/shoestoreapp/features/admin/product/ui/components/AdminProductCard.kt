@@ -21,14 +21,12 @@ import java.util.Locale
 
 /**
  * Component hiển thị thông tin sản phẩm dạng card cho admin.
- * 
- * Cấu trúc:
+ * * Cấu trúc:
  * - Ảnh sản phẩm (aspect ratio 1:1, rounded corners 16.dp)
  * - Tên sản phẩm (font bold)
  * - Giá tiền (font medium, gray)
  * - Trạng thái stock (IN STOCK, LOW STOCK: 08, OUT OF STOCK)
- * 
- * @param product - Dữ liệu sản phẩm cần hiển thị
+ * * @param product - Dữ liệu sản phẩm cần hiển thị
  * @param onProductClick - Callback khi user click vào card (dùng để navigate tới edit screen)
  */
 @Composable
@@ -71,7 +69,7 @@ fun AdminProductCard(
                     modifier = Modifier.weight(1f)
                 )
                 Text(
-                    text = NumberFormat.getNumberInstance(Locale("vi", "VN"))
+                    text = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
                         .format(product.price.toLong()) + " ₫",
                     fontWeight = FontWeight.Medium,
                     fontSize = 13.sp,

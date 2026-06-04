@@ -22,6 +22,11 @@ import okhttp3.RequestBody.Companion.toRequestBody
 class AdminProductRepositoryImpl(
     private val adminApi: AdminProductApi = RetrofitInstance.adminApi
 ) : AdminProductRepository {
+
+    companion object {
+        private const val UNKNOWN_ERROR_MESSAGE = "Unknown error"
+    }
+
     override fun searchProducts(
         keyword: String?,
         inStock: Boolean?,
@@ -84,7 +89,7 @@ class AdminProductRepositoryImpl(
                 Result.failure(response.toRepositoryException())
             }
         } catch (e: Exception) {
-            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: "Unknown error"))
+            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: UNKNOWN_ERROR_MESSAGE))
         }
     }
 
@@ -100,7 +105,7 @@ class AdminProductRepositoryImpl(
                 Result.failure(response.toRepositoryException())
             }
         } catch (e: Exception) {
-            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: "Unknown error"))
+            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: UNKNOWN_ERROR_MESSAGE))
         }
     }
 
@@ -113,7 +118,7 @@ class AdminProductRepositoryImpl(
                 Result.failure(response.toRepositoryException())
             }
         } catch (e: Exception) {
-            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: "Unknown error"))
+            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: UNKNOWN_ERROR_MESSAGE))
         }
     }
 
@@ -151,7 +156,7 @@ class AdminProductRepositoryImpl(
                 Result.failure(response.toRepositoryException())
             }
         } catch (e: Exception) {
-            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: "Unknown error"))
+            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: UNKNOWN_ERROR_MESSAGE))
         }
     }
 
@@ -191,7 +196,7 @@ class AdminProductRepositoryImpl(
                 Result.failure(response.toRepositoryException())
             }
         } catch (e: Exception) {
-            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: "Unknown error"))
+            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: UNKNOWN_ERROR_MESSAGE))
         }
     }
 
@@ -204,7 +209,7 @@ class AdminProductRepositoryImpl(
                 Result.failure(response.toRepositoryException())
             }
         } catch (e: Exception) {
-            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: "Unknown error"))
+            Result.failure(AdminProductRepositoryException.Unknown(e.message ?: UNKNOWN_ERROR_MESSAGE))
         }
     }
 
