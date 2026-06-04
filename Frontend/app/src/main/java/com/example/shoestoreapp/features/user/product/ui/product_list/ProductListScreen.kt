@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -33,6 +32,7 @@ import com.example.shoestoreapp.features.user.product.ui.components.FilterChips
 import com.example.shoestoreapp.features.user.product.ui.components.ProductCard
 import com.example.shoestoreapp.features.user.product.ui.components.SearchBar
 import com.example.shoestoreapp.features.user.product.ui.components.TopAppBar
+import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -44,7 +44,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
  * - LazyVerticalGrid hiển thị 2 columns
  * - Infinite scroll: Auto load trang tiếp theo khi scroll gần cuối
  * - Loading indicator khi đang load thêm
- * - Error handling
+ * - Error handling bằng TopBanner
  * * @param viewModel - ViewModel cung cấp dữ liệu và logic
  * @param onNavigateToDetail - Callback khi click vào sản phẩm
  * @param onTopMenuClick - Callback khi click menu
@@ -64,8 +64,11 @@ fun ProductListScreen(
     val selectedBottomTab = viewModel.selectedBottomTab.collectAsState()
     val isLoading = viewModel.isLoading.collectAsState()
     val isLoadingMore = viewModel.isLoadingMore.collectAsState()
-    val errorMessage = viewModel.errorMessage.collectAsState()
     val isLastPage = viewModel.isLastPage.collectAsState()
+
+    // State mới cho Banner
+    val bannerMessage = viewModel.bannerMessage.collectAsState()
+    val showBanner = viewModel.showBanner.collectAsState()
 
     val lazyGridState = rememberLazyGridState()
 
@@ -78,53 +81,64 @@ fun ProductListScreen(
         viewModel = viewModel
     )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                onMenuClick = onTopMenuClick,
-                onShoppingBagClick = onNavigateToShoppingBag
-            )
-        },
-        bottomBar = {
-            BottomNavBar(
-                selectedTab = selectedBottomTab.value,
-                onTabSelected = { tab ->
-                    viewModel.onTabSelected(tab)
-                    onBottomTabSelected(tab)
-                }
-            )
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    onMenuClick = onTopMenuClick,
+                    onShoppingBagClick = onNavigateToShoppingBag
+                )
+            },
+            bottomBar = {
+                BottomNavBar(
+                    selectedTab = selectedBottomTab.value,
+                    onTabSelected = { tab ->
+                        viewModel.onTabSelected(tab)
+                        onBottomTabSelected(tab)
+                    }
+                )
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp)
+            ) {
+                SearchBar(
+                    modifier = Modifier.padding(top = 16.dp),
+                    searchText = searchText.value,
+                    onSearchChanged = { query ->
+                        viewModel.onSearchChanged(query)
+                    }
+                )
+
+                FilterChipsSection(
+                    selectedFilter = selectedFilter.value,
+                    onFilterSelected = { filter ->
+                        viewModel.onFilterSelected(filter)
+                    }
+                )
+
+
+                ProductListContent(
+                    isLoading = isLoading.value,
+                    productList = productList.value,
+                    isLoadingMore = isLoadingMore.value,
+                    lazyGridState = lazyGridState,
+                    onNavigateToDetail = onNavigateToDetail
+                )
+            }
         }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White)
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
-        ) {
-            SearchBar(
-                modifier = Modifier.padding(top = 16.dp),
-                searchText = searchText.value,
-                onSearchChanged = { query ->
-                    viewModel.onSearchChanged(query)
-                }
-            )
 
-            FilterChipsSection(
-                selectedFilter = selectedFilter.value,
-                onFilterSelected = { filter ->
-                    viewModel.onFilterSelected(filter)
-                }
-            )
-
-            ErrorMessageBox(errorMessage.value)
-
-            ProductListContent(
-                isLoading = isLoading.value,
-                productList = productList.value,
-                isLoadingMore = isLoadingMore.value,
-                lazyGridState = lazyGridState,
-                onNavigateToDetail = onNavigateToDetail
+        // Tích hợp TopBanner báo lỗi
+        Box(modifier = Modifier.align(Alignment.TopCenter)) {
+            TopBanner(
+                message = bannerMessage.value,
+                isSuccess = false,
+                isVisible = showBanner.value,
+                onDismiss = { viewModel.hideBanner() }
             )
         }
     }
@@ -176,24 +190,6 @@ private fun FilterChipsSection(
 }
 
 @Composable
-private fun ErrorMessageBox(errorMessage: String?) {
-    if (!errorMessage.isNullOrEmpty()) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFFFFCDD2), shape = RoundedCornerShape(4.dp))
-                .padding(12.dp)
-        ) {
-            Text(
-                text = errorMessage,
-                color = Color(0xFFC62828),
-                fontSize = 12.sp
-            )
-        }
-    }
-}
-
-@Composable
 private fun ProductListContent(
     isLoading: Boolean,
     productList: List<*>?,
@@ -201,8 +197,19 @@ private fun ProductListContent(
     lazyGridState: androidx.compose.foundation.lazy.grid.LazyGridState,
     onNavigateToDetail: (String, String) -> Unit
 ) {
-    if (isLoading && productList?.isEmpty() == true) {
+    if (isLoading) {
         LoadingSpinner()
+    } else if (productList.isNullOrEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "No products found.",
+                color = Color.Gray,
+                fontSize = 14.sp
+            )
+        }
     } else {
         ProductGrid(
             productList = productList,

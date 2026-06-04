@@ -20,8 +20,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-import retrofit2.HttpException
-import org.json.JSONObject
 
 data class EditProfileUiState(
     val userName: String = "",
@@ -134,16 +132,10 @@ class EditProfileViewModel(
                     }
                 }
                 .onFailure { throwable ->
-                    val realErrorMessage = if (throwable is HttpException) {
-                        parseValidationError(throwable)
-                    } else {
-                        throwable.message ?: "Update failed."
-                    }
-
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            bannerMessage = realErrorMessage,
+                            bannerMessage = throwable.message ?: "Update failed.",
                             isBannerSuccess = false,
                             showBanner = true
                         )
@@ -178,44 +170,8 @@ class EditProfileViewModel(
             } else {
                 raw to ""
             }
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             raw to ""
-        }
-    }
-
-    // Hàm phụ trợ lấy lỗi chi tiết
-    private fun parseValidationError(exception: HttpException): String {
-        return try {
-            val errorString = exception.response()?.errorBody()?.string()
-            if (!errorString.isNullOrEmpty()) {
-                val jsonObject = JSONObject(errorString)
-
-                // Ưu tiên 1: Vào mảng errors để lấy lỗi chi tiết
-                if (jsonObject.has("errors")) {
-                    val errorsObj = jsonObject.getJSONObject("errors")
-                    val keys = errorsObj.keys()
-                    if (keys.hasNext()) {
-                        val firstKey = keys.next()
-                        val errorArray = errorsObj.getJSONArray(firstKey)
-                        if (errorArray.length() > 0) {
-                            return errorArray.getString(0)
-                        }
-                    }
-                }
-
-                // Ưu tiên 2: Nếu không có mảng errors thì lấy title
-                if (jsonObject.has("title")) {
-                    return jsonObject.getString("title")
-                }
-
-                // Ưu tiên 3: Lấy message thông thường
-                if (jsonObject.has("message")) {
-                    return jsonObject.getString("message")
-                }
-            }
-            "Update failed (HTTP ${exception.code()})"
-        } catch (e: Exception) {
-            "Update failed (HTTP ${exception.code()})"
         }
     }
 }

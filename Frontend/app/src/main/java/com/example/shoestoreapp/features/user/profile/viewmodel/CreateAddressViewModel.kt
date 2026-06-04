@@ -88,18 +88,20 @@ class CreateAddressViewModel(
     private fun loadAddressForEdit(addressId: String) {
         viewModelScope.launch {
             _uiState.value = CreateAddressUiState.Loading
-
-            val addresses = addressRepository.getAllAddresses().getOrNull() ?: emptyList()
-            val addressDto = addresses.find { it.id == addressId }
-
-            if (addressDto != null) {
-                _isDefault.value = addressDto.isDefault
-
-                parseAddressString(addressDto.address)
-
-                syncAdministrativeData()
-            }
-            _uiState.value = CreateAddressUiState.Idle
+            addressRepository.getAddressById(addressId)
+                .onSuccess { addressDto ->
+                    _isDefault.value = addressDto.isDefault
+                    parseAddressString(addressDto.address)
+                    syncAdministrativeData()
+                    _uiState.value = CreateAddressUiState.Idle
+                }
+                .onFailure { error ->
+                    val errorMsg = error.message ?: "Failed to load address details."
+                    _bannerMessage.value = errorMsg
+                    _isBannerSuccess.value = false
+                    _showBanner.value = true
+                    _uiState.value = CreateAddressUiState.Error(errorMsg)
+                }
         }
     }
 

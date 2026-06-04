@@ -10,8 +10,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import retrofit2.HttpException
-import org.json.JSONObject
 
 data class ChangePasswordUiState(
     val oldPassword: String = "",
@@ -119,57 +117,15 @@ class ChangePasswordViewModel(
                     }
                 }
                 .onFailure { throwable ->
-                    val realErrorMessage = if (throwable is HttpException) {
-                        parseValidationError(throwable)
-                    } else {
-                        throwable.message ?: "Change password failed."
-                    }
-
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            bannerMessage = realErrorMessage,
+                            bannerMessage = throwable.message ?: "Change password failed.",
                             isBannerSuccess = false,
                             showBanner = true
                         )
                     }
                 }
-        }
-    }
-
-    // Hàm phụ trợ lấy lỗi chi tiết
-    private fun parseValidationError(exception: HttpException): String {
-        return try {
-            val errorString = exception.response()?.errorBody()?.string()
-            if (!errorString.isNullOrEmpty()) {
-                val jsonObject = JSONObject(errorString)
-
-                // Ưu tiên 1: Lấy thông tin từ object errors
-                if (jsonObject.has("errors")) {
-                    val errorsObj = jsonObject.getJSONObject("errors")
-                    val keys = errorsObj.keys()
-                    if (keys.hasNext()) {
-                        val firstKey = keys.next()
-                        val errorArray = errorsObj.getJSONArray(firstKey)
-                        if (errorArray.length() > 0) {
-                            return errorArray.getString(0)
-                        }
-                    }
-                }
-
-                // Ưu tiên 2: Nếu không có mảng errors thì lấy title
-                if (jsonObject.has("title")) {
-                    return jsonObject.getString("title")
-                }
-
-                // Ưu tiên 3: Lấy message thông thường
-                if (jsonObject.has("message")) {
-                    return jsonObject.getString("message")
-                }
-            }
-            "Change password failed (HTTP ${exception.code()})"
-        } catch (e: Exception) {
-            "Change password failed (HTTP ${exception.code()})"
         }
     }
 }

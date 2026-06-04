@@ -17,7 +17,10 @@ data class MyVoucherUiState(
     val isLoading: Boolean = false,
     val isLoadingMore: Boolean = false,
     val currentPage: Int = 1,
-    val hasNextPage: Boolean = true
+    val hasNextPage: Boolean = true,
+    val bannerMessage: String = "",
+    val isBannerSuccess: Boolean = true,
+    val showBanner: Boolean = false
 )
 
 class MyVoucherViewModel(
@@ -25,6 +28,14 @@ class MyVoucherViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(MyVoucherUiState())
     val uiState: StateFlow<MyVoucherUiState> = _uiState.asStateFlow()
+
+    init {
+        fetchMyVouchers()
+    }
+
+    fun hideBanner() {
+        _uiState.update { it.copy(showBanner = false) }
+    }
 
     fun fetchMyVouchers(isLoadMore: Boolean = false) {
         val currentState = _uiState.value
@@ -40,19 +51,14 @@ class MyVoucherViewModel(
         }
 
         viewModelScope.launch {
-            val result = repository.getMyVouchers(pageToLoad, DEFAULT_PAGE_SIZE)
-            result.onSuccess { response ->
-                try {
+            repository.getMyVouchers(pageToLoad, DEFAULT_PAGE_SIZE)
+                .onSuccess { response ->
                     val newItems = response.items.map { it.toUiModel() }
                     handleFetchSuccess(newItems, isLoadMore, response.hasNext, pageToLoad)
-                } catch (e: Exception) {
-                    android.util.Log.e("MyVoucherVM", "Lỗi map dữ liệu", e)
-                    handleFetchError()
                 }
-            }.onFailure { throwable ->
-                android.util.Log.e("MyVoucherVM", "Không gọi được API ", throwable)
-                handleFetchError()
-            }
+                .onFailure { throwable ->
+                    handleFetchError(throwable.message ?: "Failed to load your vouchers.")
+                }
         }
     }
 
@@ -82,9 +88,15 @@ class MyVoucherViewModel(
         }
     }
 
-    private fun handleFetchError() {
+    private fun handleFetchError(errorMessage: String) {
         _uiState.update { state ->
-            state.copy(isLoading = false, isLoadingMore = false)
+            state.copy(
+                isLoading = false,
+                isLoadingMore = false,
+                bannerMessage = errorMessage,
+                isBannerSuccess = false,
+                showBanner = true
+            )
         }
     }
 

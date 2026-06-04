@@ -126,7 +126,6 @@ class CartRepositoryImpl(
         if (rawMessage.isNullOrBlank()) return null
         return try {
             val jsonObject = JSONObject(rawMessage)
-
             if (jsonObject.has("errors")) {
                 val errorsObj = jsonObject.getJSONObject("errors")
                 val errorMessages = mutableListOf<String>()
@@ -140,7 +139,10 @@ class CartRepositoryImpl(
                 }
                 if (errorMessages.isNotEmpty()) return errorMessages.joinToString("\n")
             }
+            if (jsonObject.has("detail")) return jsonObject.getString("detail")
+            if (jsonObject.has("message")) return jsonObject.getString("message")
             if (jsonObject.has("title")) return jsonObject.getString("title")
+
             rawMessage
         } catch (_: Exception) {
             rawMessage

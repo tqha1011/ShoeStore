@@ -5,10 +5,13 @@ import com.example.shoestoreapp.features.user.voucher.data.remote.PaginatedRespo
 import com.example.shoestoreapp.features.user.voucher.data.remote.VoucherApi
 import com.example.shoestoreapp.features.user.voucher.data.remote.VoucherDto
 import com.example.shoestoreapp.features.user.voucher.data.remote.VoucherUserDto
+import org.json.JSONObject
+import retrofit2.Response
 
 class VoucherRepositoryImpl(
     private val api: VoucherApi = RetrofitInstance.voucherApi
 ) : VoucherRepository {
+
     override suspend fun getValidVouchers(
         pageIndex: Int,
         pageSize: Int
@@ -16,17 +19,13 @@ class VoucherRepositoryImpl(
         return try {
             val response = api.getValidVouchers(pageIndex, pageSize)
             if (response.isSuccessful) {
-                val body = response.body()
-                if (body != null) {
-                    Result.success(body)
-                } else {
-                    Result.failure(Exception("Empty response body"))
-                }
+                response.body()?.let { Result.success(it) }
+                    ?: Result.failure(UserVoucherRepositoryException.Unknown("Empty response body."))
             } else {
-                Result.failure(Exception("Fetch valid vouchers failed (HTTP ${response.code()})"))
+                Result.failure(response.toRepositoryException())
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(UserVoucherRepositoryException.Unknown(e.message ?: UserVoucherRepositoryException.ERROR_UNKNOWN))
         }
     }
 
@@ -36,10 +35,10 @@ class VoucherRepositoryImpl(
             if (response.isSuccessful) {
                 Result.success(Unit)
             } else {
-                Result.failure(Exception("Claim voucher failed (HTTP ${response.code()})"))
+                Result.failure(response.toRepositoryException())
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(UserVoucherRepositoryException.Unknown(e.message ?: UserVoucherRepositoryException.ERROR_UNKNOWN))
         }
     }
 
@@ -50,17 +49,57 @@ class VoucherRepositoryImpl(
         return try {
             val response = api.getMyVouchers(pageIndex, pageSize)
             if (response.isSuccessful) {
-                val body = response.body()
-                if (body != null) {
-                    Result.success(body)
-                } else {
-                    Result.failure(Exception("Empty response body"))
-                }
+                response.body()?.let { Result.success(it) }
+                    ?: Result.failure(UserVoucherRepositoryException.Unknown("Empty response body."))
             } else {
-                Result.failure(Exception("Fetch my vouchers failed (HTTP ${response.code()})"))
+                Result.failure(response.toRepositoryException())
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(UserVoucherRepositoryException.Unknown(e.message ?: UserVoucherRepositoryException.ERROR_UNKNOWN))
+        }
+    }
+
+    // ================
+    // LOGIC PARSE LỖI
+    // ================
+
+    private fun <T> Response<T>.toRepositoryException(): UserVoucherRepositoryException {
+        val rawMessage = errorBody()?.string()?.takeIf { it.isNotBlank() }
+        val backendMessage = parseBackendError(rawMessage)
+
+        return when (code()) {
+            400 -> UserVoucherRepositoryException.BadRequest(backendMessage ?: UserVoucherRepositoryException.ERROR_BAD_REQUEST)
+            401 -> UserVoucherRepositoryException.Unauthorized(backendMessage ?: UserVoucherRepositoryException.ERROR_UNAUTHORIZED)
+            404 -> UserVoucherRepositoryException.NotFound(backendMessage ?: UserVoucherRepositoryException.ERROR_NOT_FOUND)
+            500 -> UserVoucherRepositoryException.ServerError(backendMessage ?: UserVoucherRepositoryException.ERROR_SERVER)
+            else -> UserVoucherRepositoryException.Unknown(backendMessage ?: "${UserVoucherRepositoryException.ERROR_UNKNOWN} (HTTP ${code()})")
+        }
+    }
+
+    private fun parseBackendError(rawMessage: String?): String? {
+        if (rawMessage.isNullOrBlank()) return null
+        return try {
+            val jsonObject = JSONObject(rawMessage)
+
+            if (jsonObject.has("errors")) {
+                val errorsObj = jsonObject.getJSONObject("errors")
+                val errorMessages = mutableListOf<String>()
+                val keys = errorsObj.keys()
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    val errorArray = errorsObj.getJSONArray(key)
+                    for (i in 0 until errorArray.length()) {
+                        errorMessages.add(errorArray.getString(i))
+                    }
+                }
+                if (errorMessages.isNotEmpty()) return errorMessages.joinToString("\n")
+            }
+            if (jsonObject.has("title")) return jsonObject.getString("title")
+            if (jsonObject.has("message")) return jsonObject.getString("message")
+
+            rawMessage
+        } catch (_: Exception) {
+            rawMessage
         }
     }
 }

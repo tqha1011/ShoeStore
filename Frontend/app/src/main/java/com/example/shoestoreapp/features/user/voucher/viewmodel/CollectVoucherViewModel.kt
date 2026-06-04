@@ -51,17 +51,14 @@ class CollectVoucherViewModel(
         }
 
         viewModelScope.launch {
-            val result = repository.getValidVouchers(pageToLoad, DEFAULT_PAGE_SIZE)
-            result.onSuccess { response ->
-                try {
+            repository.getValidVouchers(pageToLoad, DEFAULT_PAGE_SIZE)
+                .onSuccess { response ->
                     val newItems = response.items.map { it.toUiModel() }
                     handleFetchSuccess(newItems, isLoadMore, response.hasNext, pageToLoad)
-                } catch (e: Exception) {
-                    handleFetchError("Data parsing error")
                 }
-            }.onFailure { throwable ->
-                handleFetchError(throwable.message ?: "Failed to fetch vouchers")
-            }
+                .onFailure { throwable ->
+                    handleFetchError(throwable.message ?: "Failed to fetch vouchers")
+                }
         }
     }
 
@@ -71,34 +68,35 @@ class CollectVoucherViewModel(
         onError: (String) -> Unit
     ) {
         viewModelScope.launch {
-            val result = repository.claimVoucher(voucherId)
-            result.onSuccess {
-                _uiState.update { state ->
-                    state.copy(
-                        vouchers = state.vouchers.map { voucher ->
-                            if (voucher.id == voucherId) {
-                                voucher.copy(isCollected = true)
-                            } else {
-                                voucher
-                            }
-                        },
-                        bannerMessage = "Voucher collected successfully!",
-                        isBannerSuccess = true,
-                        showBanner = true
-                    )
+            repository.claimVoucher(voucherId)
+                .onSuccess {
+                    _uiState.update { state ->
+                        state.copy(
+                            vouchers = state.vouchers.map { voucher ->
+                                if (voucher.id == voucherId) {
+                                    voucher.copy(isCollected = true)
+                                } else {
+                                    voucher
+                                }
+                            },
+                            bannerMessage = "Voucher collected successfully!",
+                            isBannerSuccess = true,
+                            showBanner = true
+                        )
+                    }
+                    onSuccess()
                 }
-                onSuccess()
-            }.onFailure { throwable ->
-                val errorMsg = throwable.message ?: "Failed to collect voucher"
-                _uiState.update { state ->
-                    state.copy(
-                        bannerMessage = errorMsg,
-                        isBannerSuccess = false,
-                        showBanner = true
-                    )
+                .onFailure { throwable ->
+                    val errorMsg = throwable.message ?: "Failed to collect voucher"
+                    _uiState.update { state ->
+                        state.copy(
+                            bannerMessage = errorMsg,
+                            isBannerSuccess = false,
+                            showBanner = true
+                        )
+                    }
+                    onError(errorMsg)
                 }
-                onError(errorMsg)
-            }
         }
     }
 
