@@ -6,9 +6,14 @@ import com.example.shoestoreapp.features.agent_intelligent.data.remote.ChatSessi
 import com.example.shoestoreapp.features.admin.product.data.remote.AdminProductApi
 import com.example.shoestoreapp.features.auth.data.remote.AuthApi
 import com.example.shoestoreapp.features.user.product.data.remote.ProductApi
-import com.example.shoestoreapp.features.cart.data.remote.CartApi
-import com.example.shoestoreapp.features.admin.crud.data.remote.AdminProductCrudApi
-import com.example.shoestoreapp.features.admin.crud.data.remote.MasterDataApi
+import com.example.shoestoreapp.features.user.cart.data.remote.CartApi
+import com.example.shoestoreapp.features.admin.addproduct.data.remote.MasterDataApi
+import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutApi
+import com.example.shoestoreapp.features.admin.product.data.remote.ImageApi
+import com.example.shoestoreapp.features.admin.voucher.data.remote.AdminVoucherApi
+import com.example.shoestoreapp.features.user.profile.data.remote.AddressApi
+import com.example.shoestoreapp.features.user.profile.data.remote.ProfileApi
+import com.example.shoestoreapp.features.user.voucher.data.remote.VoucherApi
 import com.example.shoestoreapp.features.invoice.data.remote.InvoiceApi
 import com.example.shoestoreapp.features.admin.analytics.data.remote.AnalyticsApi
 import okhttp3.OkHttpClient
@@ -18,7 +23,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitInstance {
-
 
     private lateinit var appContext: Context
 
@@ -34,16 +38,14 @@ object RetrofitInstance {
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
-    val logging = HttpLoggingInterceptor().apply {
-        level = HttpLoggingInterceptor.Level.BODY // Yêu cầu in toàn bộ Body (JSON)
-    }
+
+
     val client by lazy {
         OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .addInterceptor(authInterceptor)
-            .addInterceptor(logging)
             .addInterceptor(loggingInterceptor)
             .build()
     }
@@ -57,7 +59,6 @@ object RetrofitInstance {
             .build()
     }
 
-
     // 3. Create AuthApi service for authentication endpoints
     val authApi: AuthApi by lazy {
         retrofit.create(AuthApi::class.java)
@@ -69,7 +70,7 @@ object RetrofitInstance {
     }
 
     // 5. Create CartApi service for cart endpoints
-    val cartApi: CartApi by lazy {
+    val cartApi: com.example.shoestoreapp.features.user.cart.data.remote.CartApi by lazy {
         retrofit.create(CartApi::class.java)
     }
 
@@ -78,9 +79,9 @@ object RetrofitInstance {
         retrofit.create(AdminProductApi::class.java)
     }
 
-    // 7. Create AdminProductCrudApi service for admin CRUD endpoints
-    val adminCrudApi: AdminProductCrudApi by lazy {
-        retrofit.create(AdminProductCrudApi::class.java)
+    // 7. Create ImageApi service for image upload endpoints
+    val imageApi: ImageApi by lazy {
+        retrofit.create(ImageApi::class.java)
     }
 
     // 8. Create MasterDataApi service for fetching master data (size, color, category)
@@ -88,21 +89,46 @@ object RetrofitInstance {
         retrofit.create(MasterDataApi::class.java)
     }
 
-    // 9. Create InvoiceApi service for invoice endpoints
+    // 9. Create CheckOutApi service for checkout endpoints
+    val checkOutApi: CheckOutApi by lazy {
+        retrofit.create(CheckOutApi::class.java)
+    }
+
+    // 10. Create AdminVoucherApi service for admin voucher endpoints
+    val adminVoucherApi: AdminVoucherApi by lazy {
+        retrofit.create(AdminVoucherApi::class.java)
+    }
+
+    // 11. Create VoucherApi service for valid voucher endpoints
+    val voucherApi: VoucherApi by lazy {
+        retrofit.create(VoucherApi::class.java)
+    }
+
+    // 12. Create ProfileApi service for user profile endpoints
+    val profileApi: ProfileApi by lazy {
+        retrofit.create(ProfileApi::class.java)
+    }
+
+    // 13. Create AddressApi service for address endpoints
+    val addressApi: AddressApi by lazy {
+        retrofit.create(AddressApi::class.java)
+    }
+
+    // 14. Create InvoiceApi service for invoice endpoints
     val invoiceApi: InvoiceApi by lazy {
         retrofit.create(InvoiceApi::class.java)
     }
 
-    // 10. Create AnalyticsApi service for admin analytics endpoints
+    // 15. Create AnalyticsApi service for admin analytics endpoints
     val analyticsApi: AnalyticsApi by lazy {
         retrofit.create(AnalyticsApi::class.java)
     }
 
-    // 11. Create ChatSessionApi service for admin AI assistant endpoints
+    // 16. Create ChatSessionApi service for admin AI assistant endpoints
     val chatSessionApi: ChatSessionApi by lazy {
         retrofit.create(ChatSessionApi::class.java)
     }
-    // 12. Create stream messages for admin AI assistant
+    // 17. Create stream messages for admin AI assistant
     val okHttpClient by lazy {
         client
     }

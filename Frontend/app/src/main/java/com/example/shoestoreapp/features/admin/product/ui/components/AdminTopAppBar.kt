@@ -17,30 +17,42 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.icons.filled.AutoAwesome
 
 /**
  * Top App Bar cho admin product management (sử dụng CenterAlignedTopAppBar).
  *
  * Cấu trúc:
+ * - Menu icon bên trái
  * - Admin Panel text ở giữa
  * - Add Product icon bên phải
+ *
+ * @param onMenuClick - Callback khi click menu icon
  * @param onAddProductClick - Callback khi click Add Product icon
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminTopAppBar(
+    onMenuClick: () -> Unit = {},
     onAddProductClick: () -> Unit = {}
 ) {
     CenterAlignedTopAppBar(
         title = {
             Text(
-                text = "SHOE STORE",
+                text = "NIKE",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Black,
                 color = Color.Black,
                 letterSpacing = 2.sp
             )
+        },
+        navigationIcon = {
+            IconButton(onClick = onMenuClick) {
+                Icon(
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = "Menu",
+                    tint = Color.Black
+                )
+            }
         },
         actions = {
             IconButton(onClick = onAddProductClick) {
@@ -51,10 +63,11 @@ fun AdminTopAppBar(
                 )
             }
         },
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+        colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.White,
-            titleContentColor = Color.Black,
+            scrolledContainerColor = Color.Unspecified,
             navigationIconContentColor = Color.Black,
+            titleContentColor = Color.Black,
             actionIconContentColor = Color.Black
         ),
         modifier = Modifier

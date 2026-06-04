@@ -17,7 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.text.NumberFormat
 import java.util.Locale
+import kotlin.math.roundToLong
 
 /**
  * ProductHeaderInfo: Component hiển thị thông tin cơ bản sản phẩm (tên, giá, đánh giá)
@@ -58,7 +60,7 @@ fun ProductHeaderInfo(
             }
 
             Text(
-                text = "$${String.format(Locale.US, "%.0f", price)}",
+                text = formatVnd(price),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Black,
                 color = Color.Black
@@ -114,3 +116,7 @@ fun ProductHeaderInfo(
     }
 }
 
+private fun formatVnd(price: Double): String {
+    val formatter = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
+    return "${formatter.format(price.roundToLong())} ₫"
+}

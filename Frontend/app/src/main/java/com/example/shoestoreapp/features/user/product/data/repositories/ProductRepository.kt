@@ -67,10 +67,8 @@ class ProductRepository(
         return Product(
             publicId = dto.publicId,
             productName = dto.productName,
-            brand = dto.brand,
             categoryName = dto.categoryName,
             variants = variants
         )
     }
 }
-

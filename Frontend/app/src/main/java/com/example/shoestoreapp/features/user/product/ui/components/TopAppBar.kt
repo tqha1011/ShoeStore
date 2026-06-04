@@ -18,23 +18,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.filled.AutoAwesome
 
 /**
  * TopAppBar: Thanh ứng dụng phía trên cùng (sử dụng CenterAlignedTopAppBar)
- * @param onAiClick - Callback when click Ai Icon
+ * @param onMenuClick - Callback khi click menu
  * @param onShoppingBagClick - Callback khi click shopping bag
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopAppBar(
-    onAiClick: () -> Unit = {},
+    onMenuClick: () -> Unit = {},
     onShoppingBagClick: () -> Unit = {}
 ) {
     CenterAlignedTopAppBar(
         title = {
             Text(
-                text = "SHOESTORE",
+                text = "NIKE",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Black,
                 color = Color.Black,
@@ -42,10 +41,10 @@ fun TopAppBar(
             )
         },
         navigationIcon = {
-            IconButton(onClick = onAiClick) {
+            IconButton(onClick = onMenuClick) {
                 Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    contentDescription = "AiAssistant",
+                    imageVector = Icons.Filled.Menu,
+                    contentDescription = "Menu",
                     tint = Color.Black
                 )
             }
@@ -59,10 +58,11 @@ fun TopAppBar(
                 )
             }
         },
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+        colors = TopAppBarDefaults.topAppBarColors(
             containerColor = Color.White,
-            titleContentColor = Color.Black,
+            scrolledContainerColor = Color.Unspecified,
             navigationIconContentColor = Color.Black,
+            titleContentColor = Color.Black,
             actionIconContentColor = Color.Black
         ),
         modifier = Modifier

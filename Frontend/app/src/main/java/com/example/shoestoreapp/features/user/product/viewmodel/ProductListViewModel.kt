@@ -1,5 +1,4 @@
 ﻿package com.example.shoestoreapp.features.user.product.viewmodel
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.features.user.product.data.models.Product
@@ -10,7 +9,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /**
@@ -24,7 +22,6 @@ import kotlinx.coroutines.launch
  * API được sử dụng:
  * - repository.searchProducts(request) - Tìm kiếm với filters/sorting/pagination
  * - repository.getProductsByCategory(categoryId) - Lọc theo danh mục
- * - repository.updateFavoriteToAPI(productGuid, status) - Cập nhật yêu thích
  */
 class ProductListViewModel(
     private val repository: ProductRepository = ProductRepository()
@@ -53,14 +50,12 @@ class ProductListViewModel(
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
 
-    private val _hasMore = MutableStateFlow(true)
-    val hasMore: StateFlow<Boolean> = _hasMore.asStateFlow()
-
-    private var searchJob: Job? = null
-
     companion object {
         private const val DEFAULT_PAGE_SIZE = 4
     }
+
+    private val _isLastPage = MutableStateFlow(false)
+    val isLastPage: StateFlow<Boolean> = _isLastPage.asStateFlow()
 
     // ============ INIT ============
     init {
@@ -75,21 +70,13 @@ class ProductListViewModel(
     private fun loadProducts() {
         viewModelScope.launch {
             _isLoading.value = true
-            try {
-                val products = repository.searchProducts(
-                    ProductSearchRequest(
-                        pageIndex = 1,
-                        pageSize = DEFAULT_PAGE_SIZE
-                    )
-                ).first()
-                Log.d("SHOE_DEBUG", "Dữ liệu đã về ViewModel: ${products?.size} đôi")
+            repository.searchProducts(
+                ProductSearchRequest(
+                    pageIndex = 1,
+                    pageSize = DEFAULT_PAGE_SIZE
+                )
+            ).collect { products ->
                 _products.value = products
-                _currentPage.value = 1
-                _hasMore.value = (products?.size ?: 0) >= DEFAULT_PAGE_SIZE
-                _errorMessage.value = null
-            } catch (e: Exception) {
-                _errorMessage.value = "Failed to load products: ${e.message}"
-            } finally {
                 _isLoading.value = false
             }
         }
@@ -100,7 +87,7 @@ class ProductListViewModel(
      * Xử lý khi user chọn filter
      * Sử dụng: repository.searchProducts() với categoryId filter
      * 
-     * @param filter - Tên filter được chọn (VD: "Air Max", "Dunk", "All Shoes")
+     * @param filter - Tên filter được chọn
      */
     fun onFilterSelected(filter: String) {
         _selectedFilter.value = filter
@@ -109,8 +96,6 @@ class ProductListViewModel(
 
     /**
      * Xử lý khi user gõ text tìm kiếm
-     * Sử dụng: repository.searchProducts() với searchTerm
-     * 
      * @param query - Từ khóa tìm kiếm
      */
     fun onSearchChanged(query: String) {
@@ -120,8 +105,6 @@ class ProductListViewModel(
 
     /**
      * Xử lý khi user chọn tab ở BottomNavBar
-     * 
-     * @param tab - Tab được chọn (SHOP, DISCOVER, HOME, FAVORITES, PROFILE)
      */
     fun onTabSelected(tab: BottomNavTab) {
         _selectedBottomTab.value = tab
@@ -129,15 +112,9 @@ class ProductListViewModel(
 
     /**
      * Load trang tiếp theo (pagination)
-     * Sử dụng: repository.searchProducts() với pageNumber mới
-     * 
-     * Gọi tự động khi user scroll đến cuối LazyColumn
-     * - Kiểm tra isLoadingMore để tránh duplicate requests
-     * - Reset trang về 1 nếu search/filter thay đổi
      */
     fun loadNextPage() {
-        // Prevent duplicate requests - if already loading more, ignore
-        if (_isLoadingMore.value || !_hasMore.value) {
+        if (_isLoadingMore.value || _isLastPage.value) {
             return
         }
 
@@ -145,25 +122,29 @@ class ProductListViewModel(
             _isLoadingMore.value = true
             try {
                 val nextPage = _currentPage.value + 1
-                val categoryId = getCategoryIdFromFilter(_selectedFilter.value)
+
+                // Lấy ID chuẩn xác từ hàm helper
+                val categoryIdFilter = getCategoryIdFromName(_selectedFilter.value)
 
                 val request = ProductSearchRequest(
                     keyword = _searchText.value.ifEmpty { null },
-                    brand = categoryId,
+                    categoryId = categoryIdFilter,
                     pageIndex = nextPage,
                     pageSize = DEFAULT_PAGE_SIZE
                 )
 
                 val products = repository.searchProducts(request).first()
 
-                // Thêm sản phẩm mới vào danh sách hiện tại (append, không replace)
-                if (products?.isNotEmpty() == true) {
+                if (products.isNullOrEmpty()) {
+                    _isLastPage.value = true
+                } else {
                     _products.value = _products.value?.plus(products)
                     _currentPage.value = nextPage
-                    _hasMore.value = products.size >= DEFAULT_PAGE_SIZE
                     _errorMessage.value = null
-                } else {
-                    _hasMore.value = false
+
+                    if (products.size < DEFAULT_PAGE_SIZE) {
+                        _isLastPage.value = true
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -177,53 +158,47 @@ class ProductListViewModel(
     // ============ BUSINESS LOGIC ============
     /**
      * Áp dụng filter và search, gọi API với parameters tương ứng
-     * Sử dụng: repository.searchProducts() với các tham số được xây dựng
-     * 
-     * Logic:
-     * 1. Nếu chỉ có filter (không search): Có thể dùng getProductsByCategory()
-     * 2. Nếu có search + filter: Dùng searchProducts() với cả hai
-     * 3. Reset về trang 1 khi search/filter thay đổi
      */
     private fun applyFiltersAndSearch() {
-        searchJob?.cancel()
-        searchJob = viewModelScope.launch {
+        viewModelScope.launch {
             _isLoading.value = true
-            try {
-                val categoryId = getCategoryIdFromFilter(_selectedFilter.value)
-                val searchTerm = searchText.value.ifEmpty { null }
-                val request = ProductSearchRequest(
-                    keyword = searchTerm,
-                    brand = categoryId,
-                    pageIndex = 1,
-                    pageSize = DEFAULT_PAGE_SIZE
-                )
-                val products = repository.searchProducts(request).first()
+            _isLastPage.value = false
+
+            val searchTerm = searchText.value.ifEmpty { null }
+
+            val categoryIdFilter = getCategoryIdFromName(_selectedFilter.value)
+
+            val request = ProductSearchRequest(
+                keyword = searchTerm,
+                categoryId = categoryIdFilter,
+                pageIndex = 1,
+                pageSize = DEFAULT_PAGE_SIZE
+            )
+
+            repository.searchProducts(request).collect { products ->
                 _products.value = products
                 _currentPage.value = 1
-                _hasMore.value = (products?.size ?: 0) >= DEFAULT_PAGE_SIZE
-                _errorMessage.value = null
-            } catch (e: Exception) {
-                _errorMessage.value = "Failed to search products: ${e.message}"
-            } finally {
+
+                if (products.isNullOrEmpty() || products.size < DEFAULT_PAGE_SIZE) {
+                    _isLastPage.value = true
+                }
+
                 _isLoading.value = false
             }
         }
     }
 
+    // ============ HELPER ============
     /**
-     * Convert filter name thành categoryId
-     * Sử dụng cho repository.searchProducts(categoryId=...)
-     * 
-     * @param filterName - Tên filter (VD: "Air Max", "Dunk")
-     * @return categoryId hoặc null
+     * Map tên category trên UI về đúng ID dưới database
      */
-    private fun getCategoryIdFromFilter(filterName: String): String? {
-        return when (filterName) {
-            "Air Max" -> "air-max"
-            "Dunk" -> "dunk"
-            "Pegasus" -> "pegasus"
-            "Jordan" -> "jordan"
-            else -> null // "All Shoes" → null (không filter)
+    private fun getCategoryIdFromName(name: String): String? {
+        return when (name) {
+            "Running" -> "1"
+            "Men's shoes" -> "2"
+            "Women's shoes" -> "3"
+            "Kid's shoes" -> "4"
+            else -> null // Tương đương với "All Shoes"
         }
     }
 }

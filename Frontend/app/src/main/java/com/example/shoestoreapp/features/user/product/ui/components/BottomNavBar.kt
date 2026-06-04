@@ -8,9 +8,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.sp
  */
 @Composable
 fun BottomNavBar(
-    selectedTab: BottomNavTab = BottomNavTab.HOME,
+    selectedTab: BottomNavTab = BottomNavTab.SHOP,
     onTabSelected: (BottomNavTab) -> Unit = {}
 ) {
     Row(
@@ -42,13 +42,6 @@ fun BottomNavBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         BottomNavItem(
-            icon = Icons.Filled.Home,
-            label = "Home",
-            isSelected = selectedTab == BottomNavTab.HOME,
-            onClick = { onTabSelected(BottomNavTab.HOME) }
-        )
-
-        BottomNavItem(
             icon = Icons.Filled.Storefront,
             label = "Shop",
             isSelected = selectedTab == BottomNavTab.SHOP,
@@ -56,12 +49,18 @@ fun BottomNavBar(
         )
 
         BottomNavItem(
-            icon = Icons.Filled.Favorite,
-            label = "Favorites",
-            isSelected = selectedTab == BottomNavTab.FAVORITES,
-            onClick = { onTabSelected(BottomNavTab.FAVORITES) }
+            icon = Icons.Filled.LocalOffer,
+            label = "Voucher",
+            isSelected = selectedTab == BottomNavTab.VOUCHER,
+            onClick = { onTabSelected(BottomNavTab.VOUCHER) }
         )
 
+        BottomNavItem(
+            icon = Icons.Filled.ShoppingBag,
+            label = "Bag",
+            isSelected = selectedTab == BottomNavTab.BAG,
+            onClick = { onTabSelected(BottomNavTab.BAG) }
+        )
 
         BottomNavItem(
             icon = Icons.Filled.Person,
@@ -103,10 +102,8 @@ private fun BottomNavItem(
 }
 
 enum class BottomNavTab {
-    HOME,
     SHOP,
-    FAVORITES,
+    VOUCHER,
     BAG,
     PROFILE
 }
-
