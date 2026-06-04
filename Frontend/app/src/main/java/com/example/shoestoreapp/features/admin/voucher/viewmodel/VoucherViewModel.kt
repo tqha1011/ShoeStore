@@ -1,6 +1,5 @@
 package com.example.shoestoreapp.features.admin.voucher.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.features.admin.voucher.data.remote.CreateVoucherDto
@@ -8,8 +7,6 @@ import com.example.shoestoreapp.features.admin.voucher.data.remote.ResponseVouch
 import com.example.shoestoreapp.features.admin.voucher.data.remote.UpdateVoucherDto
 import com.example.shoestoreapp.features.admin.voucher.data.repositories.VoucherRepository
 import com.example.shoestoreapp.features.admin.voucher.data.repositories.VoucherRepositoryImpl
-import org.json.JSONObject
-import retrofit2.HttpException
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -165,8 +162,7 @@ class VoucherViewModel(
                 }
                 loadVouchers(true)
             }.onFailure { error ->
-                val realErrorMessage = parseVoucherValidationError(error)
-                showErrorBanner(realErrorMessage)
+                showErrorBanner(error.message ?: "Action failed.")
             }
         }
     }
@@ -327,8 +323,7 @@ class VoucherViewModel(
                 _editingVoucherId.value = null
                 loadVouchers(true)
             }.onFailure { error ->
-                val realErrorMessage = parseVoucherValidationError(error)
-                showErrorBanner(realErrorMessage)
+                showErrorBanner(error.message ?: "Action failed.")
             }
         }
     }
@@ -336,38 +331,6 @@ class VoucherViewModel(
     // ==================
     // CÁC HÀM PHỤ TRỢ
     // ==================
-
-    private fun parseVoucherValidationError(throwable: Throwable): String {
-        return try {
-            val errorString = when (throwable) {
-                is HttpException -> throwable.response()?.errorBody()?.string()
-                else -> throwable.message
-            }
-
-            if (!errorString.isNullOrEmpty() && errorString.startsWith("{")) {
-                val jsonObject = JSONObject(errorString)
-
-                if (jsonObject.has("errors")) {
-                    val errorsObj = jsonObject.getJSONObject("errors")
-                    val keys = errorsObj.keys()
-                    if (keys.hasNext()) {
-                        val firstKey = keys.next()
-                        val errorArray = errorsObj.getJSONArray(firstKey)
-                        if (errorArray.length() > 0) {
-                            return errorArray.getString(0)
-                        }
-                    }
-                }
-
-                if (jsonObject.has("title")) {
-                    return jsonObject.getString("title")
-                }
-            }
-            throwable.message ?: "Action failed."
-        } catch (e: Exception) {
-            "Action failed."
-        }
-    }
 
     private fun validateVoucherFields(state: VoucherUiState): Boolean {
         if (state.validFrom.isBlank() || state.validTo.isBlank()) {

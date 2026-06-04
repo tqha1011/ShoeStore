@@ -5,7 +5,6 @@ import com.example.shoestoreapp.features.admin.product.data.remote.ProductRespon
 import com.example.shoestoreapp.features.admin.product.data.remote.ProductVariantResponseDto
 import com.example.shoestoreapp.features.admin.product.data.remote.UpdateProductDto
 import kotlinx.coroutines.flow.Flow
-import retrofit2.Response
 import java.io.File
 
 data class AdminProductPage(
@@ -72,22 +71,8 @@ sealed class AdminProductRepositoryException(message: String) : Exception(messag
     class Unknown(message: String = ERROR_UNKNOWN) : AdminProductRepositoryException(message)
 }
 
-private const val ERROR_BAD_REQUEST = "Invalid product data. Please check your input."
-private const val ERROR_UNAUTHORIZED = "Unauthorized. Please sign in again."
-private const val ERROR_NOT_FOUND = "Product not found."
-private const val ERROR_SERVER = "Server error. Please try again later."
-private const val ERROR_UNKNOWN = "Unable to load product details right now."
-
-internal fun <T> Response<T>.toRepositoryException(): AdminProductRepositoryException {
-    val backendMessage = errorBody()?.string()?.takeIf { it.isNotBlank() }
-
-    return when (code()) {
-        400 -> AdminProductRepositoryException.BadRequest(backendMessage ?: ERROR_BAD_REQUEST)
-        401 -> AdminProductRepositoryException.Unauthorized(backendMessage ?: ERROR_UNAUTHORIZED)
-        404 -> AdminProductRepositoryException.NotFound(backendMessage ?: ERROR_NOT_FOUND)
-        500 -> AdminProductRepositoryException.ServerError(backendMessage ?: ERROR_SERVER)
-        else -> AdminProductRepositoryException.Unknown(
-            backendMessage ?: "$ERROR_UNKNOWN (HTTP ${code()})"
-        )
-    }
-}
+const val ERROR_BAD_REQUEST = "Invalid product data. Please check your input."
+const val ERROR_UNAUTHORIZED = "Unauthorized. Please sign in again."
+const val ERROR_NOT_FOUND = "Product not found."
+const val ERROR_SERVER = "Server error. Please try again later."
+const val ERROR_UNKNOWN = "Unable to load product details right now."

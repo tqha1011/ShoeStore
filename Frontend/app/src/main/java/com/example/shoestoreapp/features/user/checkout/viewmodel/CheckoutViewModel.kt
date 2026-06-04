@@ -21,8 +21,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.json.JSONObject
-import retrofit2.HttpException
 
 sealed interface PlaceOrderUiState {
     object Idle : PlaceOrderUiState
@@ -99,14 +97,16 @@ class CheckoutViewModel(
     private fun fetchDefaultAddress() {
         viewModelScope.launch {
             addressRepository.getAllAddresses().onSuccess { addresses ->
-                // Tìm địa chỉ có isDefault = true, nếu không có thì lấy cái đầu tiên (nếu có)
                 val default = addresses.find { it.isDefault } ?: addresses.firstOrNull()
                 default?.let {
                     _deliveryAddress.value = _deliveryAddress.value.copy(
-                        fullAddress = it.address // Gán chuỗi address từ Backend trả về
+                        fullAddress = it.address
                     )
                 }
             }.onFailure {
+                _bannerMessage.value = "Failed to load default address"
+                _isBannerSuccess.value = false
+                _showBanner.value = true
             }
         }
     }
@@ -152,44 +152,36 @@ class CheckoutViewModel(
 
         viewModelScope.launch {
             _isLoading.value = true
-            try {
-                val result = checkoutRepository.prepareCheckOut(requestBody)
-                result.onSuccess { response ->
+
+            checkoutRepository.prepareCheckOut(requestBody)
+                .onSuccess { response ->
                     _orderSummary.value = response.summary.toOrderSummary()
                     _cartItems.value = response.items
                     _errorMessage.value = ""
                     _isLoading.value = false
-                }.onFailure { exception ->
+                }
+                .onFailure { exception ->
                     _isLoading.value = false
+                    val msg = exception.message ?: "Unknown error during checkout preparation"
 
-                    // LỖI ÁP VOUCHER
-                    if (exception is HttpException && exception.code() == 400) {
-                        val parsedMessage = parseErrorMessage(exception)
-                        _bannerMessage.value = parsedMessage
+                    // Xử lý lỗi áp voucher
+                    if (msg.contains("voucher", ignoreCase = true) || msg.contains("invalid", ignoreCase = true)) {
+                        _bannerMessage.value = msg
                         _isBannerSuccess.value = false
                         _showBanner.value = true
-                        _placeOrderState.value = PlaceOrderUiState.Error(parsedMessage)
+                        _placeOrderState.value = PlaceOrderUiState.Error(msg)
 
+                        // Reset voucher và thử tính toán lại
                         _selectedProductVoucher.value = null
                         _selectedShippingVoucher.value = null
                         prepareCheckoutSession()
-
                     } else {
-                        val msg = exception.message ?: "Unknown error during checkout preparation"
                         _errorMessage.value = msg
                         _bannerMessage.value = msg
                         _isBannerSuccess.value = false
                         _showBanner.value = true
                     }
                 }
-            } catch (e: Exception) {
-                _isLoading.value = false
-                val msg = e.message ?: "Unknown error during checkout preparation"
-                _errorMessage.value = msg
-                _bannerMessage.value = msg
-                _isBannerSuccess.value = false
-                _showBanner.value = true
-            }
         }
     }
 
@@ -205,7 +197,6 @@ class CheckoutViewModel(
     fun selectPaymentMethod(paymentMethod: PaymentMethod) {
         _paymentMethod.value = paymentMethod
     }
-
 
     fun placeOrder(
         fullName: String,
@@ -241,36 +232,18 @@ class CheckoutViewModel(
                 phoneNumber = phoneNumber
             )
 
-            try {
-                val result = checkoutRepository.placeOrder(fromUserCart, requestDto)
-                result.onSuccess { invoice ->
+            checkoutRepository.placeOrder(fromUserCart, requestDto)
+                .onSuccess { invoice ->
                     _placeOrderState.value = PlaceOrderUiState.Success(invoice)
                     CheckoutSession.pendingItems = emptyList()
-                }.onFailure { exception ->
-
-                    // LỖI KHI BẤM THANH TOÁN
-                    if (exception is HttpException && exception.code() == 400) {
-                        val parsedMessage = parseErrorMessage(exception)
-                        _bannerMessage.value = parsedMessage
-                        _isBannerSuccess.value = false
-                        _showBanner.value = true
-                        _placeOrderState.value = PlaceOrderUiState.Error(parsedMessage)
-                    } else {
-                        // Lỗi khác
-                        val msg = exception.message ?: "Unknown error during placing order"
-                        _bannerMessage.value = msg
-                        _isBannerSuccess.value = false
-                        _showBanner.value = true
-                        _placeOrderState.value = PlaceOrderUiState.Error(msg)
-                    }
                 }
-            } catch (e: Exception) {
-                val msg = e.message ?: "Unknown error during placing order"
-                _bannerMessage.value = msg
-                _isBannerSuccess.value = false
-                _showBanner.value = true
-                _placeOrderState.value = PlaceOrderUiState.Error(msg)
-            }
+                .onFailure { exception ->
+                    val msg = exception.message ?: "Unknown error during placing order"
+                    _bannerMessage.value = msg
+                    _isBannerSuccess.value = false
+                    _showBanner.value = true
+                    _placeOrderState.value = PlaceOrderUiState.Error(msg)
+                }
         }
     }
 
@@ -288,19 +261,5 @@ class CheckoutViewModel(
             return false
         }
         return true
-    }
-
-
-    // Hàm phụ trợ dùng chung để bóc tách JSON lỗi từ Backend
-    private fun parseErrorMessage(exception: HttpException): String {
-        val errorString = exception.response()?.errorBody()?.string() ?: ""
-        var parsedMessage = "Dữ liệu không hợp lệ"
-        try {
-            val jsonObject = JSONObject(errorString)
-            parsedMessage = jsonObject.getString("message")
-        } catch (ex: Exception) {
-            ex.printStackTrace()
-        }
-        return parsedMessage
     }
 }

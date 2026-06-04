@@ -12,9 +12,11 @@ sealed class ImageRepositoryException(message: String) : Exception(message) {
     class Unauthorized(message: String = ERROR_UNAUTHORIZED) : ImageRepositoryException(message)
     class ServerError(message: String = ERROR_SERVER) : ImageRepositoryException(message)
     class Unknown(message: String = ERROR_UNKNOWN) : ImageRepositoryException(message)
-}
 
-private const val ERROR_BAD_REQUEST = "Invalid image file. Please try another image."
-private const val ERROR_UNAUTHORIZED = "Unauthorized. Please sign in again."
-private const val ERROR_SERVER = "Server error. Please try again later."
-private const val ERROR_UNKNOWN = "Unable to upload image right now."
+    companion object {
+        const val ERROR_BAD_REQUEST = "Invalid image file. Please try another image."
+        const val ERROR_UNAUTHORIZED = "Unauthorized. Please sign in again."
+        const val ERROR_SERVER = "Server error. Please try again later."
+        const val ERROR_UNKNOWN = "Unable to upload image right now."
+    }
+}

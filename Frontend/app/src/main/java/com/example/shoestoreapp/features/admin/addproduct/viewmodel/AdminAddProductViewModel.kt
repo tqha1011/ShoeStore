@@ -41,6 +41,18 @@ class AdminAddProductViewModel(
             return
         }
 
+        if (categoryId <= 0) {
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    bannerMessage = "Please choose a category",
+                    isBannerSuccess = false,
+                    showBanner = true
+                )
+            }
+            return
+        }
+
         val dto = CreateProductDto(
             productName = productName,
             categoryId = categoryId,

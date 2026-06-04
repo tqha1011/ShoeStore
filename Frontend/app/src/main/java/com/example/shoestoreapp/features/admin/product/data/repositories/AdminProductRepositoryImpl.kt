@@ -18,6 +18,8 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import retrofit2.Response
 
 class AdminProductRepositoryImpl(
     private val adminApi: AdminProductApi = RetrofitInstance.adminApi
@@ -234,5 +236,54 @@ class AdminProductRepositoryImpl(
             stock = totalStock,
             variantsCount = variantsCount
         )
+    }
+
+    internal fun <T> Response<T>.toRepositoryException(): AdminProductRepositoryException {
+        val rawMessage = errorBody()?.string()?.takeIf { it.isNotBlank() }
+        val backendMessage = parseBackendError(rawMessage)
+
+        return when (code()) {
+            400 -> AdminProductRepositoryException.BadRequest(backendMessage ?: ERROR_BAD_REQUEST)
+            401 -> AdminProductRepositoryException.Unauthorized(backendMessage ?: ERROR_UNAUTHORIZED)
+            404 -> AdminProductRepositoryException.NotFound(backendMessage ?: ERROR_NOT_FOUND)
+            500 -> AdminProductRepositoryException.ServerError(backendMessage ?: ERROR_SERVER)
+            else -> AdminProductRepositoryException.Unknown(
+                backendMessage ?: "$ERROR_UNKNOWN (HTTP ${code()})"
+            )
+        }
+    }
+
+    private fun parseBackendError(rawMessage: String?): String? {
+        if (rawMessage.isNullOrBlank()) return null
+
+        return try {
+            val jsonObject = JSONObject(rawMessage)
+
+            if (jsonObject.has("errors")) {
+                val errorsObj = jsonObject.getJSONObject("errors")
+                val errorMessages = mutableListOf<String>()
+                val keys = errorsObj.keys()
+
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    val errorArray = errorsObj.getJSONArray(key)
+                    for (i in 0 until errorArray.length()) {
+                        errorMessages.add(errorArray.getString(i))
+                    }
+                }
+
+                if (errorMessages.isNotEmpty()) {
+                    return errorMessages.joinToString("\n")
+                }
+            }
+
+            if (jsonObject.has("title")) {
+                return jsonObject.getString("title")
+            }
+
+            rawMessage
+        } catch (_: Exception) {
+            rawMessage
+        }
     }
 }

@@ -1,49 +1,28 @@
 package com.example.shoestoreapp.features.user.checkout.data.repositories
 
-import com.example.shoestoreapp.core.networks.RetrofitInstance
-import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutApi
 import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutResponseDto
 import com.example.shoestoreapp.features.user.checkout.data.remote.InvoiceDto
 import com.example.shoestoreapp.features.user.checkout.data.remote.PlaceOrderRequestDto
 import com.example.shoestoreapp.features.user.checkout.data.remote.PrepareCheckOutRequestDto
-import retrofit2.HttpException
 
 interface CheckOutRepository {
     suspend fun prepareCheckOut(request: PrepareCheckOutRequestDto): Result<CheckOutResponseDto>
     suspend fun placeOrder(fromUserCart: Boolean, request: PlaceOrderRequestDto): Result<InvoiceDto>
 }
 
-class CheckoutRepositoryImpl(
-    private val checkOutApi: CheckOutApi = RetrofitInstance.checkOutApi
-) : CheckOutRepository {
+sealed class CheckOutRepositoryException(message: String) : Exception(message) {
+    class BadRequest(message: String = ERROR_BAD_REQUEST) : CheckOutRepositoryException(message)
+    class Unauthorized(message: String = ERROR_UNAUTHORIZED) : CheckOutRepositoryException(message)
+    class NotFound(message: String = ERROR_NOT_FOUND) : CheckOutRepositoryException(message)
+    class ServerError(message: String = ERROR_SERVER) : CheckOutRepositoryException(message)
+    class Unknown(message: String = ERROR_UNKNOWN) : CheckOutRepositoryException(message)
 
-    override suspend fun prepareCheckOut(request: PrepareCheckOutRequestDto): Result<CheckOutResponseDto> {
-        return try {
-            val response = checkOutApi.prepareCheckout(request)
-            if (response.isSuccessful) {
-                response.body()?.let {
-                    Result.success(it)
-                } ?: Result.failure(Exception("Empty response body"))
-            } else {
-                Result.failure(HttpException(response))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun placeOrder(fromUserCart: Boolean, request: PlaceOrderRequestDto): Result<InvoiceDto> {
-        return try {
-            val response = checkOutApi.placeOrder(fromUserCart, request)
-            if (response.isSuccessful) {
-                response.body()?.let {
-                    Result.success(it)
-                } ?: Result.failure(Exception("Empty invoice data"))
-            } else {
-                Result.failure(HttpException(response))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    companion object {
+        const val ERROR_BAD_REQUEST = "Invalid checkout data. Please check your information."
+        const val ERROR_UNAUTHORIZED = "Unauthorized. Please sign in again."
+        const val ERROR_NOT_FOUND = "Resource not found."
+        const val ERROR_SERVER = "Server error. Please try again later."
+        const val ERROR_UNKNOWN = "Something went wrong during checkout."
+        const val EMPTY_RESPONSE_BODY = "Empty response body"
     }
 }
