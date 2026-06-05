@@ -1,11 +1,17 @@
 package com.example.shoestoreapp.features.user.product.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.DirectionsRun
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.rounded.DirectionsRun
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -13,17 +19,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -38,42 +42,27 @@ fun TopAppBar(
     onMenuClick: () -> Unit = {},
     onShoppingBagClick: () -> Unit = {}
 ) {
+
     CenterAlignedTopAppBar(
         title = {
-            Text(
-                text = buildAnnotatedString {
-                    // Định dạng cho chữ "Kicks"
-                    withStyle(
-                        style = SpanStyle(
-                            color = Color.Black,
-                            fontWeight = FontWeight.ExtraBold
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "KicksHub",
+                    style = TextStyle(
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 1.sp,
+                        shadow = Shadow(
+                            color = Color.Gray.copy(alpha = 0.4f),
+                            offset = Offset(3f, 3f),
+                            blurRadius = 5f
                         )
-                    ) {
-                        append("Kicks")
-                    }
-                    // Định dạng cho chữ "Hub" - Màu đỏ cam, in nghiêng
-                    withStyle(
-                        style = SpanStyle(
-                            color = Color(0xFFE53935),
-                            fontWeight = FontWeight.Bold,
-                            fontStyle = FontStyle.Italic
-                        )
-                    ) {
-                        append("Hub")
-                    }
-                },
-                fontSize = 28.sp,
-                letterSpacing = 1.5.sp,
-                fontFamily = FontFamily.Serif,
-                style = TextStyle(
-                    // Thêm bóng đổ nhẹ
-                    shadow = Shadow(
-                        color = Color.LightGray,
-                        offset = Offset(2f, 2f),
-                        blurRadius = 4f
                     )
                 )
-            )
+            }
         },
         navigationIcon = {
             IconButton(onClick = onMenuClick) {
