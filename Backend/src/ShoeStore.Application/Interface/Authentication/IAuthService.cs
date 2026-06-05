@@ -10,4 +10,6 @@ public interface IAuthService
     public Task<ErrorOr<string>> LoginAsync(LoginDto loginDto, CancellationToken token);
 
     public Task<ErrorOr<string>> LoginWithSocialAsync(string providerName, string socialToken, CancellationToken token);
+
+    public Task<ErrorOr<Created>> VerifyEmailWithOtpAsync(VerifyOtpRequestDto request, CancellationToken token);
 }
