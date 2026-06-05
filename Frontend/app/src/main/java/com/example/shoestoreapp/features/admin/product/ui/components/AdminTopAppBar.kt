@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -43,7 +43,7 @@ import androidx.compose.ui.text.withStyle
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminTopAppBar(
-    onMenuClick: () -> Unit = {},
+    onAiAssistantClick: () -> Unit = {},
     onAddProductClick: () -> Unit = {}
 ) {
     CenterAlignedTopAppBar(
@@ -68,10 +68,10 @@ fun AdminTopAppBar(
             }
         },
         navigationIcon = {
-            IconButton(onClick = onMenuClick) {
+            IconButton(onClick = onAiAssistantClick) {
                 Icon(
-                    imageVector = Icons.Default.Menu,
-                    contentDescription = "Menu",
+                    imageVector = Icons.Default.SmartToy,
+                    contentDescription = "AI Product Assistant",
                     tint = Color.Black
                 )
             }
@@ -98,4 +98,3 @@ fun AdminTopAppBar(
             .padding(top = 12.dp)
     )
 }
-

@@ -1,8 +1,8 @@
 package com.example.shoestoreapp.core.utils
 
 import android.util.Log
-import com.example.shoestoreapp.features.user.ai_assistant.data.remote.AddVariantResultDto
-import com.example.shoestoreapp.features.user.ai_assistant.data.remote.SearchProductResultDto
+import com.example.shoestoreapp.features.agent_intelligent.data.remote.AddVariantResultDto
+import com.example.shoestoreapp.features.agent_intelligent.data.remote.SearchProductResultDto
 import com.google.gson.Gson
 import com.microsoft.signalr.HubConnection
 import com.microsoft.signalr.HubConnectionBuilder
@@ -16,11 +16,11 @@ class SignalRManager(private val tokenManager: TokenManager) {
     // SignalR Connection
     private var hubConnection: HubConnection? = null
     // AddVariantResult
-    private val _variantDraftFlow = MutableSharedFlow<AddVariantResultDto?>(replay = 0)
+    private val _variantDraftFlow = MutableSharedFlow<AddVariantResultDto?>(replay = 1)
     val variantDraftFlow = _variantDraftFlow.asSharedFlow()
 
     // SearchProductResult
-    private val _searchResultFlow = MutableSharedFlow<SearchProductResultDto?>(replay = 0)
+    private val _searchResultFlow = MutableSharedFlow<SearchProductResultDto?>(replay = 1)
     val searchResultFlow = _searchResultFlow.asSharedFlow()
     suspend fun startConnection() {
         if (hubConnection?.connectionState == HubConnectionState.CONNECTED) return
@@ -44,23 +44,19 @@ class SignalRManager(private val tokenManager: TokenManager) {
     }
 
     private fun registerAiAgentListeners() {
-        hubConnection?.on("NotifyAddVariantResponse", { rawJson ->
-            try {
-                val result = Gson().fromJson(rawJson, AddVariantResultDto::class.java)
-                _variantDraftFlow.tryEmit(result)
-            } catch (e: Exception) {
-                Log.e("SIGNAL_R", "Lỗi parse JSON: ${e.message}")
-            }
-        }, String::class.java)
+        // 1. Lắng nghe AddVariant (Ném thẳng class AddVariantResultDto vào)
+        hubConnection?.on("NotifyAddVariantResponse", { result ->
+            Log.d("DEBUG_FLOW", "Trạm 1 [SignalR]: Parse tự động thành công! Status AddVariant -> ${result.status}")
+            // result lúc này đã là object AddVariantResultDto rồi, không cần Gson().fromJson nữa
+            _variantDraftFlow.tryEmit(result)
+        }, AddVariantResultDto::class.java)
 
-        hubConnection?.on("NotifySearchResultAsync", { rawJson ->
-            try {
-                val result = Gson().fromJson(rawJson, SearchProductResultDto::class.java)
-                _searchResultFlow.tryEmit(result)
-            } catch (e: Exception) {
-                Log.e("SIGNAL_R", "Lỗi parse Search: ${e.message}")
-            }
-        }, String::class.java)
+        // 2. Lắng nghe Search (Ném thẳng class SearchProductResultDto vào)
+        hubConnection?.on("NotifySearchResultAsync", { result ->
+            Log.d("DEBUG_FLOW", "Trạm 1 [SignalR]: Parse tự động thành công! Status Search -> ${result.status}")
+            // result lúc này đã là object SearchProductResultDto
+            _searchResultFlow.tryEmit(result)
+        }, SearchProductResultDto::class.java)
     }
 
     fun stopConnection() {
