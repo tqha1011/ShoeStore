@@ -3,6 +3,7 @@ package com.example.shoestoreapp.core.networks
 import android.content.Context
 import com.example.shoestoreapp.core.utils.Constants
 import com.example.shoestoreapp.features.agent_intelligent.data.remote.ChatSessionApi
+import com.example.shoestoreapp.features.admin.crud.data.remote.AdminProductCrudApi
 import com.example.shoestoreapp.features.admin.product.data.remote.AdminProductApi
 import com.example.shoestoreapp.features.auth.data.remote.AuthApi
 import com.example.shoestoreapp.features.user.product.data.remote.ProductApi
