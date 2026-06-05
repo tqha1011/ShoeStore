@@ -1,5 +1,7 @@
 ﻿package com.example.shoestoreapp.features.admin.product.ui.components
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -17,6 +19,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.withStyle
 
 /**
  * Top App Bar cho admin product management (sử dụng CenterAlignedTopAppBar).
@@ -37,13 +48,24 @@ fun AdminTopAppBar(
 ) {
     CenterAlignedTopAppBar(
         title = {
-            Text(
-                text = "NIKE",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Black,
-                color = Color.Black,
-                letterSpacing = 2.sp
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "KicksHub",
+                    style = TextStyle(
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 1.sp,
+                        shadow = Shadow(
+                            color = Color.Gray.copy(alpha = 0.4f),
+                            offset = Offset(3f, 3f),
+                            blurRadius = 5f
+                        )
+                    )
+                )
+            }
         },
         navigationIcon = {
             IconButton(onClick = onAiAssistantClick) {
