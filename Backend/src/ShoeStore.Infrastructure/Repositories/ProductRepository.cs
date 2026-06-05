@@ -29,6 +29,7 @@ public class ProductRepository(AppDbContext context) : GenericRepository<Product
             .ApplyColorId(request.ListColorId)
             .ApplySizeId(request.ListSizeId)
             .ApplyProductId(request.ProductId)
+            .ApplyCategoryId(request.CategoryId)
             .ApplyPriceRange(request.MinPrice, request.MaxPrice)
             .ApplySort(request.Sort)
             .AsQueryable();

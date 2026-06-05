@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+namespace ShoeStore.Application.DTOs.AddressDTOs;
 
-namespace ShoeStore.Application.DTOs.AddressDTOs
+public class UpdateAddressDto
 {
-    public class UpdateAddressDto
-    {
-        public string Province { get; set; } = string.Empty;
-        public string District { get; set; } = string.Empty;
-        public string DetailAddress { get; set; } = string.Empty;
-        public bool IsDefault { get; set; } = false;
-    }
+    public string Province { get; set; } = string.Empty;
+    public string District { get; set; } = string.Empty;
+    public string Ward { get; set; } = string.Empty;
+    public string DetailAddress { get; set; } = string.Empty;
+    public bool IsDefault { get; set; } = false;
 }

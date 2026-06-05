@@ -7,13 +7,13 @@ package com.example.shoestoreapp.features.user.product.data.remote
  */
 data class ProductSearchRequest(
     val keyword: String? = null,
-    val brand: String? = null,
+    val categoryId: String? = null,
     val productId: Int? = null,
     val listColorId: List<Int?>? = null,
     val listSizeId: List<Int?>? = null,
     val minPrice: Double? = null,
     val maxPrice: Double? = null,
-    val sort: String? = "default",
+    val sort: String? = null,
     val pageIndex: Int = 1,
     val pageSize: Int = 4
 ) {
@@ -21,13 +21,18 @@ data class ProductSearchRequest(
         val map = mutableMapOf<String, String>()
 
         keyword?.let { if (it.isNotBlank()) map["Keyword"] = it }
-        brand?.let { if (it.isNotBlank()) map["Brand"] = it }
-        sort?.let { map["Sort"] = it }
+
+        categoryId?.let { if (it.isNotBlank()) map["CategoryId"] = it }
+
+        sort?.let { if (it.isNotBlank()) map["Sort"] = it }
+
         productId?.let { map["ProductId"] = it.toString() }
         minPrice?.let { map["MinPrice"] = it.toString() }
         maxPrice?.let { map["MaxPrice"] = it.toString() }
+
         map["PageIndex"] = pageIndex.toString()
         map["PageSize"] = pageSize.toString()
+
         listColorId?.filterNotNull()?.let { list ->
             if (list.isNotEmpty()) map["ListColorId"] = list.joinToString(",")
         }

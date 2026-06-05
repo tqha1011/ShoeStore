@@ -20,26 +20,34 @@ public class VoucherService(
 {
     public async Task<ErrorOr<Created>> CreateVoucherAsync(CreateVoucherDto voucherCreateDto, CancellationToken token)
     {
+        var validDiscount = voucherCreateDto.DiscountType switch
+        {
+            DiscountType.Percentage => voucherCreateDto.Discount / 100m ?? 0,
+            DiscountType.FixedAmount => voucherCreateDto.Discount ?? 0,
+            _ => 0
+        };
         var voucher = new Voucher
         {
             VoucherName = voucherCreateDto.VoucherName ?? string.Empty,
             VoucherDescription = voucherCreateDto.VoucherDescription ?? string.Empty,
-            Discount = voucherCreateDto.Discount ?? 0,
+            Discount = validDiscount,
             VoucherScope = voucherCreateDto.VoucherScope,
             DiscountType = voucherCreateDto.DiscountType,
             MaxPriceDiscount = voucherCreateDto.MaxPriceDiscount,
-            ValidFrom = voucherCreateDto.ValidFrom ?? DateTime.UtcNow,
-            ValidTo = voucherCreateDto.ValidTo,
+            ValidFrom = voucherCreateDto.ValidFrom?.AddHours(-7) ?? DateTime.UtcNow,
+            ValidTo = voucherCreateDto.ValidTo?.AddHours(23).AddMinutes(59).AddHours(-7) ?? DateTime.UtcNow,
             MaxUsagePerUser = voucherCreateDto.MaxUsagePerUser,
             TotalQuantity = voucherCreateDto.TotalQuantity ?? 0,
             MinOrderPrice = voucherCreateDto.MinOrderPrice ?? 0,
+            ReleaseType = voucherCreateDto.ReleaseType,
             IsDeleted = false
         };
 
         voucherRepository.Add(voucher);
         await uow.SaveChangesAsync(token);
-        await NotifyUserAboutNewVoucherAsync(voucher.Id, voucher.VoucherName, voucher.ValidTo ?? DateTime.UtcNow,
-            token);
+        if (voucherCreateDto.ReleaseType == ReleaseType.AutoAssign)
+            await NotifyUserAboutNewVoucherAsync(voucher.Id, voucher.VoucherName, voucher.ValidTo ?? DateTime.UtcNow,
+                token);
         return Result.Created;
     }
 
@@ -110,8 +118,8 @@ public class VoucherService(
 
         voucher.MaxPriceDiscount = voucherUpdateDto.MaxPriceDiscount ?? voucher.MaxPriceDiscount;
 
-        voucher.ValidFrom = voucherUpdateDto.ValidFrom ?? voucher.ValidFrom;
-        voucher.ValidTo = voucherUpdateDto.ValidTo ?? voucher.ValidTo;
+        voucher.ValidFrom = voucherUpdateDto.ValidFrom?.AddHours(-7) ?? voucher.ValidFrom;
+        voucher.ValidTo = voucherUpdateDto.ValidTo?.AddHours(23).AddMinutes(59).AddHours(-7) ?? voucher.ValidTo;
 
         voucher.MaxUsagePerUser = voucherUpdateDto.MaxUsagePerUser ?? voucher.MaxUsagePerUser;
         voucher.TotalQuantity = voucherUpdateDto.TotalQuantity ?? voucher.TotalQuantity;
@@ -160,10 +168,15 @@ public class VoucherService(
     }
 
     public async Task<ErrorOr<PageResult<ResponseVoucherDto>>> GetValidVoucherAsync(CancellationToken token,
-        int pageIndex = 1, int pageSize = 10)
+        Guid publicUserId, int pageIndex = 1, int pageSize = 10)
     {
+        var userId = await userRepository.GetUserIdByPublicIdAsync(publicUserId, token);
+        if (userId == null) return Error.NotFound("User.NotFound", "The user does not exist or has been deleted.");
         var query = voucherRepository.GetValidVouchers();
-        var filtered = query.Where(v => !v.IsDeleted && v.ValidTo > DateTime.UtcNow && v.TotalQuantity > 0);
+        var filtered = query.Where(v => !v.IsDeleted && v.ValidTo > DateTime.UtcNow && v.ValidFrom <= DateTime.UtcNow &&
+                                        v.TotalQuantity > 0
+                                        && v.UserVouchers.All(uv => uv.UserId != userId) &&
+                                        v.ReleaseType == ReleaseType.ManualAssign);
         var totalCount = await filtered.CountAsync(token);
 
         var vouchers = await filtered

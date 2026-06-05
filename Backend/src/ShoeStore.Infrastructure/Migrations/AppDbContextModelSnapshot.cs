@@ -954,6 +954,12 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnName("public_id")
                         .HasDefaultValueSql("gen_random_uuid()");
 
+                    b.Property<int>("ReleaseType")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("release_type");
+
                     b.Property<int>("TotalQuantity")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
@@ -1260,7 +1266,7 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasConstraintName("fk_user_vouchers_users_user_id");
 
                     b.HasOne("ShoeStore.Domain.Entities.Voucher", "Voucher")
-                        .WithMany()
+                        .WithMany("UserVouchers")
                         .HasForeignKey("VoucherId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
@@ -1327,6 +1333,8 @@ namespace ShoeStore.Infrastructure.Migrations
 
             modelBuilder.Entity("ShoeStore.Domain.Entities.Voucher", b =>
                 {
+                    b.Navigation("UserVouchers");
+
                     b.Navigation("VoucherDetails");
                 });
 #pragma warning restore 612, 618

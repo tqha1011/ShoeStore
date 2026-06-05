@@ -14,6 +14,8 @@ public class Voucher : Entity<int>
 
     public DiscountType DiscountType { get; set; }
 
+    public ReleaseType ReleaseType { get; set; } = ReleaseType.AutoAssign;
+
     public decimal MaxPriceDiscount { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; }
@@ -30,4 +32,9 @@ public class Voucher : Entity<int>
     ///     Representing the invoices that have applied this voucher and the details of their usage.
     /// </summary>
     public ICollection<VoucherDetail> VoucherDetails { get; set; } = new List<VoucherDetail>();
+
+    /// <summary>
+    ///     Get the collection of user voucher associated with this voucher
+    /// </summary>
+    public ICollection<UserVoucher> UserVouchers { get; set; } = new List<UserVoucher>();
 }

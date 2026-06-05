@@ -1,33 +1,21 @@
 ﻿package com.example.shoestoreapp.features.user.product.viewmodel
-import android.util.Log
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.features.user.product.data.models.Product
 import com.example.shoestoreapp.features.user.product.data.remote.ProductSearchRequest
 import com.example.shoestoreapp.features.user.product.data.repositories.ProductRepository
+import com.example.shoestoreapp.features.user.product.data.repositories.ProductRepositoryImpl
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-/**
- * ViewModel cho Product List Screen
- * 
- * Chức năng:
- * - Quản lý state UI (products, filter, search, loading)
- * - Xử lý business logic (filter & search)
- * - Kết nối giữa UI và Repository qua API mới
- * 
- * API được sử dụng:
- * - repository.searchProducts(request) - Tìm kiếm với filters/sorting/pagination
- * - repository.getProductsByCategory(categoryId) - Lọc theo danh mục
- * - repository.updateFavoriteToAPI(productGuid, status) - Cập nhật yêu thích
- */
 class ProductListViewModel(
-    private val repository: ProductRepository = ProductRepository()
+    private val repository: ProductRepository = ProductRepositoryImpl()
 ) : ViewModel() {
     // ============ STATE ============
     private val _products = MutableStateFlow<List<Product>?>(emptyList())
@@ -45,18 +33,20 @@ class ProductListViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
-
     private val _currentPage = MutableStateFlow(1)
 
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
 
-    private val _hasMore = MutableStateFlow(true)
-    val hasMore: StateFlow<Boolean> = _hasMore.asStateFlow()
+    private val _isLastPage = MutableStateFlow(false)
+    val isLastPage: StateFlow<Boolean> = _isLastPage.asStateFlow()
 
-    private var searchJob: Job? = null
+    // ============ STATE BANNER BÁO LỖI ĐỒNG BỘ ============
+    private val _bannerMessage = MutableStateFlow("")
+    val bannerMessage: StateFlow<String> = _bannerMessage.asStateFlow()
+
+    private val _showBanner = MutableStateFlow(false)
+    val showBanner: StateFlow<Boolean> = _showBanner.asStateFlow()
 
     companion object {
         private const val DEFAULT_PAGE_SIZE = 4
@@ -67,107 +57,76 @@ class ProductListViewModel(
         loadProducts()
     }
 
+    // ============ ACTIONS ============
+    fun hideBanner() {
+        _showBanner.value = false
+    }
+
     // ============ LOAD DATA ============
-    /**
-     * Tải danh sách sản phẩm mặc định từ API
-     * Sử dụng: repository.searchProducts() với tham số mặc định
-     */
     private fun loadProducts() {
         viewModelScope.launch {
             _isLoading.value = true
-            try {
-                val products = repository.searchProducts(
-                    ProductSearchRequest(
-                        pageIndex = 1,
-                        pageSize = DEFAULT_PAGE_SIZE
-                    )
-                ).first()
-                Log.d("SHOE_DEBUG", "Dữ liệu đã về ViewModel: ${products?.size} đôi")
-                _products.value = products
-                _currentPage.value = 1
-                _hasMore.value = (products?.size ?: 0) >= DEFAULT_PAGE_SIZE
-                _errorMessage.value = null
-            } catch (e: Exception) {
-                _errorMessage.value = "Failed to load products: ${e.message}"
-            } finally {
-                _isLoading.value = false
-            }
+            repository.searchProducts(
+                ProductSearchRequest(pageIndex = 1, pageSize = DEFAULT_PAGE_SIZE)
+            )
+                .catch { e ->
+                    _bannerMessage.value = e.message ?: "Failed to load products."
+                    _showBanner.value = true
+                    _isLoading.value = false
+                }
+                .collect { products ->
+                    _products.value = products
+                    _isLoading.value = false
+                }
         }
     }
 
     // ============ CALLBACKS ============
-    /**
-     * Xử lý khi user chọn filter
-     * Sử dụng: repository.searchProducts() với categoryId filter
-     * 
-     * @param filter - Tên filter được chọn (VD: "Air Max", "Dunk", "All Shoes")
-     */
     fun onFilterSelected(filter: String) {
         _selectedFilter.value = filter
         applyFiltersAndSearch()
     }
 
-    /**
-     * Xử lý khi user gõ text tìm kiếm
-     * Sử dụng: repository.searchProducts() với searchTerm
-     * 
-     * @param query - Từ khóa tìm kiếm
-     */
     fun onSearchChanged(query: String) {
         _searchText.value = query
         applyFiltersAndSearch()
     }
 
-    /**
-     * Xử lý khi user chọn tab ở BottomNavBar
-     * 
-     * @param tab - Tab được chọn (SHOP, DISCOVER, HOME, FAVORITES, PROFILE)
-     */
     fun onTabSelected(tab: BottomNavTab) {
         _selectedBottomTab.value = tab
     }
 
-    /**
-     * Load trang tiếp theo (pagination)
-     * Sử dụng: repository.searchProducts() với pageNumber mới
-     * 
-     * Gọi tự động khi user scroll đến cuối LazyColumn
-     * - Kiểm tra isLoadingMore để tránh duplicate requests
-     * - Reset trang về 1 nếu search/filter thay đổi
-     */
     fun loadNextPage() {
-        // Prevent duplicate requests - if already loading more, ignore
-        if (_isLoadingMore.value || !_hasMore.value) {
-            return
-        }
+        if (_isLoadingMore.value || _isLastPage.value) return
 
         viewModelScope.launch {
             _isLoadingMore.value = true
             try {
                 val nextPage = _currentPage.value + 1
-                val categoryId = getCategoryIdFromFilter(_selectedFilter.value)
+                val categoryIdFilter = getCategoryIdFromName(_selectedFilter.value)
 
                 val request = ProductSearchRequest(
                     keyword = _searchText.value.ifEmpty { null },
-                    brand = categoryId,
+                    categoryId = categoryIdFilter,
                     pageIndex = nextPage,
                     pageSize = DEFAULT_PAGE_SIZE
                 )
 
                 val products = repository.searchProducts(request).first()
 
-                // Thêm sản phẩm mới vào danh sách hiện tại (append, không replace)
-                if (products?.isNotEmpty() == true) {
+                if (products.isEmpty()) {
+                    _isLastPage.value = true
+                } else {
                     _products.value = _products.value?.plus(products)
                     _currentPage.value = nextPage
-                    _hasMore.value = products.size >= DEFAULT_PAGE_SIZE
-                    _errorMessage.value = null
-                } else {
-                    _hasMore.value = false
+
+                    if (products.size < DEFAULT_PAGE_SIZE) {
+                        _isLastPage.value = true
+                    }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
-                _errorMessage.value = "Failed to load more products: ${e.message}"
+                _bannerMessage.value = e.message ?: "Failed to load more products."
+                _showBanner.value = true
             } finally {
                 _isLoadingMore.value = false
             }
@@ -175,55 +134,48 @@ class ProductListViewModel(
     }
 
     // ============ BUSINESS LOGIC ============
-    /**
-     * Áp dụng filter và search, gọi API với parameters tương ứng
-     * Sử dụng: repository.searchProducts() với các tham số được xây dựng
-     * 
-     * Logic:
-     * 1. Nếu chỉ có filter (không search): Có thể dùng getProductsByCategory()
-     * 2. Nếu có search + filter: Dùng searchProducts() với cả hai
-     * 3. Reset về trang 1 khi search/filter thay đổi
-     */
     private fun applyFiltersAndSearch() {
-        searchJob?.cancel()
-        searchJob = viewModelScope.launch {
+        viewModelScope.launch {
             _isLoading.value = true
-            try {
-                val categoryId = getCategoryIdFromFilter(_selectedFilter.value)
-                val searchTerm = searchText.value.ifEmpty { null }
-                val request = ProductSearchRequest(
-                    keyword = searchTerm,
-                    brand = categoryId,
-                    pageIndex = 1,
-                    pageSize = DEFAULT_PAGE_SIZE
-                )
-                val products = repository.searchProducts(request).first()
-                _products.value = products
-                _currentPage.value = 1
-                _hasMore.value = (products?.size ?: 0) >= DEFAULT_PAGE_SIZE
-                _errorMessage.value = null
-            } catch (e: Exception) {
-                _errorMessage.value = "Failed to search products: ${e.message}"
-            } finally {
-                _isLoading.value = false
-            }
+            _isLastPage.value = false
+
+            val searchTerm = searchText.value.ifEmpty { null }
+            val categoryIdFilter = getCategoryIdFromName(_selectedFilter.value)
+
+            val request = ProductSearchRequest(
+                keyword = searchTerm,
+                categoryId = categoryIdFilter,
+                pageIndex = 1,
+                pageSize = DEFAULT_PAGE_SIZE
+            )
+
+            repository.searchProducts(request)
+                .catch { e ->
+                    _bannerMessage.value = e.message ?: "Failed to search products."
+                    _showBanner.value = true
+                    _isLoading.value = false
+                    _products.value = emptyList()
+                }
+                .collect { products ->
+                    _products.value = products
+                    _currentPage.value = 1
+
+                    if (products.isEmpty() || products.size < DEFAULT_PAGE_SIZE) {
+                        _isLastPage.value = true
+                    }
+                    _isLoading.value = false
+                }
         }
     }
 
-    /**
-     * Convert filter name thành categoryId
-     * Sử dụng cho repository.searchProducts(categoryId=...)
-     * 
-     * @param filterName - Tên filter (VD: "Air Max", "Dunk")
-     * @return categoryId hoặc null
-     */
-    private fun getCategoryIdFromFilter(filterName: String): String? {
-        return when (filterName) {
-            "Air Max" -> "air-max"
-            "Dunk" -> "dunk"
-            "Pegasus" -> "pegasus"
-            "Jordan" -> "jordan"
-            else -> null // "All Shoes" → null (không filter)
+    // ============ HELPER ============
+    private fun getCategoryIdFromName(name: String): String? {
+        return when (name) {
+            "Running" -> "1"
+            "Men's shoes" -> "2"
+            "Women's shoes" -> "3"
+            "Kid's shoes" -> "4"
+            else -> null
         }
     }
 }

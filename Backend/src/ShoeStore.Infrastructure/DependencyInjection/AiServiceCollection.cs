@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 using OpenAI;
+using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Plugin;
 
 namespace ShoeStore.Infrastructure.DependencyInjection;
@@ -20,7 +21,7 @@ public static class AiServiceCollection
 
         var embeddingModel = configuration[$"Chatbot:{provider}:EmbeddingModel"] ??
                              throw new InvalidOperationException("Chatbot embedding model is missing");
-        
+
         var summaryModel = configuration[$"Chatbot:{provider}:SmallModel"] ??
                            throw new InvalidOperationException("Chatbot summary model is missing");
 
@@ -61,9 +62,10 @@ public static class AiServiceCollection
             );
         }
 
-        services.AddScoped<ProductPluginService>();
-        services.AddScoped<MasterDataPluginService>();
-        services.AddKernel().Plugins.AddFromType<ProductPluginService>().AddFromType<MasterDataPluginService>();
+        services.AddScoped<IProductPluginService, ProductPluginService>();
+        services.AddScoped<IMasterDataPluginService, MasterDataPluginService>();
+        services.AddScoped<IStoreAssistantPluginService, StoreAssistantPluginService>();
+        services.AddKernel();
         return services;
     }
 }

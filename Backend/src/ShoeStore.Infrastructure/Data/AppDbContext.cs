@@ -67,6 +67,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             // SQLite doesn't support pgvector; ignore for in-memory/testing provider.
             modelBuilder.Entity<ProductEmbedding>().Ignore(e => e.Embedding);
+            // SQLite doesn't support rowversion; ignore shadow concurrency tokens in tests.
+            modelBuilder.Entity<ProductVariant>().Ignore("Version");
+            modelBuilder.Entity<Voucher>().Ignore("Version");
         }
     }
 }
