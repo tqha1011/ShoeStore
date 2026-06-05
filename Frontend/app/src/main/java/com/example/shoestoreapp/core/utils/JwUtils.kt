@@ -61,4 +61,14 @@ object JwtUtils {
             true
         }
     }
+
+    fun String.removeHiddenAiTags(): String {
+        // 1. Delete Tag <ProductId>...<ProductId>
+        var cleanText = this.replace(Regex("<ProductId>.*?</ProductId>"), "")
+
+        // Prevent to display on UI when tag is streaming .
+        cleanText = cleanText.replace(Regex("<ProductId>.*$"), "")
+
+        return cleanText.trim()
+    }
 }

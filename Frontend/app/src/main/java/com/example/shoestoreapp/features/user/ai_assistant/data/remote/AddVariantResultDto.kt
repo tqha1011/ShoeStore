@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.user.ai_assistant.data.remote
+package com.example.shoestoreapp.features.agent_intelligent.data.remote
 
 import com.google.gson.annotations.SerializedName
 import java.math.BigDecimal

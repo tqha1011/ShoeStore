@@ -54,6 +54,7 @@ fun BaseAIChatScreen(
     aiRoleName: String,
     onBackClick: () -> Unit = {},
     headerContent: (@Composable () -> Unit)? = null,
+    footerContent: (@Composable () -> Unit)? = null,
 ) {
     val state = viewModel.state
 
@@ -67,8 +68,14 @@ fun BaseAIChatScreen(
     }
 
     val messages = state.messages
-    LaunchedEffect(messages.size, messages.lastOrNull()?.text?.length) {
-        if (messages.isNotEmpty()) {
+    val hasFooter = footerContent != null
+    LaunchedEffect(messages.size, messages.lastOrNull()?.text?.length, hasFooter) {
+        if (hasFooter) {
+            val lastIndex = listState.layoutInfo.totalItemsCount - 1
+            if (lastIndex >= 0) {
+                listState.animateScrollToItem(lastIndex)
+            }
+        } else if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
         }
     }
@@ -132,12 +139,17 @@ fun BaseAIChatScreen(
                             )
                         } else {
                             SharedAiMessageBubble(
-                                text = message.text,
+                                text = message.displayText,
                                 isStreaming = message.isStreaming,
                                 roleName = aiRoleName,
                                 timeString = if (message.isStreaming) "Now" else formatChatTime(message.createdAt)
                             )
                         }
+                    }
+                }
+                footerContent?.let {
+                    item {
+                        it()
                     }
                 }
             }

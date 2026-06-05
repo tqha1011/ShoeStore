@@ -93,6 +93,7 @@ abstract class BaseAIViewModel(
 
     fun SendMessage(userText: String, isCampaign: Boolean = false) {
         if (userText.isBlank()) return
+        onUserMessageSent(userText, isCampaign)
         val userMsg = ChatMessage(text = userText, isUser = true)
         state = state.copy(messages = state.messages + userMsg, error = null)
 
@@ -244,4 +245,6 @@ abstract class BaseAIViewModel(
                 }
         }
     }
+
+    protected open fun onUserMessageSent(userText: String, isCampaign: Boolean) = Unit
 }

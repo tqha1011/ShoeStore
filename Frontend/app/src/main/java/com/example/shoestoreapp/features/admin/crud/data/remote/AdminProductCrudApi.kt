@@ -1,15 +1,15 @@
 package com.example.shoestoreapp.features.admin.crud.data.remote
-
-import com.example.shoestoreapp.features.admin.crud.data.remote.master_data.CategoryDto
-import com.example.shoestoreapp.features.admin.crud.data.remote.master_data.ColorDto
-import com.example.shoestoreapp.features.admin.crud.data.remote.master_data.SizeDto
-import com.example.shoestoreapp.features.admin.crud.data.remote.ProductCreateVariantDto
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Part
+import retrofit2.http.PartMap
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -31,9 +31,11 @@ interface AdminProductCrudApi {
         @Body request: ProductCreateDtoRequest
     ): Response<Unit>
 
+    @Headers("Content-Type: application/json")
     @POST("/api/products/{productGuid}/variants")
     suspend fun adminAddVariant(
         @Path("productGuid") productGuid: String,
-        @Body request: ProductCreateVariantDto
+        @PartMap fields: Map<String, @JvmSuppressWildcards RequestBody>,
+        @Part image: MultipartBody.Part? = null
     ): Response<Unit>
 }

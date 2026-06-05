@@ -69,12 +69,6 @@ import com.example.shoestoreapp.features.user.voucher.ui.screens.CollectVoucherS
 import com.example.shoestoreapp.features.user.voucher.ui.screens.MyVoucherScreen
 import com.facebook.login.LoginManager
 import kotlinx.coroutines.launch
-import android.content.pm.PackageManager
-import android.util.Base64
-import android.util.Log
-import com.example.shoestoreapp.core.utils.SignalRManager
-import com.facebook.login.LoginManager
-import java.security.MessageDigest
 
 private object Routes {
     const val WELCOME = "welcome"
@@ -113,6 +107,7 @@ private object Routes {
     const val ADMIN_AI_ASSISTANT_BASE = "admin_ai_assistant"
     const val ADMIN_AI_ASSISTANT =
         "$ADMIN_AI_ASSISTANT_BASE?isGeneratingCampaign={isGeneratingCampaign}"
+    const val ADMIN_AI_PRODUCT = "admin_ai_product"
     const val USER_AI_ASSISTANT_BASE = "user_ai_assistant"
     const val USER_AI_ASSISTANT = "$USER_AI_ASSISTANT_BASE?isGenerateProduct={isGeneratingProduct}"
 
@@ -146,6 +141,8 @@ private object Routes {
     fun adminAiAssistant(isGeneratingCampaign: Boolean = false): String {
         return "$ADMIN_AI_ASSISTANT_BASE?isGeneratingCampaign=$isGeneratingCampaign"
     }
+
+    fun adminAiProduct(): String = ADMIN_AI_PRODUCT
 
     fun userAiAssistant(isGeneratingProduct: Boolean = false): String {
         return "$USER_AI_ASSISTANT_BASE?isGenerateProduct=$isGeneratingProduct"
@@ -597,7 +594,9 @@ private fun NavGraphBuilder.adminGraph(
     composable(Routes.ADMIN_PRODUCT_LIST) {
         AdminProductListScreen(
             viewModel = remember { AdminProductListViewModel() },
-            onMenuClick = { println("Admin Menu clicked") },
+            onAiAssistantClick = {
+                navController.navigate(Routes.adminAiProduct())
+            },
             onAddProductClick = {
                 navController.navigate(Routes.ADMIN_CRUD)
             },
@@ -649,15 +648,10 @@ private fun NavGraphBuilder.adminGraph(
                     repository = AnalyticsRepository(RetrofitInstance.analyticsApi)
                 )
             },
-            // Tích hợp AI từ GitHub
-            onAiClick = { navController.navigate(Routes.adminAiAssistant(isGeneratingCampaign = false)) },
             onGenerateCampaignClick = {
-                navController.navigate(
-                    Routes.adminAiAssistant(
-                        isGeneratingCampaign = true
-                    )
-                )
+                navController.navigate(Routes.adminAiAssistant(isGeneratingCampaign = true))
             },
+            onAiClick = { navController.navigate(Routes.adminAiAssistant(isGeneratingCampaign = false)) },
             onTabSelected = { tab -> handleAdminAnalyticsTabSelection(tab, navController) }
         )
     }
@@ -691,13 +685,38 @@ private fun NavGraphBuilder.adminGraph(
                 repository = AiChatRepository(
                     sessionApi = RetrofitInstance.chatSessionApi, // Reuse authApi for session management
                     okHttpClient = RetrofitInstance.okHttpClient // Use the same OkHttpClient for streaming
-                )
+                ),
+                signalRManager = signalRManager
             )
         }
         AiStrategyScreen(
             viewModel = aiStrategyViewmodel,
             initialPrompt = initialPrompt,
             onBackClick = { navController.popBackStack() }
+        )
+    }
+
+    composable(Routes.ADMIN_AI_PRODUCT) {
+        val context = LocalContext.current
+        val tokenManager = remember { TokenManager(context) }
+        val signalRManager = remember { SignalRManager(tokenManager) }
+        val aiProductViewmodel = remember {
+            AiProductViewmodel(
+                repository = AiChatRepository(
+                    sessionApi = RetrofitInstance.chatSessionApi,
+                    okHttpClient = RetrofitInstance.okHttpClient
+                ),
+                signalRManager = signalRManager,
+                enableAdminActions = true
+            )
+        }
+        AiProductScreen(
+            viewModel = aiProductViewmodel,
+            onBackClick = { navController.popBackStack() },
+            showAdminPanels = true,
+            title = "Admin Product Assistant",
+            aiRoleName = "AI ADMIN",
+            userRoleName = "ADMIN"
         )
     }
 
@@ -851,8 +870,8 @@ private fun handleAdminProductTabSelection(
         AdminBottomNavTab.ADMIN -> Unit
         AdminBottomNavTab.ORDERS -> navController.navigate(Routes.ADMIN_INVOICE_LIST)
         AdminBottomNavTab.VOUCHERS -> navController.navigate(Routes.ADMIN_VOUCHER_MANAGEMENT)
+        AdminBottomNavTab.ANALYTICS -> navController.navigate(Routes.ADMIN_ANALYTICS)
         AdminBottomNavTab.PROFILE -> navController.navigate(Routes.ADMIN_PROFILE)
-        else -> println("Admin Tab selected: $tab")
     }
 }
 
@@ -873,11 +892,13 @@ private fun handleAdminInvoiceTabSelection(
             )
         }
 
+        AdminBottomNavTab.ANALYTICS -> {
+            navController.navigateAndPopTo(Routes.ADMIN_ANALYTICS, Routes.ADMIN_INVOICE_LIST)
+        }
+
         AdminBottomNavTab.PROFILE -> {
             navController.navigateAndPopTo(Routes.ADMIN_PROFILE, Routes.ADMIN_INVOICE_LIST)
         }
-
-        else -> println("Admin Tab selected: $tab")
     }
 }
 
@@ -898,8 +919,11 @@ private fun handleAdminProfileTabSelection(
             navController.navigateAndPopTo(Routes.ADMIN_VOUCHER_MANAGEMENT, Routes.ADMIN_PROFILE)
         }
 
+        AdminBottomNavTab.ANALYTICS -> {
+            navController.navigateAndPopTo(Routes.ADMIN_ANALYTICS, Routes.ADMIN_PROFILE)
+        }
+
         AdminBottomNavTab.PROFILE -> Unit
-        else -> println("Admin Tab selected: $tab")
     }
 }
 
@@ -952,10 +976,12 @@ private fun handleAdminVoucherTabSelection(
         }
 
         AdminBottomNavTab.VOUCHERS -> Unit
+        AdminBottomNavTab.ANALYTICS -> {
+            navController.navigateAndPopTo(Routes.ADMIN_ANALYTICS, Routes.ADMIN_VOUCHER_MANAGEMENT)
+        }
+
         AdminBottomNavTab.PROFILE -> {
             navController.navigateAndPopTo(Routes.ADMIN_PROFILE, Routes.ADMIN_VOUCHER_MANAGEMENT)
         }
-
-        else -> println("Admin Tab selected: $tab")
     }
 }
