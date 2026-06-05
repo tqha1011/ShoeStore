@@ -1,9 +1,13 @@
+using System.Security.Cryptography;
 using ErrorOr;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs.AuthDTOs;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Interface.Common;
+using ShoeStore.Application.Interface.Notification;
 using ShoeStore.Application.Interface.Strategies;
 using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Domain.Entities;
@@ -16,7 +20,10 @@ public class AuthService(
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,
     ITokenService tokenService,
-    IServiceProvider serviceProvider) : IAuthService
+    IServiceProvider serviceProvider,
+    IMemoryCache cache,
+    IEmailService emailService,
+    IConfiguration configuration) : IAuthService
 {
     public async Task<ErrorOr<Created>> RegisterAsync(RegisterDto registerDto, CancellationToken token)
     {
@@ -26,17 +33,12 @@ public class AuthService(
         if (res) return Error.Conflict("Email.Exist", "Email already exists");
 
         var passHashed = passwordHash.HashPassword(password);
-        var user = new User
-        {
-            Email = email,
-            Password = passHashed,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-            UserName = email.Split('@')[0],
-            Role = UserRole.User
-        };
-        userRepository.Add(user);
-        await unitOfWork.SaveChangesAsync(token);
+        var secureOtp = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+        var cachedUserPending = new VerifyOtpCachedDto(email, passHashed, secureOtp);
+        cache.Set(CacheKey.GenerateOtpCacheKey(email), cachedUserPending, TimeSpan.FromMinutes(5));
+        var emailBody = $"Here is your OTP: {secureOtp}. It will expired after 5 minutes";
+        var senderEmail = configuration["Email:SenderName"];
+        await emailService.SendEmailAsync(senderEmail!, email, "Verify your email", emailBody, token);
         return Result.Created;
     }
 
@@ -90,5 +92,31 @@ public class AuthService(
             var jwtToken = tokenService.GenerateToken(result.PublicId, result.Email, result.Role);
             return jwtToken;
         }
+    }
+
+    public async Task<ErrorOr<Created>> VerifyEmailWithOtpAsync(VerifyOtpRequestDto request, CancellationToken token)
+    {
+        var res = await userRepository.IsEmailExistAsync(request.Email, token);
+        if (res) return Error.Conflict("Email.Exist", "Email already exists");
+        var cacheKey = CacheKey.GenerateOtpCacheKey(request.Email);
+        if (!cache.TryGetValue(cacheKey, out VerifyOtpCachedDto? cachedUserPending))
+            return Error.NotFound("OTP.NotFound", "OTP not found or has expired");
+
+        if (cachedUserPending?.OtpCode != request.OtpCode)
+            return Error.Validation("OTP.Invalid", "Invalid OTP code");
+
+
+        var newUser = new User
+        {
+            Email = cachedUserPending.Email,
+            UserName = cachedUserPending.Email.Split('@')[0],
+            CreatedAt = DateTime.UtcNow,
+            Password = cachedUserPending.PasswordHash,
+            Role = UserRole.User
+        };
+        userRepository.Add(newUser);
+        await unitOfWork.SaveChangesAsync(token);
+        cache.Remove(cacheKey);
+        return Result.Created;
     }
 }

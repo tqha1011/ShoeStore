@@ -239,4 +239,60 @@ public class AuthController(IAuthService authService) : ControllerBase
 
         return response;
     }
+
+    /// <summary>
+    ///     Verifies the OTP code and completes the account registration.
+    /// </summary>
+    /// <remarks>
+    ///     Validates the OTP entered by the user. If the code is valid and not expired, the system will automatically create and save the new account to the database.
+    ///     
+    ///     Required Request Body:
+    ///     - <c>email</c>: The email address used for registration.
+    ///     - <c>otpCode</c>: The 6-digit verification code received via email.
+    /// </remarks>
+    /// <param name="verifyOtpRequestDto">Payload containing the user's email and OTP code.</param>
+    /// <param name="token">Cancellation token to cancel the request if needed.</param>
+    /// <returns>The result of the OTP verification and account creation process.</returns>
+    /// <response code="200">Verification successful. The account has been created.</response>
+    /// <response code="401">Invalid OTP code.</response>
+    /// <response code="404">The OTP has expired (exceeded 5 minutes) or does not exist in the system.</response>
+    /// <response code="409">This email is already in use (the account already exists).</response>
+    /// <response code="500">An unexpected system error occurred.</response>
+    [HttpPost("verify-email")]
+    [EnableRateLimiting("limit-per-user")]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyOtpRequestDto verifyOtpRequestDto,
+        CancellationToken token)
+    {
+        var result = await authService.VerifyEmailWithOtpAsync(verifyOtpRequestDto, token);
+
+        var response = result.Match<IActionResult>(
+            _ => Ok(new
+            {
+                message = "Email verified successfully. You can now proceed to login."
+            }),
+            errors => errors[0].Code switch
+            {
+                "Email.Exist" => Conflict(new
+                {
+                    message = "Email already exists",
+                    detail = errors[0].Description
+                }),
+                "OTP.NotFound" => NotFound(new
+                {
+                    message = "OTP not found or has expired",
+                    detail = errors[0].Description
+                }),
+                "OTP.Invalid" => Unauthorized(new
+                {
+                    message = "Invalid OTP code",
+                    detail = errors[0].Description
+                }),
+                _ => StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "An error occurred while verifying OTP. Please try again later.",
+                    detail = errors[0].Description
+                })
+            });
+        return response;
+    }
 }
