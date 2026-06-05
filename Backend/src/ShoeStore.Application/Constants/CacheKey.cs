@@ -61,6 +61,6 @@ public static class CacheKey
 
     public static string GenerateOtpCacheKey(string email)
     {
-        return $"PendingUser:{email}";
+        return $"PendingUser:{email.Trim().ToLower()}";
     }
 }

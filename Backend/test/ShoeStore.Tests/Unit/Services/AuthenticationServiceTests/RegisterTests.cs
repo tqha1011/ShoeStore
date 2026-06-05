@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using ShoeStore.Application.DTOs.AuthDTOs;
@@ -22,6 +23,7 @@ public class RegisterTests
     private readonly Mock<ITokenService> _tokenService = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IUserRepository> _userRepository = new();
+    private readonly Mock<IConfiguration> _configuration = new();
 
     public RegisterTests()
     {
@@ -32,7 +34,8 @@ public class RegisterTests
             _tokenService.Object,
             _serviceProvider.Object,
             _cache.Object,
-            _emailService.Object);
+            _emailService.Object,
+            _configuration.Object);
     }
 
     [Fact]

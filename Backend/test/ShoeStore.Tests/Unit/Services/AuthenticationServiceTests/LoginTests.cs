@@ -1,5 +1,6 @@
 using ErrorOr;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using ShoeStore.Application.DTOs.AuthDTOs;
@@ -27,11 +28,12 @@ public class LoginTests
     private readonly Mock<ITokenService> _tokenService = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IUserRepository> _userRepository = new();
+    private readonly Mock<IConfiguration> _configuration = new();
 
     public LoginTests()
     {
         _authService = new AuthService(_passwordHash.Object, _userRepository.Object, _unitOfWork.Object,
-            _tokenService.Object, _serviceProvider.Object, _cache.Object, _emailService.Object);
+            _tokenService.Object, _serviceProvider.Object, _cache.Object, _emailService.Object,_configuration.Object);
     }
 
     [Fact]

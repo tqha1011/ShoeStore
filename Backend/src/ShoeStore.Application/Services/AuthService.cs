@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using ErrorOr;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs.AuthDTOs;
@@ -21,7 +22,8 @@ public class AuthService(
     ITokenService tokenService,
     IServiceProvider serviceProvider,
     IMemoryCache cache,
-    IEmailService emailService) : IAuthService
+    IEmailService emailService,
+    IConfiguration configuration) : IAuthService
 {
     public async Task<ErrorOr<Created>> RegisterAsync(RegisterDto registerDto, CancellationToken token)
     {
@@ -35,7 +37,8 @@ public class AuthService(
         var cachedUserPending = new VerifyOtpCachedDto(email, passHashed, secureOtp);
         cache.Set(CacheKey.GenerateOtpCacheKey(email), cachedUserPending, TimeSpan.FromMinutes(5));
         var emailBody = $"Here is your OTP: {secureOtp}. It will expired after 5 minutes";
-        await emailService.SendEmailAsync("tranquangha2006@gmail.com", email, "Verify your email", emailBody, token);
+        var senderEmail = configuration["Email:SenderName"];
+        await emailService.SendEmailAsync(senderEmail!, email, "Verify your email", emailBody, token);
         return Result.Created;
     }
 
