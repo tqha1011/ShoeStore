@@ -15,12 +15,13 @@
     import kotlinx.coroutines.flow.collectLatest
     import kotlinx.coroutines.launch
     import com.example.shoestoreapp.core.utils.Resource
-    import com.example.shoestoreapp.features.admin.crud.data.remote.ProductCreateVariantDto
     import com.example.shoestoreapp.features.admin.addproduct.data.remote.master_data.CategoryDto
     import com.example.shoestoreapp.features.admin.addproduct.data.remote.master_data.ColorDto
     import com.example.shoestoreapp.features.admin.addproduct.data.remote.master_data.SizeDto
     import com.example.shoestoreapp.features.admin.addproduct.data.repositories.MasterDataRepository
-    import com.example.shoestoreapp.features.admin.crud.data.repositories.ProductCrudRepository
+    import com.example.shoestoreapp.features.admin.product.data.repositories.AdminProductRepository
+    import com.example.shoestoreapp.features.admin.product.data.repositories.AdminProductRepositoryImpl
+    import com.example.shoestoreapp.features.admin.product.data.repositories.CreateVariantParams
 
 
     class AiProductViewmodel(
@@ -28,7 +29,7 @@
         signalRManager: SignalRManager,
         ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
         private val enableAdminActions: Boolean = false,
-        private val productCrudRepository: ProductCrudRepository = ProductCrudRepository(),
+        private val adminProductRepository: AdminProductRepository = AdminProductRepositoryImpl(),
         private val masterDataRepository: MasterDataRepository = MasterDataRepository()
     ): BaseAIViewModel(repository, signalRManager, ioDispatcher) {
         private val _searchResultState = MutableStateFlow<SearchProductResultDto?>(null)
@@ -185,34 +186,28 @@
                 return
             }
 
-            val request = ProductCreateVariantDto(
+            val request = CreateVariantParams(
                 sizeId = resolvedSizeId,
-                size = resolvedSizeValue,
                 colorId = resolvedColorId,
-                colorName = resolvedColorName,
                 stock = resolvedStock,
                 price = resolvedPrice,
-                imageUrl = "",
-                isSelling = true
+                isSelling = true,
+                imageFile = null
             )
 
             viewModelScope.launch(ioDispatcher) {
-                productCrudRepository.adminAddVariant(productId, request).collect { res ->
-                    when (res) {
-                        is Resource.Success -> {
-                            _variantDraftState.value = null
-                            _successMessage.value = "Variant created successfully."
-                            val successMessage = ChatMessage(
-                                text = "Variant created successfully.",
-                                isUser = false
-                            )
-                            state = state.copy(messages = state.messages + successMessage, error = null)
-                        }
-                        is Resource.Error -> {
-                            state = state.copy(error = res.message)
-                        }
-                        else -> Unit
+                adminProductRepository.createVariant(productId, request)
+                    .onSuccess {
+                        _variantDraftState.value = null
+                        _successMessage.value = "Variant created successfully."
+                        val successMessage = ChatMessage(
+                            text = "Variant created successfully.",
+                            isUser = false
+                        )
+                        state = state.copy(messages = state.messages + successMessage, error = null)
                     }
+                    .onFailure { error ->
+                        state = state.copy(error = error.message)
                 }
             }
         }
