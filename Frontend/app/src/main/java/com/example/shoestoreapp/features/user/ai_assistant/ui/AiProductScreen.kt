@@ -4,6 +4,7 @@ import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,12 +12,15 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -29,9 +33,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminFormField
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminShoeColorDropdown
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminShoeSizeDropdown
@@ -57,6 +63,7 @@ fun AiProductScreen(
     userRoleName: String = "USER"
 ) {
     val searchResult by viewModel.searchResultState.collectAsState()
+    val selectedProduct by viewModel.selectedProductState.collectAsState()
     val variantDraft by viewModel.variantDraftState.collectAsState()
     val sizesList by viewModel.sizesList.collectAsState()
     val colorsList by viewModel.colorsList.collectAsState()
@@ -70,20 +77,27 @@ fun AiProductScreen(
     }
 
     val dismissedPromptId = remember { mutableStateOf<String?>(null) }
+    val dismissedSearchMessageId = remember { mutableStateOf<String?>(null) }
     val lastAiMessage = viewModel.state.messages.lastOrNull { !it.isUser }
+    val parsedSearchResult = remember(lastAiMessage?.id, lastAiMessage?.displayText) {
+        lastAiMessage?.displayText?.let(::parseSearchResultFromMessage)
+    }
+    val visibleSearchResult = searchResult ?: parsedSearchResult
+        ?.takeIf { dismissedSearchMessageId.value != lastAiMessage?.id }
     val shouldShowManualDialog = showAdminPanels &&
         variantDraft == null &&
-        lastAiMessage != null &&
-        dismissedPromptId.value != lastAiMessage.id &&
-        shouldPromptVariantForm(lastAiMessage.text) &&
-        (searchResult?.products?.size == 1)
+        selectedProduct != null &&
+        dismissedPromptId.value != selectedProduct?.publicId
 
     val manualDraft = if (shouldShowManualDialog) {
-        val productId = searchResult?.products?.firstOrNull()?.publicId.orEmpty()
+        val productId = selectedProduct?.publicId.orEmpty()
         if (productId.isBlank()) null
         else AddVariantResultDto(
             status = "Draft",
-            message = lastAiMessage?.text,
+            message = lastAiMessage
+                ?.text
+                ?.takeIf(::shouldPromptVariantForm)
+                ?: "Nhập size, màu, số lượng và giá bán cho biến thể mới.",
             variant = VariantResultDto(productId = productId)
         )
     } else {
@@ -121,10 +135,16 @@ fun AiProductScreen(
         footerContent = if (showAdminPanels) {
             {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    searchResult?.let { result ->
+                    if (selectedProduct == null) visibleSearchResult?.let { result ->
                         SearchResultPanel(
                             result = result,
-                            onClear = { viewModel.clearSearchResult() }
+                            onClear = { viewModel.clearSearchResult() },
+                            onProductSelected = { product ->
+                                if (product.publicId.isNullOrBlank()) {
+                                    dismissedSearchMessageId.value = lastAiMessage?.id
+                                }
+                                viewModel.selectSearchProduct(product)
+                            }
                         )
                     }
                 }
@@ -136,10 +156,11 @@ fun AiProductScreen(
     if (showAdminPanels && effectiveDraft != null) {
         val draft = effectiveDraft ?: return
         val productId = draft.variant?.productId.orEmpty()
-        val selectedProduct = searchResult
+        val displayProduct = searchResult
             ?.products
             ?.firstOrNull { it.publicId == productId }
-        val productName = selectedProduct?.productName
+            ?: selectedProduct
+        val productName = displayProduct?.productName
         VariantConfirmDialog(
             draft = draft,
             productName = productName,
@@ -165,13 +186,11 @@ fun AiProductScreen(
                     stockText = stockInputState.value,
                     priceText = priceInputState.value
                 )
-                if (variantDraft == null) {
-                    dismissedPromptId.value = lastAiMessage?.id
-                }
             },
             onDismiss = {
                 if (variantDraft != null) viewModel.clearVariantDraft()
-                dismissedPromptId.value = lastAiMessage?.id
+                else viewModel.clearSelectedProduct()
+                dismissedPromptId.value = productId
             }
         )
     }
@@ -183,12 +202,67 @@ private fun shouldPromptVariantForm(text: String): Boolean {
     return keywords.any { normalized.contains(it) }
 }
 
+private fun parseSearchResultFromMessage(text: String): SearchProductResultDto? {
+    if (!text.contains("Tìm thấy nhiều", ignoreCase = true) &&
+        !text.contains("chọn một", ignoreCase = true)
+    ) {
+        return null
+    }
+
+    val products = parseProductOptions(text)
+    if (products.isEmpty()) return null
+
+    return SearchProductResultDto(
+        status = "MultipleFound",
+        message = "Chọn một sản phẩm để tiếp tục",
+        products = products
+    )
+}
+
+private fun parseProductOptions(text: String): List<ProductSummaryForLlm> {
+    val optionRegex = Regex("^\\s*\\d+[.)]\\s+(.+)$")
+    val products = mutableListOf<ProductSummaryForLlm>()
+    var currentName: String? = null
+
+    fun flushCurrent() {
+        val name = currentName?.trim().orEmpty()
+        if (name.isNotBlank()) {
+            products += ProductSummaryForLlm(productName = name)
+        }
+        currentName = null
+    }
+
+    text.lineSequence().forEach { rawLine ->
+        val line = rawLine.trim()
+        val match = optionRegex.find(line)
+        when {
+            match != null -> {
+                flushCurrent()
+                currentName = match.groupValues[1].trim()
+            }
+            currentName != null &&
+                line.isNotBlank() &&
+                !line.endsWith("?") &&
+                !line.startsWith("Bạn ", ignoreCase = true) &&
+                !line.startsWith("Vui lòng", ignoreCase = true) -> {
+                currentName = "$currentName $line"
+            }
+        }
+    }
+    flushCurrent()
+
+    return products
+}
+
 @Composable
 private fun SearchResultPanel(
     result: SearchProductResultDto,
-    onClear: () -> Unit
+    onClear: () -> Unit,
+    onProductSelected: (ProductSummaryForLlm) -> Unit
 ) {
-    val products = result.products.orEmpty()
+    val products = result.products.orEmpty().ifEmpty {
+        parseProductOptions(result.message.orEmpty())
+    }
 
     Card(
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F8F8)),
@@ -197,7 +271,11 @@ private fun SearchResultPanel(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "Search Results",
+                    text = if (result.status.equals("MultipleFound", ignoreCase = true)) {
+                        "Select Product"
+                    } else {
+                        "Search Results"
+                    },
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     color = Color.Black,
@@ -214,7 +292,10 @@ private fun SearchResultPanel(
                 Text(text = "No products found.", fontSize = 12.sp, color = Color(0xFF666666))
             } else {
                 products.take(5).forEach { product ->
-                    ProductSearchRow(product = product)
+                    ProductSearchRow(
+                        product = product,
+                        onClick = { onProductSelected(product) }
+                    )
                 }
                 if (products.size > 5) {
                     Text(
@@ -229,11 +310,15 @@ private fun SearchResultPanel(
 }
 
 @Composable
-private fun ProductSearchRow(product: ProductSummaryForLlm) {
+private fun ProductSearchRow(
+    product: ProductSummaryForLlm,
+    onClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White, MaterialTheme.shapes.small)
+            .clickable(onClick = onClick)
             .padding(12.dp)
     ) {
         Text(text = product.productName.orEmpty(), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
@@ -265,24 +350,55 @@ private fun VariantConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    Dialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "Add Variant") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 560.dp),
+            shape = RoundedCornerShape(28.dp),
+            color = Color.White,
+            tonalElevation = 8.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(horizontal = 28.dp, vertical = 30.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                Text(
+                    text = "Add Variant",
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.Black
+                )
                 Text(
                     text = "This will add a variant to the selected product.",
-                    fontSize = 12.sp,
-                    color = Color(0xFF666666)
+                    fontSize = 18.sp,
+                    lineHeight = 26.sp,
+                    color = Color(0xFF333333)
                 )
-                draft.message?.let { Text(text = it, fontSize = 12.sp, color = Color(0xFF666666)) }
-                draft.variant?.productId?.let {
-                    Text(text = "Product ID: $it", fontSize = 11.sp, color = Color(0xFF777777))
+
+                draft.message?.let { message ->
+                    Text(
+                        text = message,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF1F1F3), RoundedCornerShape(18.dp))
+                            .padding(20.dp),
+                        fontSize = 18.sp,
+                        lineHeight = 30.sp,
+                        fontStyle = FontStyle.Italic,
+                        color = Color(0xFF454545)
+                    )
                 }
-                productName?.let {
-                    Text(text = "Product: $it", fontSize = 11.sp, color = Color(0xFF777777))
+
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    productName?.let { name ->
+                        DetailInfoRow(label = "PRODUCT NAME:", value = name)
+                    }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+
+                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                     Column(modifier = Modifier.weight(1f)) {
                         AdminShoeSizeDropdown(
                             selectedSize = sizeInput,
@@ -304,7 +420,7 @@ private fun VariantConfirmDialog(
                         )
                     }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                     Column(modifier = Modifier.weight(1f)) {
                         AdminFormField(
                             label = "STOCK",
@@ -324,15 +440,66 @@ private fun VariantConfirmDialog(
                         )
                     }
                 }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text(
+                            text = "Cancel",
+                            color = Color.Black,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = onConfirm,
+                        shape = RoundedCornerShape(22.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                        modifier = Modifier.height(52.dp)
+                    ) {
+                        Text(
+                            text = "Add",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 22.dp)
+                        )
+                    }
+                }
             }
-        },
-        confirmButton = {
-            Button(onClick = onConfirm, colors = ButtonDefaults.buttonColors(containerColor = Color.Black)) {
-                Text(text = "Add", color = Color.White)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(text = "Cancel") }
         }
-    )
+    }
+}
+
+@Composable
+private fun DetailInfoRow(
+    label: String,
+    value: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.weight(0.42f),
+            fontSize = 13.sp,
+            lineHeight = 18.sp,
+            fontWeight = FontWeight.Black,
+            color = Color(0xFF8A8585)
+        )
+        Text(
+            text = value,
+            modifier = Modifier.weight(1f),
+            fontSize = 18.sp,
+            lineHeight = 24.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.Black
+        )
+    }
 }

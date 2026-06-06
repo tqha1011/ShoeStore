@@ -3,6 +3,7 @@
     import androidx.lifecycle.viewModelScope
     import com.example.shoestoreapp.core.utils.SignalRManager
     import com.example.shoestoreapp.features.agent_intelligent.data.remote.AddVariantResultDto
+    import com.example.shoestoreapp.features.agent_intelligent.data.remote.ProductSummaryForLlm
     import com.example.shoestoreapp.features.agent_intelligent.data.repository.AiChatRepository
     import com.example.shoestoreapp.features.agent_intelligent.viewmodel.BaseAIViewModel
     import com.example.shoestoreapp.features.agent_intelligent.viewmodel.ChatMessage
@@ -35,6 +36,9 @@
         private val _searchResultState = MutableStateFlow<SearchProductResultDto?>(null)
         val searchResultState = _searchResultState.asStateFlow()
 
+        private val _selectedProductState = MutableStateFlow<ProductSummaryForLlm?>(null)
+        val selectedProductState = _selectedProductState.asStateFlow()
+
         private val _variantDraftState = MutableStateFlow<AddVariantResultDto?>(null)
         val variantDraftState = _variantDraftState.asStateFlow()
 
@@ -43,7 +47,7 @@
 
         private var allowAdminSignals: Boolean = false
         private val adminActionRegex = Regex(
-            "(thêm|add|variant|màu|size|giày|productid|select|xác nhận|confirm|đồng ý|tạo biến thể|create)",
+            "(thêm|add|variant|màu|size|giày|productid|select|chọn|xác nhận|confirm|đồng ý|tạo biến thể|create)",
             RegexOption.IGNORE_CASE
         )
 
@@ -114,14 +118,21 @@
 
         fun clearSearchResult() {
             _searchResultState.value = null
-            if (_variantDraftState.value == null) {
+            if (_variantDraftState.value == null && _selectedProductState.value == null) {
                 allowAdminSignals = false
             }
         }
 
         fun clearVariantDraft() {
             _variantDraftState.value = null
-            if (_searchResultState.value == null) {
+            if (_searchResultState.value == null && _selectedProductState.value == null) {
+                allowAdminSignals = false
+            }
+        }
+
+        fun clearSelectedProduct() {
+            _selectedProductState.value = null
+            if (_searchResultState.value == null && _variantDraftState.value == null) {
                 allowAdminSignals = false
             }
         }
@@ -134,6 +145,24 @@
             //Send request to bot
             SendMessage(userText = actionText, isCampaign = false)
             clearVariantDraft()
+        }
+
+        fun selectSearchProduct(product: ProductSummaryForLlm) {
+            val productName = product.productName.orEmpty()
+            val productId = product.publicId.orEmpty()
+            if (productName.isBlank() && productId.isBlank()) return
+
+            allowAdminSignals = true
+            if (productId.isNotBlank()) {
+                _selectedProductState.value = product
+            }
+            val selectedText = buildString {
+                append("Tôi chọn sản phẩm")
+                if (productName.isNotBlank()) append(" \"$productName\"")
+                if (productId.isNotBlank()) append(" có Product ID: $productId")
+            }
+            SendMessage(userText = selectedText, isCampaign = false)
+            clearSearchResult()
         }
 
         fun forceAdminAction() {
@@ -199,6 +228,7 @@
                 adminProductRepository.createVariant(productId, request)
                     .onSuccess {
                         _variantDraftState.value = null
+                        _selectedProductState.value = null
                         _successMessage.value = "Variant created successfully."
                         val successMessage = ChatMessage(
                             text = "Variant created successfully.",
