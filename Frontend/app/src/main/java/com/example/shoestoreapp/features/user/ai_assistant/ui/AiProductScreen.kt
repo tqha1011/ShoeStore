@@ -32,24 +32,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.example.shoestoreapp.features.admin.addproduct.data.remote.master_data.ColorDto
+import com.example.shoestoreapp.features.admin.addproduct.data.remote.master_data.SizeDto
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminFormField
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminShoeColorDropdown
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminShoeSizeDropdown
-import com.example.shoestoreapp.features.admin.addproduct.data.remote.master_data.ColorDto
-import com.example.shoestoreapp.features.admin.addproduct.data.remote.master_data.SizeDto
 import com.example.shoestoreapp.features.agent_intelligent.data.remote.AddVariantResultDto
 import com.example.shoestoreapp.features.agent_intelligent.data.remote.ProductSummaryForLlm
 import com.example.shoestoreapp.features.agent_intelligent.data.remote.SearchProductResultDto
 import com.example.shoestoreapp.features.agent_intelligent.data.remote.VariantResultDto
 import com.example.shoestoreapp.features.agent_intelligent.ui.BaseAIChatScreen
 import com.example.shoestoreapp.features.user.ai_assistant.viewmodel.AiProductViewmodel
-import androidx.compose.ui.platform.LocalContext
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -153,6 +153,7 @@ fun AiProductScreen(
             null
         }
     )
+
     if (showAdminPanels && effectiveDraft != null) {
         val draft = effectiveDraft ?: return
         val productId = draft.variant?.productId.orEmpty()
@@ -161,6 +162,7 @@ fun AiProductScreen(
             ?.firstOrNull { it.publicId == productId }
             ?: selectedProduct
         val productName = displayProduct?.productName
+
         VariantConfirmDialog(
             draft = draft,
             productName = productName,
@@ -240,6 +242,7 @@ private fun parseProductOptions(text: String): List<ProductSummaryForLlm> {
                 flushCurrent()
                 currentName = match.groupValues[1].trim()
             }
+
             currentName != null &&
                 line.isNotBlank() &&
                 !line.endsWith("?") &&
@@ -321,7 +324,11 @@ private fun ProductSearchRow(
             .clickable(onClick = onClick)
             .padding(12.dp)
     ) {
-        Text(text = product.productName.orEmpty(), fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+        Text(
+            text = product.productName.orEmpty(),
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 13.sp
+        )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = "${product.productBrand.orEmpty()} • ${product.catagoryName.orEmpty()}",
@@ -350,9 +357,7 @@ private fun VariantConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    Dialog(
-        onDismissRequest = onDismiss,
-    ) {
+    Dialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()

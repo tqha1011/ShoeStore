@@ -60,4 +60,9 @@ public static class CacheKey
         var hashBytes = MD5.HashData(inputBytes);
         return Convert.ToHexString(hashBytes).ToLower();
     }
+
+    public static string GenerateOtpCacheKey(string email)
+    {
+        return $"PendingUser:{email.Trim().ToLower()}";
+    }
 }
