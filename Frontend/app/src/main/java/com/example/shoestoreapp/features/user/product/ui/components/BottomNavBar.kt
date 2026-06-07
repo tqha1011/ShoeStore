@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingBag
@@ -63,6 +64,13 @@ fun BottomNavBar(
         )
 
         BottomNavItem(
+            icon = Icons.Filled.AutoAwesome,
+            label = "AI",
+            isSelected = selectedTab == BottomNavTab.AI,
+            onClick = { onTabSelected(BottomNavTab.AI) }
+        )
+
+        BottomNavItem(
             icon = Icons.Filled.Person,
             label = "Profile",
             isSelected = selectedTab == BottomNavTab.PROFILE,
@@ -105,5 +113,6 @@ enum class BottomNavTab {
     SHOP,
     VOUCHER,
     BAG,
+    AI,
     PROFILE
 }

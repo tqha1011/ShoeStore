@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.user.ai_assistant.viewmodel
+package com.example.shoestoreapp.features.agent_intelligent.product_assistant.viewmodel
 
 import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.core.utils.Resource
