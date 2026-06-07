@@ -1,5 +1,9 @@
 package com.example.shoestoreapp.features.user.invoice.ui
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -17,6 +21,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,9 +29,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipColors
@@ -34,6 +41,7 @@ import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilt
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipStyle
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipTypography
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChips
+import com.example.shoestoreapp.features.user.invoice.data.OrderStatusSignalRManager
 import com.example.shoestoreapp.features.user.invoice.ui.components.UserInvoiceDetailsBottomSheet
 import com.example.shoestoreapp.features.user.invoice.ui.components.UserOrderCard
 import com.example.shoestoreapp.features.user.invoice.viewmodel.UserInvoiceViewModel
@@ -47,14 +55,45 @@ fun UserInvoiceScreen(
     onTabSelected: (BottomNavTab) -> Unit = {}
 ) {
     val state = viewModel.state
+    val context = LocalContext.current
     // Hosts transient success/error messages.
     val snackbarHostState = remember { SnackbarHostState() }
     // Holds the card selected for cancel confirmation.
     var invoiceToConfirmCancel by remember { mutableStateOf<Invoice?>(null) }
+    val tokenManager = remember { TokenManager(context) }
+    val orderStatusSignalRManager = remember {
+        OrderStatusSignalRManager(context, tokenManager)
+    }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = {}
+    )
 
     LaunchedEffect(initialStatus) {
         // Apply route filter when screen is first opened.
         viewModel.applyInitialFilter(initialStatus)
+    }
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    LaunchedEffect(orderStatusSignalRManager) {
+        orderStatusSignalRManager.startConnection()
+    }
+
+    LaunchedEffect(orderStatusSignalRManager) {
+        orderStatusSignalRManager.notifications.collect { notification ->
+            viewModel.onOrderStatusNotification(notification)
+        }
+    }
+
+    DisposableEffect(orderStatusSignalRManager) {
+        onDispose {
+            orderStatusSignalRManager.stopConnection()
+        }
     }
 
     LaunchedEffect(state.error, state.successMessage) {
