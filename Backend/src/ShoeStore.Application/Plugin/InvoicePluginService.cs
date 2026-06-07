@@ -13,7 +13,7 @@ public class InvoicePluginService(IInvoiceRepository invoiceRepository) : IInvoi
     [KernelFunction("get-invoice-data")]
     [Description("Retrieves invoice data, order details, and total revenue. " +
                  "ONLY call this function when the user explicitly asks about ORDERS, INVOICES. DO NOT use this function to search for products. " +
-                 "After receiving the response, strictly use 'TotalInvoice' and 'TotalPrice' to provide a concise summary to the user.")]
+                 "After receiving the response, strictly use 'TotalInvoice' and 'TotalRevenue' to provide a concise summary to the user.")]
     public async Task<InvoiceResultDto> GetInvoiceDataAsync(
         [Description("The status of the order. MUST be exactly one of the following string values: " +
                      "'Pending' (for new/unapproved orders), 'Delivering' (for shipping orders), 'Delivered' (for successfully delivered orders), 'Paid' (for completed payments), 'Cancelled' (for cancelled orders). " +
