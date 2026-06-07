@@ -14,6 +14,7 @@ public static class CacheKey
         var hasFilter = !string.IsNullOrWhiteSpace(request.Keyword) ||
                         !string.IsNullOrWhiteSpace(request.Brand) ||
                         request.ProductId.HasValue ||
+                        request.CategoryId.HasValue ||
                         request.MinPrice.HasValue ||
                         request.MaxPrice.HasValue ||
                         (request.ListColorId != null && request.ListColorId.Count != 0) ||
@@ -30,6 +31,7 @@ public static class CacheKey
             q = request.Keyword?.Trim().ToLower(),
             b = request.Brand?.Trim().ToLower(),
             pId = request.PageIndex,
+            cat = request.CategoryId,
             maxP = request.MaxPrice,
             minP = request.MinPrice,
             c = sortedColors,

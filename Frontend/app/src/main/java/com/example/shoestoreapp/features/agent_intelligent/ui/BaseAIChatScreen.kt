@@ -34,10 +34,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.shoestoreapp.features.admin.ai_assistant.viewmodel.AiStrategyViewmodel
 import com.example.shoestoreapp.features.agent_intelligent.data.remote.ChatSessionResponseDto
 import com.example.shoestoreapp.features.agent_intelligent.viewmodel.BaseAIViewModel
-import com.example.shoestoreapp.features.user.ai_assistant.viewmodel.AiProductViewmodel
 import dev.jeziellago.compose.markdowntext.MarkdownText
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -54,6 +52,8 @@ fun BaseAIChatScreen(
     aiRoleName: String,
     onBackClick: () -> Unit = {},
     headerContent: (@Composable () -> Unit)? = null,
+    footerContent: (@Composable () -> Unit)? = null,
+    bottomBarContent: (@Composable () -> Unit)? = null,
 ) {
     val state = viewModel.state
 
@@ -67,8 +67,14 @@ fun BaseAIChatScreen(
     }
 
     val messages = state.messages
-    LaunchedEffect(messages.size, messages.lastOrNull()?.text?.length) {
-        if (messages.isNotEmpty()) {
+    val hasFooter = footerContent != null
+    LaunchedEffect(messages.size, messages.lastOrNull()?.text?.length, hasFooter) {
+        if (hasFooter) {
+            val lastIndex = listState.layoutInfo.totalItemsCount - 1
+            if (lastIndex >= 0) {
+                listState.animateScrollToItem(lastIndex)
+            }
+        } else if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
         }
     }
@@ -79,7 +85,11 @@ fun BaseAIChatScreen(
                 onBackClick = onBackClick,
                 onHistoryClick = { showHistorySheet = true },
                 onLoadSessions = { viewModel.loadSessions(isNextPage = false) })
-        }, containerColor = Color.White
+        },
+        bottomBar = {
+            bottomBarContent?.invoke()
+        },
+        containerColor = Color.White
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -132,12 +142,17 @@ fun BaseAIChatScreen(
                             )
                         } else {
                             SharedAiMessageBubble(
-                                text = message.text,
+                                text = message.displayText,
                                 isStreaming = message.isStreaming,
                                 roleName = aiRoleName,
                                 timeString = if (message.isStreaming) "Now" else formatChatTime(message.createdAt)
                             )
                         }
+                    }
+                }
+                footerContent?.let {
+                    item {
+                        it()
                     }
                 }
             }

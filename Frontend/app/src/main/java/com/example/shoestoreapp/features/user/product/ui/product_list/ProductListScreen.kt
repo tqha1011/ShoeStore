@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -20,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,19 +32,20 @@ import com.example.shoestoreapp.features.user.product.ui.components.FilterChips
 import com.example.shoestoreapp.features.user.product.ui.components.ProductCard
 import com.example.shoestoreapp.features.user.product.ui.components.SearchBar
 import com.example.shoestoreapp.features.user.product.ui.components.TopAppBar
+import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
 import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewModel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * ProductListScreen: Composable screen hiển thị danh sách sản phẩm với Infinite Scroll
- * 
- * Features:
+ * * Features:
  * - Search bar + Filter chips
  * - LazyVerticalGrid hiển thị 2 columns
  * - Infinite scroll: Auto load trang tiếp theo khi scroll gần cuối
  * - Loading indicator khi đang load thêm
- * - Error handling
- * 
- * @param viewModel - ViewModel cung cấp dữ liệu và logic
+ * - Error handling bằng TopBanner
+ * * @param viewModel - ViewModel cung cấp dữ liệu và logic
  * @param onNavigateToDetail - Callback khi click vào sản phẩm
  * @param onTopMenuClick - Callback khi click menu
  * @param onNavigateToShoppingBag - Callback khi click shopping bag
@@ -52,8 +53,8 @@ import com.example.shoestoreapp.features.user.product.viewmodel.ProductListViewM
 @Composable
 fun ProductListScreen(
     viewModel: ProductListViewModel,
-    onNavigateToDetail: (String) -> Unit = {},  // Changed from Int to String (GUID)
-    onAiAssistantClick: () -> Unit = {},
+    onNavigateToDetail: (String, String) -> Unit = { _, _ -> },
+    onTopMenuClick: () -> Unit = {},
     onNavigateToShoppingBag: () -> Unit = {},
     onBottomTabSelected: (BottomNavTab) -> Unit = {}
 ) {
@@ -63,60 +64,81 @@ fun ProductListScreen(
     val selectedBottomTab = viewModel.selectedBottomTab.collectAsState()
     val isLoading = viewModel.isLoading.collectAsState()
     val isLoadingMore = viewModel.isLoadingMore.collectAsState()
-    val hasMore = viewModel.hasMore.collectAsState()
-    val errorMessage = viewModel.errorMessage.collectAsState()
+    val isLastPage = viewModel.isLastPage.collectAsState()
+
+    // State mới cho Banner
+    val bannerMessage = viewModel.bannerMessage.collectAsState()
+    val showBanner = viewModel.showBanner.collectAsState()
 
     val lazyGridState = rememberLazyGridState()
 
-    SetupInfiniteScroll(lazyGridState, productList.value, isLoadingMore.value, hasMore.value, viewModel)
+    SetupInfiniteScroll(
+        lazyGridState = lazyGridState,
+        productList = productList.value,
+        isLoading = isLoading.value,
+        isLoadingMore = isLoadingMore.value,
+        isLastPage = isLastPage.value,
+        viewModel = viewModel
+    )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                onAiClick = onAiAssistantClick,
-                onShoppingBagClick = onNavigateToShoppingBag
-            )
-        },
-        bottomBar = {
-            BottomNavBar(
-                selectedTab = selectedBottomTab.value,
-                onTabSelected = { tab ->
-                    viewModel.onTabSelected(tab)
-                    onBottomTabSelected(tab)
-                }
-            )
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    onMenuClick = onTopMenuClick,
+                    onShoppingBagClick = onNavigateToShoppingBag
+                )
+            },
+            bottomBar = {
+                BottomNavBar(
+                    selectedTab = selectedBottomTab.value,
+                    onTabSelected = { tab ->
+                        viewModel.onTabSelected(tab)
+                        onBottomTabSelected(tab)
+                    }
+                )
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(paddingValues)
+                    .padding(horizontal = 16.dp)
+            ) {
+                SearchBar(
+                    modifier = Modifier.padding(top = 16.dp),
+                    searchText = searchText.value,
+                    onSearchChanged = { query ->
+                        viewModel.onSearchChanged(query)
+                    }
+                )
+
+                FilterChipsSection(
+                    selectedFilter = selectedFilter.value,
+                    onFilterSelected = { filter ->
+                        viewModel.onFilterSelected(filter)
+                    }
+                )
+
+
+                ProductListContent(
+                    isLoading = isLoading.value,
+                    productList = productList.value,
+                    isLoadingMore = isLoadingMore.value,
+                    lazyGridState = lazyGridState,
+                    onNavigateToDetail = onNavigateToDetail
+                )
+            }
         }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White)
-                .padding(paddingValues)
-                .padding(horizontal = 16.dp)
-        ) {
-            SearchBar(
-                modifier = Modifier.padding(top = 16.dp),
-                searchText = searchText.value,
-                onSearchChanged = { query ->
-                    viewModel.onSearchChanged(query)
-                }
-            )
 
-            FilterChipsSection(
-                selectedFilter = selectedFilter.value,
-                onFilterSelected = { filter ->
-                    viewModel.onFilterSelected(filter)
-                }
-            )
-
-            ErrorMessageBox(errorMessage.value)
-
-            ProductListContent(
-                isLoading = isLoading.value,
-                productList = productList.value,
-                isLoadingMore = isLoadingMore.value,
-                lazyGridState = lazyGridState,
-                onNavigateToDetail = onNavigateToDetail
+        // Tích hợp TopBanner báo lỗi
+        Box(modifier = Modifier.align(Alignment.TopCenter)) {
+            TopBanner(
+                message = bannerMessage.value,
+                isSuccess = false,
+                isVisible = showBanner.value,
+                onDismiss = { viewModel.hideBanner() }
             )
         }
     }
@@ -126,26 +148,28 @@ fun ProductListScreen(
 private fun SetupInfiniteScroll(
     lazyGridState: androidx.compose.foundation.lazy.grid.LazyGridState,
     productList: List<*>?,
+    isLoading: Boolean,
     isLoadingMore: Boolean,
-    hasMore: Boolean,
+    isLastPage: Boolean,
     viewModel: ProductListViewModel
 ) {
-    // Bùa chú chống Stale Closure đây:
-    val currentIsLoadingMore by androidx.compose.runtime.rememberUpdatedState(isLoadingMore)
-    val currentProductList by androidx.compose.runtime.rememberUpdatedState(productList)
-    val currentHasMore by androidx.compose.runtime.rememberUpdatedState(hasMore)
+    val currentList by rememberUpdatedState(productList)
+    val currentLoading by rememberUpdatedState(isLoading)
+    val currentLoadingMore by rememberUpdatedState(isLoadingMore)
+    val currentIsLastPage by rememberUpdatedState(isLastPage)
 
     LaunchedEffect(lazyGridState) {
-        snapshotFlow { lazyGridState.layoutInfo.visibleItemsInfo }
-            .collect { visibleItems ->
-                if (visibleItems.isNotEmpty()) {
-                    val lastVisibleIndex = visibleItems.last().index
-                    val totalItems = currentProductList?.size ?: 0
+        snapshotFlow { lazyGridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+            .distinctUntilChanged()
+            .collectLatest { lastVisibleIndex ->
+                val totalItems = currentList?.size ?: 0
 
-                    // Dùng biến current thay vì biến cứng ban đầu
-                    if (totalItems > 0 && currentHasMore && lastVisibleIndex >= totalItems - 2 && !currentIsLoadingMore) {
-                        viewModel.loadNextPage()
-                    }
+                if (totalItems == 0 || currentLoading || currentLoadingMore || currentIsLastPage) {
+                    return@collectLatest
+                }
+
+                if (lastVisibleIndex >= totalItems - 2) {
+                    viewModel.loadNextPage()
                 }
             }
     }
@@ -158,28 +182,10 @@ private fun FilterChipsSection(
 ) {
     Box(modifier = Modifier.padding(vertical = 12.dp)) {
         FilterChips(
-            filters = listOf("All Shoes", "Air Max", "Dunk", "Pegasus", "Jordan"),
+            filters = listOf("All Shoes", "Running", "Men's shoes", "Women's shoes", "Kid's shoes"),
             selectedFilter = selectedFilter,
             onFilterSelected = onFilterSelected
         )
-    }
-}
-
-@Composable
-private fun ErrorMessageBox(errorMessage: String?) {
-    if (!errorMessage.isNullOrEmpty()) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFFFFCDD2), shape = RoundedCornerShape(4.dp))
-                .padding(12.dp)
-        ) {
-            Text(
-                text = errorMessage,
-                color = Color(0xFFC62828),
-                fontSize = 12.sp
-            )
-        }
     }
 }
 
@@ -189,10 +195,21 @@ private fun ProductListContent(
     productList: List<*>?,
     isLoadingMore: Boolean,
     lazyGridState: androidx.compose.foundation.lazy.grid.LazyGridState,
-    onNavigateToDetail: (String) -> Unit
+    onNavigateToDetail: (String, String) -> Unit
 ) {
-    if (isLoading && productList?.isEmpty() == true) {
+    if (isLoading) {
         LoadingSpinner()
+    } else if (productList.isNullOrEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "No products found.",
+                color = Color.Gray,
+                fontSize = 14.sp
+            )
+        }
     } else {
         ProductGrid(
             productList = productList,
@@ -218,7 +235,7 @@ private fun ProductGrid(
     productList: List<*>?,
     isLoadingMore: Boolean,
     lazyGridState: androidx.compose.foundation.lazy.grid.LazyGridState,
-    onNavigateToDetail: (String) -> Unit
+    onNavigateToDetail: (String, String) -> Unit
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
@@ -235,16 +252,15 @@ private fun ProductGrid(
                 ProductCard(
                     product = it,
                     onProductClick = { productGuid: String ->
-                        onNavigateToDetail(productGuid)
-                    },
-                    onFavoriteClick = {}
+                        val passedColorName = it.variants.firstOrNull()?.colorName ?: ""
+                        onNavigateToDetail(productGuid, passedColorName)
+                    }
                 )
             }
         }
 
         if (isLoadingMore) {
-            // FIX Ở ĐÂY: Thêm span = { GridItemSpan(maxLineSpan) }
-            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+            item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -259,9 +275,3 @@ private fun ProductGrid(
         }
     }
 }
-
-
-
-
-
-

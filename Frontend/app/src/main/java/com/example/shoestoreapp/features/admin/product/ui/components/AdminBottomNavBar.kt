@@ -9,8 +9,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ConfirmationNumber
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material.icons.outlined.Analytics
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -23,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 enum class AdminBottomNavTab {
-    ADMIN, ORDERS, ANALYTICS, SETTINGS
+    ADMIN, ORDERS, VOUCHERS, ANALYTICS, PROFILE
 }
 
 /**
@@ -32,9 +36,10 @@ enum class AdminBottomNavTab {
  * Tabs:
  * - ADMIN (admin_panel_settings icon)
  * - ORDERS (receipt_long icon)
+ * - VOUCHERS (confirmation_number icon)
  * - ANALYTICS (analytics icon)
- * - SETTINGS (settings icon)
- * 
+ * - PROFILE (person icon)
+ *
  * Tab hiện tại sẽ có:
  * - Text màu đen, bold
  * - Icon filled (FILL=1)
@@ -90,6 +95,14 @@ fun AdminBottomNavBar(
                             tint = if (isSelected) Color.Black else Color(0xFFBBBBBB)
                         )
                     }
+                    AdminBottomNavTab.VOUCHERS -> {
+                        Icon(
+                            imageVector = if (isSelected) Icons.Default.ConfirmationNumber else Icons.Outlined.ConfirmationNumber,
+                            contentDescription = "Vouchers",
+                            modifier = Modifier.padding(bottom = 2.dp),
+                            tint = if (isSelected) Color.Black else Color(0xFFBBBBBB)
+                        )
+                    }
                     AdminBottomNavTab.ANALYTICS -> {
                         Icon(
                             imageVector = Icons.Outlined.Analytics,
@@ -98,19 +111,18 @@ fun AdminBottomNavBar(
                             tint = if (isSelected) Color.Black else Color(0xFFBBBBBB)
                         )
                     }
-                    AdminBottomNavTab.SETTINGS -> {
+                    AdminBottomNavTab.PROFILE -> {
                         Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
+                            imageVector = if (isSelected) Icons.Filled.Person else Icons.Outlined.Person,
+                            contentDescription = "Profile",
                             modifier = Modifier.padding(bottom = 2.dp),
                             tint = if (isSelected) Color.Black else Color(0xFFBBBBBB)
                         )
                     }
                 }
-                
                 // Text
                 Text(
-                    text = tab.name,
+                    text = if (tab == AdminBottomNavTab.PROFILE) "PROFILE" else tab.name,
                     fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Medium,
                     fontSize = 10.sp,
                     letterSpacing = 0.8.sp,

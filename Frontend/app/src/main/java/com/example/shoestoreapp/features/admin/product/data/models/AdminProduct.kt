@@ -14,10 +14,11 @@ enum class StockStatus {
 }
 
 data class AdminProduct(
-    val id: String?,
-    val name: String?,
+    val id: String,
+    val name: String,
     val imageUrl: String?,
     val price: Double,
     val stockStatus: StockStatus,
     val stock: Int,
+    val variantsCount: Int = 0,
 )

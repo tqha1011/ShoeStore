@@ -26,7 +26,6 @@ public class AdminProductController(IProductService productService) : Controller
     /// <remarks>
     ///     Requires Admin role authorization and supports query parameters for:
     ///     - <c>searchTerm</c>: search keyword to find products by name or description
-    ///     - <c>categoryId</c>: filter products by specific category
     ///     - <c>minPrice</c>: filter products with minimum price
     ///     - <c>maxPrice</c>: filter products with maximum price
     ///     - <c>pageNumber</c>: page number for pagination (default: 1)

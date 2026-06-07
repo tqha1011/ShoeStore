@@ -1,0 +1,105 @@
+package com.example.shoestoreapp.features.admin.product.ui.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.shoestoreapp.features.admin.addproduct.data.remote.master_data.SizeDto
+import com.example.shoestoreapp.features.admin.addproduct.ui.components.AdminCrudColors
+
+/**
+ * Shoe Size Dropdown Component
+ */
+@Composable
+fun AdminShoeSizeDropdown(
+    selectedSize: String,
+    sizesList: List<SizeDto>,
+    onSizeSelected: (String, String) -> Unit,
+    enabled: Boolean = true
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Column {
+        Text(
+            text = "SIZE",
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.5.sp,
+            color = AdminCrudColors.onPrimaryFixedVariant,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .background(
+                    color = Color.White,
+                    shape = RoundedCornerShape(8.dp)
+                )
+                .border(
+                    width = 1.5.dp,
+                    color = AdminCrudColors.gray300,
+                    shape = RoundedCornerShape(8.dp)
+                )
+                .clickable(enabled = enabled) { expanded = true }
+                .padding(horizontal = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = selectedSize.ifEmpty { "Select shoe size" },
+                    fontSize = 13.sp,
+                    color = when {
+                        !enabled -> AdminCrudColors.gray500
+                        selectedSize.isEmpty() -> AdminCrudColors.gray500
+                        else -> AdminCrudColors.onSurface
+                    }
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Icon(
+                    imageVector = Icons.Outlined.ExpandMore,
+                    contentDescription = "Expand",
+                    tint = AdminCrudColors.gray500,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        DropdownMenu(
+            expanded = expanded && enabled,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.fillMaxWidth(0.9f)
+        ) {
+            sizesList.forEach { size ->
+                DropdownMenuItem(
+                    text = { Text(size.sizeValue) },
+                    onClick = {
+                        onSizeSelected(size.id, size.sizeValue)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}

@@ -16,8 +16,8 @@ data class ProductSearchResponse(
 
 // 2. DTO cho từng sản phẩm
 data class ProductSearchDto(
-    @SerializedName("publicId") val publicId: String?,
-    @SerializedName("productName") val productName: String?,
+    @SerializedName("publicId") val publicId: String,
+    @SerializedName("productName") val productName: String,
     @SerializedName("variants") val variants: List<ProductVariantDto>?
 )
 
@@ -26,5 +26,5 @@ data class ProductVariantDto(
     @SerializedName("price") val price: Double?,
     @SerializedName("stockStatus") val stockStatus: String?,
     @SerializedName("stock") val stock: Int?,
-    @SerializedName("imageUrl") val imageUrl: String?,
+    @SerializedName("imgUrl") val imageUrl: String?,
 )
