@@ -21,7 +21,7 @@ fun AiStrategyScreen(
 )  {
     BaseAIChatScreen(
         viewModel = viewModel,
-        title = "STRATEGY ASSISTANT",
+        title = "Strategy Assistant",
         initialPrompt = initialPrompt,
         userRoleName = "Admin",
         aiRoleName = "Ai Strategy",

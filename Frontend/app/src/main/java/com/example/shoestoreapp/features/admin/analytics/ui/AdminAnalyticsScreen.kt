@@ -16,12 +16,9 @@ import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +39,7 @@ import com.example.shoestoreapp.features.admin.analytics.data.remote.SummaryDto
 import com.example.shoestoreapp.features.admin.analytics.data.remote.TopProductDto
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavBar
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
+import com.example.shoestoreapp.features.admin.product.ui.components.AdminManagementTopBar
 import com.example.shoestoreapp.features.admin.analytics.viewmodel.AdminAnalyticsState
 import com.example.shoestoreapp.features.admin.analytics.viewmodel.AdminAnalyticsViewModel
 import java.text.NumberFormat
@@ -161,21 +159,12 @@ fun AdminAnalyticsScreen(
 /**
  * Top navigation bar with menu, title, and search
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminAnalyticsTopBar(
     onAiClick: () -> Unit = {}
 ) {
-    CenterAlignedTopAppBar(
-        title = {
-            Text(
-                text = "SHOE STORE",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Black,
-                color = Color.Black,
-                letterSpacing = 1.sp
-            )
-        },
+    AdminManagementTopBar(
+        title = "Analytics Management",
         actions = {
             IconButton(onClick = onAiClick) {
                 Icon(
@@ -185,17 +174,7 @@ fun AdminAnalyticsTopBar(
                     modifier = Modifier.size(24.dp)
                 )
             }
-        },
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = Color.White,
-            titleContentColor = Color.Black,
-            navigationIconContentColor = Color.Black,
-            actionIconContentColor = Color.Black
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .padding(top = 8.dp)
+        }
     )
 }
 
