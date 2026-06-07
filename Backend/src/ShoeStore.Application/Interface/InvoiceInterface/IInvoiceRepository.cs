@@ -1,6 +1,7 @@
 ﻿using ShoeStore.Application.DTOs.StatisticsDto;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Domain.Entities;
+using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Application.Interface.InvoiceInterface;
 
@@ -22,5 +23,8 @@ public interface IInvoiceRepository : IGenericRepository<Invoice, int>
         List<Guid> productIds, CancellationToken token);
 
     Task<List<(DateTime Date, decimal Revenue)>> GetChartDataAsync(DateTime startDate, DateTime endDate, string type,
+        CancellationToken token);
+
+    Task<List<Invoice>> GetInvoicesByStatusAndDateRangeAsync(InvoiceStatus status, DateTime startDate, DateTime endDate,
         CancellationToken token);
 }

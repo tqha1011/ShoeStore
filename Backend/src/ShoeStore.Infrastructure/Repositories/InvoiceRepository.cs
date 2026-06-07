@@ -102,6 +102,17 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
         return rawDayData.Select(iv => new ValueTuple<DateTime, decimal>(iv.Date, iv.Revenue)).ToList();
     }
 
+    public async Task<List<Invoice>> GetInvoicesByStatusAndDateRangeAsync(InvoiceStatus status, DateTime startDate,
+        DateTime endDate,
+        CancellationToken token)
+    {
+        var utcStartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc);
+        var utcEndDate = DateTime.SpecifyKind(endDate, DateTimeKind.Utc);
+        return await DbSet.Where(inv =>
+                inv.CreatedAt >= utcStartDate && inv.CreatedAt < utcEndDate && inv.Status == status)
+            .ToListAsync(token);
+    }
+
     public async Task<(int TotalInvoices, decimal TotalRevenue)> GetSummaryMetricsAsync(DateTime startDate,
         DateTime endDate,
         CancellationToken token)

@@ -28,7 +28,8 @@ public class ChatBotService(
     Kernel kernel,
     IProductPluginService productPluginService,
     IMasterDataPluginService masterDataPluginService,
-    IStoreAssistantPluginService storeAssistantPluginService)
+    IStoreAssistantPluginService storeAssistantPluginService,
+    IInvoicePluginService invoicePluginService)
     : IChatBotService
 {
     public async Task<ErrorOr<IAsyncEnumerable<string>>> GenerateCampaignAsync(CreateCampaignRequestDto requestDto,
@@ -303,6 +304,7 @@ public class ChatBotService(
         var executionSetting = BuildPluginExecutionSettings();
         adminKernel.Plugins.AddFromObject(productPluginService);
         adminKernel.Plugins.AddFromObject(masterDataPluginService);
+        adminKernel.Plugins.AddFromObject(invoicePluginService);
         var newChatMessage = new ChatMessage
         {
             Content = messageRequestDto.Content,
