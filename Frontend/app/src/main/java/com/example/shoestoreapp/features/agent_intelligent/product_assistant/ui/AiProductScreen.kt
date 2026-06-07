@@ -1,4 +1,4 @@
-package com.example.shoestoreapp.features.user.ai_assistant.ui
+package com.example.shoestoreapp.features.agent_intelligent.product_assistant.ui
 
 import android.os.Build
 import android.widget.Toast
@@ -48,8 +48,10 @@ import com.example.shoestoreapp.features.agent_intelligent.data.remote.AddVarian
 import com.example.shoestoreapp.features.agent_intelligent.data.remote.ProductSummaryForLlm
 import com.example.shoestoreapp.features.agent_intelligent.data.remote.SearchProductResultDto
 import com.example.shoestoreapp.features.agent_intelligent.data.remote.VariantResultDto
+import com.example.shoestoreapp.features.agent_intelligent.product_assistant.viewmodel.AiProductViewmodel
 import com.example.shoestoreapp.features.agent_intelligent.ui.BaseAIChatScreen
-import com.example.shoestoreapp.features.user.ai_assistant.viewmodel.AiProductViewmodel
+import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
+import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -60,7 +62,8 @@ fun AiProductScreen(
     showAdminPanels: Boolean = false,
     title: String = "Product Assistant",
     aiRoleName: String = "AI ASSISTANT",
-    userRoleName: String = "USER"
+    userRoleName: String = "USER",
+    onTabSelected: (BottomNavTab) -> Unit = {}
 ) {
     val searchResult by viewModel.searchResultState.collectAsState()
     val selectedProduct by viewModel.selectedProductState.collectAsState()
@@ -132,6 +135,16 @@ fun AiProductScreen(
         userRoleName = userRoleName,
         initialPrompt = initialPrompt,
         onBackClick = onBackClick,
+        bottomBarContent = if (showAdminPanels) {
+            null
+        } else {
+            {
+                BottomNavBar(
+                    selectedTab = BottomNavTab.AI,
+                    onTabSelected = onTabSelected
+                )
+            }
+        },
         footerContent = if (showAdminPanels) {
             {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

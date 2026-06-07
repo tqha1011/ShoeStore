@@ -39,14 +39,14 @@ import com.example.shoestoreapp.features.admin.product.viewmodel.AdminProductLis
 import com.example.shoestoreapp.features.admin.profile.ui.AdminProfileScreen
 import com.example.shoestoreapp.features.admin.voucher.ui.screen.VoucherManagementScreen
 import com.example.shoestoreapp.features.agent_intelligent.data.repository.AiChatRepository
+import com.example.shoestoreapp.features.agent_intelligent.product_assistant.ui.AiProductScreen
+import com.example.shoestoreapp.features.agent_intelligent.product_assistant.viewmodel.AiProductViewmodel
 import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.CreateNewPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenContent
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
 import com.example.shoestoreapp.features.auth.presentation.welcome.WelcomeScreen
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
-import com.example.shoestoreapp.features.user.ai_assistant.ui.AiProductScreen
-import com.example.shoestoreapp.features.user.ai_assistant.viewmodel.AiProductViewmodel
 import com.example.shoestoreapp.features.user.cart.ui.screens.CartScreen
 import com.example.shoestoreapp.features.user.cart.viewmodel.CartViewModel
 import com.example.shoestoreapp.features.user.checkout.ui.screens.CheckoutScreen
@@ -581,7 +581,8 @@ private fun NavGraphBuilder.userGraph(
         }
         AiProductScreen(
             viewModel = aiProductViewmodel,
-            onBackClick = { navController.popBackStack() }
+            onBackClick = { navController.popBackStack() },
+            onTabSelected = { tab -> handleUserAiTabSelection(tab, navController) }
         )
     }
 }
@@ -779,6 +780,7 @@ private fun handleUserHomeTabSelection(tab: BottomNavTab, navController: NavHost
         BottomNavTab.PROFILE -> navController.navigate(Routes.USER_PROFILE)
         BottomNavTab.BAG -> navController.navigate(Routes.CART)
         BottomNavTab.VOUCHER -> navController.navigate(Routes.USER_COLLECT_VOUCHERS)
+        BottomNavTab.AI -> navController.navigate(Routes.userAiAssistant())
         else -> Unit
     }
 }
@@ -801,6 +803,10 @@ private fun handleUserInvoiceTabSelection(tab: BottomNavTab, navController: NavH
         }
 
         BottomNavTab.BAG -> Unit
+        BottomNavTab.AI -> {
+            navController.navigateAndPopTo(Routes.userAiAssistant(), Routes.USER_INVOICE_LIST_BASE)
+        }
+
         else -> println("User Tab selected: $tab")
     }
 }
@@ -820,6 +826,10 @@ private fun handleUserBagTabSelection(tab: BottomNavTab, navController: NavHostC
         }
 
         BottomNavTab.BAG -> Unit
+        BottomNavTab.AI -> {
+            navController.navigateAndPopTo(Routes.userAiAssistant(), Routes.CART)
+        }
+
         else -> println("User Tab selected: $tab")
     }
 }
@@ -839,6 +849,10 @@ private fun handleUserProfileTabSelection(tab: BottomNavTab, navController: NavH
         }
 
         BottomNavTab.PROFILE -> Unit
+        BottomNavTab.AI -> {
+            navController.navigateAndPopTo(Routes.userAiAssistant(), Routes.USER_PROFILE)
+        }
+
         else -> println("User Tab selected: $tab")
     }
 }
@@ -858,7 +872,33 @@ private fun handleUserVoucherTabSelected(tab: BottomNavTab, navController: NavHo
         }
 
         BottomNavTab.VOUCHER -> Unit
+        BottomNavTab.AI -> {
+            navController.navigateAndPopTo(Routes.userAiAssistant(), Routes.USER_COLLECT_VOUCHERS)
+        }
+
         else -> println("User Tab selected: $tab")
+    }
+}
+
+private fun handleUserAiTabSelection(tab: BottomNavTab, navController: NavHostController) {
+    when (tab) {
+        BottomNavTab.SHOP -> {
+            navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.USER_AI_ASSISTANT)
+        }
+
+        BottomNavTab.BAG -> {
+            navController.navigateAndPopTo(Routes.CART, Routes.USER_AI_ASSISTANT)
+        }
+
+        BottomNavTab.VOUCHER -> {
+            navController.navigateAndPopTo(Routes.USER_COLLECT_VOUCHERS, Routes.USER_AI_ASSISTANT)
+        }
+
+        BottomNavTab.PROFILE -> {
+            navController.navigateAndPopTo(Routes.USER_PROFILE, Routes.USER_AI_ASSISTANT)
+        }
+
+        BottomNavTab.AI -> Unit
     }
 }
 
