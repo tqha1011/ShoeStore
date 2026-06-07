@@ -13,11 +13,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -30,13 +27,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavBar
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
+import com.example.shoestoreapp.features.admin.product.ui.components.AdminManagementTopBar
 import com.example.shoestoreapp.features.admin.profile.viewmodel.AdminProfileViewModel
 import com.example.shoestoreapp.features.user.profile.ui.components.LogoutButton
 import com.example.shoestoreapp.features.user.profile.ui.components.ProfileHeader
 import com.example.shoestoreapp.features.user.profile.ui.components.ProfileMenuItem
 import com.example.shoestoreapp.features.user.profile.ui.components.ProfileSectionLabel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminProfileScreen(
     viewModel: AdminProfileViewModel = AdminProfileViewModel(),
@@ -53,24 +50,7 @@ fun AdminProfileScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        text = "PROFILE",
-                        fontWeight = FontWeight.Black,
-                        fontSize = 18.sp,
-                        letterSpacing = 1.sp,
-                        color = Color.Black
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    scrolledContainerColor = Color.Unspecified,
-                    navigationIconContentColor = Color.Unspecified,
-                    titleContentColor = Color.Unspecified,
-                    actionIconContentColor = Color.Unspecified
-                )
-            )
+            AdminManagementTopBar(title = "Profile Management")
         },
         bottomBar = {
             AdminBottomNavBar(

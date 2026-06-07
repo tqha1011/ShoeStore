@@ -5,21 +5,17 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.admin.invoice.ui.components.AdminInvoiceFilterChips
 import com.example.shoestoreapp.features.admin.invoice.viewmodel.AdminInvoiceViewmodel
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavBar
 import com.example.shoestoreapp.features.admin.product.ui.components.AdminBottomNavTab
+import com.example.shoestoreapp.features.admin.product.ui.components.AdminManagementTopBar
 import com.example.shoestoreapp.features.admin.invoice.ui.components.AdminOrderCard
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
@@ -45,7 +41,7 @@ fun AdminInvoiceScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-        topBar = { AdminTopBar() },
+        topBar = { AdminManagementTopBar(title = "Order Management") },
         bottomBar = { AdminBottomNavBar(selectedTab = AdminBottomNavTab.ORDERS, onTabSelected = onTabSelected) }
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues).background(Color.White)) {
@@ -73,33 +69,6 @@ fun AdminInvoiceScreen(
         )
     }
 }
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AdminTopBar() {
-    CenterAlignedTopAppBar(
-        title = {
-            Text(
-                text = "SHOE STORE",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Black,
-                color = Color.Black,
-                letterSpacing = 2.sp
-            )
-        },
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = Color.White,
-            titleContentColor = Color.Black,
-            navigationIconContentColor = Color.Black,
-            actionIconContentColor = Color.Black
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .padding(top = 12.dp)
-    )
-}
-
 
 @Composable
 fun AdminInvoiceListContent(
