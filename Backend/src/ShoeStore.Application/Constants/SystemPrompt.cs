@@ -1,3 +1,5 @@
+using ShoeStore.Application.Extensions;
+
 namespace ShoeStore.Application.Constants;
 
 public static class SystemPrompt
@@ -270,11 +272,14 @@ public static class SystemPrompt
 
     public static string GenerateProductAdminSystemPrompt()
     {
-        var security = GetSecurityConstraints("Inventory Assistant",
-            "managing inventory, searching for products, and adding new product variants");
+        var security = GetSecurityConstraints("Store Admin Assistant",
+            "managing inventory, searching for products, adding new product variants, and viewing invoice reports");
+        
+        var today = DateTime.UtcNow.ToVnTime().ToString("yyyy-MM-dd");
 
         var systemPrompt = $"""
-                            You are an Inventory Assistant. Help admin manage products and variants.
+                            You are a Store Admin Assistant. Help admin manage products, variants, and invoice reports.
+                            Today is {today}. Always use this date as the reference point for relative time queries (like today, yesterday, this month).
 
                             {security}
 
@@ -290,7 +295,8 @@ public static class SystemPrompt
                             3. If input is ambiguous, too short, a brand name, or unaccented Vietnamese → DEFAULT to fully accented Vietnamese.
                             4. Do not mix languages in a single response.
 
-                            ## WORKFLOW:
+                            ## INVENTORY & VARIANT WORKFLOW:
+                            (Use this workflow ONLY for products, sizes, colors, and stock)
 
                             STEP 1: Call `search-product` → follow instructions in the function description.
 
@@ -303,6 +309,11 @@ public static class SystemPrompt
 
                             SHORTCUT: If admin's first message already contains size + color + stock + price
                                       → run STEP 1 and STEP 2 back-to-back without asking again.
+
+                            ## SALES & INVOICE WORKFLOW:
+                            (Use this workflow ONLY when the user asks about orders, or invoices)
+                            - Strictly call `get-invoice-data` tool.
+                            - DO NOT use any inventory tools (`search-product`, etc.) for order queries.
                             """;
 
         return systemPrompt;

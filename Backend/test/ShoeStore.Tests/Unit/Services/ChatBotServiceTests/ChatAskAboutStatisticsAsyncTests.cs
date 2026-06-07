@@ -28,6 +28,7 @@ public class ChatAskAboutStatisticsAsyncTests
     private readonly Mock<IStoreAssistantPluginService> _storeAssistantPluginService = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IUserRepository> _userRepository = new();
+    private readonly Mock<IInvoicePluginService> _invoicePluginService = new();
 
     public ChatAskAboutStatisticsAsyncTests()
     {
@@ -42,7 +43,8 @@ public class ChatAskAboutStatisticsAsyncTests
             _kernel,
             _productPluginService.Object,
             _masterDataPluginService.Object,
-            _storeAssistantPluginService.Object);
+            _storeAssistantPluginService.Object,
+            _invoicePluginService.Object);
     }
 
     [Fact]
