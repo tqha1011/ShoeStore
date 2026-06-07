@@ -8,6 +8,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.features.invoice.model.Detail
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
+import com.example.shoestoreapp.features.invoice.model.displayName
+import com.example.shoestoreapp.features.user.invoice.data.OrderStatusNotification
 import com.example.shoestoreapp.features.user.invoice.data.UserInvoiceRepository
 import kotlinx.coroutines.launch
 
@@ -167,6 +169,31 @@ class UserInvoiceViewModel(
                     )
                 }
         }
+    }
+
+    fun onOrderStatusNotification(notification: OrderStatusNotification) {
+        val updatedInvoices = state.invoices.map { invoice ->
+            if (invoice.orderCode == notification.orderCode) {
+                invoice.copy(status = notification.status)
+            } else {
+                invoice
+            }
+        }
+
+        val updatedSelected = state.selectedInvoice?.let { selected ->
+            if (selected.orderCode == notification.orderCode) {
+                selected.copy(status = notification.status)
+            } else {
+                selected
+            }
+        }
+
+        state = state.copy(
+            invoices = updatedInvoices,
+            selectedInvoice = updatedSelected,
+            orderCounts = buildOrderCounts(updatedInvoices),
+            successMessage = "Order ${notification.orderCode} updated to ${notification.status.displayName()}."
+        )
     }
 
 

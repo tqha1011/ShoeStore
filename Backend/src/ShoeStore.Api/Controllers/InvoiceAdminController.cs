@@ -188,7 +188,7 @@ public class InvoiceAdminController(
         }
 
         await hubContext.Clients.Group($"User-{result.Value.PublicUserId}")
-            .ReceiveNotification(result.Value.OrderCode, result.Value.Status);
+            .ReceiveNotification(result.Value.OrderCode, result.Value.Status.ToString());
 
         return Ok(new
         {
