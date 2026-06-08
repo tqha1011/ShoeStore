@@ -23,7 +23,8 @@ public class CheckOutService(
     IInvoiceRepository invoiceRepository,
     IUserRepository userRepository,
     IVoucherRepository voucherRepository,
-    IConfiguration configuration) : ICheckOutService
+    IConfiguration configuration,
+    IUserVoucherRepository userVoucherRepository) : ICheckOutService
 {
     public async Task<ErrorOr<CheckOutResponseDto>> PrepareCheckOutAsync(List<CheckOutRequestDto> checkOutList,
         Guid publicUserId, List<int> voucherIds, CancellationToken token)
@@ -84,6 +85,7 @@ public class CheckOutService(
             totalProductPrice = CalculateFinalProductPrice(validVouchers!, null!, totalProductPrice);
             shippingFee = CalculateFinalShippingFee(validVouchers!, null!, shippingFee);
         }
+
         var finalPrice = totalProductPrice + shippingFee;
 
         var summary = new CheckOutSummaryDto(totalProductPrice, finalPrice, shippingFee);
@@ -116,13 +118,12 @@ public class CheckOutService(
                 var variantIdList = placeOrderRequestDto.Items.Select(x => x.VariantId).Distinct().ToList();
                 var voucherIdList = placeOrderRequestDto.VoucherIds?.Distinct().ToList() ?? [];
                 var variantsList = await productVariantRepository.GetListVariantsAsync(variantIdList, token);
-
+                var userVouchers = await userVoucherRepository.GetUserVouchersByIds(voucherIdList, user.Id, token);
                 if (variantsList.Count < variantIdList.Count)
                     return Error.NotFound("Variant.NotFound", "One or more variants are deleted.");
 
                 var variantQuantityById = ConvertToDictionary(placeOrderRequestDto.Items);
-
-                var vouchersApplied = MarkUsedVoucher(voucherIdList, user);
+                var vouchersApplied = MarkUsedVoucher(userVouchers);
 
                 if (vouchersApplied.Count < voucherIdList.Count)
                     return Error.NotFound("Voucher.NotFound", "One or more vouchers are not found or already used.");
@@ -143,8 +144,10 @@ public class CheckOutService(
                 if (deductResult.IsError) return deductResult.Errors;
 
                 // Stage 4: create invoice and invoice details
-                var invoice = CreateInvoice(placeOrderRequestDto, user.Id, variantsList, variantQuantityById,
+                var invoiceResult = CreateInvoice(placeOrderRequestDto, user.Id, variantsList, variantQuantityById,
                     vouchersApplied);
+                if (invoiceResult.IsError) return invoiceResult.Errors;
+                var invoice = invoiceResult.Value;
                 invoiceRepository.Add(invoice);
 
                 // If all stages execute successfully, commit the transaction, otherwise rollback the transaction
@@ -157,6 +160,7 @@ public class CheckOutService(
                     var shopBankName = configuration["ShopBank:AccountName"];
                     return invoice.MapToInvoiceDto(shopBankCode, shopBankAccount, shopBankName);
                 }
+
                 return invoice.MapToInvoiceDto();
             }
             catch (DbUpdateConcurrencyException)
@@ -180,24 +184,30 @@ public class CheckOutService(
         return variantQuantityById;
     }
 
-    private static List<Voucher?> MarkUsedVoucher(List<int> voucherIds, User user)
+    // this method mark the voucher is reserved with the invoice until it is paid
+    private static List<Voucher?> MarkUsedVoucher(List<UserVoucher> userVouchers)
     {
-        if (voucherIds.Count == 0) return []; // return empty if user didn't choose any voucher
+        if (userVouchers.Count == 0) return []; // return empty if user didn't choose any voucher
 
-        var userVoucher = user.UserVouchers.Where(uv => voucherIds.Contains(uv.VoucherId) && !uv.IsUsed)
-            .ToList();
-
-        foreach (var items in userVoucher)
+        var validVoucher = new List<Voucher?>();
+        foreach (var userVoucher in userVouchers)
         {
-            items.IsUsed = true;
-            items.UsedAt = DateTime.UtcNow;
+            if (userVoucher.Voucher == null) continue;
+            if (userVoucher.Voucher.ValidFrom > DateTime.UtcNow || userVoucher.Voucher.ValidTo < DateTime.UtcNow ||
+                userVoucher.Voucher.IsDeleted)
+                continue;
+            var availableUsedCount =
+                userVoucher.Voucher!.MaxUsagePerUser - userVoucher.UsedCount - userVoucher.ReservedCount;
+            if (!(availableUsedCount > 0)) continue;
+            userVoucher.ReservedCount += 1; // mark it is reserved
+            userVoucher.ReservedAt = DateTime.UtcNow;
+            validVoucher.Add(userVoucher.Voucher);
         }
 
-        var vouchers = userVoucher.Select(uv => uv.Voucher).ToList();
-        return vouchers;
+        return validVoucher;
     }
 
-    private static Invoice CreateInvoice(PlaceOrderRequestDto placeOrderRequestDto, int userId,
+    private static ErrorOr<Invoice> CreateInvoice(PlaceOrderRequestDto placeOrderRequestDto, int userId,
         List<ProductVariant> variantsList,
         Dictionary<Guid, int> variantQuantityById, List<Voucher?> vouchersApplied)
     {
@@ -239,10 +249,11 @@ public class CheckOutService(
 
         // validate vouchers
         var validVouchers = ValidateVouchers(vouchersApplied, subTotal);
-
+        if (validVouchers.Count < vouchersApplied.Count)
+            return Error.Validation("Voucher.Invalid", "One or more vouchers are invalid.");
         // calculate the final price after applying voucher and shipping fee
-        var priceAfterApplyVoucherProduct = CalculateFinalProductPrice(validVouchers, invoice, subTotal,false);
-        var finalShippingFee = CalculateFinalShippingFee(validVouchers, invoice, shippingFee,false);
+        var priceAfterApplyVoucherProduct = CalculateFinalProductPrice(validVouchers, invoice, subTotal, false);
+        var finalShippingFee = CalculateFinalShippingFee(validVouchers, invoice, shippingFee, false);
         invoice.FinalPrice = priceAfterApplyVoucherProduct + finalShippingFee;
         invoice.ShippingFee = finalShippingFee;
         return invoice;
@@ -272,7 +283,8 @@ public class CheckOutService(
             .ToList();
     }
 
-    private static decimal CalculateFinalProductPrice(List<Voucher?> validVouchers, Invoice invoice, decimal subTotal, bool isPrepare = true)
+    private static decimal CalculateFinalProductPrice(List<Voucher?> validVouchers, Invoice invoice, decimal subTotal,
+        bool isPrepare = true)
     {
         var currentTotal = subTotal;
         if (validVouchers.Count == 0) return currentTotal;
@@ -296,6 +308,7 @@ public class CheckOutService(
                         };
                         invoice.VoucherDetails.Add(voucherDetails);
                     }
+
                     break;
                 }
                 case { DiscountType: DiscountType.Percentage, VoucherScope: VoucherScope.Product }:
@@ -315,6 +328,7 @@ public class CheckOutService(
                         };
                         invoice.VoucherDetails.Add(voucherDetails);
                     }
+
                     break;
                 }
             }
@@ -322,7 +336,8 @@ public class CheckOutService(
         return currentTotal;
     }
 
-    private static decimal CalculateFinalShippingFee(List<Voucher?> validVouchers, Invoice invoice, decimal shippingFee,bool isPrepare = true)
+    private static decimal CalculateFinalShippingFee(List<Voucher?> validVouchers, Invoice invoice, decimal shippingFee,
+        bool isPrepare = true)
     {
         if (validVouchers.Count == 0) return shippingFee;
         foreach (var voucher in validVouchers)
@@ -344,6 +359,7 @@ public class CheckOutService(
                         };
                         invoice.VoucherDetails.Add(voucherDetails);
                     }
+
                     break;
                 }
                 case { DiscountType: DiscountType.Percentage, VoucherScope: VoucherScope.Shipping }:
@@ -363,6 +379,7 @@ public class CheckOutService(
                         };
                         invoice.VoucherDetails.Add(voucherDetails);
                     }
+
                     break;
                 }
             }
