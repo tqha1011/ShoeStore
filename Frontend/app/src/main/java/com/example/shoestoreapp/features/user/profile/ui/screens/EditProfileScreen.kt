@@ -45,6 +45,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.shoestoreapp.features.admin.product.ui.components.PhotoActionBottomSheet
 import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
+import com.example.shoestoreapp.features.user.product.ui.components.UserTopBarTitle
 import com.example.shoestoreapp.features.user.profile.ui.components.DatePickerField
 import com.example.shoestoreapp.features.user.profile.ui.components.EditableAvatar
 import com.example.shoestoreapp.features.user.profile.ui.components.ProfileEditField
@@ -96,13 +97,7 @@ fun EditProfileScreen(
             topBar = {
                 TopAppBar(
                     title = {
-                        Text(
-                            text = "EDIT PROFILE",
-                            fontWeight = FontWeight.Black,
-                            fontSize = 18.sp,
-                            letterSpacing = 1.sp,
-                            color = Color.Black
-                        )
+                        UserTopBarTitle(text = "EDIT PROFILE")
                     },
                     navigationIcon = {
                         IconButton(onClick = onBackClick) {

@@ -16,5 +16,7 @@ interface AuthRepository {
 
     suspend fun verifyOtp(email: String, otp: String): Result<Unit>
 
+    suspend fun verifySignUpOtp(email: String, otp: String): Result<Unit>
+
     suspend fun updatePassword(email: String, otp: String, newPassword: String): Result<Unit>
 }

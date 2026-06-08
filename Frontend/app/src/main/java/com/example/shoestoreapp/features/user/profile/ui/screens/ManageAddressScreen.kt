@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
+import com.example.shoestoreapp.features.user.product.ui.components.UserTopBarTitle
 import com.example.shoestoreapp.features.user.profile.ui.components.AddAddressButton
 import com.example.shoestoreapp.features.user.profile.ui.components.AddressItemCard
 import com.example.shoestoreapp.features.user.profile.viewmodel.ManageAddressUiState
@@ -66,7 +67,9 @@ fun ManageAddressScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { },
+                    title = {
+                        UserTopBarTitle(text = "ADDRESSES")
+                    },
                     navigationIcon = {
                         IconButton(onClick = onBackClick) {
                             Icon(

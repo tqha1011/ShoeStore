@@ -30,6 +30,8 @@ data class UserInvoiceState(
     val selectedInvoice: Invoice? = null,
     // Line items of selected invoice.
     val invoiceDetails: List<Detail> = emptyList(),
+    // First line item by invoice id, used as the order list thumbnail.
+    val orderPreviewDetails: Map<String, Detail> = emptyMap(),
     // Controls details bottom-sheet loading state.
     val isDetailLoading: Boolean = false,
     // True while cancel request is in progress.
@@ -61,6 +63,7 @@ class UserInvoiceViewModel(
                         invoices = invoices,
                         orderCounts = buildOrderCounts(invoices)
                     )
+                    loadOrderPreviewDetails(invoices)
                 }
                 .onFailure { throwable ->
                     state = state.copy(
@@ -101,7 +104,18 @@ class UserInvoiceViewModel(
 
             repository.getInvoiceDetailsUser(invoiceGuid)
                 .onSuccess { detailsList ->
-                    state = state.copy(isDetailLoading = false, invoiceDetails = detailsList)
+                    val firstDetail = detailsList.firstOrNull()
+                    val previewDetails = if (firstDetail != null) {
+                        state.orderPreviewDetails + (invoice.publicId to firstDetail)
+                    } else {
+                        state.orderPreviewDetails
+                    }
+
+                    state = state.copy(
+                        isDetailLoading = false,
+                        invoiceDetails = detailsList,
+                        orderPreviewDetails = previewDetails
+                    )
                 }
                 .onFailure { throwable ->
                     state = state.copy(
@@ -134,7 +148,7 @@ class UserInvoiceViewModel(
                 error = null
             )
 
-            repository.updateInvoiceStatusUser(invoiceGuid, "Canceled")
+            repository.updateInvoiceStatusUser(invoiceGuid, "Cancelled")
                 .onSuccess {
                     // Sync list and selected detail after successful cancel.
                     val updatedInvoices = state.invoices.map { current ->
@@ -222,6 +236,23 @@ class UserInvoiceViewModel(
     private fun buildOrderCounts(invoices: List<Invoice>): Map<InvoiceStatus, Int> {
         return InvoiceStatus.entries.associateWith { status ->
             invoices.count { invoice -> invoice.status == status }
+        }
+    }
+
+    private fun loadOrderPreviewDetails(invoices: List<Invoice>) {
+        invoices.forEach { invoice ->
+            val invoiceGuid = invoice.publicId.trim()
+            if (invoiceGuid.isEmpty() || state.orderPreviewDetails.containsKey(invoiceGuid)) return@forEach
+
+            viewModelScope.launch {
+                repository.getInvoiceDetailsUser(invoiceGuid)
+                    .onSuccess { detailsList ->
+                        val firstDetail = detailsList.firstOrNull() ?: return@onSuccess
+                        state = state.copy(
+                            orderPreviewDetails = state.orderPreviewDetails + (invoiceGuid to firstDetail)
+                        )
+                    }
+            }
         }
     }
 }

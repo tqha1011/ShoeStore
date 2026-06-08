@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import com.example.shoestoreapp.features.user.product.ui.components.UserTopBarTitle
 
 /**
  * TopAppBar Component cho Cart Screen (sử dụng CenterAlignedTopAppBar)
@@ -33,12 +34,7 @@ fun CartTopAppBar(
 ) {
     CenterAlignedTopAppBar(
         title = {
-            Text(
-                text = "SHOPPING BAG",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
+            UserTopBarTitle(text = "SHOPPING BAG")
         },
         navigationIcon = {
             IconButton(onClick = onBackClick) {

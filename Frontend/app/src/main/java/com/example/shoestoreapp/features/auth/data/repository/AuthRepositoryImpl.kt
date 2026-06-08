@@ -10,6 +10,7 @@
     import com.example.shoestoreapp.features.auth.data.remote.UpdatePasswordRequest
     import com.example.shoestoreapp.features.auth.data.remote.VerifyEmailRequest
     import com.example.shoestoreapp.features.auth.data.remote.VerifyOtpRequest
+    import com.example.shoestoreapp.features.auth.data.remote.VerifySignUpOtpRequest
     import kotlinx.coroutines.CancellationException
     import retrofit2.HttpException
     import java.io.IOException
@@ -135,6 +136,28 @@
                 }
             } catch (e: Exception) {
                 Result.failure(e)
+            }
+        }
+
+        override suspend fun verifySignUpOtp(email: String, otp: String): Result<Unit> {
+            return try {
+                val response = api.verifySignUpOtp(VerifySignUpOtpRequest(email, otp))
+                if (response.isSuccessful) {
+                    Result.success(Unit)
+                } else {
+                    val errorMessage = when (response.code()) {
+                        401 -> "Invalid OTP code. Please try again."
+                        404 -> "OTP has expired. Please sign up again."
+                        409 -> "This email has already been used."
+                        429 -> "Too many attempts. Please try again later."
+                        else -> "Could not verify email. Please try again."
+                    }
+                    Result.failure(Exception(errorMessage))
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Result.failure(Exception(ERROR_OFFLINE))
             }
         }
 
