@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 fun RegisterScreenContent(
     onNavigateToSignIn: () -> Unit = {},
     onNavigateToUserHome: () -> Unit = {},
+    onNavigateToVerifyOtp: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val tokenManager = remember { TokenManager(context) }
@@ -45,6 +46,7 @@ fun RegisterScreenContent(
             when (event) {
                 is AuthUiEvent.NavigateToSignIn -> onNavigateToSignIn()
                 is AuthUiEvent.NavigateToUserHome -> onNavigateToUserHome()
+                is AuthUiEvent.NavigateToSignUpOtp -> onNavigateToVerifyOtp(event.email)
                 else -> Unit
             }
         }
