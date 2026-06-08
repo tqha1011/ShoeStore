@@ -216,20 +216,32 @@ fun UserInvoiceScreen(
         // Confirm dialog for list-level cancel action.
         AlertDialog(
             onDismissRequest = { invoiceToConfirmCancel = null },
-            title = { Text(text = "Confirm cancellation") },
+            containerColor = Color.White,
+            titleContentColor = Color.Black,
+            textContentColor = Color(0xFF4A4447),
+            title = {
+                Text(
+                    text = "Confirm cancellation",
+                    fontWeight = FontWeight.ExtraBold
+                )
+            },
             text = { Text(text = "Are you sure you want to cancel this order?") },
             confirmButton = {
                 TextButton(
                     onClick = {
                         invoiceToConfirmCancel = null
                         viewModel.cancelInvoice(targetInvoice)
-                    }
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Black)
                 ) {
                     Text("Confirm")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { invoiceToConfirmCancel = null }) {
+                TextButton(
+                    onClick = { invoiceToConfirmCancel = null },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF5D5659))
+                ) {
                     Text("Keep order")
                 }
             }

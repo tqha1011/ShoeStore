@@ -16,6 +16,7 @@ data class Invoice(
     val paymentMethod: String?,
     val status: InvoiceStatus?,
     val createdAt: String?,
+    val shippingFee: String?,
     val finalPrice: String?,
     val address: String?,
     val phones: String?,

@@ -53,6 +53,9 @@ fun UserInvoiceDetailsBottomSheet(
     val subtotal = state.invoiceDetails.sumOf { detail ->
         detail.unitPrice.toLong() * detail.quantity.toLong()
     }
+    val finalPrice = selectedInvoice.finalPrice.orEmpty().toDoubleOrNull() ?: 0.0
+    val shippingFee = selectedInvoice.shippingFee?.toDoubleOrNull()
+        ?: (finalPrice - subtotal).coerceAtLeast(0.0)
     val totalText = formatAdminPrice(selectedInvoice.finalPrice.orEmpty())
 
     ModalBottomSheet(onDismissRequest = onDismissRequest) {
@@ -156,6 +159,10 @@ fun UserInvoiceDetailsBottomSheet(
                                 PriceSummaryRow(
                                     label = "Subtotal",
                                     value = formatAdminPrice(subtotal.toString())
+                                )
+                                PriceSummaryRow(
+                                    label = "Shipping Fee",
+                                    value = formatAdminPrice(shippingFee.toString())
                                 )
                                 PriceSummaryRow(
                                     label = "Payment method",

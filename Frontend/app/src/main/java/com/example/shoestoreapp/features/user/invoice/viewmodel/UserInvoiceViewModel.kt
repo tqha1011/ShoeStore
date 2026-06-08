@@ -148,7 +148,7 @@ class UserInvoiceViewModel(
                 error = null
             )
 
-            repository.updateInvoiceStatusUser(invoiceGuid, "Canceled")
+            repository.updateInvoiceStatusUser(invoiceGuid, "Cancelled")
                 .onSuccess {
                     // Sync list and selected detail after successful cancel.
                     val updatedInvoices = state.invoices.map { current ->
