@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
+import com.example.shoestoreapp.features.user.product.ui.components.UserTopBarTitle
 import com.example.shoestoreapp.features.user.profile.ui.components.LogoutButton
 import com.example.shoestoreapp.features.user.profile.ui.components.ProfileHeader
 import com.example.shoestoreapp.features.user.profile.ui.components.ProfileMenuItem
@@ -63,13 +64,7 @@ fun UserProfileScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
-                        text = "PROFILE",
-                        fontWeight = FontWeight.Black,
-                        fontSize = 18.sp,
-                        letterSpacing = 1.sp,
-                        color = Color.Black
-                    )
+                    UserTopBarTitle(text = "PROFILE")
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.White,
