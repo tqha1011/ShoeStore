@@ -414,6 +414,9 @@ private fun NavGraphBuilder.userGraph(
                     )
                 )
             },
+            onMyOrdersClick = {
+                navController.navigate(Routes.userInvoiceList())
+            },
             onLogoutClick = {
                 scope.launch {
                     tokenManager.clearAuthInfo()
@@ -802,7 +805,9 @@ private fun handleUserInvoiceTabSelection(tab: BottomNavTab, navController: NavH
             )
         }
 
-        BottomNavTab.BAG -> Unit
+        BottomNavTab.BAG -> {
+            navController.navigateAndPopTo(Routes.CART, Routes.USER_INVOICE_LIST_BASE)
+        }
         BottomNavTab.AI -> {
             navController.navigateAndPopTo(Routes.userAiAssistant(), Routes.USER_INVOICE_LIST_BASE)
         }

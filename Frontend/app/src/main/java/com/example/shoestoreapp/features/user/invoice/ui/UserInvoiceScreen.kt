@@ -5,16 +5,28 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -36,11 +48,6 @@ import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.core.utils.TokenManager
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
-import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipColors
-import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipDimensions
-import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipStyle
-import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChipTypography
-import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusFilterChips
 import com.example.shoestoreapp.features.user.invoice.data.OrderStatusSignalRManager
 import com.example.shoestoreapp.features.user.invoice.ui.components.UserInvoiceDetailsBottomSheet
 import com.example.shoestoreapp.features.user.invoice.ui.components.UserOrderCard
@@ -112,7 +119,7 @@ fun UserInvoiceScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         bottomBar = {
             BottomNavBar(
-                selectedTab = BottomNavTab.BAG,
+                selectedTab = BottomNavTab.PROFILE,
                 onTabSelected = onTabSelected
             )
         }
@@ -120,17 +127,12 @@ fun UserInvoiceScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(Color(0xFFF7F7F8))
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "My Orders",
-                color = Color.Black,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
+            OrdersHeader()
 
             UserInvoiceFilterRow(
                 selectedStatus = state.selectedStatus,
@@ -177,7 +179,7 @@ fun UserInvoiceScreen(
                     // Main list with per-item actions.
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(
                             items = viewModel.filteredInvoices,
@@ -185,6 +187,7 @@ fun UserInvoiceScreen(
                         ) { invoice ->
                             UserOrderCard(
                                 invoice = invoice,
+                                previewDetail = state.orderPreviewDetails[invoice.publicId],
                                 isCancelling = state.isCancelling && state.cancellingInvoicePublicId == invoice.publicId,
                                 onCancelClick = {
                                     // Show confirm before firing cancel API.
@@ -235,27 +238,79 @@ fun UserInvoiceScreen(
 }
 
 @Composable
+private fun OrdersHeader() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+    ) {
+        IconButton(onClick = {}) {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = "Search orders",
+                tint = Color.Black
+            )
+        }
+
+        Text(
+            text = "Orders",
+            color = Color.Black,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Black
+        )
+
+        IconButton(onClick = {}) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "More order options",
+                tint = Color.Black
+            )
+        }
+    }
+}
+
+@Composable
 private fun UserInvoiceFilterRow(
     selectedStatus: InvoiceStatus?,
     onFilterSelected: (InvoiceStatus?) -> Unit
 ) {
-    InvoiceStatusFilterChips(
-        selectedStatus = selectedStatus,
-        onFilterSelected = onFilterSelected,
+    val filters = listOf(
+        OrderFilter(null, "All"),
+        OrderFilter(InvoiceStatus.PENDING, "To confirm"),
+        OrderFilter(InvoiceStatus.PAID, "To ship"),
+        OrderFilter(InvoiceStatus.DELIVERING, "Shipping"),
+        OrderFilter(InvoiceStatus.DELIVERED, "Completed"),
+        OrderFilter(InvoiceStatus.CANCELLED, "Cancelled")
+    )
+
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 2.dp),
-        style = InvoiceStatusFilterChipStyle(
-            dimensions = InvoiceStatusFilterChipDimensions(
-                chipCornerRadius = 18.dp,
-                chipHorizontalPadding = 12.dp,
-                chipVerticalPadding = 7.dp
-            ),
-            colors = InvoiceStatusFilterChipColors(
-                unselectedTextColor = Color(0xFF888888)
-            ),
-            typography = InvoiceStatusFilterChipTypography(letterSpacing = 0.sp),
-            showSelectedBorder = true
-        )
-    )
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        filters.forEach { filter ->
+            val isSelected = selectedStatus == filter.status
+            Text(
+                text = filter.label,
+                modifier = Modifier
+                    .background(
+                        color = if (isSelected) Color.Black else Color(0xFFF0F0F1),
+                        shape = RoundedCornerShape(999.dp)
+                    )
+                    .clickable { onFilterSelected(filter.status) }
+                    .padding(horizontal = 22.dp, vertical = 12.dp),
+                color = if (isSelected) Color.White else Color(0xFF5D6570),
+                fontSize = 15.sp,
+                fontWeight = FontWeight.ExtraBold,
+                maxLines = 1
+            )
+            Spacer(modifier = Modifier.width(0.dp))
+        }
+    }
 }
+
+private data class OrderFilter(
+    val status: InvoiceStatus?,
+    val label: String
+)
