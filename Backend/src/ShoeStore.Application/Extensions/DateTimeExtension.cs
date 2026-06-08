@@ -19,5 +19,10 @@ public static class DateTimeExtensions
         {
             return new DateTime(utcDateTime.Year, utcDateTime.Month, 1, 0, 0, 0);
         }
+
+        public DateTime ToUtcFromVnTime()
+        {
+            return TimeZoneInfo.ConvertTimeToUtc(utcDateTime, TZConvert.GetTimeZoneInfo("Asia/Ho_Chi_Minh"));
+        }
     }
 }
