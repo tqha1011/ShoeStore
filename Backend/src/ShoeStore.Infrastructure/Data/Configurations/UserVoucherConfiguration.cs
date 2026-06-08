@@ -36,5 +36,13 @@ public class UserVoucherConfiguration : IEntityTypeConfiguration<UserVoucher>
 
         builder.Property(c => c.PublicId)
             .HasDefaultValueSql("gen_random_uuid()");
+
+        builder.Property(c => c.UsedCount)
+            .IsRequired()
+            .HasDefaultValue(0);
+
+        builder.Property(c => c.ReservedCount)
+            .IsRequired()
+            .HasDefaultValue(0);
     }
 }

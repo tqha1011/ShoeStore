@@ -1,7 +1,7 @@
 using Moq;
 using ShoeStore.Application.DTOs.VoucherDTOs;
-using ShoeStore.Domain.Enum;
 using ShoeStore.Domain.Entities;
+using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Tests.Unit.Services.VoucherServiceTests;
 
@@ -36,8 +36,8 @@ public class CreateVoucherServiceTests : VoucherServiceTestBase
         Assert.False(result.IsError);
         var actualVoucher = Assert.IsType<Voucher>(addedVoucher);
         Assert.Equal(dto.VoucherName, actualVoucher.VoucherName);
-        Assert.Equal(dto.Discount, actualVoucher.Discount);
-        Assert.Equal(dto.ValidTo, actualVoucher.ValidTo);
+        Assert.Equal(dto.Discount / 100m, actualVoucher.Discount);
+        Assert.Equal(dto.ValidTo?.AddHours(23).AddMinutes(59).AddHours(-7), actualVoucher.ValidTo);
 
         var actualNotification = Assert.IsType<VoucherNotificationDto>(queuedNotification);
         Assert.Equal(actualVoucher.Id, actualNotification.VoucherId);
