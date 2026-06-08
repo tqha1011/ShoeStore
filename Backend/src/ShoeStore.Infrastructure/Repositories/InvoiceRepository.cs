@@ -26,6 +26,7 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
     {
         return DbSet.Where(inv => inv.OrderCode == orderCode)
             .Include(inv => inv.PaymentTransactions)
+            .Include(inv => inv.VoucherDetails)
             .FirstOrDefaultAsync(token);
     }
 

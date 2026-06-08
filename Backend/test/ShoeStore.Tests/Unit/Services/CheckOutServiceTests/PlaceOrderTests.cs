@@ -1,6 +1,7 @@
 using System.Data;
 using ErrorOr;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
 using ShoeStore.Application.Interface.CartItemInterface;
@@ -12,7 +13,6 @@ using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Application.Services;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
-using Microsoft.Extensions.Configuration;
 
 namespace ShoeStore.Tests.Unit.Services.CheckOutServiceTests;
 
@@ -20,6 +20,7 @@ public class PlaceOrderTests
 {
     private readonly Mock<ICartItemRepository> _cartItemRepository = new();
     private readonly CheckOutService _checkOutService;
+    private readonly Mock<IConfiguration> _configuration = new();
 
     private readonly Mock<IInvoiceRepository> _invoiceRepository = new();
 
@@ -29,15 +30,15 @@ public class PlaceOrderTests
     private readonly Mock<IDbTransaction> _transaction = new();
 
     private readonly Mock<IUserRepository> _userRepository = new();
-    
+    private readonly Mock<IUserVoucherRepository> _userVoucherRepository = new();
+
     private readonly Mock<IVoucherRepository> _voucherRepository = new();
-    private readonly Mock<IConfiguration> _configuration = new();
 
     public PlaceOrderTests()
     {
         _checkOutService = new CheckOutService(_productVariantRepository.Object, _mockUow.Object,
             _cartItemRepository.Object, _invoiceRepository.Object, _userRepository.Object,
-            _voucherRepository.Object, _configuration.Object);
+            _voucherRepository.Object, _configuration.Object, _userVoucherRepository.Object);
     }
 
     [Fact]
@@ -90,6 +91,9 @@ public class PlaceOrderTests
         _productVariantRepository
             .Setup(x => x.GetListVariantsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
+        _userVoucherRepository
+            .Setup(x => x.GetUserVouchersByIds(It.IsAny<List<int>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
 
         // Act
         var result = await _checkOutService.PlaceOrderAsync(request, fakeUserId, false, CancellationToken.None);
@@ -121,6 +125,9 @@ public class PlaceOrderTests
         _productVariantRepository
             .Setup(x => x.GetListVariantsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([variant]);
+        _userVoucherRepository
+            .Setup(x => x.GetUserVouchersByIds(It.IsAny<List<int>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
 
         // Act
         var result = await _checkOutService.PlaceOrderAsync(request, fakeUserId, false, CancellationToken.None);
@@ -154,6 +161,9 @@ public class PlaceOrderTests
             .ReturnsAsync([variant]);
         _mockUow.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new DbUpdateConcurrencyException());
+        _userVoucherRepository
+            .Setup(x => x.GetUserVouchersByIds(It.IsAny<List<int>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
 
         // Act
         var result = await _checkOutService.PlaceOrderAsync(request, fakeUserId, false, CancellationToken.None);
@@ -208,6 +218,9 @@ public class PlaceOrderTests
             .ReturnsAsync([variant]);
         _invoiceRepository.Setup(x => x.Add(It.IsAny<Invoice>()))
             .Callback<Invoice>(invoice => addedInvoice = invoice);
+        _userVoucherRepository
+            .Setup(x => x.GetUserVouchersByIds(It.IsAny<List<int>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
 
         _configuration.SetupGet(c => c["ShopBank:BankCode"]).Returns("VCB");
         _configuration.SetupGet(c => c["ShopBank:BankAccount"]).Returns("0123456789");
