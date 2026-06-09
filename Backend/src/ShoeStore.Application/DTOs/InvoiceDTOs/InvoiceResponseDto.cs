@@ -13,6 +13,7 @@ namespace ShoeStore.Application.DTOs.InvoiceDTOs
         public string Phone { get; set; } = string.Empty;
         public string OrderCode { get; set; } = string.Empty;
         
+        public decimal ShippingFee { get; set; }
         public decimal FinalPrice { get; set; }
     }
 }

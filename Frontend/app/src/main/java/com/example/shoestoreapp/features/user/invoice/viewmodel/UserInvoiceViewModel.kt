@@ -8,6 +8,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.features.invoice.model.Detail
 import com.example.shoestoreapp.features.invoice.model.Invoice
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
+import com.example.shoestoreapp.features.invoice.model.displayName
+import com.example.shoestoreapp.features.user.invoice.data.OrderStatusNotification
 import com.example.shoestoreapp.features.user.invoice.data.UserInvoiceRepository
 import kotlinx.coroutines.launch
 
@@ -28,6 +30,8 @@ data class UserInvoiceState(
     val selectedInvoice: Invoice? = null,
     // Line items of selected invoice.
     val invoiceDetails: List<Detail> = emptyList(),
+    // First line item by invoice id, used as the order list thumbnail.
+    val orderPreviewDetails: Map<String, Detail> = emptyMap(),
     // Controls details bottom-sheet loading state.
     val isDetailLoading: Boolean = false,
     // True while cancel request is in progress.
@@ -59,6 +63,7 @@ class UserInvoiceViewModel(
                         invoices = invoices,
                         orderCounts = buildOrderCounts(invoices)
                     )
+                    loadOrderPreviewDetails(invoices)
                 }
                 .onFailure { throwable ->
                     state = state.copy(
@@ -99,7 +104,18 @@ class UserInvoiceViewModel(
 
             repository.getInvoiceDetailsUser(invoiceGuid)
                 .onSuccess { detailsList ->
-                    state = state.copy(isDetailLoading = false, invoiceDetails = detailsList)
+                    val firstDetail = detailsList.firstOrNull()
+                    val previewDetails = if (firstDetail != null) {
+                        state.orderPreviewDetails + (invoice.publicId to firstDetail)
+                    } else {
+                        state.orderPreviewDetails
+                    }
+
+                    state = state.copy(
+                        isDetailLoading = false,
+                        invoiceDetails = detailsList,
+                        orderPreviewDetails = previewDetails
+                    )
                 }
                 .onFailure { throwable ->
                     state = state.copy(
@@ -132,7 +148,7 @@ class UserInvoiceViewModel(
                 error = null
             )
 
-            repository.updateInvoiceStatusUser(invoiceGuid, "Canceled")
+            repository.updateInvoiceStatusUser(invoiceGuid, "Cancelled")
                 .onSuccess {
                     // Sync list and selected detail after successful cancel.
                     val updatedInvoices = state.invoices.map { current ->
@@ -169,6 +185,31 @@ class UserInvoiceViewModel(
         }
     }
 
+    fun onOrderStatusNotification(notification: OrderStatusNotification) {
+        val updatedInvoices = state.invoices.map { invoice ->
+            if (invoice.orderCode == notification.orderCode) {
+                invoice.copy(status = notification.status)
+            } else {
+                invoice
+            }
+        }
+
+        val updatedSelected = state.selectedInvoice?.let { selected ->
+            if (selected.orderCode == notification.orderCode) {
+                selected.copy(status = notification.status)
+            } else {
+                selected
+            }
+        }
+
+        state = state.copy(
+            invoices = updatedInvoices,
+            selectedInvoice = updatedSelected,
+            orderCounts = buildOrderCounts(updatedInvoices),
+            successMessage = "Order ${notification.orderCode} updated to ${notification.status.displayName()}."
+        )
+    }
+
 
     fun clearDetails() {
         // Reset detail sheet state on dismiss.
@@ -195,6 +236,23 @@ class UserInvoiceViewModel(
     private fun buildOrderCounts(invoices: List<Invoice>): Map<InvoiceStatus, Int> {
         return InvoiceStatus.entries.associateWith { status ->
             invoices.count { invoice -> invoice.status == status }
+        }
+    }
+
+    private fun loadOrderPreviewDetails(invoices: List<Invoice>) {
+        invoices.forEach { invoice ->
+            val invoiceGuid = invoice.publicId.trim()
+            if (invoiceGuid.isEmpty() || state.orderPreviewDetails.containsKey(invoiceGuid)) return@forEach
+
+            viewModelScope.launch {
+                repository.getInvoiceDetailsUser(invoiceGuid)
+                    .onSuccess { detailsList ->
+                        val firstDetail = detailsList.firstOrNull() ?: return@onSuccess
+                        state = state.copy(
+                            orderPreviewDetails = state.orderPreviewDetails + (invoiceGuid to firstDetail)
+                        )
+                    }
+            }
         }
     }
 }

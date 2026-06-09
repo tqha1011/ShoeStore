@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
+import com.example.shoestoreapp.features.user.product.ui.components.UserTopBarTitle
 import com.example.shoestoreapp.features.user.profile.ui.components.PasswordEditField
 import com.example.shoestoreapp.features.user.profile.ui.components.PasswordRequirementList
 import com.example.shoestoreapp.features.user.profile.viewmodel.ChangePasswordViewModel
@@ -62,13 +63,7 @@ fun ChangePasswordScreen(
             topBar = {
                 TopAppBar(
                     title = {
-                        Text(
-                            text = "CHANGE PASSWORD",
-                            fontWeight = FontWeight.Black,
-                            fontSize = 18.sp,
-                            letterSpacing = 1.sp,
-                            color = Color.Black
-                        )
+                        UserTopBarTitle(text = "CHANGE PASSWORD")
                     },
                     navigationIcon = {
                         IconButton(onClick = onBackClick) {

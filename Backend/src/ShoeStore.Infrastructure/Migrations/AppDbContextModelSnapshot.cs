@@ -870,6 +870,16 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnName("public_id")
                         .HasDefaultValueSql("gen_random_uuid()");
 
+                    b.Property<DateTime?>("ReservedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("reserved_at");
+
+                    b.Property<int>("ReservedCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("reserved_count");
+
                     b.Property<DateTime>("SavedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("saved_at");
@@ -877,6 +887,12 @@ namespace ShoeStore.Infrastructure.Migrations
                     b.Property<DateTime?>("UsedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("used_at");
+
+                    b.Property<int>("UsedCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("used_count");
 
                     b.Property<int>("UserId")
                         .HasColumnType("integer")
@@ -1037,7 +1053,7 @@ namespace ShoeStore.Infrastructure.Migrations
                         .HasColumnName("public_id")
                         .HasDefaultValueSql("gen_random_uuid()");
 
-                    b.Property<int?>("VoucherId")
+                    b.Property<int>("VoucherId")
                         .HasColumnType("integer")
                         .HasColumnName("voucher_id");
 
@@ -1290,6 +1306,7 @@ namespace ShoeStore.Infrastructure.Migrations
                         .WithMany("VoucherDetails")
                         .HasForeignKey("VoucherId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
                         .HasConstraintName("fk_voucher_details_vouchers_voucher_id");
 
                     b.Navigation("Invoice");

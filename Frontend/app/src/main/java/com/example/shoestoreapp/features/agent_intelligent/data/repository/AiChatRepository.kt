@@ -26,7 +26,9 @@ class AiChatRepository (
     fun streamChatStatistics(sessionId : String, title : String) =
         baseStreamCall("${Constants.BASE_URL}/api/v1/chatbot/chat-statistics?publicSessionId=$sessionId", title)
 
-    fun streamChatProducts(sessionId : String, title : String) =
+    fun streamChatProductsAdmin(sessionId: String, title: String) =
+        baseStreamCall("${Constants.BASE_URL}/api/v1/chatbot/chat-product-admin?publicSessionId=$sessionId", title)
+    fun streamChatProductsUser(sessionId : String, title : String) =
         baseStreamCall("${Constants.BASE_URL}/api/v1/chatbot/chat-product?publicSessionId=$sessionId", title)
     fun streamGenerateCampaign(sessionId : String, content : String) =
         baseStreamCall("${Constants.BASE_URL}/api/v1/chatbot/generate-campaign", content, sessionId)

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Moq;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
 using ShoeStore.Application.Interface.CartItemInterface;
@@ -8,7 +9,6 @@ using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Application.Services;
 using ShoeStore.Domain.Entities;
-using Microsoft.Extensions.Configuration;
 
 namespace ShoeStore.Tests.Unit.Services.CheckOutServiceTests;
 
@@ -16,6 +16,7 @@ public class PrepareCheckOutTests
 {
     private readonly Mock<ICartItemRepository> _cartItemRepository = new();
     private readonly CheckOutService _checkOutService;
+    private readonly Mock<IConfiguration> _configuration = new();
 
     private readonly Mock<IInvoiceRepository> _invoiceRepository = new();
 
@@ -24,15 +25,15 @@ public class PrepareCheckOutTests
     private readonly Mock<IProductVariantRepository> _productVariantRepository = new();
 
     private readonly Mock<IUserRepository> _userRepository = new();
-    
+    private readonly Mock<IUserVoucherRepository> _userVoucherRepository = new();
+
     private readonly Mock<IVoucherRepository> _voucherRepository = new();
-    private readonly Mock<IConfiguration> _configuration = new();
 
     public PrepareCheckOutTests()
     {
         _checkOutService = new CheckOutService(_productVariantRepository.Object, _mockUow.Object,
             _cartItemRepository.Object, _invoiceRepository.Object, _userRepository.Object,
-            _voucherRepository.Object, _configuration.Object);
+            _voucherRepository.Object, _configuration.Object, _userVoucherRepository.Object);
     }
 
     [Fact]
@@ -140,7 +141,7 @@ public class PrepareCheckOutTests
         Assert.False(result.IsError);
 
         Assert.Equal(100, result.Value.Summary.TotalPrice);
-        Assert.Equal(100, result.Value.Summary.FinalPrice);
+        Assert.Equal(40100, result.Value.Summary.FinalPrice);
         Assert.Equal(40000, result.Value.Summary.ShippingFee);
 
         var item = Assert.Single(result.Value.Items);

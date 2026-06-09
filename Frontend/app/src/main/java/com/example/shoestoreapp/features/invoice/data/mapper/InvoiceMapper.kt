@@ -14,6 +14,7 @@ fun ItemDto.toDomain() : Invoice {
         paymentMethod =  this.paymentName,
         status = this.status.toInvoiceStatus(),
         createdAt = this.dateCreated,
+        shippingFee = this.shippingFee,
         finalPrice = this.finalPrice,
         address = this.address,
         phones = this.phone

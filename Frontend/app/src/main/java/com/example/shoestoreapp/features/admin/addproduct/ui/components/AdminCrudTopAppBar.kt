@@ -1,44 +1,18 @@
 package com.example.shoestoreapp.features.admin.addproduct.ui.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.shoestoreapp.features.admin.product.ui.components.AdminManagementTopBar
 
-/**
- * TopAppBar Component for Admin CRUD (sử dụng CenterAlignedTopAppBar)
- *
- * Cấu trúc:
- * - Back icon bên trái
- * - ADMIN PANEL text ở giữa
- */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminCrudTopAppBar(
     onBackClick: () -> Unit
 ) {
-    CenterAlignedTopAppBar(
-        title = {
-            Text(
-                text = "ADMIN PANEL",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = AdminCrudColors.primary
-            )
-        },
+    AdminManagementTopBar(
+        title = "Add Product",
         navigationIcon = {
             IconButton(onClick = onBackClick) {
                 Icon(
@@ -47,17 +21,6 @@ fun AdminCrudTopAppBar(
                     tint = AdminCrudColors.primary
                 )
             }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.White,
-            scrolledContainerColor = Color.Unspecified,
-            navigationIconContentColor = AdminCrudColors.primary,
-            titleContentColor = AdminCrudColors.primary,
-            actionIconContentColor = Color.Unspecified
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .padding(top = 12.dp)
+        }
     )
 }

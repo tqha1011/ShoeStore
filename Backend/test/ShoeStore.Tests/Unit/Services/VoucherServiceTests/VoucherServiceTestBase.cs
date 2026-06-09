@@ -13,11 +13,6 @@ namespace ShoeStore.Tests.Unit.Services.VoucherServiceTests;
 
 public abstract class VoucherServiceTestBase
 {
-    protected Mock<INotificationQueue> QueueMock { get; } = new();
-    protected Mock<IUnitOfWork> UowMock { get; } = new();
-    protected Mock<IUserRepository> UserRepositoryMock { get; } = new();
-    protected Mock<IVoucherRepository> VoucherRepositoryMock { get; } = new();
-
     protected VoucherServiceTestBase()
     {
         Service = new VoucherService(
@@ -26,6 +21,11 @@ public abstract class VoucherServiceTestBase
             UserRepositoryMock.Object,
             VoucherRepositoryMock.Object);
     }
+
+    protected Mock<INotificationQueue> QueueMock { get; } = new();
+    protected Mock<IUnitOfWork> UowMock { get; } = new();
+    protected Mock<IUserRepository> UserRepositoryMock { get; } = new();
+    protected Mock<IVoucherRepository> VoucherRepositoryMock { get; } = new();
 
     protected VoucherService Service { get; }
 
@@ -37,7 +37,8 @@ public abstract class VoucherServiceTestBase
 
     protected void VerifyQueueSafe(Func<Times> enqueueTimes)
     {
-        QueueMock.Verify(x => x.EnqueueAsync(It.IsAny<VoucherNotificationDto>(), It.IsAny<CancellationToken>()), enqueueTimes);
+        QueueMock.Verify(x => x.EnqueueAsync(It.IsAny<VoucherNotificationDto>(), It.IsAny<CancellationToken>()),
+            enqueueTimes);
     }
 
     protected static IQueryable<T> AsAsyncQueryable<T>(IEnumerable<T> source) where T : class
@@ -59,7 +60,8 @@ public abstract class VoucherServiceTestBase
             ValidTo = DateTime.UtcNow.AddDays(30),
             MaxUsagePerUser = 1,
             TotalQuantity = 50,
-            MinOrderPrice = 200
+            MinOrderPrice = 200,
+            ReleaseType = ReleaseType.AutoAssign
         };
     }
 

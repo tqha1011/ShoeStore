@@ -1,4 +1,5 @@
-﻿using ShoeStore.Application.Interface.VoucherInterface;
+﻿using Microsoft.EntityFrameworkCore;
+using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Infrastructure.Data;
 
@@ -20,5 +21,14 @@ public class UserVoucherRepository(AppDbContext context)
     public void AddListUserVoucher(List<UserVoucher> userVouchers)
     {
         DbSet.AddRange(userVouchers);
+    }
+
+    public async Task<List<UserVoucher>> GetUserVouchersByIds(List<int> userVoucherIds, int userId,
+        CancellationToken token)
+    {
+        if (userVoucherIds.Count == 0)
+            return [];
+        return await DbSet.Where(uv => userVoucherIds.Contains(uv.VoucherId) && uv.UserId == userId)
+            .Include(uv => uv.Voucher).ToListAsync(token);
     }
 }

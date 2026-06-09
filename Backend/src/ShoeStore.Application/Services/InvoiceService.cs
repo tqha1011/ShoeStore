@@ -47,6 +47,7 @@ public class InvoiceService(
             Address = i.ShippingAddress,
             Phone = i.Phone,
             OrderCode = i.OrderCode,
+            ShippingFee = i.ShippingFee,
             FinalPrice = i.FinalPrice
         }).ToListAsync(token);
 

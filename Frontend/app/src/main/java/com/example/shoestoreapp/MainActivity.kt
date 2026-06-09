@@ -2,6 +2,7 @@ package com.example.shoestoreapp
 
 import android.os.Build
 import android.os.Bundle
+import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -39,14 +40,15 @@ import com.example.shoestoreapp.features.admin.product.viewmodel.AdminProductLis
 import com.example.shoestoreapp.features.admin.profile.ui.AdminProfileScreen
 import com.example.shoestoreapp.features.admin.voucher.ui.screen.VoucherManagementScreen
 import com.example.shoestoreapp.features.agent_intelligent.data.repository.AiChatRepository
+import com.example.shoestoreapp.features.agent_intelligent.product_assistant.ui.AiProductScreen
+import com.example.shoestoreapp.features.agent_intelligent.product_assistant.viewmodel.AiProductViewmodel
 import com.example.shoestoreapp.features.auth.presentation.reset_password.create_new_password.CreateNewPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenContent
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
+import com.example.shoestoreapp.features.auth.presentation.sign_up_verify.SignUpOtpScreen
 import com.example.shoestoreapp.features.auth.presentation.welcome.WelcomeScreen
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
-import com.example.shoestoreapp.features.user.ai_assistant.ui.AiProductScreen
-import com.example.shoestoreapp.features.user.ai_assistant.viewmodel.AiProductViewmodel
 import com.example.shoestoreapp.features.user.cart.ui.screens.CartScreen
 import com.example.shoestoreapp.features.user.cart.viewmodel.CartViewModel
 import com.example.shoestoreapp.features.user.checkout.ui.screens.CheckoutScreen
@@ -74,6 +76,7 @@ private object Routes {
     const val WELCOME = "welcome"
     const val SIGN_IN = "sign_in"
     const val SIGN_UP = "sign_up"
+    const val SIGN_UP_VERIFY = "sign_up_verify/{email}"
     const val FORGOT_PASSWORD = "forgot_password"
     const val CREATE_NEW_PASSWORD = "create_new_password/{email}/{otp}"
     const val PRODUCT_LIST = "product_list"
@@ -101,16 +104,20 @@ private object Routes {
     const val ADMIN_EDIT_PROFILE = "admin_edit_profile"
     const val ADMIN_CHANGE_PASSWORD = "admin_change_password"
 
-    const val USER_MY_VOUCHERS = "user_my_vouchers?isSelectionMode={isSelectionMode}&cartTotal={cartTotal}"
+    const val USER_MY_VOUCHERS =
+        "user_my_vouchers?isSelectionMode={isSelectionMode}&cartTotal={cartTotal}"
 
     const val ADMIN_AI_ASSISTANT_BASE = "admin_ai_assistant"
-    const val ADMIN_AI_ASSISTANT = "$ADMIN_AI_ASSISTANT_BASE?isGeneratingCampaign={isGeneratingCampaign}"
+    const val ADMIN_AI_ASSISTANT =
+        "$ADMIN_AI_ASSISTANT_BASE?isGeneratingCampaign={isGeneratingCampaign}"
+    const val ADMIN_AI_PRODUCT = "admin_ai_product"
     const val USER_AI_ASSISTANT_BASE = "user_ai_assistant"
     const val USER_AI_ASSISTANT = "$USER_AI_ASSISTANT_BASE?isGenerateProduct={isGeneratingProduct}"
 
     fun userManageAddress(isSelectionMode: Boolean = false): String {
         return "$USER_MANAGE_ADDRESS_BASE?isSelectionMode=$isSelectionMode"
     }
+
     fun userCreateAddress(addressId: String? = null): String {
         return if (addressId != null) {
             "$USER_CREATE_ADDRESS_BASE?addressId=$addressId"
@@ -118,6 +125,7 @@ private object Routes {
             USER_CREATE_ADDRESS_BASE
         }
     }
+
     fun userMyVouchers(isSelectionMode: Boolean = false, cartTotal: Double? = null): String {
         return if (cartTotal != null) {
             "user_my_vouchers?isSelectionMode=$isSelectionMode&cartTotal=$cartTotal"
@@ -127,6 +135,7 @@ private object Routes {
     }
 
     fun createNewPassword(email: String, otp: String): String = "create_new_password/$email/$otp"
+    fun signUpVerify(email: String): String = "sign_up_verify/${Uri.encode(email)}"
     fun adminEditProduct(productId: String): String = "admin_edit_product/$productId"
 
     fun userInvoiceList(status: InvoiceStatus? = null): String {
@@ -136,6 +145,9 @@ private object Routes {
     fun adminAiAssistant(isGeneratingCampaign: Boolean = false): String {
         return "$ADMIN_AI_ASSISTANT_BASE?isGeneratingCampaign=$isGeneratingCampaign"
     }
+
+    fun adminAiProduct(): String = ADMIN_AI_PRODUCT
+
     fun userAiAssistant(isGeneratingProduct: Boolean = false): String {
         return "$USER_AI_ASSISTANT_BASE?isGenerateProduct=$isGeneratingProduct"
     }
@@ -148,6 +160,19 @@ class MainActivity : ComponentActivity() {
         RetrofitInstance.init(this)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+//        try {
+//            val info = packageManager.getPackageInfo(
+//                packageName,
+//                PackageManager.GET_SIGNATURES
+//            )
+//            for (signature in info.signatures!!) {
+//                val md = MessageDigest.getInstance("SHA")
+//                md.update(signature.toByteArray())
+//                Log.d("MY_KEY_HASH", Base64.encodeToString(md.digest(), Base64.DEFAULT))
+//            }
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//        }
         setContent {
             MaterialTheme {
                 AppNavHost()
@@ -189,7 +214,10 @@ fun AppNavHost() {
     }
 }
 
-private fun NavGraphBuilder.authGraph(navController: NavHostController, tokenManager: TokenManager) {
+private fun NavGraphBuilder.authGraph(
+    navController: NavHostController,
+    tokenManager: TokenManager
+) {
     composable(Routes.WELCOME) {
         val token by tokenManager.getToken.collectAsState(initial = "LOADING")
         val role by tokenManager.getRole.collectAsState(initial = "")
@@ -252,13 +280,39 @@ private fun NavGraphBuilder.authGraph(navController: NavHostController, tokenMan
             onNavigateToSignIn = { navController.navigate(Routes.SIGN_IN) },
             onNavigateToUserHome = {
                 navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.SIGN_UP)
+            },
+            onNavigateToVerifyOtp = { email ->
+                navController.navigate(Routes.signUpVerify(email))
+            }
+        )
+    }
+
+    composable(
+        route = Routes.SIGN_UP_VERIFY,
+        arguments = listOf(
+            navArgument("email") {
+                type = NavType.StringType
+            }
+        )
+    ) { backStackEntry ->
+        val email = backStackEntry.arguments?.getString("email")?.let(Uri::decode).orEmpty()
+        SignUpOtpScreen(
+            email = email,
+            onNavigateToSignIn = {
+                navController.navigateAndPopTo(Routes.SIGN_IN, Routes.SIGN_UP)
+            },
+            onBackClick = {
+                navController.popBackStack()
             }
         )
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
-private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenManager: TokenManager) {
+private fun NavGraphBuilder.userGraph(
+    navController: NavHostController,
+    tokenManager: TokenManager
+) {
     composable(Routes.PRODUCT_LIST) {
         ProductListScreen(
             viewModel = remember { ProductListViewModel() },
@@ -287,9 +341,19 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             navController = navController,
             actions = CheckoutScreenActions(
                 onBackClick = { navController.popBackStack() },
-                onShoppingBagClick = { navController.navigateAndPopTo(Routes.CART, Routes.CHECKOUT) },
+                onShoppingBagClick = {
+                    navController.navigateAndPopTo(
+                        Routes.CART,
+                        Routes.CHECKOUT
+                    )
+                },
                 onNavigateToVoucherScreen = { cartTotal ->
-                    navController.navigate(Routes.userMyVouchers(isSelectionMode = true, cartTotal = cartTotal))
+                    navController.navigate(
+                        Routes.userMyVouchers(
+                            isSelectionMode = true,
+                            cartTotal = cartTotal
+                        )
+                    )
                 },
                 onNavigateToQRScreen = { invoice ->
                     navController.currentBackStackEntry?.savedStateHandle?.apply {
@@ -370,7 +434,15 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             onChangePasswordClick = { navController.navigate(Routes.USER_CHANGE_PASSWORD) },
             onManageAddressClick = { navController.navigate(Routes.userManageAddress(isSelectionMode = false)) },
             onMyVouchersClick = {
-                navController.navigate(Routes.userMyVouchers(isSelectionMode = false, cartTotal = null))
+                navController.navigate(
+                    Routes.userMyVouchers(
+                        isSelectionMode = false,
+                        cartTotal = null
+                    )
+                )
+            },
+            onMyOrdersClick = {
+                navController.navigate(Routes.userInvoiceList())
             },
             onLogoutClick = {
                 scope.launch {
@@ -415,9 +487,18 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             isSelectionMode = isSelectionMode,
             onBackClick = { navController.popBackStack() },
             onAddAddressClick = { navController.navigate(Routes.userCreateAddress(null)) },
-            onEditAddressClick = { addressId -> navController.navigate(Routes.userCreateAddress(addressId)) },
+            onEditAddressClick = { addressId ->
+                navController.navigate(
+                    Routes.userCreateAddress(
+                        addressId
+                    )
+                )
+            },
             onAddressSelected = { selectedId ->
-                navController.previousBackStackEntry?.savedStateHandle?.set("selected_address_id", selectedId)
+                navController.previousBackStackEntry?.savedStateHandle?.set(
+                    "selected_address_id",
+                    selectedId
+                )
                 navController.popBackStack()
             }
         )
@@ -467,7 +548,10 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
             onBackClick = { navController.popBackStack() },
             onApplyVoucher = { voucherUiModel ->
                 val voucherJson = com.google.gson.Gson().toJson(voucherUiModel)
-                navController.previousBackStackEntry?.savedStateHandle?.set("selected_voucher_json", voucherJson)
+                navController.previousBackStackEntry?.savedStateHandle?.set(
+                    "selected_voucher_json",
+                    voucherJson
+                )
                 navController.popBackStack()
             },
             onShopNowClick = {
@@ -501,19 +585,19 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
     composable(
         route = "${Routes.USER_AI_ASSISTANT_BASE}?isGenerateProduct={isGeneratingProduct}",
         arguments = listOf(
-            navArgument("isGeneratingProduct"){
+            navArgument("isGeneratingProduct") {
                 type = NavType.BoolType
                 defaultValue = false
             }
         )
-    ){ backStackEntry ->
+    ) { backStackEntry ->
         val signalRManager = remember { SignalRManager(tokenManager) }
-        val isGeneratingProduct = backStackEntry.arguments?.getBoolean("isGeneratingProduct") ?: false
+        val isGeneratingProduct =
+            backStackEntry.arguments?.getBoolean("isGeneratingProduct") ?: false
         val initialPrompt = if (isGeneratingProduct) {
             """Generate product recommendation based on user's purchase history and preferences
             """.trimIndent()
-        }
-        else {
+        } else {
             null
         }
         val aiProductViewmodel = remember {
@@ -525,19 +609,25 @@ private fun NavGraphBuilder.userGraph(navController: NavHostController, tokenMan
                 signalRManager = signalRManager
             )
         }
-        AiProductScreen (
+        AiProductScreen(
             viewModel = aiProductViewmodel,
-            onBackClick = { navController.popBackStack() }
+            onBackClick = { navController.popBackStack() },
+            onTabSelected = { tab -> handleUserAiTabSelection(tab, navController) }
         )
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
-private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenManager: TokenManager) {
+private fun NavGraphBuilder.adminGraph(
+    navController: NavHostController,
+    tokenManager: TokenManager
+) {
     composable(Routes.ADMIN_PRODUCT_LIST) {
         AdminProductListScreen(
             viewModel = remember { AdminProductListViewModel() },
-            onMenuClick = { println("Admin Menu clicked") },
+            onAiAssistantClick = {
+                navController.navigate(Routes.adminAiProduct())
+            },
             onAddProductClick = {
                 navController.navigate(Routes.ADMIN_CRUD)
             },
@@ -589,9 +679,10 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
                     repository = AnalyticsRepository(RetrofitInstance.analyticsApi)
                 )
             },
-            // Tích hợp AI từ GitHub
+            onGenerateCampaignClick = {
+                navController.navigate(Routes.adminAiAssistant(isGeneratingCampaign = true))
+            },
             onAiClick = { navController.navigate(Routes.adminAiAssistant(isGeneratingCampaign = false)) },
-            onGenerateCampaignClick = {navController.navigate(Routes.adminAiAssistant(isGeneratingCampaign = true)) },
             onTabSelected = { tab -> handleAdminAnalyticsTabSelection(tab, navController) }
         )
     }
@@ -606,8 +697,12 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
             }
         )
     ) { backStackEntry ->
+        // Get context and create pile to connect SignalR
+        val context = LocalContext.current
+        val tokenManager = remember { TokenManager(context) }
         val signalRManager = remember { SignalRManager(tokenManager) }
-        val isGeneratingCampaign = backStackEntry.arguments?.getBoolean("isGeneratingCampaign") ?: false
+        val isGeneratingCampaign =
+            backStackEntry.arguments?.getBoolean("isGeneratingCampaign") ?: false
         val initialPrompt = if (isGeneratingCampaign) {
             """
             Generate campaign to improve shop's revenue with the data based on shop's statistics
@@ -619,16 +714,40 @@ private fun NavGraphBuilder.adminGraph(navController: NavHostController, tokenMa
         val aiStrategyViewmodel = remember {
             AiStrategyViewmodel(
                 repository = AiChatRepository(
-                    sessionApi = RetrofitInstance.chatSessionApi,
-                    okHttpClient = RetrofitInstance.okHttpClient
+                    sessionApi = RetrofitInstance.chatSessionApi, // Reuse authApi for session management
+                    okHttpClient = RetrofitInstance.okHttpClient // Use the same OkHttpClient for streaming
                 ),
                 signalRManager = signalRManager
             )
         }
-        AiStrategyScreen (
+        AiStrategyScreen(
             viewModel = aiStrategyViewmodel,
             initialPrompt = initialPrompt,
             onBackClick = { navController.popBackStack() }
+        )
+    }
+
+    composable(Routes.ADMIN_AI_PRODUCT) {
+        val context = LocalContext.current
+        val tokenManager = remember { TokenManager(context) }
+        val signalRManager = remember { SignalRManager(tokenManager) }
+        val aiProductViewmodel = remember {
+            AiProductViewmodel(
+                repository = AiChatRepository(
+                    sessionApi = RetrofitInstance.chatSessionApi,
+                    okHttpClient = RetrofitInstance.okHttpClient
+                ),
+                signalRManager = signalRManager,
+                enableAdminActions = true
+            )
+        }
+        AiProductScreen(
+            viewModel = aiProductViewmodel,
+            onBackClick = { navController.popBackStack() },
+            showAdminPanels = true,
+            title = "Admin Product Assistant",
+            aiRoleName = "AI ADMIN",
+            userRoleName = "ADMIN"
         )
     }
 
@@ -691,6 +810,7 @@ private fun handleUserHomeTabSelection(tab: BottomNavTab, navController: NavHost
         BottomNavTab.PROFILE -> navController.navigate(Routes.USER_PROFILE)
         BottomNavTab.BAG -> navController.navigate(Routes.CART)
         BottomNavTab.VOUCHER -> navController.navigate(Routes.USER_COLLECT_VOUCHERS)
+        BottomNavTab.AI -> navController.navigate(Routes.userAiAssistant())
         else -> Unit
     }
 }
@@ -700,13 +820,25 @@ private fun handleUserInvoiceTabSelection(tab: BottomNavTab, navController: NavH
         BottomNavTab.SHOP -> {
             navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.USER_INVOICE_LIST_BASE)
         }
+
         BottomNavTab.PROFILE -> {
             navController.navigateAndPopTo(Routes.USER_PROFILE, Routes.USER_INVOICE_LIST_BASE)
         }
+
         BottomNavTab.VOUCHER -> {
-            navController.navigateAndPopTo(Routes.USER_COLLECT_VOUCHERS, Routes.USER_INVOICE_LIST_BASE)
+            navController.navigateAndPopTo(
+                Routes.USER_COLLECT_VOUCHERS,
+                Routes.USER_INVOICE_LIST_BASE
+            )
         }
-        BottomNavTab.BAG -> Unit
+
+        BottomNavTab.BAG -> {
+            navController.navigateAndPopTo(Routes.CART, Routes.USER_INVOICE_LIST_BASE)
+        }
+        BottomNavTab.AI -> {
+            navController.navigateAndPopTo(Routes.userAiAssistant(), Routes.USER_INVOICE_LIST_BASE)
+        }
+
         else -> println("User Tab selected: $tab")
     }
 }
@@ -716,28 +848,43 @@ private fun handleUserBagTabSelection(tab: BottomNavTab, navController: NavHostC
         BottomNavTab.SHOP -> {
             navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CART)
         }
+
         BottomNavTab.PROFILE -> {
             navController.navigateAndPopTo(Routes.USER_PROFILE, Routes.CART)
         }
+
         BottomNavTab.VOUCHER -> {
             navController.navigateAndPopTo(Routes.USER_COLLECT_VOUCHERS, Routes.CART)
         }
+
         BottomNavTab.BAG -> Unit
+        BottomNavTab.AI -> {
+            navController.navigateAndPopTo(Routes.userAiAssistant(), Routes.CART)
+        }
+
         else -> println("User Tab selected: $tab")
     }
 }
+
 private fun handleUserProfileTabSelection(tab: BottomNavTab, navController: NavHostController) {
     when (tab) {
         BottomNavTab.SHOP -> {
             navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.USER_PROFILE)
         }
+
         BottomNavTab.BAG -> {
             navController.navigateAndPopTo(Routes.CART, Routes.USER_PROFILE)
         }
+
         BottomNavTab.VOUCHER -> {
             navController.navigateAndPopTo(Routes.USER_COLLECT_VOUCHERS, Routes.USER_PROFILE)
         }
+
         BottomNavTab.PROFILE -> Unit
+        BottomNavTab.AI -> {
+            navController.navigateAndPopTo(Routes.userAiAssistant(), Routes.USER_PROFILE)
+        }
+
         else -> println("User Tab selected: $tab")
     }
 }
@@ -747,80 +894,166 @@ private fun handleUserVoucherTabSelected(tab: BottomNavTab, navController: NavHo
         BottomNavTab.SHOP -> {
             navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CART)
         }
+
         BottomNavTab.BAG -> {
             navController.navigateAndPopTo(Routes.CART, Routes.CART)
         }
+
         BottomNavTab.PROFILE -> {
             navController.navigateAndPopTo(Routes.USER_PROFILE, Routes.CART)
         }
+
         BottomNavTab.VOUCHER -> Unit
+        BottomNavTab.AI -> {
+            navController.navigateAndPopTo(Routes.userAiAssistant(), Routes.USER_COLLECT_VOUCHERS)
+        }
+
         else -> println("User Tab selected: $tab")
     }
 }
 
-private fun handleAdminProductTabSelection(tab: AdminBottomNavTab, navController: NavHostController) {
+private fun handleUserAiTabSelection(tab: BottomNavTab, navController: NavHostController) {
+    when (tab) {
+        BottomNavTab.SHOP -> {
+            navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.USER_AI_ASSISTANT)
+        }
+
+        BottomNavTab.BAG -> {
+            navController.navigateAndPopTo(Routes.CART, Routes.USER_AI_ASSISTANT)
+        }
+
+        BottomNavTab.VOUCHER -> {
+            navController.navigateAndPopTo(Routes.USER_COLLECT_VOUCHERS, Routes.USER_AI_ASSISTANT)
+        }
+
+        BottomNavTab.PROFILE -> {
+            navController.navigateAndPopTo(Routes.USER_PROFILE, Routes.USER_AI_ASSISTANT)
+        }
+
+        BottomNavTab.AI -> Unit
+    }
+}
+
+private fun handleAdminProductTabSelection(
+    tab: AdminBottomNavTab,
+    navController: NavHostController
+) {
     when (tab) {
         AdminBottomNavTab.ADMIN -> Unit
         AdminBottomNavTab.ORDERS -> navController.navigate(Routes.ADMIN_INVOICE_LIST)
         AdminBottomNavTab.VOUCHERS -> navController.navigate(Routes.ADMIN_VOUCHER_MANAGEMENT)
+        AdminBottomNavTab.ANALYTICS -> navController.navigate(Routes.ADMIN_ANALYTICS)
         AdminBottomNavTab.PROFILE -> navController.navigate(Routes.ADMIN_PROFILE)
-        else -> println("Admin Tab selected: $tab")
     }
 }
 
-private fun handleAdminInvoiceTabSelection(tab: AdminBottomNavTab, navController: NavHostController) {
+private fun handleAdminInvoiceTabSelection(
+    tab: AdminBottomNavTab,
+    navController: NavHostController
+) {
     when (tab) {
         AdminBottomNavTab.ADMIN -> {
             navController.navigateAndPopTo(Routes.ADMIN_PRODUCT_LIST, Routes.ADMIN_INVOICE_LIST)
         }
+
         AdminBottomNavTab.ORDERS -> Unit
         AdminBottomNavTab.VOUCHERS -> {
-            navController.navigateAndPopTo(Routes.ADMIN_VOUCHER_MANAGEMENT, Routes.ADMIN_INVOICE_LIST)
+            navController.navigateAndPopTo(
+                Routes.ADMIN_VOUCHER_MANAGEMENT,
+                Routes.ADMIN_INVOICE_LIST
+            )
         }
+
+        AdminBottomNavTab.ANALYTICS -> {
+            navController.navigateAndPopTo(Routes.ADMIN_ANALYTICS, Routes.ADMIN_INVOICE_LIST)
+        }
+
         AdminBottomNavTab.PROFILE -> {
             navController.navigateAndPopTo(Routes.ADMIN_PROFILE, Routes.ADMIN_INVOICE_LIST)
         }
-        else -> println("Admin Tab selected: $tab")
     }
 }
 
-private fun handleAdminProfileTabSelection(tab: AdminBottomNavTab, navController: NavHostController) {
+private fun handleAdminProfileTabSelection(
+    tab: AdminBottomNavTab,
+    navController: NavHostController
+) {
     when (tab) {
         AdminBottomNavTab.ADMIN -> {
             navController.navigateAndPopTo(Routes.ADMIN_PRODUCT_LIST, Routes.ADMIN_PROFILE)
         }
+
         AdminBottomNavTab.ORDERS -> {
             navController.navigateAndPopTo(Routes.ADMIN_INVOICE_LIST, Routes.ADMIN_PROFILE)
         }
+
         AdminBottomNavTab.VOUCHERS -> {
             navController.navigateAndPopTo(Routes.ADMIN_VOUCHER_MANAGEMENT, Routes.ADMIN_PROFILE)
         }
+
+        AdminBottomNavTab.ANALYTICS -> {
+            navController.navigateAndPopTo(Routes.ADMIN_ANALYTICS, Routes.ADMIN_PROFILE)
+        }
+
         AdminBottomNavTab.PROFILE -> Unit
-        else -> println("Admin Tab selected: $tab")
     }
 }
 
-private fun handleAdminAnalyticsTabSelection(tab: AdminBottomNavTab, navController: NavHostController) {
+private fun handleAdminAnalyticsTabSelection(
+    tab: AdminBottomNavTab,
+    navController: NavHostController
+) {
     when (tab) {
-        AdminBottomNavTab.ADMIN -> navController.navigateAndPopTo(Routes.ADMIN_PRODUCT_LIST, Routes.ADMIN_ANALYTICS)
-        AdminBottomNavTab.ORDERS -> navController.navigateAndPopTo(Routes.ADMIN_INVOICE_LIST, Routes.ADMIN_ANALYTICS)
-        AdminBottomNavTab.VOUCHERS -> navController.navigateAndPopTo(Routes.ADMIN_VOUCHER_MANAGEMENT, Routes.ADMIN_ANALYTICS)
-        AdminBottomNavTab.PROFILE -> navController.navigateAndPopTo(Routes.ADMIN_PROFILE, Routes.ADMIN_ANALYTICS)
+        AdminBottomNavTab.ADMIN -> navController.navigateAndPopTo(
+            Routes.ADMIN_PRODUCT_LIST,
+            Routes.ADMIN_ANALYTICS
+        )
+
+        AdminBottomNavTab.ORDERS -> navController.navigateAndPopTo(
+            Routes.ADMIN_INVOICE_LIST,
+            Routes.ADMIN_ANALYTICS
+        )
+
+        AdminBottomNavTab.VOUCHERS -> navController.navigateAndPopTo(
+            Routes.ADMIN_VOUCHER_MANAGEMENT,
+            Routes.ADMIN_ANALYTICS
+        )
+
+        AdminBottomNavTab.PROFILE -> navController.navigateAndPopTo(
+            Routes.ADMIN_PROFILE,
+            Routes.ADMIN_ANALYTICS
+        )
+
         else -> Unit
     }
 }
-private fun handleAdminVoucherTabSelection(tab: AdminBottomNavTab, navController: NavHostController) {
+
+private fun handleAdminVoucherTabSelection(
+    tab: AdminBottomNavTab,
+    navController: NavHostController
+) {
     when (tab) {
         AdminBottomNavTab.ADMIN -> {
-            navController.navigateAndPopTo(Routes.ADMIN_PRODUCT_LIST, Routes.ADMIN_VOUCHER_MANAGEMENT)
+            navController.navigateAndPopTo(
+                Routes.ADMIN_PRODUCT_LIST,
+                Routes.ADMIN_VOUCHER_MANAGEMENT
+            )
         }
+
         AdminBottomNavTab.ORDERS -> {
-            navController.navigateAndPopTo(Routes.ADMIN_INVOICE_LIST, Routes.ADMIN_VOUCHER_MANAGEMENT)
+            navController.navigateAndPopTo(
+                Routes.ADMIN_INVOICE_LIST,
+                Routes.ADMIN_VOUCHER_MANAGEMENT
+            )
         }
+
         AdminBottomNavTab.VOUCHERS -> Unit
+        AdminBottomNavTab.ANALYTICS -> {
+            navController.navigateAndPopTo(Routes.ADMIN_ANALYTICS, Routes.ADMIN_VOUCHER_MANAGEMENT)
+        }
+
         AdminBottomNavTab.PROFILE -> {
             navController.navigateAndPopTo(Routes.ADMIN_PROFILE, Routes.ADMIN_VOUCHER_MANAGEMENT)
         }
-        else -> println("Admin Tab selected: $tab")
     }
 }

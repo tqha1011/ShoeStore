@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.shoestoreapp.features.user.product.ui.components.UserTopBarTitle
 import com.microsoft.signalr.HubConnectionBuilder
 import com.microsoft.signalr.HubConnectionState
 import kotlinx.coroutines.delay
@@ -70,7 +71,7 @@ fun PaymentQRScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Order Payment", fontWeight = FontWeight.Bold) },
+                title = { UserTopBarTitle(text = "ORDER PAYMENT") },
                 navigationIcon = {
                     if (!isPaymentSuccess) {
                         IconButton(onClick = onBackClick) {

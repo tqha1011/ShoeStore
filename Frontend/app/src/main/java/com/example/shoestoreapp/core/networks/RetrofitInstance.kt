@@ -128,6 +128,7 @@ object RetrofitInstance {
     val chatSessionApi: ChatSessionApi by lazy {
         retrofit.create(ChatSessionApi::class.java)
     }
+
     // 17. Create stream messages for admin AI assistant
     val okHttpClient by lazy {
         client

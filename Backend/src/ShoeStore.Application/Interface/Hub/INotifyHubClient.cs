@@ -8,5 +8,5 @@ public interface INotifyHubClient
 {
     Task ReceivePaymentNotification(PaymentNotificationDto paymentNotification);
 
-    Task ReceiveNotification(string invoiceCode, InvoiceStatus newStatus);
+    Task ReceiveNotification(string invoiceCode, string newStatus);
 }

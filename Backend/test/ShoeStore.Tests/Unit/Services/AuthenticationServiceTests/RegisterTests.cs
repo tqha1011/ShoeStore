@@ -1,19 +1,23 @@
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using ShoeStore.Application.DTOs.AuthDTOs;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Interface.Common;
+using ShoeStore.Application.Interface.Notification;
 using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Services;
 using ShoeStore.Domain.Entities;
-using ShoeStore.Domain.Enum;
 
 namespace ShoeStore.Tests.Unit.Services.AuthenticationServiceTests;
 
 public class RegisterTests
 {
     private readonly AuthService _authService;
+    private readonly IMemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
+    private readonly Mock<IConfiguration> _configuration = new();
+    private readonly Mock<IEmailService> _emailService = new();
     private readonly Mock<IPasswordHash> _passwordHash = new();
     private readonly Mock<IKeyedServiceProvider> _serviceProvider = new();
     private readonly Mock<ITokenService> _tokenService = new();
@@ -27,7 +31,10 @@ public class RegisterTests
             _userRepository.Object,
             _unitOfWork.Object,
             _tokenService.Object,
-            _serviceProvider.Object);
+            _serviceProvider.Object,
+            _cache,
+            _emailService.Object,
+            _configuration.Object);
     }
 
     [Fact]
@@ -62,17 +69,16 @@ public class RegisterTests
         _passwordHash
             .Setup(hash => hash.HashPassword(It.IsAny<string>()))
             .Returns(hashedPassword);
+        _configuration.Setup(config => config["Email:SenderName"]).Returns("noreply@gmail.com");
 
         // Act
         var result = await _authService.RegisterAsync(request, CancellationToken.None);
 
         // Assert
         Assert.False(result.IsError);
-        _userRepository.Verify(repo => repo.Add(It.Is<User>(u =>
-            u.Email == request.Email &&
-            u.Password == hashedPassword &&
-            u.UserName == "newuser" &&
-            u.Role == UserRole.User)), Times.Once);
-        _unitOfWork.Verify(uow => uow.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _emailService.Verify(e => e.SendEmailAsync(
+            It.IsAny<string>(), request.Email,
+            It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 }

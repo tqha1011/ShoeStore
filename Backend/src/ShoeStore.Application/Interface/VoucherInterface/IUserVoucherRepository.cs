@@ -7,6 +7,8 @@ public interface IUserVoucherRepository : IGenericRepository<UserVoucher, int>
 {
     IQueryable<UserVoucher> GetAllVouchers();
     IQueryable<UserVoucher> GetVouchersByUserGuid(Guid userGuid);
-    
+
     void AddListUserVoucher(List<UserVoucher> userVouchers);
+
+    Task<List<UserVoucher>> GetUserVouchersByIds(List<int> userVoucherIds, int userId, CancellationToken token);
 }

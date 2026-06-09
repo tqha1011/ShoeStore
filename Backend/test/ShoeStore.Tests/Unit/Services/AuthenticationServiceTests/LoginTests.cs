@@ -1,10 +1,12 @@
 using ErrorOr;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using ShoeStore.Application.DTOs.AuthDTOs;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Authentication;
 using ShoeStore.Application.Interface.Common;
+using ShoeStore.Application.Interface.Notification;
 using ShoeStore.Application.Interface.Strategies;
 using ShoeStore.Application.Interface.UserInterface;
 using ShoeStore.Application.Services;
@@ -18,17 +20,20 @@ public class LoginTests
     private const string ProviderName = "Google";
     private const string FakeGoogleToken = "ya29.fake_google_access_token_xyz_123";
     private readonly AuthService _authService;
+    private readonly Mock<IMemoryCache> _cache = new();
+    private readonly Mock<IEmailService> _emailService = new();
     private readonly Mock<ISocialAuthStrategy> _googleAuthStrategy = new();
     private readonly Mock<IPasswordHash> _passwordHash = new();
     private readonly Mock<IKeyedServiceProvider> _serviceProvider = new();
     private readonly Mock<ITokenService> _tokenService = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<IUserRepository> _userRepository = new();
+    private readonly Mock<IConfiguration> _configuration = new();
 
     public LoginTests()
     {
         _authService = new AuthService(_passwordHash.Object, _userRepository.Object, _unitOfWork.Object,
-            _tokenService.Object, _serviceProvider.Object);
+            _tokenService.Object, _serviceProvider.Object, _cache.Object, _emailService.Object,_configuration.Object);
     }
 
     [Fact]

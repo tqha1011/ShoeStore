@@ -132,7 +132,7 @@ class SignUpViewModel(
 
             result.fold(
                 onSuccess = {
-                    _uiEvent.send(AuthUiEvent.NavigateToUserHome)
+                    _uiEvent.send(AuthUiEvent.NavigateToSignUpOtp(currentState.email))
                 },
                 onFailure = { error ->
                     _state.update {

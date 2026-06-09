@@ -17,6 +17,7 @@ import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
@@ -34,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
+import com.example.shoestoreapp.features.user.product.ui.components.UserTopBarTitle
 import com.example.shoestoreapp.features.user.profile.ui.components.LogoutButton
 import com.example.shoestoreapp.features.user.profile.ui.components.ProfileHeader
 import com.example.shoestoreapp.features.user.profile.ui.components.ProfileMenuItem
@@ -49,6 +51,7 @@ fun UserProfileScreen(
     onChangePasswordClick: () -> Unit = {},
     onManageAddressClick: () -> Unit = {},
     onMyVouchersClick: () -> Unit = {},
+    onMyOrdersClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
     val profile by viewModel.profileState.collectAsState()
@@ -61,13 +64,7 @@ fun UserProfileScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
-                        text = "PROFILE",
-                        fontWeight = FontWeight.Black,
-                        fontSize = 18.sp,
-                        letterSpacing = 1.sp,
-                        color = Color.Black
-                    )
+                    UserTopBarTitle(text = "PROFILE")
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.White,
@@ -141,6 +138,12 @@ fun UserProfileScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 ProfileSectionLabel(text = "Account")
+
+                ProfileMenuItem(
+                    icon = Icons.Outlined.ReceiptLong,
+                    label = "My Orders",
+                    onClick = onMyOrdersClick
+                )
 
                 ProfileMenuItem(
                     icon = Icons.Outlined.ConfirmationNumber,

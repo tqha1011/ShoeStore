@@ -13,9 +13,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 
@@ -33,13 +31,7 @@ fun ProductDetailTopAppBar(
 ) {
     CenterAlignedTopAppBar(
         title = {
-            Text(
-                text = "NIKE",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Black,
-                color = Color.Black,
-                letterSpacing = 2.sp
-            )
+            UserTopBarTitle(text = "NIKE")
         },
         navigationIcon = {
             IconButton(onClick = onBackClick) {

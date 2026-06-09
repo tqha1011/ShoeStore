@@ -9,6 +9,11 @@ data class VerifyOtpRequest(
     val otp: String
 )
 
+data class VerifySignUpOtpRequest(
+    val email: String,
+    val otpCode: String
+)
+
 data class UpdatePasswordRequest(
     val email: String,
     val otp: String,

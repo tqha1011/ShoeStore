@@ -5,12 +5,12 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 interface AuthApi {
-    @POST("api/Auth/signin")
+    @POST("api/auth/signin")
     suspend fun login(
         @Body request: LoginRequest
     ): Response<LoginResponse>
 
-    @POST("api/Auth/signup")
+    @POST("api/auth/signup")
     suspend fun register(
         @Body request: RegisterRequest
     ): Response<RegisterResponse>
@@ -30,6 +30,9 @@ interface AuthApi {
 
     @POST("api/RestorePass/verify-otp")
     suspend fun verifyOtp(@Body request: VerifyOtpRequest): Response<Unit>
+
+    @POST("api/auth/verify-email")
+    suspend fun verifySignUpOtp(@Body request: VerifySignUpOtpRequest): Response<Unit>
 
     @POST("api/RestorePass/update-password")
     suspend fun updatePassword(@Body request: UpdatePasswordRequest): Response<Unit>

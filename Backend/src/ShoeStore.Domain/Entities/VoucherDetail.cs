@@ -7,7 +7,7 @@ public class VoucherDetail : Entity<int>
     public Guid PublicId { get; set; } = Guid.NewGuid();
     public required int InvoiceId { get; set; }
     public Invoice? Invoice { get; set; }
-    public int? VoucherId { get; set; }
+    public int VoucherId { get; set; }
 
     public Voucher? Voucher { get; set; }
 
