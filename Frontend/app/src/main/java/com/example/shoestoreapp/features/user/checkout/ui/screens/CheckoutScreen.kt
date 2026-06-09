@@ -176,6 +176,9 @@ fun CheckoutScreen(
                         onClick = {
                             val currentCartTotal = orderSummary.value.subtotal
                             actions.onNavigateToVoucherScreen(currentCartTotal)
+                        },
+                        onClearClick = {
+                            checkoutViewModel.clearAppliedVouchers()
                         }
                     )
 
