@@ -103,12 +103,10 @@ class CartViewModel(
 
     private fun buildSummary(items: List<CartItem>, shippingFee: Double): CartSummary {
         val subtotal = items.sumOf { it.price * it.quantity }
-        val tax = subtotal * 0.1
 
         return CartSummary(
             subtotal = subtotal,
             shippingCost = shippingFee,
-            tax = tax,
             itemCount = items.size
         )
     }
