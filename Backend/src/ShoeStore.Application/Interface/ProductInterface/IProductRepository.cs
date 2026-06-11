@@ -17,6 +17,8 @@ public interface IProductRepository : IGenericRepository<Product, int>
 
     IQueryable<Product> GetProductsInformation();
 
+    Task<List<Product>> GetProductsForRagInventoryAsync(IReadOnlyCollection<int> productIds, CancellationToken token);
+
     Task<int> CountActiveProductAsync(CancellationToken token);
 
     Task<ProductResultDto?> CheckProductVariantExistsAsync(Guid productId, int colorId, int sizeId,

@@ -75,6 +75,22 @@ public class ProductRepository(AppDbContext context) : GenericRepository<Product
             .Include(x => x.Category);
     }
 
+    public async Task<List<Product>> GetProductsForRagInventoryAsync(IReadOnlyCollection<int> productIds,
+        CancellationToken token)
+    {
+        if (productIds.Count == 0) return [];
+
+        return await DbSet.AsNoTracking()
+            .AsSplitQuery()
+            .Where(p => !p.IsDeleted && productIds.Contains(p.Id))
+            .Include(x => x.ProductVariants.Where(v => v.IsSelling && !v.IsDeleted))
+            .ThenInclude(x => x.Size)
+            .Include(x => x.ProductVariants.Where(v => v.IsSelling && !v.IsDeleted))
+            .ThenInclude(x => x.Color)
+            .Include(x => x.Category)
+            .ToListAsync(token);
+    }
+
     public async Task<int> CountActiveProductAsync(CancellationToken token)
     {
         return await DbSet.Where(p => !p.IsDeleted && p.ProductVariants.Any(v => v.IsSelling && !v.IsDeleted))
