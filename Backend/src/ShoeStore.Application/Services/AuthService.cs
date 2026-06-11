@@ -39,7 +39,7 @@ public class AuthService(
         var emailBody = $"Here is your OTP: {secureOtp}. It will expired after 5 minutes";
         var senderEmail = configuration["Email:SenderName"] ??
                           throw new InvalidOperationException("Sender email configuration is missing");
-        await emailService.SendEmailAsync(senderEmail!, email, "Verify your email", emailBody, token);
+        await emailService.SendEmailAsync(senderEmail, email, "Verify your email", emailBody, token);
         return Result.Created;
     }
 
@@ -105,7 +105,6 @@ public class AuthService(
 
         if (cachedUserPending?.OtpCode != request.OtpCode)
             return Error.Validation("OTP.Invalid", "Invalid OTP code");
-        cache.Remove(cacheKey);
         var newUser = new User
         {
             Email = cachedUserPending.Email,
@@ -116,6 +115,7 @@ public class AuthService(
         };
         userRepository.Add(newUser);
         await unitOfWork.SaveChangesAsync(token);
+        cache.Remove(cacheKey);
         return Result.Created;
     }
 }

@@ -175,13 +175,12 @@ public class ProductService(
         {
             await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
             await cache.RemoveByTagAsync(CacheTag.Product, token);
+            await queue.EnqueueAsync(product.PublicId, token);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error while updating product cache.");
+            logger.LogError(ex, "Error while updating product cache or enqueue sync embedding");
         }
-
-        await queue.EnqueueAsync(product.PublicId, token);
 
         return Result.Updated;
     }
@@ -210,13 +209,12 @@ public class ProductService(
         {
             await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(productGuid), token);
             await cache.RemoveByTagAsync(CacheTag.Product, token);
+            await queue.EnqueueAsync(product.PublicId, token);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error while deleting product.");
+            logger.LogError(ex, "Error while deleting product and sync product embedding.");
         }
-
-        await queue.EnqueueAsync(product.PublicId, token);
 
         return Result.Deleted;
     }
