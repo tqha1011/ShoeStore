@@ -81,11 +81,9 @@ builder.Services.AddHostedService<OrderCancellationService>();
 builder.Services.AddHostedService<NotifyNewVoucherService>();
 builder.Services.AddHostedService<DeleteVoucherExpiredService>();
 builder.Services.AddHostedService<UpdateTitleSessionService>();
-builder.Services.AddSignalR(options =>
-{
-    options.EnableDetailedErrors = true;
-});
-builder.Services.AddScoped<INotifyBotResponse,NotifyBotResponse>();
+builder.Services.AddHostedService<SyncProductEmbeddingService>();
+builder.Services.AddSignalR(options => { options.EnableDetailedErrors = true; });
+builder.Services.AddScoped<INotifyBotResponse, NotifyBotResponse>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>

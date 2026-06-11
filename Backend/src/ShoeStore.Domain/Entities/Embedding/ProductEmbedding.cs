@@ -4,6 +4,8 @@ namespace ShoeStore.Domain.Entities.Embedding;
 
 public class ProductEmbedding : Entity<int>
 {
+    public const int EmbeddingDimensions = 768;
+
     public required int ProductId { get; set; }
 
     public Product? Product { get; set; }

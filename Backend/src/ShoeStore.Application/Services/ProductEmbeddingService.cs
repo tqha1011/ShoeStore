@@ -41,7 +41,10 @@ public class ProductEmbeddingService(
                 textChunks.Add(textChunk);
             }
 
-            var embeddingVector = await GenerateVectorEmbeddingAsync(textChunks, cancellationToken);
+            var embeddingVectorResult = await GenerateVectorEmbeddingAsync(textChunks, cancellationToken);
+            if (embeddingVectorResult.IsError) return embeddingVectorResult.Errors;
+
+            var embeddingVector = embeddingVectorResult.Value;
             for (var index = 0; index < productList.Count; index++)
             {
                 var newProductEmbedding = new ProductEmbedding
@@ -69,20 +72,68 @@ public class ProductEmbeddingService(
     public async Task<ErrorOr<Created>> GenerateVectorEmbeddingByProductPublicId(Guid productId,
         CancellationToken cancellationToken)
     {
-        var product = await productRepository.GetDetailsByGuidAsync(productId, cancellationToken);
-        if (product is null) return Error.NotFound("Product.NotFound", "Product not found");
-        var textChunk = GenerateText(product);
-        var textChunks = new List<string> { textChunk };
-        var vectorEmbedding = await GenerateVectorEmbeddingAsync(textChunks, cancellationToken);
-        var newProductEmbedding = new ProductEmbedding
-        {
-            ProductId = product.Id,
-            TextChunk = textChunk,
-            Embedding = vectorEmbedding[0]
-        };
-        productEmbeddingRepository.Add(newProductEmbedding);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        var product = await productRepository.GetProductInformationByPublicIdAsync(productId, cancellationToken);
+        if (product is null)
+            return Error.NotFound("Product.NotEmbeddable",
+                "Product not found, deleted, or has no active selling variants.");
+
+        var upsertResult = await UpsertProductEmbeddingAsync(product, cancellationToken);
+        if (upsertResult.IsError) return upsertResult.Errors;
+
         return Result.Created;
+    }
+
+    /// <summary>
+    ///     Synchronizes a product embedding with current product data, removing stale embeddings for non-embeddable products.
+    /// </summary>
+    /// <param name="productId">Public product ID used to locate the product.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    /// <returns>Success when the embedding is upserted, removed, or already absent.</returns>
+    public async Task<ErrorOr<Success>> SyncVectorEmbeddingByProductPublicId(Guid productId,
+        CancellationToken cancellationToken)
+    {
+        var product = await productRepository.GetProductInformationByPublicIdAsync(productId, cancellationToken);
+        if (product is null)
+        {
+            var existingEmbedding =
+                await productEmbeddingRepository.GetByProductPublicIdAsync(productId, cancellationToken);
+            if (existingEmbedding is not null)
+            {
+                productEmbeddingRepository.Delete(existingEmbedding);
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+
+            return Result.Success;
+        }
+
+        return await UpsertProductEmbeddingAsync(product, cancellationToken);
+    }
+
+    private async Task<ErrorOr<Success>> UpsertProductEmbeddingAsync(Product product, CancellationToken cancellationToken)
+    {
+        var textChunk = GenerateText(product);
+        var vectorEmbeddingResult = await GenerateVectorEmbeddingAsync([textChunk], cancellationToken);
+        if (vectorEmbeddingResult.IsError) return vectorEmbeddingResult.Errors;
+
+        var existingEmbedding = await productEmbeddingRepository.GetByProductIdAsync(product.Id, cancellationToken);
+        if (existingEmbedding is null)
+        {
+            productEmbeddingRepository.Add(new ProductEmbedding
+            {
+                ProductId = product.Id,
+                TextChunk = textChunk,
+                Embedding = vectorEmbeddingResult.Value[0]
+            });
+        }
+        else
+        {
+            existingEmbedding.TextChunk = textChunk;
+            existingEmbedding.Embedding = vectorEmbeddingResult.Value[0];
+            productEmbeddingRepository.Update(existingEmbedding);
+        }
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        return Result.Success;
     }
 
     /// <summary>
@@ -92,16 +143,18 @@ public class ProductEmbeddingService(
     /// <returns>Flattened text describing the product and its variants.</returns>
     private static string GenerateText(Product product)
     {
-        var listVariantInfo = product.ProductVariants.GroupBy(p => new { p.Color!.ColorName, p.Price })
+        var listVariantInfo = product.ProductVariants
+            .Where(p => p.IsSelling && !p.IsDeleted)
+            .GroupBy(p => new { ColorName = p.Color?.ColorName ?? "Unknown", p.Price })
             .Select(pr => new
             {
                 pr.Key.ColorName,
                 pr.Key.Price,
-                Size = pr.Select(x => x.Size!.Size).ToList()
+                Size = pr.Select(x => x.Size?.Size.ToString() ?? "Unknown").ToList()
             }).ToList();
         var infoTextBuilder =
             new StringBuilder(
-                $"Product: {product.ProductName}. Brand: {product.Brand}. Category: {product.Category!.Name}. ");
+                $"Product: {product.ProductName}. Description: {product.Description ?? "No description"}. Brand: {product.Brand ?? "Unknown"}. Category: {product.Category?.Name ?? "Unknown"}. ");
         foreach (var variant in listVariantInfo)
             infoTextBuilder.Append(
                 $"Variant: Available colors: {variant.ColorName}, Price: {variant.Price}, Available sizes: {string.Join(", ", variant.Size)}. ");
@@ -114,11 +167,21 @@ public class ProductEmbeddingService(
     /// <param name="textChunk">Ordered list of text chunks to embed.</param>
     /// <param name="token">Token to cancel the operation.</param>
     /// <returns>Embedding vectors aligned with the input order.</returns>
-    private async Task<List<ReadOnlyMemory<float>>> GenerateVectorEmbeddingAsync(List<string> textChunk,
+    private async Task<ErrorOr<List<ReadOnlyMemory<float>>>> GenerateVectorEmbeddingAsync(List<string> textChunk,
         CancellationToken token)
     {
         var vector = await embeddingGenerator.GenerateAsync(textChunk, cancellationToken: token);
         var result = vector.Select(v => v.Vector).ToList();
+
+        if (result.Count != textChunk.Count)
+            return Error.Failure("ProductEmbedding.VectorCountMismatch",
+                $"Expected {textChunk.Count} embedding vectors but received {result.Count}.");
+
+        for (var index = 0; index < result.Count; index++)
+            if (result[index].Length != ProductEmbedding.EmbeddingDimensions)
+                return Error.Failure("ProductEmbedding.InvalidVectorDimension",
+                    $"Expected embedding dimension {ProductEmbedding.EmbeddingDimensions} but received {result[index].Length} at index {index}.");
+
         return result;
     }
 }

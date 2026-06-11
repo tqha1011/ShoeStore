@@ -4,6 +4,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 using ShoeStore.Application.Interface.ChatBotInterface;
+using ShoeStore.Domain.Entities.Embedding;
 
 namespace ShoeStore.Application.Plugin;
 
@@ -22,6 +23,14 @@ public class StoreAssistantPluginService(
         try
         {
             var queryVector = await embeddingGenerator.GenerateAsync(keyword, cancellationToken: token);
+            if (queryVector.Vector.Length != ProductEmbedding.EmbeddingDimensions)
+            {
+                logger.LogError("Invalid query embedding dimension. Expected {ExpectedDimension}, received {ActualDimension}.",
+                    ProductEmbedding.EmbeddingDimensions,
+                    queryVector.Vector.Length);
+                return "Hệ thống tìm kiếm đang gặp sự cố. Vui lòng thử lại sau.";
+            }
+
             var top5Products = await productEmbeddingRepository.GetTop5ProductByVectorAsync(queryVector.Vector, token);
             if (top5Products.Count == 0)
                 return

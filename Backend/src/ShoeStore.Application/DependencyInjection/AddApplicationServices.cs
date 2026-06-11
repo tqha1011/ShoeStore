@@ -44,6 +44,7 @@ public static class DependencyInjection
         services.AddScoped<IAddressService, AddressService>();
         services.AddScoped<IChatMessageService, ChatMessageService>();
         services.AddSingleton<IUpdateTitleQueue, UpdateTitleService>();
+        services.AddSingleton<IProductEmbeddingQueue, SyncEmbeddingService>();
         return services;
     }
 }

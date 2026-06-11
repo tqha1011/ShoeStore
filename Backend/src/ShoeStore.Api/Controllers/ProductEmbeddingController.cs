@@ -35,7 +35,7 @@ public class ProductEmbeddingController(
     /// <response code="404">Product not found with the provided ID.</response>
     /// <response code="500">Internal server error; failed to generate or store the embedding.</response>
     /// <returns>An action result indicating success (201 Created) or detailing the error.</returns>
-    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost("generate-single")]
@@ -47,9 +47,9 @@ public class ProductEmbeddingController(
             _ => Created(),
             errors => errors[0].Code switch
             {
-                "Product.NotFound" => NotFound(new
+                "Product.NotFound" or "Product.NotEmbeddable" => NotFound(new
                 {
-                    message = "Product not found",
+                    message = "Product not found or not embeddable",
                     description = errors[0].Description
                 }),
                 _ => StatusCode(StatusCodes.Status500InternalServerError, new
@@ -71,7 +71,7 @@ public class ProductEmbeddingController(
     ///     <para>
     ///         This endpoint MUST be called <strong>EXACTLY ONE TIME ONLY</strong> after the initial product database setup.
     ///         <br />
-    ///         Do NOT call this endpoint multiple times or in regular workflows, as it will create duplicate embeddings.
+    ///         Repeated calls are idempotent for already embedded products, but this is still a long-running admin job.
     ///     </para>
     ///     <para>
     ///         <strong>When to Call:</strong>
@@ -96,7 +96,7 @@ public class ProductEmbeddingController(
     ///         <list type="bullet">
     ///             <item>This is a long-running operation (may take several minutes)</item>
     ///             <item>Only Admin users have access (authorization required)</item>
-    ///             <item>Calling this multiple times will create duplicate embeddings - no deduplication occurs</item>
+    ///             <item>Calling this multiple times will only process products that do not already have embeddings</item>
     ///             <item>For new products, use the single-product endpoint instead</item>
     ///         </list>
     ///     </para>
@@ -112,16 +112,27 @@ public class ProductEmbeddingController(
     {
         _ = Task.Run(async () =>
         {
+            var jobId = Guid.NewGuid();
             using var scope = scopeFactory.CreateScope();
             var embeddingService = scope.ServiceProvider.GetRequiredService<IProductEmbeddingService>();
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<ProductEmbeddingController>>();
             try
             {
-                await embeddingService.GenerateVectorEmbeddingWithExistDataAsync(CancellationToken.None);
+                logger.LogInformation("Started product embedding generation job {JobId}.", jobId);
+                var result = await embeddingService.GenerateVectorEmbeddingWithExistDataAsync(CancellationToken.None);
+                if (result.IsError)
+                {
+                    logger.LogError("Product embedding generation job {JobId} failed: {Errors}",
+                        jobId,
+                        string.Join("; ", result.Errors.Select(error => $"{error.Code}: {error.Description}")));
+                    return;
+                }
+
+                logger.LogInformation("Completed product embedding generation job {JobId}.", jobId);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, ex.Message);
+                logger.LogError(ex, "Product embedding generation job {JobId} failed.", jobId);
             }
         }, CancellationToken.None);
 

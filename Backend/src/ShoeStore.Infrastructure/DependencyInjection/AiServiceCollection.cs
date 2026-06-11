@@ -13,22 +13,23 @@ public static class AiServiceCollection
     public static IServiceCollection AddChatBotInfrastructure(this IServiceCollection services,
         IConfiguration configuration)
     {
-        var provider = configuration["Chatbot:ActiveProvider"] ?? "Gemini";
-        var apiKey = configuration[$"Chatbot:{provider}:ApiKey"] ??
-                     throw new InvalidOperationException("Chatbot API key is missing");
-        var model = configuration[$"Chatbot:{provider}:Model"] ??
-                    throw new InvalidOperationException("Chatbot model is missing");
+        var provider = configuration["Chatbot:ActiveProvider"];
+        provider = string.IsNullOrWhiteSpace(provider) ? "Gemini" : provider.Trim();
 
-        var embeddingModel = configuration[$"Chatbot:{provider}:EmbeddingModel"] ??
-                             throw new InvalidOperationException("Chatbot embedding model is missing");
+        var apiKey = GetRequiredConfigurationValue(configuration, $"Chatbot:{provider}:ApiKey",
+            "Chatbot API key is missing");
+        var model = GetRequiredConfigurationValue(configuration, $"Chatbot:{provider}:Model",
+            "Chatbot model is missing");
+        var embeddingModel = GetRequiredConfigurationValue(configuration, $"Chatbot:{provider}:EmbeddingModel",
+            "Chatbot embedding model is missing");
 
-        var summaryModel = configuration[$"Chatbot:{provider}:SmallModel"] ??
-                           throw new InvalidOperationException("Chatbot summary model is missing");
+        var summaryModel = configuration[$"Chatbot:{provider}:SmallModel"];
+        summaryModel = string.IsNullOrWhiteSpace(summaryModel) ? model : summaryModel.Trim();
 
-        if (provider == "Ollama")
+        if (provider.Equals("Ollama", StringComparison.OrdinalIgnoreCase))
         {
-            var url = configuration[$"Chatbot:{provider}:Url"] ??
-                      throw new InvalidOperationException("Chatbot url is missing");
+            var url = GetRequiredConfigurationValue(configuration, $"Chatbot:{provider}:Url",
+                "Chatbot url is missing");
 
             var endpoint = new Uri(url);
 
@@ -47,13 +48,19 @@ public static class AiServiceCollection
                 "summary"
             );
 
-            services.AddOpenAIEmbeddingGenerator(embeddingModel, openAiClient);
+            services.AddOpenAIEmbeddingGenerator(embeddingModel.Trim(), openAiClient);
         }
         else
         {
             services.AddGoogleAIGeminiChatCompletion(
                 model.Trim(),
                 apiKey
+            );
+
+            services.AddGoogleAIGeminiChatCompletion(
+                summaryModel.Trim(),
+                apiKey,
+                serviceId: "summary"
             );
 
             services.AddGoogleAIEmbeddingGenerator(
@@ -68,5 +75,14 @@ public static class AiServiceCollection
         services.AddScoped<IInvoicePluginService, InvoicePluginService>();
         services.AddKernel();
         return services;
+    }
+
+    private static string GetRequiredConfigurationValue(IConfiguration configuration, string key, string message)
+    {
+        var value = configuration[key];
+        if (string.IsNullOrWhiteSpace(value))
+            throw new InvalidOperationException(message);
+
+        return value.Trim();
     }
 }
