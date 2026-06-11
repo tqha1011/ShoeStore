@@ -194,6 +194,15 @@ class CheckoutViewModel(
         prepareCheckoutSession()
     }
 
+    fun clearAppliedVouchers() {
+        // Reset states to null
+        _selectedProductVoucher.value = null
+        _selectedShippingVoucher.value = null
+
+        // Trigger API recalculation without vouchers
+        prepareCheckoutSession()
+    }
+
     fun selectPaymentMethod(paymentMethod: PaymentMethod) {
         _paymentMethod.value = paymentMethod
     }

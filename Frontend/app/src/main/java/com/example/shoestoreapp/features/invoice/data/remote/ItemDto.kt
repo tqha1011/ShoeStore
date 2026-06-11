@@ -16,6 +16,8 @@ data class ItemDto(
     val paymentName: String?,
     @SerializedName("phone")
     val phone: String?,
+    @SerializedName("shippingFee")
+    val shippingFee: String?,
     @SerializedName("publicId")
     val publicId: String?,
     @SerializedName("status")

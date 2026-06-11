@@ -56,12 +56,6 @@ fun CartSummarySection(
             isHighlight = false
         )
 
-        // Tax
-        SummaryRow(
-            label = "Estimated Tax",
-            value = if (summary.tax == 0.0) "—" else formatVnd(summary.tax),
-            isHighlight = false
-        )
 
         // Divider
         androidx.compose.material3.HorizontalDivider(

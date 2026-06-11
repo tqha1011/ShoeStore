@@ -11,12 +11,11 @@ package com.example.shoestoreapp.features.user.cart.data.models
 data class CartSummary(
     val subtotal: Double = 0.0,
     val shippingCost: Double = 15.0,
-    val tax: Double = 0.0,
     val itemCount: Int = 0
 ) {
     /**
      * Tính tổng tiền cuối cùng
      */
-    fun getTotal(): Double = subtotal + shippingCost + tax
+    fun getTotal(): Double = subtotal + shippingCost
 }
 

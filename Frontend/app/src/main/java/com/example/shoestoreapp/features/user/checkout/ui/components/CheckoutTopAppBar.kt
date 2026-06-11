@@ -12,12 +12,11 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import com.example.shoestoreapp.features.user.product.ui.components.UserTopBarTitle
 
 /**
  * Component TopAppBar cho Checkout Screen.
@@ -38,13 +37,7 @@ fun CheckoutTopAppBar(
 ) {
     CenterAlignedTopAppBar(
         title = {
-            Text(
-                text = "NIKE",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 0.5.sp,
-                color = Color.Black
-            )
+            UserTopBarTitle(text = "NIKE")
         },
         navigationIcon = {
             IconButton(onClick = onBackClick) {

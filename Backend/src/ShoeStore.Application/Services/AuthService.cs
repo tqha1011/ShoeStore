@@ -115,7 +115,6 @@ public class AuthService(
         };
         userRepository.Add(newUser);
         await unitOfWork.SaveChangesAsync(token);
-        cache.Remove(cacheKey);
         return Result.Created;
     }
 }

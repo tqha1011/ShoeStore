@@ -2,6 +2,7 @@ package com.example.shoestoreapp
 
 import android.os.Build
 import android.os.Bundle
+import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -45,6 +46,7 @@ import com.example.shoestoreapp.features.auth.presentation.reset_password.create
 import com.example.shoestoreapp.features.auth.presentation.reset_password.forgot_password.ForgotPasswordScreen
 import com.example.shoestoreapp.features.auth.presentation.sign_in.LoginScreenContent
 import com.example.shoestoreapp.features.auth.presentation.sign_up.RegisterScreenContent
+import com.example.shoestoreapp.features.auth.presentation.sign_up_verify.SignUpOtpScreen
 import com.example.shoestoreapp.features.auth.presentation.welcome.WelcomeScreen
 import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import com.example.shoestoreapp.features.user.cart.ui.screens.CartScreen
@@ -74,6 +76,7 @@ private object Routes {
     const val WELCOME = "welcome"
     const val SIGN_IN = "sign_in"
     const val SIGN_UP = "sign_up"
+    const val SIGN_UP_VERIFY = "sign_up_verify/{email}"
     const val FORGOT_PASSWORD = "forgot_password"
     const val CREATE_NEW_PASSWORD = "create_new_password/{email}/{otp}"
     const val PRODUCT_LIST = "product_list"
@@ -132,6 +135,7 @@ private object Routes {
     }
 
     fun createNewPassword(email: String, otp: String): String = "create_new_password/$email/$otp"
+    fun signUpVerify(email: String): String = "sign_up_verify/${Uri.encode(email)}"
     fun adminEditProduct(productId: String): String = "admin_edit_product/$productId"
 
     fun userInvoiceList(status: InvoiceStatus? = null): String {
@@ -276,6 +280,29 @@ private fun NavGraphBuilder.authGraph(
             onNavigateToSignIn = { navController.navigate(Routes.SIGN_IN) },
             onNavigateToUserHome = {
                 navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.SIGN_UP)
+            },
+            onNavigateToVerifyOtp = { email ->
+                navController.navigate(Routes.signUpVerify(email))
+            }
+        )
+    }
+
+    composable(
+        route = Routes.SIGN_UP_VERIFY,
+        arguments = listOf(
+            navArgument("email") {
+                type = NavType.StringType
+            }
+        )
+    ) { backStackEntry ->
+        val email = backStackEntry.arguments?.getString("email")?.let(Uri::decode).orEmpty()
+        SignUpOtpScreen(
+            email = email,
+            onNavigateToSignIn = {
+                navController.navigateAndPopTo(Routes.SIGN_IN, Routes.SIGN_UP)
+            },
+            onBackClick = {
+                navController.popBackStack()
             }
         )
     }
@@ -413,6 +440,9 @@ private fun NavGraphBuilder.userGraph(
                         cartTotal = null
                     )
                 )
+            },
+            onMyOrdersClick = {
+                navController.navigate(Routes.userInvoiceList())
             },
             onLogoutClick = {
                 scope.launch {
@@ -802,7 +832,9 @@ private fun handleUserInvoiceTabSelection(tab: BottomNavTab, navController: NavH
             )
         }
 
-        BottomNavTab.BAG -> Unit
+        BottomNavTab.BAG -> {
+            navController.navigateAndPopTo(Routes.CART, Routes.USER_INVOICE_LIST_BASE)
+        }
         BottomNavTab.AI -> {
             navController.navigateAndPopTo(Routes.userAiAssistant(), Routes.USER_INVOICE_LIST_BASE)
         }

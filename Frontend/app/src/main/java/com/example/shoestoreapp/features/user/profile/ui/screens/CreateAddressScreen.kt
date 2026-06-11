@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
+import com.example.shoestoreapp.features.user.product.ui.components.UserTopBarTitle
 import com.example.shoestoreapp.features.user.profile.ui.components.AddressDropdownField
 import com.example.shoestoreapp.features.user.profile.viewmodel.CreateAddressUiState
 import com.example.shoestoreapp.features.user.profile.viewmodel.CreateAddressViewModel
@@ -113,7 +114,9 @@ fun CreateAddressScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { },
+                    title = {
+                        UserTopBarTitle(text = if (isEditMode) "EDIT ADDRESS" else "ADD ADDRESS")
+                    },
                     navigationIcon = {
                         IconButton(onClick = onBackClick) {
                             Icon(

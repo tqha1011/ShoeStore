@@ -31,6 +31,9 @@ interface AuthApi {
     @POST("api/RestorePass/verify-otp")
     suspend fun verifyOtp(@Body request: VerifyOtpRequest): Response<Unit>
 
+    @POST("api/auth/verify-email")
+    suspend fun verifySignUpOtp(@Body request: VerifySignUpOtpRequest): Response<Unit>
+
     @POST("api/RestorePass/update-password")
     suspend fun updatePassword(@Body request: UpdatePasswordRequest): Response<Unit>
 }

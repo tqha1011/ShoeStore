@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material.icons.outlined.ConfirmationNumber
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,7 +34,8 @@ import com.example.shoestoreapp.features.user.voucher.data.models.VoucherUiModel
 fun CheckoutVoucherRow(
     selectedProductVoucher: VoucherUiModel? = null,
     selectedShippingVoucher: VoucherUiModel? = null,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onClearClick: () -> Unit
 ) {
     val hasVoucher = selectedProductVoucher != null || selectedShippingVoucher != null
 
@@ -57,7 +60,7 @@ fun CheckoutVoucherRow(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -68,11 +71,22 @@ fun CheckoutVoucherRow(
                     modifier = Modifier.weight(1f)
                 )
 
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
-                    contentDescription = "Arrow Right",
-                    tint = Color.Gray
-                )
+                if (hasVoucher) {
+                    IconButton(onClick = onClearClick) {
+                        Icon(
+                            imageVector = Icons.Outlined.Clear,
+                            contentDescription = "Remove Voucher",
+                            tint = Color.Gray
+                        )
+                    }
+                } else {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                        contentDescription = "Arrow Right",
+                        tint = Color.Gray,
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
             }
         }
     }
