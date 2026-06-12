@@ -177,8 +177,6 @@ fun ProductDetailScreen(
                 ProductHeaderInfo(
                     name = productDetail?.productName ?: "",
                     price = selectedVariantForCart?.price ?: defaultVariant?.price ?: 0.0,
-                    rating = 0.0,
-                    reviewCount = 0,
                     productType = productDetail?.categoryName ?: ""
                 )
 
