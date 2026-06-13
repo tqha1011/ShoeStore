@@ -8,4 +8,7 @@ public interface IProductEmbeddingService
 
     Task<ErrorOr<Created>>
         GenerateVectorEmbeddingByProductPublicId(Guid productId, CancellationToken cancellationToken);
+
+    Task<ErrorOr<Success>>
+        SyncVectorEmbeddingByProductPublicId(Guid productId, CancellationToken cancellationToken);
 }

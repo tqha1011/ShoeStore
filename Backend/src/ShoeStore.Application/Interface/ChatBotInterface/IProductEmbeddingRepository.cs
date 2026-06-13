@@ -7,6 +7,10 @@ public interface IProductEmbeddingRepository : IGenericRepository<ProductEmbeddi
 {
     void AddRange(IEnumerable<ProductEmbedding> productEmbeddings);
 
+    Task<ProductEmbedding?> GetByProductIdAsync(int productId, CancellationToken token);
+
+    Task<ProductEmbedding?> GetByProductPublicIdAsync(Guid productPublicId, CancellationToken token);
+
     Task<List<ProductEmbedding>>
         GetTop5ProductByVectorAsync(ReadOnlyMemory<float> queryVector, CancellationToken token);
 }

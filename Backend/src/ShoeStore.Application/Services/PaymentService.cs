@@ -2,7 +2,6 @@ using System.Text.RegularExpressions;
 using Microsoft.Extensions.Caching.Hybrid;
 using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
@@ -18,12 +17,10 @@ public class PaymentService(
     IPaymentTransactionRepository paymentTransactionRepository,
     IUnitOfWork unitOfWork,
     IUserVoucherRepository userVoucherRepository,
-    HybridCache cache,
-    ICurrentUser currentUser) : IPaymentService
+    HybridCache cache) : IPaymentService
 {
     public async Task<bool> ProcessSepayWebhookAsync(SepayWebhookDto sepayWebhookDto, CancellationToken token)
     {
-        if (currentUser.Id == null) return false;
         if (sepayWebhookDto.TransferType != "in") return true;
 
         var orderCode = sepayWebhookDto.Code ?? ExtractOrderCode(sepayWebhookDto.Content);

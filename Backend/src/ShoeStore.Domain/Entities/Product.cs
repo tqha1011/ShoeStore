@@ -8,6 +8,7 @@ public class Product : Entity<int>
     public Guid PublicId { get; set; } = Guid.NewGuid();
     public required string ProductName { get; set; }
     public string? Brand { get; set; }
+    public string? Description { get; set; }
 
     public int CategoryId { get; set; }
 
