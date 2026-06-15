@@ -18,4 +18,6 @@ public interface IInvoiceService
     Task<ErrorOr<UpdateStateAdminResponseDto>> UpdateInvoiceStateByAdminAsync(Guid invoiceGuid,
         UpdateStateRequestDto request,
         CancellationToken token);
+
+    Task<ErrorOr<InvoiceCheckResultDto>> CheckInvoicePaymentStatusAsync(string orderCode, CancellationToken token);
 }
