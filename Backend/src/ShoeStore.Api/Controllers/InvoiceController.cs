@@ -1,4 +1,5 @@
-﻿using Asp.Versioning;
+﻿using System.Security.Claims;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -201,5 +202,45 @@ public class InvoiceController(
             invoiceCode = result.Value,
             newStatus = request.Status
         });
+    }
+
+    /// <summary>
+    ///     Checks the payment status for an invoice by order code.
+    /// </summary>
+    /// <param name="orderCode">The order code of the invoice to check.</param>
+    /// <param name="token">Cancellation token from the HTTP request pipeline.</param>
+    /// <response code="200">Invoice payment status is returned successfully.</response>
+    /// <response code="401">The caller is not authenticated.</response>
+    /// <response code="403">The caller is authenticated but not allowed to access this resource.</response>
+    /// <response code="404">The invoice for the specified order code is not found.</response>
+    /// <response code="500">Unexpected server-side error while processing the request.</response>
+    [HttpGet("payment-status")]
+    [ProducesResponseType(typeof(InvoiceCheckResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> CheckInvoicePaymentStatus([FromQuery] string orderCode, CancellationToken token)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null || !Guid.TryParse(userId, out var userGuid)) return Unauthorized();
+        var result = await invoiceService.CheckInvoicePaymentStatusAsync(orderCode, token);
+
+        var response = result.Match<IActionResult>(
+            checkResult => Ok(checkResult),
+            errors => errors[0].Code switch
+            {
+                "Invoice.NotFound" => NotFound(new
+                {
+                    message = "Invoice not found",
+                    description = errors[0].Description
+                }),
+                _ => StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "An unexpected error occurred. Please try again later",
+                    description = errors[0].Description
+                })
+            });
+        return response;
     }
 }
