@@ -65,6 +65,15 @@ data class InvoiceDto(
     @SerializedName("shopAccountName") val shopAccountName: String?,
 )
 
+
+data class PaymentStatusResponse(
+    val status: String,
+    val orderCode: String,
+    val totalPrice: Double,
+    val amountPaid: Double,
+    val remainingAmount: Double
+)
+
 /**
  * Hàm mở rộng giúp chuyển đổi từ DTO của Server sang Model của UI
  */
