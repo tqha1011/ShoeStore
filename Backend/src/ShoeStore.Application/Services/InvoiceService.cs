@@ -131,8 +131,12 @@ public class InvoiceService(
     public async Task<ErrorOr<InvoiceCheckResultDto>> CheckInvoicePaymentStatusAsync(string orderCode,
         CancellationToken token)
     {
+        if (string.IsNullOrEmpty(orderCode))
+            return Error.Validation("Invoice.InvalidOrderCode", "Order code cannot be null or empty");
         var invoice = await invoiceRepository.GetInvoiceByOrderCodeAsync(orderCode, token);
         if (invoice == null) return Error.NotFound("Invoice.NotFound", "Invoice not found");
+        if (invoice.User?.PublicId != currentUser.Id)
+            return Error.Unauthorized("User.Unauthorized", "You are not authorized to check this invoice");
         var paymentTransaction = invoice.PaymentTransactions.ToList();
         var amountPaid = paymentTransaction.Sum(pt => pt.Amount);
         var remainingAmount = Math.Max(0, invoice.FinalPrice - amountPaid);

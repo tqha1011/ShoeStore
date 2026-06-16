@@ -82,7 +82,8 @@ public class ProductRepository(AppDbContext context) : GenericRepository<Product
 
         return await DbSet.AsNoTracking()
             .AsSplitQuery()
-            .Where(p => !p.IsDeleted && productIds.Contains(p.Id))
+            .Where(p => !p.IsDeleted && productIds.Contains(p.Id)
+                                     && p.ProductVariants.Any(v => v.IsSelling && !v.IsDeleted))
             .Include(x => x.ProductVariants.Where(v => v.IsSelling && !v.IsDeleted))
             .ThenInclude(x => x.Size)
             .Include(x => x.ProductVariants.Where(v => v.IsSelling && !v.IsDeleted))

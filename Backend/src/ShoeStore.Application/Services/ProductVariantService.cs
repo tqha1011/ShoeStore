@@ -46,11 +46,19 @@ public class ProductVariantService(
         {
             await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(productGuid), token);
             await cache.RemoveByTagAsync(CacheTag.Product, token);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error while remove product detail cache");
+        }
+
+        try
+        {
             await queue.EnqueueAsync(productGuid, token);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error while remove product detail cache or enqueue sync embedding");
+            logger.LogError(ex, "Error while sync embedding");
         }
 
         return Result.Created;

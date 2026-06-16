@@ -491,7 +491,11 @@ public class ChatBotService(
 
             return InvoiceReportQueryParser.ParseAndNormalize(response.Content);
         }
-        catch
+        catch(OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            return InvoiceReportQueryParser.ParserFailure("Invoice query parsing was cancelled.");
+        }
+        catch(Exception)
         {
             return InvoiceReportQueryParser.ParserFailure("Could not parse invoice query.");
         }

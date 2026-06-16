@@ -68,16 +68,6 @@ public class StoreAssistantPluginService(
             if (orderedProducts.Count == 0)
                 return BuildNoMatchContext();
 
-            var productIds = top5ProductEmbeddings
-                .Select(x => x.ProductId)
-                .Distinct()
-                .ToList();
-            var products = await productRepository.GetProductsForRagInventoryAsync(productIds, token);
-            if (products.Count == 0)
-                return
-                    "Hiện tại không tìm thấy sản phẩm phù hợp với yêu cầu của bạn. Vui lòng thử lại với từ khóa khác hoặc cung cấp thêm chi tiết về sản phẩm bạn đang tìm kiếm.";
-
-            var productById = products.ToDictionary(x => x.Id);
             var context = new StringBuilder();
             context.AppendLine("SearchResult: Found");
             context.AppendLine("Instruction: Only recommend products marked RecommendationEligibility: CanRecommend.");
