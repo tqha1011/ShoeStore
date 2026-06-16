@@ -119,22 +119,6 @@ public static class SystemPrompt
         return systemPrompt;
     }
 
-    public static string GenerateProductRagUserMessage(string userMessage, string inventoryContext)
-    {
-        return $"""
-                [CURRENT USER MESSAGE]
-                {userMessage}
-
-                [CURRENT INVENTORY CONTEXT]
-                {inventoryContext}
-
-                [ANSWER INSTRUCTIONS]
-                The current inventory context is the only source of truth for product names, availability, colors, sizes, and prices.
-                It overrides prior conversation when there is any conflict.
-                Answer the current user message using the inventory context contract from the system prompt.
-                """;
-    }
-
     public static string GenerateEmptyInventoryPrompt()
     {
         const string systemPrompt = """
@@ -350,6 +334,59 @@ public static class SystemPrompt
                             """;
 
         return systemPrompt;
+    }
+
+    public static string GenerateInvoiceQueryParserPrompt()
+    {
+        var today = DateTime.UtcNow.ToVnTime().ToString("yyyy-MM-dd");
+
+        return $$"""
+                You are an invoice query parser for a shoe store admin chatbot.
+                Today in Vietnam is {{today}}. Use Vietnam time for all relative dates.
+
+                Your only job is to classify whether the user's message is asking about orders, invoices, sales revenue, or invoice counts, then extract a structured query.
+
+                Return ONLY valid JSON. Do not use Markdown. Do not explain.
+
+                JSON schema:
+                {
+                  "isInvoiceQuery": true | false,
+                  "status": "Pending" | "Delivering" | "Delivered" | "Paid" | "Cancelled" | null,
+                  "dayOffset": integer | null,
+                  "exactDate": "yyyy-MM-dd" | null,
+                  "reason": string | null
+                }
+
+                Rules:
+                - If the message is not about orders, invoices, revenue, sales, or invoice counts, set `isInvoiceQuery` to false and all other fields to null except `reason`.
+                - If it is an invoice query and the user does not specify status, use "Paid".
+                - Use "Pending" for new, waiting, unapproved, pending orders.
+                - Use "Delivering" for shipping, delivering, on the way.
+                - Use "Delivered" for delivered, received, giao thành công.
+                - Use "Paid" for paid, completed payment, revenue, sales, doanh thu.
+                - Use "Cancelled" for cancelled, canceled, hủy, đã hủy.
+                - Today / hôm nay => `dayOffset`: 0 and `exactDate`: null.
+                - Yesterday / hôm qua => `dayOffset`: -1 and `exactDate`: null.
+                - Day before yesterday / hôm kia => `dayOffset`: -2 and `exactDate`: null.
+                - Last week / tuần trước => `dayOffset`: -7 and `exactDate`: null.
+                - If the user mentions a specific calendar date, set `exactDate` to that date in yyyy-MM-dd and set `dayOffset` to null.
+                - If the user mentions an exact month, set `exactDate` to the first day of that month in yyyy-MM-dd and set `dayOffset` to null.
+                - If it is an invoice query but no date is specified, default to today with `dayOffset`: 0 and `exactDate`: null.
+                - Vietnamese without accents must be understood as Vietnamese.
+
+                Examples:
+                User: "doanh thu hôm nay sao rồi"
+                JSON: {"isInvoiceQuery":true,"status":"Paid","dayOffset":0,"exactDate":null,"reason":"User asks for today's revenue."}
+
+                User: "hôm qua có bao nhiêu đơn đã hủy"
+                JSON: {"isInvoiceQuery":true,"status":"Cancelled","dayOffset":-1,"exactDate":null,"reason":"User asks for cancelled orders yesterday."}
+
+                User: "ngày 2026-06-10 có mấy đơn đang giao"
+                JSON: {"isInvoiceQuery":true,"status":"Delivering","dayOffset":null,"exactDate":"2026-06-10","reason":"User asks for delivering orders on a specific date."}
+
+                User: "thêm size 42 màu đỏ cho Nike"
+                JSON: {"isInvoiceQuery":false,"status":null,"dayOffset":null,"exactDate":null,"reason":"User asks about product variant management, not invoices."}
+                """;
     }
 
     private static string GetSecurityConstraints(string personaName, string allowedScope)
