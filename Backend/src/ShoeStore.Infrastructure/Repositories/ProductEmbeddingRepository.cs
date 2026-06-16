@@ -15,13 +15,28 @@ public class ProductEmbeddingRepository(AppDbContext context)
         DbSet.AddRange(productEmbeddings);
     }
 
-    public async Task<List<ProductEmbedding>> GetTop5ProductByVectorAsync(ReadOnlyMemory<float> queryVector,
-        CancellationToken token)
+    public async Task<ProductEmbedding?> GetByProductIdAsync(int productId, CancellationToken token)
+    {
+        return await DbSet.FirstOrDefaultAsync(x => x.ProductId == productId, token);
+    }
+
+    public async Task<ProductEmbedding?> GetByProductPublicIdAsync(Guid productPublicId, CancellationToken token)
     {
         return await DbSet
+            .Include(x => x.Product)
+            .FirstOrDefaultAsync(x => x.Product != null && x.Product.PublicId == productPublicId, token);
+    }
+
+    public async Task<List<ProductEmbedding>> GetTopProductByVectorAsync(ReadOnlyMemory<float> queryVector,
+        double maxDistance, int take, CancellationToken token)
+    {
+        var vector = new Vector(queryVector.ToArray());
+
+        return await DbSet
             .AsNoTracking()
-            .OrderBy(x => x.Embedding.CosineDistance(new Vector(queryVector.ToArray())))
-            .Take(5)
+            .Where(x => x.Embedding.CosineDistance(vector) <= maxDistance)
+            .OrderBy(x => x.Embedding.CosineDistance(vector))
+            .Take(take)
             .ToListAsync(token);
     }
 }

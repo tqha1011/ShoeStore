@@ -10,6 +10,9 @@ public class ProductEmbeddingConfiguration : IEntityTypeConfiguration<ProductEmb
     {
         builder.HasKey(e => e.Id);
 
+        builder.HasIndex(e => e.ProductId)
+            .IsUnique();
+
         builder.HasOne(e => e.Product)
             .WithMany(p => p.ProductEmbeddings)
             .HasForeignKey(e => e.ProductId)

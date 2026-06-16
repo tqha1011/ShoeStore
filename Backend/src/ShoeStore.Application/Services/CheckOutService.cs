@@ -66,11 +66,12 @@ public class CheckOutService(
             .ToList();
 
         var totalProductPrice = items.Sum(x => x.SubTotal);
-        if (voucherIds.Count > 0)
+        var distinctVoucherIds = voucherIds.Distinct().ToList();
+        if (distinctVoucherIds.Count > 0)
         {
-            var vouchers = await voucherRepository.GetVouchersByIdsAsync(voucherIds, token);
+            var vouchers = await voucherRepository.GetVouchersByIdsAsync(distinctVoucherIds, token);
             var validVouchers = new List<Voucher>();
-            foreach (var voucherId in voucherIds)
+            foreach (var voucherId in distinctVoucherIds)
             {
                 var voucher = vouchers.GetValueOrDefault(voucherId);
                 if (voucher == null || voucher.IsDeleted || voucher.ValidTo < DateTime.UtcNow ||

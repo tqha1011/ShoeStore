@@ -12,6 +12,7 @@ using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.StatisticsInterface;
 using ShoeStore.Application.Interface.UserInterface;
+using ShoeStore.Application.Utilities;
 using ShoeStore.Domain.Enum;
 using ChatMessage = ShoeStore.Domain.Entities.ChatMessage;
 
@@ -225,14 +226,8 @@ public class ChatBotService(
         var historyChat = await chatMessageRepository.GetHistoryChatMessageAsync(sessionId.Value, token);
         var isFirstMessage = historyChat.Count == 0;
         var reverseHistoryChat = historyChat.OrderBy(m => m.CreatedAt)
-            .Select(c => new
-            {
-                c.Content,
-                c.Role
-            })
+            .Select(c => new ProductChatHistoryMessageDto(c.Content, c.Role))
             .ToList();
-        var ragKernel = kernel.Clone();
-        ragKernel.Plugins.AddFromObject(storeAssistantPluginService);
         var newChatMessage = new ChatMessage
         {
             Content = messageRequestDto.Content,
@@ -242,7 +237,7 @@ public class ChatBotService(
             TokenCount = messageRequestDto.Content.Length / 2 // Rough token estimation for Vietnamese
         };
         chatMessageRepository.Add(newChatMessage);
-        var executionSetting = BuildStoreAssistantPluginExecutionSettings();
+        var executionSetting = BuildStoreAssistantRagExecutionSettings();
         var systemPrompt = SystemPrompt.GenerateProductPrompt();
         var chat = new ChatHistory(systemPrompt);
         var reducer = new TokenBudgetChatReducer(3000);
@@ -263,10 +258,19 @@ public class ChatBotService(
 
         var reducedMessage = await reducer.ReduceAsync(chat, token);
         if (reducedMessage != null) chat = new ChatHistory(reducedMessage);
-        chat.AddUserMessage(messageRequestDto.Content);
+
+        var userMessage = messageRequestDto.Content;
+        if (!IsSmallTalkOnly(messageRequestDto.Content))
+        {
+            var inventorySearchKeyword = BuildInventorySearchKeyword(reverseHistoryChat, messageRequestDto.Content);
+            var inventoryContext = await storeAssistantPluginService.SearchInventory(inventorySearchKeyword, token);
+            userMessage = ChatPromptTemplate.GenerateProductRagUserMessage(messageRequestDto.Content, inventoryContext);
+        }
+
+        chat.AddUserMessage(userMessage);
 
         var response = chatCompletionService.GetStreamingChatMessageContentsAsync(
-            chat, executionSetting, ragKernel, token);
+            chat, executionSetting, kernel, token);
 
         Func<string, Task>? onCompleted = null;
         if (isFirstMessage)
@@ -304,7 +308,6 @@ public class ChatBotService(
         var executionSetting = BuildPluginExecutionSettings();
         adminKernel.Plugins.AddFromObject(productPluginService);
         adminKernel.Plugins.AddFromObject(masterDataPluginService);
-        adminKernel.Plugins.AddFromObject(invoicePluginService);
         var newChatMessage = new ChatMessage
         {
             Content = messageRequestDto.Content,
@@ -314,6 +317,10 @@ public class ChatBotService(
             TokenCount = messageRequestDto.Content.Length / 2 // Rough token estimation for Vietnamese
         };
         chatMessageRepository.Add(newChatMessage);
+
+        // Pre-parse invoice intent/date/status as a DTO. Invoice queries are executed
+        // in application code so the model cannot skip or alter the database query.
+        var invoiceReportQuery = await ParseInvoiceReportQueryAsync(messageRequestDto.Content, token);
         var systemPrompt = SystemPrompt.GenerateProductAdminSystemPrompt();
         var chat = new ChatHistory(systemPrompt);
         var reducer = new TokenBudgetChatReducer(3000);
@@ -334,12 +341,33 @@ public class ChatBotService(
 
         var reducedMessage = await reducer.ReduceAsync(chat, token);
         if (reducedMessage != null) chat = new ChatHistory(reducedMessage);
-        chat.AddUserMessage(messageRequestDto.Content);
+        Kernel responseKernel;
+        OpenAIPromptExecutionSettings responseExecutionSetting;
+
+        if (invoiceReportQuery.IsInvoiceQuery)
+        {
+            var invoiceResult = await invoicePluginService.GetInvoiceDataAsync(
+                invoiceReportQuery.Status!,
+                invoiceReportQuery.DayOffset ?? 0,
+                invoiceReportQuery.ExactDate,
+                token);
+            chat.AddUserMessage(ChatPromptTemplate.GenerateInvoiceReportUserMessage(messageRequestDto.Content,
+                invoiceReportQuery, invoiceResult));
+            responseKernel = kernel;
+            responseExecutionSetting = BuildInvoiceReportExecutionSettings();
+        }
+        else
+        {
+            chat.AddUserMessage(messageRequestDto.Content);
+            responseKernel = adminKernel;
+            responseExecutionSetting = executionSetting;
+        }
+
         var response =
             chatCompletionService.GetStreamingChatMessageContentsAsync(
                 chat,
-                executionSetting,
-                adminKernel,
+                responseExecutionSetting,
+                responseKernel,
                 token);
 
         Func<string, Task>? onCompleted = null;
@@ -418,13 +446,78 @@ public class ChatBotService(
         };
     }
 
-    private static OpenAIPromptExecutionSettings BuildStoreAssistantPluginExecutionSettings()
+    private static OpenAIPromptExecutionSettings BuildStoreAssistantRagExecutionSettings()
     {
         return new OpenAIPromptExecutionSettings
         {
             MaxTokens = 1000,
-            Temperature = 0.2,
-            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
+            Temperature = 0.1
         };
+    }
+
+    private static OpenAIPromptExecutionSettings BuildInvoiceQueryParserExecutionSettings()
+    {
+        // Parser calls should be deterministic and short: the model returns JSON only.
+        return new OpenAIPromptExecutionSettings
+        {
+            MaxTokens = 250,
+            Temperature = 0
+        };
+    }
+
+    private static OpenAIPromptExecutionSettings BuildInvoiceReportExecutionSettings()
+    {
+        return new OpenAIPromptExecutionSettings
+        {
+            MaxTokens = 600,
+            Temperature = 0.1
+        };
+    }
+
+    private async Task<InvoiceReportQueryDto> ParseInvoiceReportQueryAsync(string userMessage, CancellationToken token)
+    {
+        // The LLM only converts natural language into a structured DTO; all JSON
+        // validation and normalization is handled by InvoiceReportQueryParser.
+        var parserChat = new ChatHistory(SystemPrompt.GenerateInvoiceQueryParserPrompt());
+        parserChat.AddUserMessage(userMessage);
+
+        try
+        {
+            var response = await chatCompletionService.GetChatMessageContentAsync(
+                parserChat,
+                BuildInvoiceQueryParserExecutionSettings(),
+                kernel,
+                token);
+
+            return InvoiceReportQueryParser.ParseAndNormalize(response.Content);
+        }
+        catch(OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            return InvoiceReportQueryParser.ParserFailure("Invoice query parsing was cancelled.");
+        }
+        catch(Exception)
+        {
+            return InvoiceReportQueryParser.ParserFailure("Could not parse invoice query.");
+        }
+    }
+
+    private static string BuildInventorySearchKeyword(IReadOnlyCollection<ProductChatHistoryMessageDto> historyChat,
+        string currentMessage)
+    {
+        var recentMessages = historyChat
+            .TakeLast(4)
+            .Select(message => $"{message.Role}: {message.Content}")
+            .Where(content => !string.IsNullOrWhiteSpace(content));
+
+        return string.Join(Environment.NewLine, recentMessages.Append(currentMessage));
+    }
+
+    private static bool IsSmallTalkOnly(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return true;
+
+        var normalized = content.Trim().Trim('.', '!', '?', ',', ';', ':').ToLowerInvariant();
+        return normalized is "hi" or "hello" or "hey" or "chào" or "chao" or "chào shop" or "chao shop"
+            or "alo" or "alo shop" or "shop ơi" or "shop oi";
     }
 }

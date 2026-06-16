@@ -36,7 +36,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.shoestoreapp.features.user.checkout.data.models.PaymentType
 import com.example.shoestoreapp.features.user.checkout.data.remote.InvoiceDto
-import com.example.shoestoreapp.features.user.checkout.ui.components.CheckoutTopAppBar
 import com.example.shoestoreapp.features.user.checkout.ui.components.CheckoutHeader
 import com.example.shoestoreapp.features.user.checkout.ui.components.CheckoutVoucherRow
 import com.example.shoestoreapp.features.user.checkout.ui.components.CompletePurchaseButton
@@ -46,6 +45,7 @@ import com.example.shoestoreapp.features.user.checkout.ui.components.PaymentMeth
 import com.example.shoestoreapp.features.user.checkout.ui.components.TermsDisclaimerText
 import com.example.shoestoreapp.features.user.checkout.viewmodel.CheckoutViewModel
 import com.example.shoestoreapp.features.user.checkout.viewmodel.PlaceOrderUiState
+import com.example.shoestoreapp.features.user.product.ui.components.ProductDetailTopAppBar
 import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
 import com.example.shoestoreapp.features.user.voucher.data.models.VoucherUiModel
 
@@ -124,7 +124,7 @@ fun CheckoutScreen(
                 .fillMaxSize()
                 .background(Color.White),
             topBar = {
-                CheckoutTopAppBar(
+                ProductDetailTopAppBar(
                     onBackClick = actions.onBackClick,
                     onShoppingBagClick = actions.onShoppingBagClick
                 )
@@ -176,6 +176,9 @@ fun CheckoutScreen(
                         onClick = {
                             val currentCartTotal = orderSummary.value.subtotal
                             actions.onNavigateToVoucherScreen(currentCartTotal)
+                        },
+                        onClearClick = {
+                            checkoutViewModel.clearAppliedVouchers()
                         }
                     )
 

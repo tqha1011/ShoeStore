@@ -127,6 +127,30 @@ public class InvoiceService(
         return new UpdateStateAdminResponseDto(invoice.OrderCode, invoice.Status, invoice.User!.PublicId);
     }
 
+    // Check the invoice status when confirm paid by Sepay
+    public async Task<ErrorOr<InvoiceCheckResultDto>> CheckInvoicePaymentStatusAsync(string orderCode,
+        CancellationToken token)
+    {
+        if (string.IsNullOrEmpty(orderCode))
+            return Error.Validation("Invoice.InvalidOrderCode", "Order code cannot be null or empty");
+        var invoice = await invoiceRepository.GetInvoiceByOrderCodeAsync(orderCode, token);
+        if (invoice == null) return Error.NotFound("Invoice.NotFound", "Invoice not found");
+        if (invoice.User?.PublicId != currentUser.Id)
+            return Error.Unauthorized("User.Unauthorized", "You are not authorized to check this invoice");
+        var paymentTransaction = invoice.PaymentTransactions.ToList();
+        var amountPaid = paymentTransaction.Sum(pt => pt.Amount);
+        var remainingAmount = Math.Max(0, invoice.FinalPrice - amountPaid);
+        // if remaining = 0 => status = Paid
+        // remaining > 0 and < final price => status = PartiallyPaid
+        // remaining = final price => status = Pending
+        var status = remainingAmount == 0
+            ? InvoiceStatus.Paid
+            : remainingAmount > 0 && remainingAmount < invoice.FinalPrice
+                ? InvoiceStatus.PartiallyPaid
+                : InvoiceStatus.Pending;
+        return new InvoiceCheckResultDto(status, invoice.OrderCode, invoice.FinalPrice, amountPaid, remainingAmount);
+    }
+
     private static ErrorOr<Success> CheckEnoughInvoicePayment(List<PaymentTransaction> paymentTransactions,
         decimal finalPrice)
     {

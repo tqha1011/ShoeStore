@@ -2,7 +2,6 @@ using System.Text.RegularExpressions;
 using Microsoft.Extensions.Caching.Hybrid;
 using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs.CheckOutDTOs;
-using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.CheckoutInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
@@ -18,12 +17,10 @@ public class PaymentService(
     IPaymentTransactionRepository paymentTransactionRepository,
     IUnitOfWork unitOfWork,
     IUserVoucherRepository userVoucherRepository,
-    HybridCache cache,
-    ICurrentUser currentUser) : IPaymentService
+    HybridCache cache) : IPaymentService
 {
     public async Task<bool> ProcessSepayWebhookAsync(SepayWebhookDto sepayWebhookDto, CancellationToken token)
     {
-        if (currentUser.Id == null) return false;
         if (sepayWebhookDto.TransferType != "in") return true;
 
         var orderCode = sepayWebhookDto.Code ?? ExtractOrderCode(sepayWebhookDto.Content);
@@ -36,7 +33,6 @@ public class PaymentService(
         // prevent webhook call twice
         if (invoice.Status is InvoiceStatus.Paid or InvoiceStatus.Cancelled) return true;
 
-        if (sepayWebhookDto.TransferAmount < invoice.FinalPrice) return false;
         var paymentMethodId = await paymentRepository.GetPaymentIdByCode("SEPAY", token);
         var paymentTransaction = new PaymentTransaction
         {
@@ -50,16 +46,23 @@ public class PaymentService(
         };
         paymentTransactionRepository.Add(paymentTransaction);
         invoice.PaymentTransactions.Add(paymentTransaction);
-        invoice.Status = InvoiceStatus.Paid;
-        var userVouchers = await userVoucherRepository.GetUserVouchersByIds(voucherId, invoice.UserId, token);
-        foreach (var userVoucher in userVouchers)
+        if (sepayWebhookDto.TransferAmount >= invoice.FinalPrice)
         {
-            userVoucher.ReservedCount -= 1;
-            userVoucher.UsedAt = DateTime.UtcNow;
-            userVoucher.UsedCount += 1;
-            if (userVoucher.Voucher is { MaxUsagePerUser: > 0 } &&
-                userVoucher.UsedCount >= userVoucher.Voucher.MaxUsagePerUser)
-                userVoucher.IsUsed = true;
+            invoice.Status = InvoiceStatus.Paid;
+            var userVouchers = await userVoucherRepository.GetUserVouchersByIds(voucherId, invoice.UserId, token);
+            foreach (var userVoucher in userVouchers)
+            {
+                userVoucher.ReservedCount -= 1;
+                userVoucher.UsedAt = DateTime.UtcNow;
+                userVoucher.UsedCount += 1;
+                if (userVoucher.Voucher is { MaxUsagePerUser: > 0 } &&
+                    userVoucher.UsedCount >= userVoucher.Voucher.MaxUsagePerUser)
+                    userVoucher.IsUsed = true;
+            }
+        }
+        else
+        {
+            invoice.Status = InvoiceStatus.PartiallyPaid;
         }
 
         await unitOfWork.SaveChangesAsync(token);

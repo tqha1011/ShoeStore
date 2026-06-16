@@ -25,6 +25,7 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
     public Task<Invoice?> GetInvoiceByOrderCodeAsync(string orderCode, CancellationToken token)
     {
         return DbSet.Where(inv => inv.OrderCode == orderCode)
+            .Include(inv => inv.User)
             .Include(inv => inv.PaymentTransactions)
             .Include(inv => inv.VoucherDetails)
             .FirstOrDefaultAsync(token);

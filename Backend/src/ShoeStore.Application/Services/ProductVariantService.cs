@@ -1,7 +1,9 @@
 ﻿using ErrorOr;
 using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.Logging;
 using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
+using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Domain.Entities;
@@ -12,10 +14,13 @@ public class ProductVariantService(
     IUnitOfWork uow,
     IProductVariantRepository productVariantRepository,
     IProductRepository productRepository,
-    HybridCache cache)
+    HybridCache cache,
+    IProductEmbeddingQueue queue,
+    ILogger<ProductVariantService> logger)
     : IProductVariantService
 {
-    public async Task<ErrorOr<Created>> CreateAsync(Guid productGuid, CreateProductVariantDto dto, CancellationToken token)
+    public async Task<ErrorOr<Created>> CreateAsync(Guid productGuid, CreateProductVariantDto dto,
+        CancellationToken token)
     {
         var product = await productRepository.GetForUpdateByGuidAsync(productGuid, token);
         if (product == null) return Error.NotFound("Product.NotFound", "Product not found.");
@@ -37,8 +42,24 @@ public class ProductVariantService(
 
         productVariantRepository.Add(productVariant);
         await uow.SaveChangesAsync(token);
-        await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(productGuid), token);
-        await cache.RemoveByTagAsync(CacheTag.Product, token);
+        try
+        {
+            await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(productGuid), token);
+            await cache.RemoveByTagAsync(CacheTag.Product, token);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error while remove product detail cache");
+        }
+
+        try
+        {
+            await queue.EnqueueAsync(productGuid, token);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error while sync embedding");
+        }
 
         return Result.Created;
     }
@@ -47,28 +68,43 @@ public class ProductVariantService(
     {
         var variant = await productVariantRepository.GetByGuidAsync(productVariantGuid, token);
 
-        if (variant == null || variant.IsDeleted == true)
+        if (variant == null || variant.IsDeleted)
             return Error.NotFound("ProductVariant.NotFound", "Product variant not found.");
 
+        var productPublicId = variant.Product?.PublicId;
         variant.IsDeleted = true;
         productVariantRepository.Update(variant);
         await uow.SaveChangesAsync(token);
         var product = await productRepository.GetByIdAsync(variant.ProductId, token);
-        if (product != null)
-        {
-            await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
-        }
+        if (product != null) await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
         await cache.RemoveByTagAsync(CacheTag.Product, token);
+        if (productPublicId.HasValue)
+            try
+            {
+                await queue.EnqueueAsync(productPublicId.Value, token);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error while sync embedding");
+            }
+
         return Result.Deleted;
     }
 
-    public async Task<ErrorOr<Updated>> UpdateAsync(Guid productVariantGuid, UpdateProductVariantDto dto, CancellationToken token)
+    public async Task<ErrorOr<Updated>> UpdateAsync(Guid productVariantGuid, UpdateProductVariantDto dto,
+        CancellationToken token)
     {
         var variant = await productVariantRepository.GetByGuidAsync(productVariantGuid, token);
 
         if (variant == null)
             return Error.NotFound("ProductVariant.NotFound", "Product variant not found.");
 
+        var shouldSyncEmbedding = (dto.SizeId.HasValue && dto.SizeId != variant.SizeId) ||
+                                  (dto.ColorId.HasValue && dto.ColorId != variant.ColorId) ||
+                                  (dto.Price.HasValue && dto.Price != variant.Price) ||
+                                  (dto.IsSelling.HasValue && dto.IsSelling != variant.IsSelling);
+
+        var productPublicId = variant.Product?.PublicId;
         variant.SizeId = dto.SizeId ?? variant.SizeId;
         variant.ColorId = dto.ColorId ?? variant.ColorId;
         variant.Stock = dto.Stock ?? variant.Stock;
@@ -80,14 +116,18 @@ public class ProductVariantService(
         await uow.SaveChangesAsync(token);
 
         var product = await productRepository.GetByIdAsync(variant.ProductId, token);
-        if (product != null)
-        {
-            await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
-        }
+        if (product != null) await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
         await cache.RemoveByTagAsync(CacheTag.Product, token);
+        if (productPublicId.HasValue && shouldSyncEmbedding)
+            try
+            {
+                await queue.EnqueueAsync(productPublicId.Value, token);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error while sync embedding embedding");
+            }
 
         return Result.Updated;
-
     }
-
 }

@@ -54,6 +54,7 @@ import com.example.shoestoreapp.features.user.cart.viewmodel.CartViewModel
 import com.example.shoestoreapp.features.user.checkout.ui.screens.CheckoutScreen
 import com.example.shoestoreapp.features.user.checkout.ui.screens.CheckoutScreenActions
 import com.example.shoestoreapp.features.user.checkout.ui.screens.PaymentQRScreen
+import com.example.shoestoreapp.features.user.checkout.viewmodel.CheckoutViewModel
 import com.example.shoestoreapp.features.user.invoice.data.UserInvoiceRepository
 import com.example.shoestoreapp.features.user.invoice.ui.UserInvoiceScreen
 import com.example.shoestoreapp.features.user.invoice.viewmodel.UserInvoiceViewModel
@@ -389,6 +390,7 @@ private fun NavGraphBuilder.userGraph(
             bankCode = bankCode,
             bankAccount = bankAccount,
             accountName = accountName,
+            viewModel = remember { CheckoutViewModel() },
             onBackClick = {
                 navController.navigate(Routes.PRODUCT_LIST) {
                     popUpTo(Routes.PRODUCT_LIST) { inclusive = true }

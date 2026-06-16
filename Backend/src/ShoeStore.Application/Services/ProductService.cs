@@ -7,6 +7,7 @@ using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.ProductDTOs;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
 using ShoeStore.Application.Extensions;
+using ShoeStore.Application.Interface.ChatBotInterface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Domain.Entities;
@@ -16,6 +17,7 @@ namespace ShoeStore.Application.Services;
 public class ProductService(
     IUnitOfWork uow,
     IProductRepository productRepository,
+    IProductEmbeddingQueue queue,
     HybridCache cache,
     ILogger<ProductService> logger) : IProductService
 {
@@ -173,10 +175,11 @@ public class ProductService(
         {
             await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
             await cache.RemoveByTagAsync(CacheTag.Product, token);
+            await queue.EnqueueAsync(product.PublicId, token);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error while updating product cache.");
+            logger.LogError(ex, "Error while updating product cache or enqueue sync embedding");
         }
 
         return Result.Updated;
@@ -206,10 +209,11 @@ public class ProductService(
         {
             await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(productGuid), token);
             await cache.RemoveByTagAsync(CacheTag.Product, token);
+            await queue.EnqueueAsync(product.PublicId, token);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error while deleting product.");
+            logger.LogError(ex, "Error while deleting product and sync product embedding.");
         }
 
         return Result.Deleted;

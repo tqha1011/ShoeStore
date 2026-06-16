@@ -11,9 +11,13 @@ public interface IProductRepository : IGenericRepository<Product, int>
 
     Task<Product?> GetDetailsByGuidAsync(Guid productGuid, CancellationToken token);
 
+    Task<Product?> GetProductInformationByPublicIdAsync(Guid productGuid, CancellationToken token);
+
     IQueryable<Product> GetAll();
 
     IQueryable<Product> GetProductsInformation();
+
+    Task<List<Product>> GetProductsForRagInventoryAsync(IReadOnlyCollection<int> productIds, CancellationToken token);
 
     Task<int> CountActiveProductAsync(CancellationToken token);
 

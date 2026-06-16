@@ -2,6 +2,7 @@ package com.example.shoestoreapp.features.user.checkout.data.remote
 
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Query
 
@@ -17,4 +18,9 @@ interface CheckOutApi {
         @Query("fromUserCart") fromUserCart: Boolean,
         @Body request: PlaceOrderRequestDto
     ): Response<InvoiceDto>
+
+    @GET("api/invoice/user/payment-status")
+    suspend fun checkPaymentStatus(
+        @Query("orderCode") orderCode: String
+    ): Response<PaymentStatusResponse>
 }
