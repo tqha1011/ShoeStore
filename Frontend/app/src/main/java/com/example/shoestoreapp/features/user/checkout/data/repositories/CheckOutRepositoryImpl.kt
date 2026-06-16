@@ -7,6 +7,7 @@ import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutRespo
 import com.example.shoestoreapp.features.user.checkout.data.remote.InvoiceDto
 import com.example.shoestoreapp.features.user.checkout.data.remote.PlaceOrderRequestDto
 import com.example.shoestoreapp.features.user.checkout.data.remote.PrepareCheckOutRequestDto
+import com.example.shoestoreapp.features.user.checkout.data.remote.PaymentStatusResponse
 import retrofit2.Response
 
 class CheckoutRepositoryImpl(
@@ -35,6 +36,22 @@ class CheckoutRepositoryImpl(
                 response.body()?.let {
                     Result.success(it)
                 } ?: Result.failure(CheckOutRepositoryException.Unknown("Empty invoice data"))
+            } else {
+                Result.failure(response.toRepositoryException())
+            }
+        } catch (e: Exception) {
+            Result.failure(CheckOutRepositoryException.Unknown(e.message ?: CheckOutRepositoryException.ERROR_UNKNOWN))
+        }
+    }
+
+    // LOGIC CHECK TRẠNG THÁI THANH TOÁN
+    override suspend fun checkPaymentStatus(orderCode: String): Result<PaymentStatusResponse> {
+        return try {
+            val response = checkOutApi.checkPaymentStatus(orderCode)
+            if (response.isSuccessful) {
+                response.body()?.let {
+                    Result.success(it)
+                } ?: Result.failure(CheckOutRepositoryException.Unknown(CheckOutRepositoryException.EMPTY_RESPONSE_BODY))
             } else {
                 Result.failure(response.toRepositoryException())
             }

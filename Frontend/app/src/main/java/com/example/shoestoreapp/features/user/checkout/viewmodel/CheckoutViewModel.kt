@@ -82,6 +82,13 @@ class CheckoutViewModel(
     )
     val availablePaymentMethods: StateFlow<List<PaymentMethod>> = _availablePaymentMethods.asStateFlow()
 
+    // ============ MANUAL PAYMENT STATUS ============
+
+    // Quản lý trạng thái đang loading của nút kiểm tra thanh toán
+    private val _isCheckingPayment = MutableStateFlow(false)
+    val isCheckingPayment = _isCheckingPayment.asStateFlow()
+
+
     // ============ INITIALIZATION ============
 
     init {
@@ -270,5 +277,40 @@ class CheckoutViewModel(
             return false
         }
         return true
+    }
+
+    // HÀM KIỂM TRA THANH TOÁN THỦ CÔNG QUA NÚT
+    fun verifyPaymentManual(
+        orderCode: String,
+        onSuccess: () -> Unit
+    ) {
+        viewModelScope.launch {
+            _isCheckingPayment.value = true
+
+            checkoutRepository.checkPaymentStatus(orderCode).fold(
+                onSuccess = { data ->
+                    if (data.status.equals("Paid", ignoreCase = true) && data.remainingAmount == 0.0) {
+                        onSuccess()
+                    } else {
+                        _bannerMessage.value = "Hệ thống chưa ghi nhận tiền. Vui lòng đợi thêm hoặc kiểm tra lại ngân hàng!"
+                        _isBannerSuccess.value = false
+                        _showBanner.value = true
+                    }
+                },
+                onFailure = { exception ->
+                    _bannerMessage.value = exception.message ?: "Failed to check payment status."
+                    _isBannerSuccess.value = false
+                    _showBanner.value = true
+                }
+            )
+
+            _isCheckingPayment.value = false
+        }
+    }
+
+    fun showCustomBanner(message: String, isSuccess: Boolean) {
+        _bannerMessage.value = message
+        _isBannerSuccess.value = isSuccess
+        _showBanner.value = true
     }
 }
