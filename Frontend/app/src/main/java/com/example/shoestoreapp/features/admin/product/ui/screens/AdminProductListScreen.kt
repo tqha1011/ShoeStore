@@ -36,7 +36,7 @@ import com.example.shoestoreapp.features.admin.product.viewmodel.AdminProductLis
  * Màn hình quản lý sản phẩm cho Admin.
  * 
  * Cấu trúc:
- * 1. TopAppBar: Menu, NIKE text, Add Product button
+ * 1. TopAppBar: Menu, Product Management text, Add Product button
  * 2. SearchBar: Tìm kiếm sản phẩm
  * 3. FilterChips: Lọc theo status (ALL, IN STOCK, LOW STOCK, OUT OF STOCK)
  * 4. Product Grid: Hiển thị danh sách sản phẩm (2 cột)

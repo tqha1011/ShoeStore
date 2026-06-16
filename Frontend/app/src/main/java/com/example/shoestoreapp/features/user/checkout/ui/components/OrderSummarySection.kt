@@ -30,7 +30,7 @@ import kotlin.math.roundToLong
  *
  * UI Structure:
  * - Header: "ORDER SUMMARY"
- * - Product Item display (cố định: Nike Air Max Dn)
+ * - Product Item display
  * - Pricing Breakdown (Subtotal, Shipping, Tax, Total)
  */
 @Composable
