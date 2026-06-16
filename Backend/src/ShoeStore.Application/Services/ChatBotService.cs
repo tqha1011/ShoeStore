@@ -225,14 +225,8 @@ public class ChatBotService(
         var historyChat = await chatMessageRepository.GetHistoryChatMessageAsync(sessionId.Value, token);
         var isFirstMessage = historyChat.Count == 0;
         var reverseHistoryChat = historyChat.OrderBy(m => m.CreatedAt)
-            .Select(c => new
-            {
-                c.Content,
-                c.Role
-            })
+            .Select(c => new ProductChatHistoryMessageDto(c.Content, c.Role))
             .ToList();
-        var ragKernel = kernel.Clone();
-        ragKernel.Plugins.AddFromObject(storeAssistantPluginService);
         var newChatMessage = new ChatMessage
         {
             Content = messageRequestDto.Content,
@@ -242,7 +236,7 @@ public class ChatBotService(
             TokenCount = messageRequestDto.Content.Length / 2 // Rough token estimation for Vietnamese
         };
         chatMessageRepository.Add(newChatMessage);
-        var executionSetting = BuildStoreAssistantPluginExecutionSettings();
+        var executionSetting = BuildStoreAssistantRagExecutionSettings();
         var systemPrompt = SystemPrompt.GenerateProductPrompt();
         var chat = new ChatHistory(systemPrompt);
         var reducer = new TokenBudgetChatReducer(3000);
@@ -263,10 +257,19 @@ public class ChatBotService(
 
         var reducedMessage = await reducer.ReduceAsync(chat, token);
         if (reducedMessage != null) chat = new ChatHistory(reducedMessage);
-        chat.AddUserMessage(messageRequestDto.Content);
+
+        var userMessage = messageRequestDto.Content;
+        if (!IsSmallTalkOnly(messageRequestDto.Content))
+        {
+            var inventorySearchKeyword = BuildInventorySearchKeyword(reverseHistoryChat, messageRequestDto.Content);
+            var inventoryContext = await storeAssistantPluginService.SearchInventory(inventorySearchKeyword, token);
+            userMessage = SystemPrompt.GenerateProductRagUserMessage(messageRequestDto.Content, inventoryContext);
+        }
+
+        chat.AddUserMessage(userMessage);
 
         var response = chatCompletionService.GetStreamingChatMessageContentsAsync(
-            chat, executionSetting, ragKernel, token);
+            chat, executionSetting, kernel, token);
 
         Func<string, Task>? onCompleted = null;
         if (isFirstMessage)
@@ -418,13 +421,32 @@ public class ChatBotService(
         };
     }
 
-    private static OpenAIPromptExecutionSettings BuildStoreAssistantPluginExecutionSettings()
+    private static OpenAIPromptExecutionSettings BuildStoreAssistantRagExecutionSettings()
     {
         return new OpenAIPromptExecutionSettings
         {
             MaxTokens = 1000,
-            Temperature = 0.2,
-            ToolCallBehavior = ToolCallBehavior.AutoInvokeKernelFunctions
+            Temperature = 0.1
         };
+    }
+
+    private static string BuildInventorySearchKeyword(IReadOnlyCollection<ProductChatHistoryMessageDto> historyChat,
+        string currentMessage)
+    {
+        var recentMessages = historyChat
+            .TakeLast(4)
+            .Select(message => $"{message.Role}: {message.Content}")
+            .Where(content => !string.IsNullOrWhiteSpace(content));
+
+        return string.Join(Environment.NewLine, recentMessages.Append(currentMessage));
+    }
+
+    private static bool IsSmallTalkOnly(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return true;
+
+        var normalized = content.Trim().Trim('.', '!', '?', ',', ';', ':').ToLowerInvariant();
+        return normalized is "hi" or "hello" or "hey" or "chào" or "chao" or "chào shop" or "chao shop"
+            or "alo" or "alo shop" or "shop ơi" or "shop oi";
     }
 }

@@ -28,11 +28,14 @@ public class ProductEmbeddingRepository(AppDbContext context)
     }
 
     public async Task<List<ProductEmbedding>> GetTop5ProductByVectorAsync(ReadOnlyMemory<float> queryVector,
-        CancellationToken token)
+        double maxDistance, CancellationToken token)
     {
+        var vector = new Vector(queryVector.ToArray());
+
         return await DbSet
             .AsNoTracking()
-            .OrderBy(x => x.Embedding.CosineDistance(new Vector(queryVector.ToArray())))
+            .Where(x => x.Embedding.CosineDistance(vector) <= maxDistance)
+            .OrderBy(x => x.Embedding.CosineDistance(vector))
             .Take(5)
             .ToListAsync(token);
     }
