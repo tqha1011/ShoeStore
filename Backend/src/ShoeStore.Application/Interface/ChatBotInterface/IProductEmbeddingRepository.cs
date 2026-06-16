@@ -12,5 +12,6 @@ public interface IProductEmbeddingRepository : IGenericRepository<ProductEmbeddi
     Task<ProductEmbedding?> GetByProductPublicIdAsync(Guid productPublicId, CancellationToken token);
 
     Task<List<ProductEmbedding>>
-        GetTop5ProductByVectorAsync(ReadOnlyMemory<float> queryVector, double maxDistance, CancellationToken token);
+        GetTopProductByVectorAsync(ReadOnlyMemory<float> queryVector, double maxDistance, int take,
+            CancellationToken token);
 }

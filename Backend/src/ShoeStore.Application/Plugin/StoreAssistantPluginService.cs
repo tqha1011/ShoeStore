@@ -17,7 +17,8 @@ public class StoreAssistantPluginService(
     ILogger<StoreAssistantPluginService> logger)
     : IStoreAssistantPluginService
 {
-    private const double MaxInventorySearchDistance = 0.35;
+    private const double MaxInventorySearchDistance = 0.75;
+    private const int MaxInventorySearchResults = 3;
 
     [KernelFunction("search-store-inventory")]
     [Description("Searches the store's inventory for shoes based on customer needs, styles, or specific requests. " +
@@ -36,13 +37,18 @@ public class StoreAssistantPluginService(
                 return "Hệ thống tìm kiếm đang gặp sự cố. Vui lòng thử lại sau.";
             }
 
-            var top5ProductEmbeddings =
-                await productEmbeddingRepository.GetTop5ProductByVectorAsync(queryVector.Vector,
-                    MaxInventorySearchDistance, token);
-            if (top5ProductEmbeddings.Count == 0)
+            var matchedProductEmbeddings =
+                await productEmbeddingRepository.GetTopProductByVectorAsync(queryVector.Vector,
+                    MaxInventorySearchDistance, MaxInventorySearchResults, token);
+            if (matchedProductEmbeddings.Count == 0)
+            {
+                logger.LogInformation("No inventory embeddings matched keyword within max cosine distance {MaxDistance}. Keyword: {Keyword}",
+                    MaxInventorySearchDistance,
+                    keyword);
                 return BuildNoMatchContext();
+            }
 
-            var productIds = top5ProductEmbeddings
+            var productIds = matchedProductEmbeddings
                 .Select(x => x.ProductId)
                 .Distinct()
                 .ToList();
@@ -51,7 +57,7 @@ public class StoreAssistantPluginService(
                 return BuildNoMatchContext();
 
             var productById = products.ToDictionary(x => x.Id);
-            var orderedProducts = top5ProductEmbeddings
+            var orderedProducts = matchedProductEmbeddings
                 .Select(x => productById.GetValueOrDefault(x.ProductId))
                 .Where(x => x is not null)
                 .Cast<Product>()
