@@ -17,6 +17,9 @@ public class StoreAssistantPluginService(
     ILogger<StoreAssistantPluginService> logger)
     : IStoreAssistantPluginService
 {
+    private const double MaxInventorySearchDistance = 0.75;
+    private const int MaxInventorySearchResults = 3;
+
     [KernelFunction("search-store-inventory")]
     [Description("Searches the store's inventory for shoes based on customer needs, styles, or specific requests. " +
                  "CRITICAL: Call this function ONLY when the user explicitly asks for shoe recommendations, checks availability, or asks about product details. " +
@@ -34,28 +37,46 @@ public class StoreAssistantPluginService(
                 return "Hệ thống tìm kiếm đang gặp sự cố. Vui lòng thử lại sau.";
             }
 
-            var top5ProductEmbeddings =
-                await productEmbeddingRepository.GetTop5ProductByVectorAsync(queryVector.Vector, token);
-            if (top5ProductEmbeddings.Count == 0)
-                return
-                    "Hiện tại không tìm thấy sản phẩm phù hợp với yêu cầu của bạn. Vui lòng thử lại với từ khóa khác hoặc cung cấp thêm chi tiết về sản phẩm bạn đang tìm kiếm.";
+            var matchedProductEmbeddings =
+                await productEmbeddingRepository.GetTopProductByVectorAsync(queryVector.Vector,
+                    MaxInventorySearchDistance, MaxInventorySearchResults, token);
+            if (matchedProductEmbeddings.Count == 0)
+            {
+                logger.LogInformation("No inventory embeddings matched keyword within max cosine distance {MaxDistance}. Keyword: {Keyword}",
+                    MaxInventorySearchDistance,
+                    keyword);
+                return BuildNoMatchContext();
+            }
 
-            var productIds = top5ProductEmbeddings
+            var productIds = matchedProductEmbeddings
                 .Select(x => x.ProductId)
                 .Distinct()
                 .ToList();
             var products = await productRepository.GetProductsForRagInventoryAsync(productIds, token);
             if (products.Count == 0)
-                return
-                    "Hiện tại không tìm thấy sản phẩm phù hợp với yêu cầu của bạn. Vui lòng thử lại với từ khóa khác hoặc cung cấp thêm chi tiết về sản phẩm bạn đang tìm kiếm.";
+                return BuildNoMatchContext();
 
             var productById = products.ToDictionary(x => x.Id);
+            var orderedProducts = matchedProductEmbeddings
+                .Select(x => productById.GetValueOrDefault(x.ProductId))
+                .Where(x => x is not null)
+                .Cast<Product>()
+                .DistinctBy(x => x.Id)
+                .OrderByDescending(HasInStockVariant)
+                .ToList();
+
+            if (orderedProducts.Count == 0)
+                return BuildNoMatchContext();
+
             var context = new StringBuilder();
-            foreach (var productEmbedding in top5ProductEmbeddings)
-            {
-                if (!productById.TryGetValue(productEmbedding.ProductId, out var product)) continue;
+            context.AppendLine("SearchResult: Found");
+            context.AppendLine("Instruction: Only recommend products marked RecommendationEligibility: CanRecommend.");
+            context.AppendLine(
+                $"AllowedProductNames: {string.Join(", ", orderedProducts.Select(x => x.ProductName))}");
+            context.AppendLine();
+
+            foreach (var product in orderedProducts)
                 context.AppendLine(BuildInventoryContext(product));
-            }
 
             return context.ToString();
         }
@@ -64,6 +85,14 @@ public class StoreAssistantPluginService(
             logger.LogError(ex, "Error occurred while searching store inventory with keyword: {Keyword}", keyword);
             return "Hệ thống tìm kiếm đang gặp sự cố. Vui lòng thử lại sau.";
         }
+    }
+
+    private static string BuildNoMatchContext()
+    {
+        return """
+               SearchResult: NoMatch
+               Instruction: No inventory item matched the user's request strongly enough. Do not recommend or mention any product names outside store inventory. Ask the user for another size, color, budget, or style.
+               """;
     }
 
     private static string BuildInventoryContext(Product product)
@@ -110,6 +139,8 @@ public class StoreAssistantPluginService(
 
         var context = new StringBuilder();
         context.AppendLine($"Product: {product.ProductName}");
+        context.AppendLine(
+            $"RecommendationEligibility: {(availableVariants.Count > 0 ? "CanRecommend" : "CannotRecommendOutOfStock")}");
         context.AppendLine($"Description: {product.Description ?? "No description"}");
         context.AppendLine($"Brand: {product.Brand ?? "Unknown"}");
         context.AppendLine($"Category: {product.Category?.Name ?? "Unknown"}");
@@ -136,6 +167,11 @@ public class StoreAssistantPluginService(
         }
 
         return context.ToString();
+    }
+
+    private static bool HasInStockVariant(Product product)
+    {
+        return product.ProductVariants.Any(v => v.IsSelling && !v.IsDeleted && v.Stock > 0);
     }
 
     private static string FormatSize(decimal? size)

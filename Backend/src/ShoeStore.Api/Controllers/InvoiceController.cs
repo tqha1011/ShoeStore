@@ -230,6 +230,16 @@ public class InvoiceController(
             checkResult => Ok(checkResult),
             errors => errors[0].Code switch
             {
+                "User.NotAuthorized" => Unauthorized(new
+                {
+                    message = "You are not authorized to check this invoice.",
+                    description = errors[0].Description
+                }),
+                "Invoice.InvalidOrderCode" => BadRequest(new
+                {
+                    message = "Invalid order code",
+                    description = errors[0].Description
+                }),
                 "Invoice.NotFound" => NotFound(new
                 {
                     message = "Invoice not found",
