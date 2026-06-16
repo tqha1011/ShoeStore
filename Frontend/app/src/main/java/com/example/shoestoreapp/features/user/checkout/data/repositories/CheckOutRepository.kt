@@ -2,12 +2,14 @@ package com.example.shoestoreapp.features.user.checkout.data.repositories
 
 import com.example.shoestoreapp.features.user.checkout.data.remote.CheckOutResponseDto
 import com.example.shoestoreapp.features.user.checkout.data.remote.InvoiceDto
+import com.example.shoestoreapp.features.user.checkout.data.remote.PaymentStatusResponse
 import com.example.shoestoreapp.features.user.checkout.data.remote.PlaceOrderRequestDto
 import com.example.shoestoreapp.features.user.checkout.data.remote.PrepareCheckOutRequestDto
 
 interface CheckOutRepository {
     suspend fun prepareCheckOut(request: PrepareCheckOutRequestDto): Result<CheckOutResponseDto>
     suspend fun placeOrder(fromUserCart: Boolean, request: PlaceOrderRequestDto): Result<InvoiceDto>
+    suspend fun checkPaymentStatus(orderCode: String): Result<PaymentStatusResponse>
 }
 
 sealed class CheckOutRepositoryException(message: String) : Exception(message) {
