@@ -9,6 +9,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,8 +22,11 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -31,7 +35,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.shoestoreapp.features.agent_intelligent.data.remote.ChatSessionResponseDto
@@ -40,6 +46,12 @@ import dev.jeziellago.compose.markdowntext.MarkdownText
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+
+data class AiQuickAction(
+    val label: String,
+    val prompt: String,
+    val icon: ImageVector
+)
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,6 +66,11 @@ fun BaseAIChatScreen(
     headerContent: (@Composable () -> Unit)? = null,
     footerContent: (@Composable () -> Unit)? = null,
     bottomBarContent: (@Composable () -> Unit)? = null,
+    emptyTitle: String = "Hello! How can I help you?",
+    emptySubtitle: String = "Type a question or choose a suggestion below to get started.",
+    inputPlaceholder: String = "Ask me anything...",
+    quickActions: List<AiQuickAction> = emptyList(),
+    onQuickActionClick: (AiQuickAction) -> Unit = { action -> viewModel.SendMessage(action.prompt) },
 ) {
     val state = viewModel.state
 
@@ -102,7 +119,7 @@ fun BaseAIChatScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp),
+                contentPadding = PaddingValues(top = 24.dp, bottom = 100.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 if (!state.error.isNullOrBlank()) {
@@ -126,10 +143,11 @@ fun BaseAIChatScreen(
                     }
                 } else if (state.messages.isEmpty()) {
                     item {
-                        Text(
-                            text = "Please enter a new question to start",
-                            fontSize = 13.sp,
-                            color = Color(0xFF999999)
+                        SharedAiEmptyState(
+                            title = emptyTitle,
+                            subtitle = emptySubtitle,
+                            quickActions = quickActions,
+                            onQuickActionClick = onQuickActionClick
                         )
                     }
                 } else {
@@ -167,7 +185,7 @@ fun BaseAIChatScreen(
                 SharedChatInputBar(value = inputText, onValueChange = { inputText = it }, onSend = {
                     viewModel.SendMessage(inputText)
                     inputText = "" // clear input aften sending
-                })
+                }, placeholder = inputPlaceholder)
             }
         }
     }
@@ -185,6 +203,7 @@ fun BaseAIChatScreen(
                     showHistorySheet = false
                 },
                 onLoadMore = { viewModel.loadSessions(isNextPage = true) },
+                onClearAll = { viewModel.clearHistoryPlaceholder() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 480.dp)
@@ -203,7 +222,7 @@ fun SharedChatTopBar(
     onLoadSessions: () -> Unit,
 ) {
     CenterAlignedTopAppBar(
-        title = { Text(titleTopBar, fontSize = 24.sp, fontWeight = FontWeight.Bold) },
+        title = { Text(titleTopBar, fontSize = 22.sp, fontWeight = FontWeight.Black) },
         navigationIcon = {
             IconButton(onClick = onBackClick) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -223,20 +242,34 @@ fun SharedChatTopBar(
 }
 
 @Composable
-fun SharedChatInputBar(value: String, onValueChange: (String) -> Unit, onSend: () -> Unit) {
+fun SharedChatInputBar(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onSend: () -> Unit,
+    placeholder: String
+) {
     Surface(
         tonalElevation = 8.dp,
         shadowElevation = 12.dp,
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(28.dp),
         color = Color.White
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(
+                imageVector = Icons.Default.AttachFile,
+                contentDescription = "Attach",
+                tint = Color(0xFF555555),
+                modifier = Modifier.size(22.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
             Box(modifier = Modifier.weight(1f)) {
                 if (value.isEmpty()) Text(
-                    "Ask about optimization...", color = Color.LightGray, fontSize = 14.sp
+                    placeholder, color = Color(0xFFC7C7C7), fontSize = 16.sp
                 )
                 BasicTextField(
                     value = value, onValueChange = onValueChange, modifier = Modifier.fillMaxWidth()
@@ -246,7 +279,7 @@ fun SharedChatInputBar(value: String, onValueChange: (String) -> Unit, onSend: (
                 onClick = onSend,
                 modifier = Modifier
                     .background(Color.Black, CircleShape)
-                    .size(40.dp)
+                    .size(42.dp)
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.Send,
@@ -260,20 +293,104 @@ fun SharedChatInputBar(value: String, onValueChange: (String) -> Unit, onSend: (
 }
 
 @Composable
+fun SharedAiEmptyState(
+    title: String,
+    subtitle: String,
+    quickActions: List<AiQuickAction>,
+    onQuickActionClick: (AiQuickAction) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 56.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Surface(
+            modifier = Modifier.size(88.dp),
+            shape = CircleShape,
+            color = Color.White,
+            tonalElevation = 3.dp,
+            shadowElevation = 10.dp
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = "AI",
+                    tint = Color.Black,
+                    modifier = Modifier.size(38.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(88.dp))
+        Text(
+            text = title,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.Black
+        )
+        Spacer(modifier = Modifier.height(14.dp))
+        Text(
+            text = subtitle,
+            fontSize = 20.sp,
+            lineHeight = 30.sp,
+            color = Color(0xFF555555),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
+        Spacer(modifier = Modifier.height(32.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            quickActions.forEach { action ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(2.dp, Color.Black, RoundedCornerShape(12.dp))
+                        .clickable { onQuickActionClick(action) }
+                        .padding(horizontal = 20.dp, vertical = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = action.icon,
+                        contentDescription = null,
+                        tint = Color.Black,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(18.dp))
+                    Text(
+                        text = action.label,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.Black
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun SharedSessionListArea(
     sessions: List<ChatSessionResponseDto>,
     isLoading: Boolean,
     isMoreLoading: Boolean,
     onSessionClick: (String) -> Unit,
     onLoadMore: () -> Unit,
+    onClearAll: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
+    var searchText by remember { mutableStateOf("") }
+    val filteredSessions = remember(sessions, searchText) {
+        if (searchText.isBlank()) sessions
+        else sessions.filter { session ->
+            session.title.orEmpty().contains(searchText, ignoreCase = true) ||
+                session.publicId.orEmpty().contains(searchText, ignoreCase = true)
+        }
+    }
 
     val shouldLoadMore = remember {
         derivedStateOf {
             val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
-            lastVisibleItem != null && lastVisibleItem.index >= sessions.size - 3
+            lastVisibleItem != null && lastVisibleItem.index >= filteredSessions.size - 3
         }
     }
     LaunchedEffect(shouldLoadMore.value) {
@@ -294,15 +411,51 @@ fun SharedSessionListArea(
         modifier = modifier.padding(16.dp)
     ) {
         item {
-            Text(
-                "Recent Sessions",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Black,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Conversation History",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Color.Black,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = onClearAll) {
+                    Text("Clear all", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = Color(0xFFFAFAFA),
+                tonalElevation = 0.dp,
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE8E8E8))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF999999))
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Box(modifier = Modifier.weight(1f)) {
+                        if (searchText.isBlank()) {
+                            Text("Search conversations...", color = Color(0xFFD7D7D7), fontSize = 16.sp)
+                        }
+                        BasicTextField(
+                            value = searchText,
+                            onValueChange = { searchText = it },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(18.dp))
         }
 
-        itemsIndexed(sessions) { index, session ->
+        itemsIndexed(filteredSessions) { index, session ->
             val sessionId = session.publicId ?: ""
             val displayTitle = when {
                 !session.title.isNullOrBlank() -> session.title
