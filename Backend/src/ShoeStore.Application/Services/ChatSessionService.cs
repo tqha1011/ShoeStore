@@ -60,4 +60,13 @@ public class ChatSessionService(
         await unitOfWork.SaveChangesAsync(token);
         return new CreateSessionResponseDto(newSession.PublicId, newSession.Title);
     }
+
+    public async Task<ErrorOr<Deleted>> DeleteAllChatSessionsAsync(Guid publicUserId, CancellationToken token)
+    {
+        var user = await userRepository.GetUserByPublicIdAsync(publicUserId, token, false);
+        if (user == null) return Error.NotFound("User.NotFound", "User not found.");
+
+        await chatSessionRepository.DeleteAllChatSessionsByUserIdAsync(user.Id, token);
+        return Result.Deleted;
+    }
 }

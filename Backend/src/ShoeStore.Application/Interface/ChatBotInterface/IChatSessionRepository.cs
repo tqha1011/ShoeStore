@@ -10,4 +10,6 @@ public interface IChatSessionRepository : IGenericRepository<ChatSession, int>
     Task<int?> GetChatSessionIdByPublicIdAsync(Guid publicSessionId, int userId, CancellationToken token);
 
     Task<ChatSession?> GetChatSessionByPublicIdAsync(Guid publicSessionId, int userId, CancellationToken token);
+
+    Task<int> DeleteAllChatSessionsByUserIdAsync(int userId, CancellationToken token);
 }
