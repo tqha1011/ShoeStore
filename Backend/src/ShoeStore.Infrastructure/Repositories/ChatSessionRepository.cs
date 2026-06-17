@@ -26,4 +26,11 @@ public class ChatSessionRepository(AppDbContext context)
             .Where(s => s.PublicId == publicSessionId && s.IsActive && s.UserId == userId)
             .FirstOrDefaultAsync(token);
     }
+
+    public async Task<int> DeleteAllChatSessionsByUserIdAsync(int userId, CancellationToken token)
+    {
+        return await DbSet
+            .Where(session => session.UserId == userId)
+            .ExecuteDeleteAsync(token);
+    }
 }

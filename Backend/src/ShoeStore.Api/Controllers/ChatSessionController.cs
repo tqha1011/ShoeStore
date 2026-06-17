@@ -104,4 +104,45 @@ public class ChatSessionController(IChatSessionService chatSessionService) : Con
             });
         return response;
     }
+
+    /// <summary>
+    ///     Deletes all chat sessions for the current authenticated user.
+    /// </summary>
+    /// <remarks>
+    ///     Reads the user identifier from the authenticated principal and deletes all of the user's chat sessions.
+    /// </remarks>
+    /// <param name="token">Cancellation token for the request.</param>
+    /// <response code="204">All chat sessions deleted successfully.</response>
+    /// <response code="401">Unauthorized; user is not authenticated.</response>
+    /// <response code="404">Not found; user does not exist.</response>
+    /// <response code="500">Internal server error; failed to delete chat sessions.</response>
+    /// <returns>An action result indicating the outcome of the deletion process.</returns>
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
+    [HttpDelete]
+    public async Task<IActionResult> DeleteAllChatSessions(CancellationToken token)
+    {
+        var validUser = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (validUser == null || !Guid.TryParse(validUser, out var publicUserId)) return Unauthorized();
+
+        var result = await chatSessionService.DeleteAllChatSessionsAsync(publicUserId, token);
+        var response = result.Match<IActionResult>(
+            _ => NoContent(),
+            errors => errors[0].Code switch
+            {
+                "User.NotFound" => NotFound(new
+                {
+                    message = "User not found.",
+                    description = "The specified user does not exist."
+                }),
+                _ => StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "An error occurred while deleting chat sessions.",
+                    description = errors[0].Description
+                })
+            });
+        return response;
+    }
 }

@@ -11,4 +11,6 @@ public interface IChatSessionService
         int pageSize = 10);
 
     Task<ErrorOr<CreateSessionResponseDto>> CreateSessionAsync(Guid publicUserId, CancellationToken token);
+
+    Task<ErrorOr<Deleted>> DeleteAllChatSessionsAsync(Guid publicUserId, CancellationToken token);
 }
