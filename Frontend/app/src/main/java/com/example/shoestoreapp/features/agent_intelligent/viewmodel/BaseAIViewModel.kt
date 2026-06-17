@@ -202,6 +202,10 @@ abstract class BaseAIViewModel(
         state = state.copy(error = null)
     }
 
+    fun clearHistoryPlaceholder() {
+        state = state.copy(sessions = emptyList(), currentPage = 1, isLastPage = true)
+    }
+
     fun selectSession(sessionId: String) {
         if (sessionId.isBlank()) return
         state = state.copy(

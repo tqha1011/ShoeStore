@@ -24,10 +24,12 @@ class AiStrategyViewmodel(
      signalRManager: SignalRManager,
      ioDispatcher : CoroutineDispatcher = Dispatchers.IO,
 ) : BaseAIViewModel(repository, signalRManager, ioDispatcher) {
+    private var handledInitialPrompt: String? = null
 
     override fun initialize(initialPrompt: String?) {
         // For strategy, we might want to load the most recent session or start fresh
-        if (!initialPrompt.isNullOrBlank()){
+        if (!initialPrompt.isNullOrBlank() && handledInitialPrompt != initialPrompt){
+            handledInitialPrompt = initialPrompt
             SendMessage(userText = initialPrompt, isCampaign = true)
         }
     }

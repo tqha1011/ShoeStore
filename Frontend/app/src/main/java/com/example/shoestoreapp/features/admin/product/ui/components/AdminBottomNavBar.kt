@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ConfirmationNumber
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
@@ -27,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 enum class AdminBottomNavTab {
-    ADMIN, ORDERS, VOUCHERS, ANALYTICS, PROFILE
+    ADMIN, ORDERS, VOUCHERS, ANALYTICS, AI, PROFILE
 }
 
 /**
@@ -107,6 +108,14 @@ fun AdminBottomNavBar(
                         Icon(
                             imageVector = Icons.Outlined.Analytics,
                             contentDescription = "Analytics",
+                            modifier = Modifier.padding(bottom = 2.dp),
+                            tint = if (isSelected) Color.Black else Color(0xFFBBBBBB)
+                        )
+                    }
+                    AdminBottomNavTab.AI -> {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = "AI",
                             modifier = Modifier.padding(bottom = 2.dp),
                             tint = if (isSelected) Color.Black else Color(0xFFBBBBBB)
                         )
