@@ -9,5 +9,8 @@ data class SignUpState(
     val confirmPasswordError: String? = null,
     val isPasswordVisible: Boolean = false,
     val isConfirmPasswordVisible: Boolean = false,
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val bannerMessage: String = "",
+    val isBannerSuccess: Boolean = true,
+    val showBanner: Boolean = false
 )

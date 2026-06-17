@@ -6,5 +6,8 @@ data class CreateNewPasswordState(
     val passwordError: String? = null,
     val isPasswordVisible: Boolean = false,
     val isConfirmPasswordVisible: Boolean = false,
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val bannerMessage: String = "",
+    val isBannerSuccess: Boolean = true,
+    val showBanner: Boolean = false
 )

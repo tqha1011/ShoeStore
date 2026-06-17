@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -22,6 +23,7 @@ import com.example.shoestoreapp.features.auth.presentation.components.AuthUiEven
 import com.example.shoestoreapp.features.auth.presentation.components.ResetPasswordContent
 import com.example.shoestoreapp.features.auth.presentation.components.ResetPasswordTopBar
 import com.example.shoestoreapp.features.auth.presentation.components.TitleBottom
+import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,15 +50,26 @@ fun ForgotPasswordScreen(
         }
     }
 
-    Scaffold(
-        topBar = { ResetPasswordTopBar(onBackClick = onNavigateToSignIn) },
-        containerColor = Color.White
-    ) { paddingValues ->
-        ForgotPasswordForm(
-            state = state,
-            onEvent = viewModel::onEvent,
-            paddingValues = paddingValues
-        )
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = { ResetPasswordTopBar(onBackClick = onNavigateToSignIn) },
+            containerColor = Color.White
+        ) { paddingValues ->
+            ForgotPasswordForm(
+                state = state,
+                onEvent = viewModel::onEvent,
+                paddingValues = paddingValues
+            )
+        }
+
+        Box(modifier = Modifier.align(Alignment.TopCenter)) {
+            TopBanner(
+                message = state.bannerMessage,
+                isSuccess = state.isBannerSuccess,
+                isVisible = state.showBanner,
+                onDismiss = { viewModel.hideBanner() }
+            )
+        }
     }
 }
 @Composable

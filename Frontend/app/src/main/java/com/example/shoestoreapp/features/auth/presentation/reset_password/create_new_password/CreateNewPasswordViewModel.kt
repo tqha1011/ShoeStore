@@ -7,6 +7,7 @@ import com.example.shoestoreapp.features.auth.data.repository.AuthRepositoryImpl
 import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
 import com.example.shoestoreapp.features.auth.presentation.components.AuthUiEvent // IMPORTANT: Using the shared AuthUiEvent
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,6 +35,10 @@ class CreateNewPasswordViewModel(
     fun initCredentials(email: String, otp: String) {
         this.targetEmail = email
         this.targetOtp = otp
+    }
+
+    fun hideBanner() {
+        _state.update { it.copy(showBanner = false) }
     }
 
     // 3. Handle User Events
@@ -106,7 +111,15 @@ class CreateNewPasswordViewModel(
 
             result.fold(
                 onSuccess = {
-                    _state.update { it.copy(isLoading = false) }
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            bannerMessage = "Password changed successfully",
+                            isBannerSuccess = true,
+                            showBanner = true
+                        )
+                    }
+                    delay(SUCCESS_NAVIGATION_DELAY_MS)
                     // Navigate back to Sign In screen upon success
                     _uiEvent.trySend(AuthUiEvent.NavigateToSignIn)
                 },
@@ -118,5 +131,9 @@ class CreateNewPasswordViewModel(
                 }
             )
         }
+    }
+
+    private companion object {
+        const val SUCCESS_NAVIGATION_DELAY_MS = 1500L
     }
 }

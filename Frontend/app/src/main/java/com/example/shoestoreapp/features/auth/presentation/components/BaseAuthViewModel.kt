@@ -20,7 +20,7 @@ abstract class BaseAuthViewModel<S>(
     val state = _state.asStateFlow()
 
     protected abstract fun updateLoading(isLoading: Boolean)
-    protected abstract fun handleSocialSuccess(role: String)
+    protected abstract suspend fun handleSocialSuccess(role: String)
     protected abstract fun handleSocialError(message: String)
 
     fun loginWithGoogle(idToken: String) {

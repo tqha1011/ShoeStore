@@ -10,6 +10,7 @@ import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
 import com.example.shoestoreapp.features.auth.presentation.components.AuthUiEvent
 import com.example.shoestoreapp.features.auth.presentation.components.BaseAuthViewModel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -29,13 +30,19 @@ class SignUpViewModel(
         _state.update { it.copy(isLoading = isLoading) }
     }
 
-    override fun handleSocialSuccess(role: String) {
+    override suspend fun handleSocialSuccess(role: String) {
         // Social login users always go to User Home
+        showSuccessBanner("Signed up successfully")
+        delay(SUCCESS_NAVIGATION_DELAY_MS)
         _uiEvent.trySend(AuthUiEvent.NavigateToUserHome)
     }
 
     override fun handleSocialError(message: String) {
         _state.update { it.copy(passwordError = message) }
+    }
+
+    fun hideBanner() {
+        _state.update { it.copy(showBanner = false) }
     }
 
     // --- Standard Register Logic ---
@@ -132,16 +139,33 @@ class SignUpViewModel(
 
             result.fold(
                 onSuccess = {
+                    showSuccessBanner("Signed up successfully")
+                    delay(SUCCESS_NAVIGATION_DELAY_MS)
                     _uiEvent.send(AuthUiEvent.NavigateToSignUpOtp(currentState.email))
                 },
                 onFailure = { error ->
                     _state.update {
                         it.copy(
-                            passwordError = error.message ?: "Registration failed!"
+                            emailError = error.message ?: "Registration failed!"
                         )
                     }
                 }
             )
         }
+    }
+
+    private fun showSuccessBanner(message: String) {
+        _state.update {
+            it.copy(
+                isLoading = false,
+                bannerMessage = message,
+                isBannerSuccess = true,
+                showBanner = true
+            )
+        }
+    }
+
+    private companion object {
+        const val SUCCESS_NAVIGATION_DELAY_MS = 1500L
     }
 }

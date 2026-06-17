@@ -56,7 +56,7 @@ class AdminAddProductViewModel(
         val dto = CreateProductDto(
             productName = productName,
             categoryId = categoryId,
-            brand = "Nike"
+            brand = "KicksHub"
         )
 
         viewModelScope.launch {

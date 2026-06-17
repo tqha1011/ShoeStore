@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -22,6 +23,7 @@ import com.example.shoestoreapp.features.auth.presentation.components.AuthUiEven
 import com.example.shoestoreapp.features.auth.presentation.components.ResetPasswordContent
 import com.example.shoestoreapp.features.auth.presentation.components.ResetPasswordTopBar
 import com.example.shoestoreapp.features.auth.presentation.components.TitleBottom
+import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,43 +57,54 @@ fun CreateNewPasswordScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            ResetPasswordTopBar(onBackClick = onNavigateToSignIn)
-        },
-        containerColor = Color.White
-    ) { paddingValues ->
-        ResetPasswordContent(
-            paddingValues = paddingValues,
-            title = "Create New Password",
-            description = "Your new password must be different from previously used passwords."
-        ) {
-            // New Password Input Field
-            NewPasswordInput(
-                state = state,
-                onEvent = viewModel::onEvent
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                ResetPasswordTopBar(onBackClick = onNavigateToSignIn)
+            },
+            containerColor = Color.White
+        ) { paddingValues ->
+            ResetPasswordContent(
+                paddingValues = paddingValues,
+                title = "Create New Password",
+                description = "Your new password must be different from previously used passwords."
+            ) {
+                // New Password Input Field
+                NewPasswordInput(
+                    state = state,
+                    onEvent = viewModel::onEvent
+                )
+
+                // Confirm Password Input Field
+                ConfirmPasswordInput(
+                    state = state,
+                    onEvent = viewModel::onEvent
+                )
+
+                // Display Error Message if any
+                ErrorDisplay(errorText = state.passwordError)
+
+                Spacer(modifier = Modifier.height(40.dp))
+
+                // Submit Button
+                ResetPasswordButton(
+                    isLoading = state.isLoading,
+                    onEvent = viewModel::onEvent
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                TitleBottom()
+            }
+        }
+
+        Box(modifier = Modifier.align(Alignment.TopCenter)) {
+            TopBanner(
+                message = state.bannerMessage,
+                isSuccess = state.isBannerSuccess,
+                isVisible = state.showBanner,
+                onDismiss = { viewModel.hideBanner() }
             )
-
-            // Confirm Password Input Field
-            ConfirmPasswordInput(
-                state = state,
-                onEvent = viewModel::onEvent
-            )
-
-            // Display Error Message if any
-            ErrorDisplay(errorText = state.passwordError)
-
-            Spacer(modifier = Modifier.height(40.dp))
-
-            // Submit Button
-            ResetPasswordButton(
-                isLoading = state.isLoading,
-                onEvent = viewModel::onEvent
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            TitleBottom()
         }
     }
 }
