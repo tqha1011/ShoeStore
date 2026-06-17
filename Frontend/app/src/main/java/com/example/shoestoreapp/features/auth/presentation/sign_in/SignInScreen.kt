@@ -20,6 +20,7 @@ import com.example.shoestoreapp.features.auth.presentation.components.*
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import com.example.shoestoreapp.features.auth.presentation.components.AuthUiEvent
+import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
 
 @Composable
 fun LoginScreenContent(
@@ -64,64 +65,75 @@ fun LoginScreenContent(
         topBarButtonContainerColor = Color.White
     )
 
-    AuthScreenTemplate(
-        topBarButtonText = "Sign up",
-        onTopBarButtonClick = onNavigateToSignUp,
-        theme = signInTheme,
-    ) {
-        Spacer(modifier = Modifier.weight(1.8f))
-        TitleText("Sign In", color = Color.Black)
-        Spacer(modifier = Modifier.weight(2f))
+    Box(modifier = Modifier.fillMaxSize()) {
+        AuthScreenTemplate(
+            topBarButtonText = "Sign up",
+            onTopBarButtonClick = onNavigateToSignUp,
+            theme = signInTheme,
+        ) {
+            Spacer(modifier = Modifier.weight(1.8f))
+            TitleText("Sign In", color = Color.Black)
+            Spacer(modifier = Modifier.weight(2f))
 
-        val inputStyle = AuthFieldStyle(label = "Email", containerColor = Color(0xFF222222), textColor = Color.White)
+            val inputStyle = AuthFieldStyle(label = "Email", containerColor = Color(0xFF222222), textColor = Color.White)
 
-        AuthTextField(
-            value = state.email,
-            onValueChange = { viewModel.onEvent(SignInEvent.EmailChanged(it)) },
-            style = inputStyle,
-            isError = state.emailError != null,
-            errorText = state.emailError
-        )
+            AuthTextField(
+                value = state.email,
+                onValueChange = { viewModel.onEvent(SignInEvent.EmailChanged(it)) },
+                style = inputStyle,
+                isError = state.emailError != null,
+                errorText = state.emailError
+            )
 
-        Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-        AuthPasswordField(
-            value = state.password,
-            onValueChange = { viewModel.onEvent(SignInEvent.PasswordChanged(it)) },
-            style = inputStyle.copy(label = "Password"),
-            isError = state.passwordError != null,
-            errorText = state.passwordError,
-            passwordVisible = state.isPasswordVisible,
-            onToggleVisibility = { viewModel.onEvent(SignInEvent.TogglePasswordVisibility) }
-        )
+            AuthPasswordField(
+                value = state.password,
+                onValueChange = { viewModel.onEvent(SignInEvent.PasswordChanged(it)) },
+                style = inputStyle.copy(label = "Password"),
+                isError = state.passwordError != null,
+                errorText = state.passwordError,
+                passwordVisible = state.isPasswordVisible,
+                onToggleVisibility = { viewModel.onEvent(SignInEvent.TogglePasswordVisibility) }
+            )
 
-        Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-        AuthActionButton(
-            text = if (state.isLoading) "Loading..." else "Sign in",
-            icon = Icons.Default.Key,
-            onClick = { if (!state.isLoading) viewModel.onEvent(SignInEvent.Submit) },
-            containerColor = Color(0xFF1A1A1A),
-            contentColor = Color.White
-        )
+            AuthActionButton(
+                text = if (state.isLoading) "Loading..." else "Sign in",
+                icon = Icons.Default.Key,
+                onClick = { if (!state.isLoading) viewModel.onEvent(SignInEvent.Submit) },
+                containerColor = Color(0xFF1A1A1A),
+                contentColor = Color.White
+            )
 
-        Text(
-            text = "Forgot password?",
-            fontSize = 16.sp,
-            color = Color.LightGray,
-            modifier = Modifier.align(Alignment.End).padding(top = 8.dp).clickable { onNavigateToForgotPassword() }
-        )
+            Text(
+                text = "Forgot password?",
+                fontSize = 16.sp,
+                color = Color.LightGray,
+                modifier = Modifier.align(Alignment.End).padding(top = 8.dp).clickable { onNavigateToForgotPassword() }
+            )
 
-        Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.weight(1f))
 
-        SocialLoginSection(
-            dividerColor = Color.DarkGray,
-            textColor = Color.DarkGray,
-            buttonContainerColor = Color(0xFF222222),
-            iconTint = Color.White,
-            onGoogleClick = { coroutineScope.launch { googleAuthClient.signIn()?.let { viewModel.loginWithGoogle(it) } } },
-            onFacebookClick = { triggerFacebookLogin() }
-        )
-        Spacer(modifier = Modifier.height(30.dp))
+            SocialLoginSection(
+                dividerColor = Color.DarkGray,
+                textColor = Color.DarkGray,
+                buttonContainerColor = Color(0xFF222222),
+                iconTint = Color.White,
+                onGoogleClick = { coroutineScope.launch { googleAuthClient.signIn()?.let { viewModel.loginWithGoogle(it) } } },
+                onFacebookClick = { triggerFacebookLogin() }
+            )
+            Spacer(modifier = Modifier.height(30.dp))
+        }
+
+        Box(modifier = Modifier.align(Alignment.TopCenter)) {
+            TopBanner(
+                message = state.bannerMessage,
+                isSuccess = state.isBannerSuccess,
+                isVisible = state.showBanner,
+                onDismiss = { viewModel.hideBanner() }
+            )
+        }
     }
 }

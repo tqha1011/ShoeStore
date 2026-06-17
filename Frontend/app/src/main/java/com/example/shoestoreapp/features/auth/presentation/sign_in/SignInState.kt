@@ -7,5 +7,8 @@ data class SignInState(
     val emailError: String? = null,
     val passwordError: String? = null,
     val isPasswordVisible: Boolean = false,
-    val isLoading: Boolean = false // Loading call api
+    val isLoading: Boolean = false, // Loading call api
+    val bannerMessage: String = "",
+    val isBannerSuccess: Boolean = true,
+    val showBanner: Boolean = false
 )

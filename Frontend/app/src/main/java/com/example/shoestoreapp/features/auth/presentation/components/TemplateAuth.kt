@@ -173,6 +173,7 @@ fun AuthTextField(
     isError: Boolean,
     errorText: String?,
     style: AuthFieldStyle,
+    showErrorAboveField: Boolean = false,
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(top = 20.dp)) {
         Text(
@@ -181,11 +182,23 @@ fun AuthTextField(
             color = Color.Gray,
             modifier = Modifier.padding(start = 8.dp)
         )
+        if (showErrorAboveField && errorText != null) {
+            Text(
+                text = errorText,
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(start = 8.dp, top = 4.dp, bottom = 4.dp)
+            )
+        }
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
             isError = isError,
-            supportingText = { errorText?.let { Text(it) } },
+            supportingText = {
+                if (!showErrorAboveField) {
+                    errorText?.let { Text(it) }
+                }
+            },
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),

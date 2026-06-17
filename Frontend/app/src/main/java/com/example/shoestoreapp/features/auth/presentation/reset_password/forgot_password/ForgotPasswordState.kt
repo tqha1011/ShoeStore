@@ -7,5 +7,8 @@ data class ForgotPasswordState(
     val isCodeSent: Boolean = false, // Check if verification code has been sent
     val emailError: String? = null,
     val verificationError: String? = null,
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val bannerMessage: String = "",
+    val isBannerSuccess: Boolean = true,
+    val showBanner: Boolean = false
 )
