@@ -19,6 +19,7 @@ class AiChatRepository (
 ) {
     suspend fun createSession() = sessionApi.createSession()
     suspend fun getSessions(pageNumber : Int, pageSize : Int) = sessionApi.getSession(pageNumber, pageSize)
+    suspend fun deleteAllSessions() = sessionApi.deleteAllSessions()
 
     suspend fun getChatMessages(sessionId: String, cursor: String? = null): retrofit2.Response<ChatHistoryResponseDto> {
         return sessionApi.getChatMessages(sessionId, cursor)

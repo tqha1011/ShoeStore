@@ -203,7 +203,7 @@ fun BaseAIChatScreen(
                     showHistorySheet = false
                 },
                 onLoadMore = { viewModel.loadSessions(isNextPage = true) },
-                onClearAll = { viewModel.clearHistoryPlaceholder() },
+                onClearAll = { viewModel.clearAllSessions() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 480.dp)

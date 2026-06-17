@@ -202,8 +202,39 @@ abstract class BaseAIViewModel(
         state = state.copy(error = null)
     }
 
-    fun clearHistoryPlaceholder() {
-        state = state.copy(sessions = emptyList(), currentPage = 1, isLastPage = true)
+    fun clearAllSessions() {
+        if (state.isLoadingSesions) return
+
+        viewModelScope.launch(ioDispatcher) {
+            state = state.copy(isLoadingSesions = true, error = null)
+
+            runCatching {
+                val response = repository.deleteAllSessions()
+                if (!response.isSuccessful) {
+                    val errorBody = response.errorBody()?.string()?.take(200)
+                    throw Exception("Failed to clear history: ${response.code()} ${errorBody ?: ""}".trim())
+                }
+            }
+                .onSuccess {
+                    state = state.copy(
+                        sessions = emptyList(),
+                        messages = emptyList(),
+                        currentSessionId = null,
+                        currentPage = 1,
+                        isLastPage = true,
+                        isLoadingSesions = false,
+                        isMoreLoading = false,
+                        error = null
+                    )
+                }
+                .onFailure { exception ->
+                    state = state.copy(
+                        error = exception.message ?: "Failed to clear history.",
+                        isLoadingSesions = false,
+                        isMoreLoading = false
+                    )
+                }
+        }
     }
 
     fun selectSession(sessionId: String) {
