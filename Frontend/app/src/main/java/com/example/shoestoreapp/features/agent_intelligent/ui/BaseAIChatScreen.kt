@@ -179,7 +179,6 @@ fun BaseAIChatScreen(
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .imePadding() // Push up when keyboard appears
                     .padding(16.dp)
             ) {
                 SharedChatInputBar(value = inputText, onValueChange = { inputText = it }, onSend = {
