@@ -72,7 +72,7 @@ fun TermsDisclaimerText(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "By clicking \"Complete Purchase\", you agree to Nike's Terms of Use and Privacy Policy.",
+            text = "By clicking \"Complete Purchase\", you agree to KicksHub's Terms of Use and Privacy Policy.",
             fontSize = 10.sp,
             fontWeight = FontWeight.Normal,
             color = Color(0xFF999999),

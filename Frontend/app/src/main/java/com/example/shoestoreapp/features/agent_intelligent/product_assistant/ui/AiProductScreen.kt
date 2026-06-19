@@ -15,6 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.ManageSearch
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -49,6 +53,7 @@ import com.example.shoestoreapp.features.agent_intelligent.data.remote.ProductSu
 import com.example.shoestoreapp.features.agent_intelligent.data.remote.SearchProductResultDto
 import com.example.shoestoreapp.features.agent_intelligent.data.remote.VariantResultDto
 import com.example.shoestoreapp.features.agent_intelligent.product_assistant.viewmodel.AiProductViewmodel
+import com.example.shoestoreapp.features.agent_intelligent.ui.AiQuickAction
 import com.example.shoestoreapp.features.agent_intelligent.ui.BaseAIChatScreen
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
@@ -63,7 +68,13 @@ fun AiProductScreen(
     title: String = "Product Assistant",
     aiRoleName: String = "AI ASSISTANT",
     userRoleName: String = "USER",
-    onTabSelected: (BottomNavTab) -> Unit = {}
+    onTabSelected: (BottomNavTab) -> Unit = {},
+    headerContent: (@Composable () -> Unit)? = null,
+    adminBottomBarContent: (@Composable () -> Unit)? = null,
+    quickActions: List<AiQuickAction> = defaultProductQuickActions(showAdminPanels),
+    onQuickActionClick: (AiQuickAction) -> Unit = { action ->
+        viewModel.SendMessage(action.prompt, isCampaign = false)
+    }
 ) {
     val searchResult by viewModel.searchResultState.collectAsState()
     val selectedProduct by viewModel.selectedProductState.collectAsState()
@@ -100,7 +111,7 @@ fun AiProductScreen(
             message = lastAiMessage
                 ?.text
                 ?.takeIf(::shouldPromptVariantForm)
-                ?: "Nhập size, màu, số lượng và giá bán cho biến thể mới.",
+                ?: "Enter size, color, stock, and price for the new variant.",
             variant = VariantResultDto(productId = productId)
         )
     } else {
@@ -135,8 +146,14 @@ fun AiProductScreen(
         userRoleName = userRoleName,
         initialPrompt = initialPrompt,
         onBackClick = onBackClick,
+        headerContent = headerContent,
+        emptyTitle = "Hello! How can I help you?",
+        emptySubtitle = "Type a question or choose a suggestion below to get started.",
+        inputPlaceholder = "Ask me anything...",
+        quickActions = quickActions,
+        onQuickActionClick = onQuickActionClick,
         bottomBarContent = if (showAdminPanels) {
-            null
+            adminBottomBarContent
         } else {
             {
                 BottomNavBar(
@@ -211,6 +228,46 @@ fun AiProductScreen(
     }
 }
 
+private fun defaultProductQuickActions(showAdminPanels: Boolean): List<AiQuickAction> {
+    return if (showAdminPanels) {
+        listOf(
+            AiQuickAction(
+                label = "Optimize product catalog",
+                prompt = "Analyze my product catalog and suggest optimization opportunities.",
+                icon = Icons.Default.TrendingUp
+            ),
+            AiQuickAction(
+                label = "Find products missing variants",
+                prompt = "Find products that should have more sizes, colors, or stock variants.",
+                icon = Icons.Default.ManageSearch
+            ),
+            AiQuickAction(
+                label = "Plan a product improvement",
+                prompt = "Help me plan the next product improvement based on current inventory.",
+                icon = Icons.Default.Inventory2
+            )
+        )
+    } else {
+        listOf(
+            AiQuickAction(
+                label = "Recommend shoes for me",
+                prompt = "Recommend shoes based on comfort, style, and daily use.",
+                icon = Icons.Default.TrendingUp
+            ),
+            AiQuickAction(
+                label = "Find running shoes",
+                prompt = "Help me find running shoes with good cushioning.",
+                icon = Icons.Default.ManageSearch
+            ),
+            AiQuickAction(
+                label = "Compare popular products",
+                prompt = "Compare popular shoes and help me choose the best option.",
+                icon = Icons.Default.Inventory2
+            )
+        )
+    }
+}
+
 private fun shouldPromptVariantForm(text: String): Boolean {
     val normalized = text.lowercase()
     val keywords = listOf("kích thước", "size", "màu", "color", "stock", "giá", "price")
@@ -229,7 +286,7 @@ private fun parseSearchResultFromMessage(text: String): SearchProductResultDto? 
 
     return SearchProductResultDto(
         status = "MultipleFound",
-        message = "Chọn một sản phẩm để tiếp tục",
+        message = "Select a product to continue",
         products = products
     )
 }

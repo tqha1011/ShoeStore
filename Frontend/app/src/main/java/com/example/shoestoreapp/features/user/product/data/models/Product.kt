@@ -5,7 +5,7 @@ package com.example.shoestoreapp.features.user.product.data.models
  * Match với Backend ProductResponseDto
  *
  * @param publicId - GUID của sản phẩm (từ Backend)
- * @param productName - Tên sản phẩm (VD: "Nike Air Max 270")
+ * @param productName - Tên sản phẩm (VD: "KicksHub Runner 270")
  * @param categoryName - Danh mục sản phẩm (VD: "Giày thể thao")
  * @param variants - Danh sách các biến thể (size, color, price, stock)
  */

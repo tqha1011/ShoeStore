@@ -11,6 +11,7 @@ import com.example.shoestoreapp.features.auth.domain.repository.AuthRepository
 import com.example.shoestoreapp.features.auth.presentation.components.AuthUiEvent
 import com.example.shoestoreapp.features.auth.presentation.components.BaseAuthViewModel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -27,12 +28,18 @@ class SignInViewModel(
         _state.update { it.copy(isLoading = isLoading) }
     }
 
-    override fun handleSocialSuccess(role: String) {
-        _uiEvent.trySend(AuthUiEvent.NavigateToUserHome)
+    override suspend fun handleSocialSuccess(role: String) {
+        showSuccessBanner()
+        delay(SUCCESS_NAVIGATION_DELAY_MS)
+        navigateByRole(role)
     }
 
     override fun handleSocialError(message: String) {
         _state.update { it.copy(passwordError = message) }
+    }
+
+    fun hideBanner() {
+        _state.update { it.copy(showBanner = false) }
     }
 
     // --- Standard Login Logic ---
@@ -109,11 +116,9 @@ class SignInViewModel(
 
                         tokenManager.saveAuthInfo(token = token, role = role)
 
-                        if (role.uppercase() == "ADMIN") {
-                            _uiEvent.trySend(AuthUiEvent.NavigateToAdminHome)
-                        } else {
-                            _uiEvent.trySend(AuthUiEvent.NavigateToUserHome)
-                        }
+                        showSuccessBanner()
+                        delay(SUCCESS_NAVIGATION_DELAY_MS)
+                        navigateByRole(role)
                     },
                     onFailure = { error ->
                         _state.update {
@@ -137,5 +142,28 @@ class SignInViewModel(
                 _state.update { it.copy(isLoading = false) }
             }
         }
+    }
+
+    private fun showSuccessBanner() {
+        _state.update {
+            it.copy(
+                isLoading = false,
+                bannerMessage = "Signed in successfully",
+                isBannerSuccess = true,
+                showBanner = true
+            )
+        }
+    }
+
+    private fun navigateByRole(role: String) {
+        if (role.uppercase() == "ADMIN") {
+            _uiEvent.trySend(AuthUiEvent.NavigateToAdminHome)
+        } else {
+            _uiEvent.trySend(AuthUiEvent.NavigateToUserHome)
+        }
+    }
+
+    private companion object {
+        const val SUCCESS_NAVIGATION_DELAY_MS = 1500L
     }
 }

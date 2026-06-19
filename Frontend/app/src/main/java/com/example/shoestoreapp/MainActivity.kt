@@ -26,7 +26,8 @@ import com.example.shoestoreapp.features.admin.addproduct.data.repositories.Mast
 import com.example.shoestoreapp.features.admin.addproduct.ui.screens.AdminProductCrudScreen
 import com.example.shoestoreapp.features.admin.addproduct.viewmodel.AdminAddProductViewModel
 import com.example.shoestoreapp.features.admin.addproduct.viewmodel.FetchMasterDataViewModel
-import com.example.shoestoreapp.features.admin.ai_assistant.ui.AiStrategyScreen
+import com.example.shoestoreapp.features.admin.ai_assistant.ui.AdminAiAssistantScreen
+import com.example.shoestoreapp.features.admin.ai_assistant.ui.AdminAiMode
 import com.example.shoestoreapp.features.admin.ai_assistant.viewmodel.AiStrategyViewmodel
 import com.example.shoestoreapp.features.admin.analytics.data.AnalyticsRepository
 import com.example.shoestoreapp.features.admin.analytics.ui.AdminAnalyticsScreen
@@ -111,7 +112,6 @@ private object Routes {
     const val ADMIN_AI_ASSISTANT_BASE = "admin_ai_assistant"
     const val ADMIN_AI_ASSISTANT =
         "$ADMIN_AI_ASSISTANT_BASE?isGeneratingCampaign={isGeneratingCampaign}"
-    const val ADMIN_AI_PRODUCT = "admin_ai_product"
     const val USER_AI_ASSISTANT_BASE = "user_ai_assistant"
     const val USER_AI_ASSISTANT = "$USER_AI_ASSISTANT_BASE?isGenerateProduct={isGeneratingProduct}"
 
@@ -146,8 +146,6 @@ private object Routes {
     fun adminAiAssistant(isGeneratingCampaign: Boolean = false): String {
         return "$ADMIN_AI_ASSISTANT_BASE?isGeneratingCampaign=$isGeneratingCampaign"
     }
-
-    fun adminAiProduct(): String = ADMIN_AI_PRODUCT
 
     fun userAiAssistant(isGeneratingProduct: Boolean = false): String {
         return "$USER_AI_ASSISTANT_BASE?isGenerateProduct=$isGeneratingProduct"
@@ -613,6 +611,7 @@ private fun NavGraphBuilder.userGraph(
         }
         AiProductScreen(
             viewModel = aiProductViewmodel,
+            initialPrompt = initialPrompt,
             onBackClick = { navController.popBackStack() },
             onTabSelected = { tab -> handleUserAiTabSelection(tab, navController) }
         )
@@ -627,9 +626,6 @@ private fun NavGraphBuilder.adminGraph(
     composable(Routes.ADMIN_PRODUCT_LIST) {
         AdminProductListScreen(
             viewModel = remember { AdminProductListViewModel() },
-            onAiAssistantClick = {
-                navController.navigate(Routes.adminAiProduct())
-            },
             onAddProductClick = {
                 navController.navigate(Routes.ADMIN_CRUD)
             },
@@ -684,7 +680,6 @@ private fun NavGraphBuilder.adminGraph(
             onGenerateCampaignClick = {
                 navController.navigate(Routes.adminAiAssistant(isGeneratingCampaign = true))
             },
-            onAiClick = { navController.navigate(Routes.adminAiAssistant(isGeneratingCampaign = false)) },
             onTabSelected = { tab -> handleAdminAnalyticsTabSelection(tab, navController) }
         )
     }
@@ -722,17 +717,6 @@ private fun NavGraphBuilder.adminGraph(
                 signalRManager = signalRManager
             )
         }
-        AiStrategyScreen(
-            viewModel = aiStrategyViewmodel,
-            initialPrompt = initialPrompt,
-            onBackClick = { navController.popBackStack() }
-        )
-    }
-
-    composable(Routes.ADMIN_AI_PRODUCT) {
-        val context = LocalContext.current
-        val tokenManager = remember { TokenManager(context) }
-        val signalRManager = remember { SignalRManager(tokenManager) }
         val aiProductViewmodel = remember {
             AiProductViewmodel(
                 repository = AiChatRepository(
@@ -743,13 +727,13 @@ private fun NavGraphBuilder.adminGraph(
                 enableAdminActions = true
             )
         }
-        AiProductScreen(
-            viewModel = aiProductViewmodel,
-            onBackClick = { navController.popBackStack() },
-            showAdminPanels = true,
-            title = "Admin Product Assistant",
-            aiRoleName = "AI ADMIN",
-            userRoleName = "ADMIN"
+        AdminAiAssistantScreen(
+            analyticsViewModel = aiStrategyViewmodel,
+            productViewModel = aiProductViewmodel,
+            initialMode = AdminAiMode.ANALYTICS,
+            initialPrompt = initialPrompt,
+            onTabSelected = { tab -> handleAdminAiTabSelection(tab, navController) },
+            onBackClick = { navController.popBackStack() }
         )
     }
 
@@ -945,6 +929,7 @@ private fun handleAdminProductTabSelection(
         AdminBottomNavTab.ORDERS -> navController.navigate(Routes.ADMIN_INVOICE_LIST)
         AdminBottomNavTab.VOUCHERS -> navController.navigate(Routes.ADMIN_VOUCHER_MANAGEMENT)
         AdminBottomNavTab.ANALYTICS -> navController.navigate(Routes.ADMIN_ANALYTICS)
+        AdminBottomNavTab.AI -> navController.navigate(Routes.adminAiAssistant())
         AdminBottomNavTab.PROFILE -> navController.navigate(Routes.ADMIN_PROFILE)
     }
 }
@@ -968,6 +953,10 @@ private fun handleAdminInvoiceTabSelection(
 
         AdminBottomNavTab.ANALYTICS -> {
             navController.navigateAndPopTo(Routes.ADMIN_ANALYTICS, Routes.ADMIN_INVOICE_LIST)
+        }
+
+        AdminBottomNavTab.AI -> {
+            navController.navigateAndPopTo(Routes.adminAiAssistant(), Routes.ADMIN_INVOICE_LIST)
         }
 
         AdminBottomNavTab.PROFILE -> {
@@ -995,6 +984,10 @@ private fun handleAdminProfileTabSelection(
 
         AdminBottomNavTab.ANALYTICS -> {
             navController.navigateAndPopTo(Routes.ADMIN_ANALYTICS, Routes.ADMIN_PROFILE)
+        }
+
+        AdminBottomNavTab.AI -> {
+            navController.navigateAndPopTo(Routes.adminAiAssistant(), Routes.ADMIN_PROFILE)
         }
 
         AdminBottomNavTab.PROFILE -> Unit
@@ -1026,7 +1019,12 @@ private fun handleAdminAnalyticsTabSelection(
             Routes.ADMIN_ANALYTICS
         )
 
-        else -> Unit
+        AdminBottomNavTab.AI -> navController.navigateAndPopTo(
+            Routes.adminAiAssistant(),
+            Routes.ADMIN_ANALYTICS
+        )
+
+        AdminBottomNavTab.ANALYTICS -> Unit
     }
 }
 
@@ -1054,8 +1052,41 @@ private fun handleAdminVoucherTabSelection(
             navController.navigateAndPopTo(Routes.ADMIN_ANALYTICS, Routes.ADMIN_VOUCHER_MANAGEMENT)
         }
 
+        AdminBottomNavTab.AI -> {
+            navController.navigateAndPopTo(Routes.adminAiAssistant(), Routes.ADMIN_VOUCHER_MANAGEMENT)
+        }
+
         AdminBottomNavTab.PROFILE -> {
             navController.navigateAndPopTo(Routes.ADMIN_PROFILE, Routes.ADMIN_VOUCHER_MANAGEMENT)
+        }
+    }
+}
+
+private fun handleAdminAiTabSelection(
+    tab: AdminBottomNavTab,
+    navController: NavHostController
+) {
+    when (tab) {
+        AdminBottomNavTab.ADMIN -> {
+            navController.navigateAndPopTo(Routes.ADMIN_PRODUCT_LIST, Routes.ADMIN_AI_ASSISTANT)
+        }
+
+        AdminBottomNavTab.ORDERS -> {
+            navController.navigateAndPopTo(Routes.ADMIN_INVOICE_LIST, Routes.ADMIN_AI_ASSISTANT)
+        }
+
+        AdminBottomNavTab.VOUCHERS -> {
+            navController.navigateAndPopTo(Routes.ADMIN_VOUCHER_MANAGEMENT, Routes.ADMIN_AI_ASSISTANT)
+        }
+
+        AdminBottomNavTab.ANALYTICS -> {
+            navController.navigateAndPopTo(Routes.ADMIN_ANALYTICS, Routes.ADMIN_AI_ASSISTANT)
+        }
+
+        AdminBottomNavTab.AI -> Unit
+
+        AdminBottomNavTab.PROFILE -> {
+            navController.navigateAndPopTo(Routes.ADMIN_PROFILE, Routes.ADMIN_AI_ASSISTANT)
         }
     }
 }

@@ -45,6 +45,10 @@ class ForgotPasswordViewModel(
         }
     }
 
+    fun hideBanner() {
+        _state.update { it.copy(showBanner = false) }
+    }
+
     // Send verificationcode
     private fun sendVerificationCode() {
         val currentState = _state.value
@@ -71,7 +75,15 @@ class ForgotPasswordViewModel(
 
             result.fold(
                 onSuccess = {
-                    _state.update { it.copy(isLoading = false, isCodeSent = true) }
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            isCodeSent = true,
+                            bannerMessage = "Verification code sent successfully",
+                            isBannerSuccess = true,
+                            showBanner = true
+                        )
+                    }
                 },
                 onFailure = { error ->
                     _state.update { it.copy(isLoading = false, emailError = error.message) }

@@ -13,11 +13,9 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -52,7 +50,6 @@ import java.util.Locale
 @Composable
 fun AdminAnalyticsScreen(
     viewModel: AdminAnalyticsViewModel,
-    onAiClick: () -> Unit = {},
     onTabSelected: (AdminBottomNavTab) -> Unit = {},
     onGenerateCampaignClick: () -> Unit
 ) {
@@ -67,11 +64,7 @@ fun AdminAnalyticsScreen(
             .background(Color.White)
     ) {
         // Top Navigation Bar
-        AdminAnalyticsTopBar(
-            onAiClick = {
-               onAiClick()
-            }
-        )
+        AdminAnalyticsTopBar()
 
         if (state.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -161,20 +154,9 @@ fun AdminAnalyticsScreen(
  */
 @Composable
 fun AdminAnalyticsTopBar(
-    onAiClick: () -> Unit = {}
 ) {
     AdminManagementTopBar(
-        title = "Analytics Management",
-        actions = {
-            IconButton(onClick = onAiClick) {
-                Icon(
-                    imageVector = Icons.Default.AutoAwesome, // Icon for AI Assistant
-                    contentDescription = "AI Assistant",
-                    tint = Color.Black,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
+        title = "Analytics Management"
     )
 }
 

@@ -155,15 +155,9 @@ class AiProductViewmodel(
             _selectedProductState.value = product
         }
         val selectedText = buildString {
-<<<<<<< Updated upstream
-            append("Tôi chọn sản phẩm")
+            append("I choose product")
             if (productName.isNotBlank()) append(" \"$productName\"")
-            if (productId.isNotBlank()) append(" có Product ID: $productId")
-=======
-            append("I select product")
-            if (productName.isNotBlank()) append(" \"$productName\"")
-            if (productId.isNotBlank()) append(" with productId: $productId")
->>>>>>> Stashed changes
+            if (productId.isNotBlank()) append(" with Product ID: $productId")
         }
         SendMessage(userText = selectedText, isCampaign = false)
         clearSearchResult()
