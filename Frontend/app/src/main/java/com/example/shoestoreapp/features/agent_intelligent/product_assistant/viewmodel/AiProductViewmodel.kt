@@ -46,7 +46,7 @@ class AiProductViewmodel(
 
     private var allowAdminSignals: Boolean = false
     private val adminActionRegex = Regex(
-        "(thêm|add|variant|màu|size|giày|productid|select|chọn|xác nhận|confirm|đồng ý|tạo biến thể|create)",
+        "(thêm|add|variant|màu|size|giày|product\\s*id|select|choose|chọn|xác nhận|confirm|đồng ý|tạo biến thể|create)",
         RegexOption.IGNORE_CASE
     )
 
@@ -155,9 +155,15 @@ class AiProductViewmodel(
             _selectedProductState.value = product
         }
         val selectedText = buildString {
+<<<<<<< Updated upstream
             append("Tôi chọn sản phẩm")
             if (productName.isNotBlank()) append(" \"$productName\"")
             if (productId.isNotBlank()) append(" có Product ID: $productId")
+=======
+            append("I select product")
+            if (productName.isNotBlank()) append(" \"$productName\"")
+            if (productId.isNotBlank()) append(" with productId: $productId")
+>>>>>>> Stashed changes
         }
         SendMessage(userText = selectedText, isCampaign = false)
         clearSearchResult()

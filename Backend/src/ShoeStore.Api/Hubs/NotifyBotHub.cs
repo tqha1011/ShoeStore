@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using ShoeStore.Application.Interface.Hub;
 
@@ -31,6 +32,7 @@ namespace ShoeStore.Api.Hubs;
 /// hubConnection.stop().blockingAwait()
 /// </code>
 /// </remarks>
+[Authorize(Roles = "Admin")]
 public class NotifyBotHub : Hub<INotifyBotHub>
 {
     /// <summary>

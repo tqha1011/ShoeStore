@@ -11,7 +11,7 @@ data class AddVariantResultDto(
     val message : String? = null,
 
     @SerializedName("variant", alternate = ["Variant"])
-    val variant : VariantResultDto?
+    val variant : VariantResultDto? = null
 )
 
 data class VariantResultDto(
