@@ -70,6 +70,22 @@ builder.Services.AddAuthentication(options =>
         ),
         ClockSkew = TimeSpan.Zero // set clock skew to zero to prevent token expiration issues
     };
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+
+            if (!string.IsNullOrEmpty(accessToken) &&
+                path.StartsWithSegments("/hubs", StringComparison.OrdinalIgnoreCase))
+            {
+                context.Token = accessToken;
+            }
+
+            return Task.CompletedTask;
+        }
+    };
 });
 
 builder.Services.AddProblemDetails(); // return 
@@ -207,5 +223,5 @@ app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();
 app.MapHub<NotifyHub>("/hubs/notify");
-app.MapHub<NotifyBotHub>("hubs/agent/notify");
+app.MapHub<NotifyBotHub>("/hubs/agent/notify");
 app.Run();

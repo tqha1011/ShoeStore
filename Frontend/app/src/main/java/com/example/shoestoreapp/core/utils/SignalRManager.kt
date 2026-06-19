@@ -3,7 +3,6 @@ package com.example.shoestoreapp.core.utils
 import android.util.Log
 import com.example.shoestoreapp.features.agent_intelligent.data.remote.AddVariantResultDto
 import com.example.shoestoreapp.features.agent_intelligent.data.remote.SearchProductResultDto
-import com.google.gson.Gson
 import com.microsoft.signalr.HubConnection
 import com.microsoft.signalr.HubConnectionBuilder
 import com.microsoft.signalr.HubConnectionState
@@ -15,6 +14,8 @@ import kotlinx.coroutines.flow.firstOrNull
 class SignalRManager(private val tokenManager: TokenManager) {
     // SignalR Connection
     private var hubConnection: HubConnection? = null
+    private val connectionLock = Any()
+    private var isStartingConnection = false
     // AddVariantResult
     private val _variantDraftFlow = MutableSharedFlow<AddVariantResultDto?>(replay = 1)
     val variantDraftFlow = _variantDraftFlow.asSharedFlow()
@@ -23,11 +24,14 @@ class SignalRManager(private val tokenManager: TokenManager) {
     private val _searchResultFlow = MutableSharedFlow<SearchProductResultDto?>(replay = 1)
     val searchResultFlow = _searchResultFlow.asSharedFlow()
     suspend fun startConnection() {
-        if (hubConnection?.connectionState == HubConnectionState.CONNECTED) return
+        synchronized(connectionLock) {
+            if (hubConnection?.connectionState == HubConnectionState.CONNECTED || isStartingConnection) return
+            isStartingConnection = true
+        }
 
         try {
             val jwtToken = tokenManager.getToken.firstOrNull() ?: ""
-            val serverUrl = "https://overhaul-pampered-landslide.ngrok-free.dev/hubs/agent/notify"
+            val serverUrl = "${Constants.BASE_URL.trimEnd('/')}/hubs/agent/notify"
 
             hubConnection = HubConnectionBuilder.create(serverUrl)
                 .withAccessTokenProvider(Single.defer { Single.just(jwtToken) })
@@ -40,6 +44,10 @@ class SignalRManager(private val tokenManager: TokenManager) {
             Log.d("SIGNAL_R", "Open SignalR successfully")
         } catch (e: Exception) {
             Log.e("SIGNAL_R", "Error SignalR: ${e.message}")
+        } finally {
+            synchronized(connectionLock) {
+                isStartingConnection = false
+            }
         }
     }
 

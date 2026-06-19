@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
+import com.example.shoestoreapp.core.utils.Constants
 import com.example.shoestoreapp.features.user.checkout.viewmodel.CheckoutViewModel
 import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
 import com.example.shoestoreapp.features.user.product.ui.components.UserTopBarTitle
@@ -238,8 +239,10 @@ private fun ObservePaymentSignalR(
     val coroutineScope = rememberCoroutineScope()
 
     DisposableEffect(orderCode) {
-        val hubUrl = "https://deploy-service-h6acgba9dkc0gvcw.eastasia-01.azurewebsites.net/paymentHub"
-        val hubConnection = HubConnectionBuilder.create(hubUrl).build()
+        val hubUrl = "${Constants.BASE_URL.trimEnd('/')}/hubs/notify"
+        val hubConnection = HubConnectionBuilder.create(hubUrl)
+            .withHeader("ngrok-skip-browser-warning", "true")
+            .build()
 
         hubConnection.on("ReceivePaymentNotification", { dto ->
             coroutineScope.launch {

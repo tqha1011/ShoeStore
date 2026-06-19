@@ -46,29 +46,55 @@ import com.example.shoestoreapp.features.invoice.model.displayName
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceCardContainer
 import com.example.shoestoreapp.features.invoice.ui.components.InvoiceStatusOrUnknown
 import com.example.shoestoreapp.features.invoice.ui.components.invoiceTextOrDash
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 fun formatAdminDate(isoString: String?): String {
-    if (isoString.isNullOrEmpty() || isoString == "-") return "-"
-    return try {
-        val datePart = isoString.substringBefore("T")
-        val dateTokens = datePart.split("-")
-        if (dateTokens.size < 3) return isoString
+    val rawDate = isoString?.trim().orEmpty()
+    if (rawDate.isEmpty() || rawDate == "-") return "-"
 
-        val month = dateTokens[1]
-        val day = dateTokens[2]
-        val rawTime = isoString.substringAfter("T", "")
-        val timeTokens = rawTime.split(":")
-        val timePart = if (timeTokens.size >= 2) {
-            "${timeTokens[0]}:${timeTokens[1]}"
-        } else {
-            "--:--"
-        }
-
-        "$timePart - $day/$month"
-    } catch (_: Exception) {
-        isoString
+    val parsedUtcDate = parseUtcInvoiceDate(rawDate)
+    if (parsedUtcDate != null) {
+        return SimpleDateFormat("HH:mm - dd/MM", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("GMT+07:00")
+        }.format(parsedUtcDate)
     }
+
+    return rawDate
+}
+
+private fun parseUtcInvoiceDate(rawDate: String): Date? {
+    val normalizedDate = normalizeUtcInvoiceDate(rawDate) ?: return null
+    return runCatching {
+        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ", Locale.US).apply {
+            isLenient = false
+            timeZone = TimeZone.getTimeZone("UTC")
+        }.parse(normalizedDate)
+    }.getOrNull()
+}
+
+private fun normalizeUtcInvoiceDate(rawDate: String): String? {
+    val match = Regex(
+        pattern = """^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?(Z|[+-]\d{2}:?\d{2})?$"""
+    ).matchEntire(rawDate) ?: return null
+
+    val datePart = match.groupValues[1]
+    val timePart = match.groupValues[2]
+    val millisPart = match.groupValues[3]
+        .takeIf { it.isNotEmpty() }
+        ?.padEnd(3, '0')
+        ?.take(3)
+        ?: "000"
+    val offsetPart = match.groupValues[4]
+        .takeIf { it.isNotEmpty() }
+        ?.let { offset ->
+            if (offset == "Z") "+0000" else offset.replace(":", "")
+        }
+        ?: "+0000"
+
+    return "${datePart}T$timePart.$millisPart$offsetPart"
 }
 
 fun formatAdminPrice(priceStr: String?): String {
