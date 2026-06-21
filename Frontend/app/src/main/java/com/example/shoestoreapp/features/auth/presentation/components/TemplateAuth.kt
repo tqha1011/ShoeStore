@@ -175,7 +175,7 @@ fun AuthTextField(
     style: AuthFieldStyle,
     showErrorAboveField: Boolean = false,
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(top = 20.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Text(
             text = style.label,
             fontSize = 17.sp,
@@ -194,10 +194,10 @@ fun AuthTextField(
             value = value,
             onValueChange = onValueChange,
             isError = isError,
-            supportingText = {
-                if (!showErrorAboveField) {
-                    errorText?.let { Text(it) }
-                }
+            supportingText = if (!showErrorAboveField && errorText != null) {
+                { Text(errorText) }
+            } else {
+                null
             },
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth(),
@@ -228,7 +228,7 @@ fun AuthPasswordField(
     passwordVisible: Boolean,
     onToggleVisibility: () -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(top = 20.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Text(
             text = style.label,
             fontSize = 17.sp,
@@ -239,7 +239,11 @@ fun AuthPasswordField(
             value = value,
             onValueChange = onValueChange,
             isError = isError,
-            supportingText = { errorText?.let { Text(it) } },
+            supportingText = if (errorText != null) {
+                { Text(errorText) }
+            } else {
+                null
+            },
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.fillMaxWidth(),
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),

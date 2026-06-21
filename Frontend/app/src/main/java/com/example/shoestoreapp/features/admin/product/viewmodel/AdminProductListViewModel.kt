@@ -1,11 +1,12 @@
 ﻿package com.example.shoestoreapp.features.admin.product.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shoestoreapp.features.admin.product.data.models.AdminProduct
 import com.example.shoestoreapp.features.admin.product.data.repositories.AdminProductRepository
 import com.example.shoestoreapp.features.admin.product.data.repositories.AdminProductRepositoryImpl
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,13 +40,17 @@ class AdminProductListViewModel(
 
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
+
+    private var listRequestJob: Job? = null
+
     // ============ INIT ============
     init {
         loadProducts()
     }
     // ============ LOAD DATA ============
     fun loadProducts() {
-        viewModelScope.launch {
+        listRequestJob?.cancel()
+        listRequestJob = viewModelScope.launch {
             _isLoading.value = true
             _currentPage.value = 1
             _hasNext.value = false
@@ -70,7 +75,7 @@ class AdminProductListViewModel(
     }
 
     fun loadNextPage() {
-        if (_isLoadingMore.value || !_hasNext.value) {
+        if (_isLoading.value || _isLoadingMore.value || !_hasNext.value) {
             return
         }
 
@@ -114,6 +119,7 @@ class AdminProductListViewModel(
      * @param filter - Filter được chọn ("ALL PRODUCTS", "IN STOCK", etc)
      */
     fun onFilterChanged(filter: String) {
+        if (_selectedFilter.value == filter) return
         _selectedFilter.value = filter
         applyFiltersAndSearch()
     }
@@ -123,32 +129,42 @@ class AdminProductListViewModel(
      * @param query - Text tìm kiếm
      */
     fun onSearchChanged(query: String) {
+        if (_searchText.value == query) return
         _searchText.value = query
-        applyFiltersAndSearch()
+        applyFiltersAndSearch(debounceMillis = 300)
     }
     // ============ BUSINESS LOGIC ============
     /**
      * Áp dụng filter và search, cập nhật danh sách hiển thị
      */
-    private fun applyFiltersAndSearch() {
-        viewModelScope.launch {
-            _isLoading.value = true
+    private fun applyFiltersAndSearch(debounceMillis: Long = 0L) {
+        listRequestJob?.cancel()
+        listRequestJob = viewModelScope.launch {
+            if (debounceMillis > 0) {
+                delay(debounceMillis)
+            }
+
             _currentPage.value = 1
             _hasNext.value = false
-            _products.value = emptyList()
+
             val keyword = _searchText.value.ifEmpty { null }
             val inStock = (_selectedFilter.value == "IN STOCK").takeIf { it }
             val outOfStock = (_selectedFilter.value == "OUT OF STOCK").takeIf { it }
             val lowStock = (_selectedFilter.value == "LOW STOCK").takeIf { it }
             val pageIndex = 1
             val pageSize = 6
-            repository.searchProducts(keyword, inStock, outOfStock, lowStock, pageIndex, pageSize)
-                .collect { page ->
-                    _products.value = page.items
-                    _currentPage.value = page.pageNumber
-                    _hasNext.value = page.hasNext
-                    _isLoading.value = false
-                }
+
+            val page = repository.searchProducts(
+                keyword,
+                inStock,
+                outOfStock,
+                lowStock,
+                pageIndex,
+                pageSize
+            ).first()
+            _products.value = page.items
+            _currentPage.value = page.pageNumber
+            _hasNext.value = page.hasNext
         }
     }
 

@@ -22,6 +22,12 @@ data class ItemDto(
     val publicId: String?,
     @SerializedName("status")
     val status: String?,
+    @SerializedName(value = "shopBankCode", alternate = ["ShopBankCode"])
+    val shopBankCode: String?,
+    @SerializedName(value = "shopBankAccount", alternate = ["ShopBankAccount"])
+    val shopBankAccount: String?,
+    @SerializedName(value = "shopAccountName", alternate = ["ShopAccountName"])
+    val shopAccountName: String?,
     @SerializedName("updateCreated")
     val updateCreated: Any?,
     @SerializedName("username")

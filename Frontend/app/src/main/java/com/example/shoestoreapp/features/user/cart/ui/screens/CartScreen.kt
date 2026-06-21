@@ -41,12 +41,14 @@ import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
  * @param viewModel - CartViewModel cung cấp dữ liệu và logic
  * @param onNavigateBack - Callback quay lại màn hình trước
  * @param onNavigateToCheckout - Callback chuyển sang checkout screen
+ * @param onContinueShoppingClick - Callback chuyển sang màn hình danh sách sản phẩm khi giỏ hàng trống
  */
 @Composable
 fun CartScreen(
     viewModel: CartViewModel,
     onNavigateBack: () -> Unit = {},
     onNavigateToCheckout: () -> Unit = {},
+    onContinueShoppingClick: () -> Unit = {},
     onTabSelected: (BottomNavTab) -> Unit = {}
 ) {
     // Collect state từ ViewModel
@@ -97,7 +99,7 @@ fun CartScreen(
 
                 is CartUiState.Success -> {
                     if (state.isEmpty) {
-                        EmptyCart(onContinueShopping = onNavigateBack)
+                        EmptyCart(onContinueShopping = onContinueShoppingClick)
                     } else {
                         // Cart items list with summary
                         LazyColumn(

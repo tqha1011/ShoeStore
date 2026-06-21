@@ -71,9 +71,9 @@ fun LoginScreenContent(
             onTopBarButtonClick = onNavigateToSignUp,
             theme = signInTheme,
         ) {
-            Spacer(modifier = Modifier.weight(1.8f))
+            Spacer(modifier = Modifier.height(118.dp))
             TitleText("Sign In", color = Color.Black)
-            Spacer(modifier = Modifier.weight(2f))
+            Spacer(modifier = Modifier.height(96.dp))
 
             val inputStyle = AuthFieldStyle(label = "Email", containerColor = Color(0xFF222222), textColor = Color.White)
 
@@ -85,7 +85,7 @@ fun LoginScreenContent(
                 errorText = state.emailError
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             AuthPasswordField(
                 value = state.password,
@@ -97,7 +97,7 @@ fun LoginScreenContent(
                 onToggleVisibility = { viewModel.onEvent(SignInEvent.TogglePasswordVisibility) }
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             AuthActionButton(
                 text = if (state.isLoading) "Loading..." else "Sign in",
@@ -121,7 +121,16 @@ fun LoginScreenContent(
                 textColor = Color.DarkGray,
                 buttonContainerColor = Color(0xFF222222),
                 iconTint = Color.White,
-                onGoogleClick = { coroutineScope.launch { googleAuthClient.signIn()?.let { viewModel.loginWithGoogle(it) } } },
+                onGoogleClick = {
+                    coroutineScope.launch {
+                        val idToken = googleAuthClient.signIn()
+                        if (idToken != null) {
+                            viewModel.loginWithGoogle(idToken)
+                        } else {
+                            viewModel.onSocialLoginFailed("Google sign-in failed. Check Google client configuration.")
+                        }
+                    }
+                },
                 onFacebookClick = { triggerFacebookLogin() }
             )
             Spacer(modifier = Modifier.height(30.dp))

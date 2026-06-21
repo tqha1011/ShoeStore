@@ -20,6 +20,7 @@ class AdminAnalyticsViewModel(
     var state by mutableStateOf(AdminAnalyticsState())
         private set
     private var chartJob: Job? = null // Tracks the current chart loading job for cancellation.
+    private var analyticsJob: Job? = null
 
     init {
         loadAnalytics()
@@ -27,8 +28,23 @@ class AdminAnalyticsViewModel(
 
     // Loads summary, chart data, and top products into the screen state.
     fun loadAnalytics() {
-        viewModelScope.launch {
-            state = state.copy(isLoading = true, error = null)
+        loadAnalytics(showFullScreenLoading = true)
+    }
+
+    fun refreshAnalytics() {
+        loadAnalytics(showFullScreenLoading = false)
+    }
+
+    private fun loadAnalytics(showFullScreenLoading: Boolean) {
+        analyticsJob?.cancel()
+        chartJob?.cancel()
+        analyticsJob = viewModelScope.launch {
+            val shouldShowFullScreenLoading = showFullScreenLoading && state.summary == null
+            state = state.copy(
+                isLoading = shouldShowFullScreenLoading,
+                isRefreshing = !showFullScreenLoading,
+                error = null
+            )
 
             val summaryResult = repository.getSummary()
             val chartResult = repository.getChartData(state.chartPeriod)
@@ -47,6 +63,7 @@ class AdminAnalyticsViewModel(
             val defaultSelectedIndex = if (chartValue.isNotEmpty()) chartValue.lastIndex else 0
             state = state.copy(
                 isLoading = false,
+                isRefreshing = false,
                 summary = summaryValue,
                 chartData = chartValue,
                 topProducts = topProductsValue,
@@ -97,6 +114,7 @@ data class AdminAnalyticsState(
     val chartData: List<ChartDataDto> = emptyList(),
     val topProducts: List<TopProductDto> = emptyList(),
     val error: String? = null,
+    val isRefreshing: Boolean = false,
     val selectedIndex: Int = 2,
     val chartPeriod: String = "7days"
 )

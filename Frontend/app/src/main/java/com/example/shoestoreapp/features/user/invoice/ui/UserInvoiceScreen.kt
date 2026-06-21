@@ -38,6 +38,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -54,15 +55,18 @@ import com.example.shoestoreapp.features.user.invoice.ui.components.UserOrderCar
 import com.example.shoestoreapp.features.user.invoice.viewmodel.UserInvoiceViewModel
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
+import kotlinx.coroutines.launch
 
 @Composable
 fun UserInvoiceScreen(
     viewModel: UserInvoiceViewModel,
     initialStatus: InvoiceStatus? = null,
-    onTabSelected: (BottomNavTab) -> Unit = {}
+    onTabSelected: (BottomNavTab) -> Unit = {},
+    onNavigateToPendingPayment: (Invoice) -> Unit = {}
 ) {
     val state = viewModel.state
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     // Hosts transient success/error messages.
     val snackbarHostState = remember { SnackbarHostState() }
     // Holds the card selected for cancel confirmation.
@@ -208,7 +212,17 @@ fun UserInvoiceScreen(
         // Details sheet is driven by selectedInvoice presence.
         UserInvoiceDetailsBottomSheet(
             state = state,
-            onDismissRequest = viewModel::clearDetails
+            onDismissRequest = viewModel::clearDetails,
+            onPayPendingSePayClick = { invoice ->
+                if (invoice.hasQrPaymentData()) {
+                    viewModel.clearDetails()
+                    onNavigateToPendingPayment(invoice)
+                } else {
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar("Không đủ thông tin thanh toán để tạo mã QR.")
+                    }
+                }
+            }
         )
     }
 
@@ -326,3 +340,11 @@ private data class OrderFilter(
     val status: InvoiceStatus?,
     val label: String
 )
+
+private fun Invoice.hasQrPaymentData(): Boolean {
+    val finalAmount = finalPrice?.toDoubleOrNull() ?: 0.0
+    return orderCode.isNotBlank() &&
+        finalAmount > 0.0 &&
+        !shopBankCode.isNullOrBlank() &&
+        !shopBankAccount.isNullOrBlank()
+}

@@ -7,9 +7,11 @@ import android.graphics.BitmapFactory
 import android.os.Build
 import android.provider.MediaStore
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -117,7 +119,7 @@ fun PaymentQRScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(24.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Box(
                 modifier = Modifier
@@ -364,13 +366,16 @@ private fun PaymentScanQrView(
     var isSavingImage by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(bottom = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Top
     ) {
         Text(
             text = "Scan QR Code to Pay",
-            fontSize = 18.sp,
+            fontSize = 17.sp,
             fontWeight = FontWeight.Black,
             color = Color.Black
         )
@@ -379,20 +384,21 @@ private fun PaymentScanQrView(
 
         Text(
             text = "Account Holder: ${accountName.ifEmpty { "Shoe Store Official" }}",
-            fontSize = 14.sp,
+            fontSize = 13.sp,
             color = Color.DarkGray,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
+            textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         Box(contentAlignment = Alignment.Center) {
             AsyncImage(
                 model = sePayQrUrl,
                 contentDescription = "SePay VietQR Code",
                 modifier = Modifier
-                    .size(280.dp)
-                    .padding(8.dp),
+                    .size(230.dp)
+                    .padding(4.dp),
                 contentScale = ContentScale.Fit
             )
         }
@@ -404,9 +410,9 @@ private fun PaymentScanQrView(
                     isSavingImage = true
                     val success = saveQrToGallery(context, sePayQrUrl, orderCode)
                     if (success) {
-                        viewModel.showCustomBanner("Đã lưu mã QR thành công vào Thư viện ảnh!", true)
+                        viewModel.showCustomBanner("QR code saved to your gallery.", true)
                     } else {
-                        viewModel.showCustomBanner("Tải ảnh thất bại. Vui lòng kiểm tra lại kết nối mạng!", false)
+                        viewModel.showCustomBanner("Failed to save the QR code. Please check your network connection.", false)
                     }
                     isSavingImage = false
                 }
@@ -414,7 +420,7 @@ private fun PaymentScanQrView(
             enabled = !isSavingImage,
             modifier = Modifier
                 .wrapContentSize()
-                .padding(bottom = 16.dp),
+                .padding(bottom = 8.dp),
             shape = RoundedCornerShape(24.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Black),
             border = ButtonDefaults.outlinedButtonBorder(enabled = !isSavingImage).copy(width = 1.dp)
@@ -440,19 +446,19 @@ private fun PaymentScanQrView(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color(0xFFF9FAFB))
         ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Amount:", color = Color.Gray)
-                    Text("$formattedAmount VND", fontWeight = FontWeight.Bold, color = Color.Black)
+                    Text("Amount:", color = Color.Gray, fontSize = 13.sp)
+                    Text("$formattedAmount VND", fontWeight = FontWeight.Bold, color = Color.Black, fontSize = 13.sp)
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Description:", color = Color.Gray)
-                    Text(rawDescription, fontWeight = FontWeight.Bold, color = Color(0xFFEF4444))
+                    Text("Description:", color = Color.Gray, fontSize = 13.sp)
+                    Text(rawDescription, fontWeight = FontWeight.Bold, color = Color(0xFFEF4444), fontSize = 13.sp)
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         Text(
             text = "Your order will be processed automatically upon payment receipt.",
@@ -462,7 +468,7 @@ private fun PaymentScanQrView(
             modifier = Modifier.padding(horizontal = 16.dp)
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = {

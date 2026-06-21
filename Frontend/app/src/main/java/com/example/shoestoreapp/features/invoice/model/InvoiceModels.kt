@@ -20,6 +20,9 @@ data class Invoice(
     val finalPrice: String?,
     val address: String?,
     val phones: String?,
+    val shopBankCode: String?,
+    val shopBankAccount: String?,
+    val shopAccountName: String?,
 )
 // Data Details
 data class Detail (
@@ -73,4 +76,3 @@ fun String?.toInvoiceStatus(): InvoiceStatus {
         else -> InvoiceStatus.PENDING
     }
 }
-

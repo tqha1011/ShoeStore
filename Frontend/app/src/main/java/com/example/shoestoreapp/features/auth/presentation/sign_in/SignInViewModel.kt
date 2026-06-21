@@ -35,7 +35,14 @@ class SignInViewModel(
     }
 
     override fun handleSocialError(message: String) {
-        _state.update { it.copy(passwordError = message) }
+        _state.update {
+            it.copy(
+                passwordError = message,
+                bannerMessage = message,
+                isBannerSuccess = false,
+                showBanner = true
+            )
+        }
     }
 
     fun hideBanner() {

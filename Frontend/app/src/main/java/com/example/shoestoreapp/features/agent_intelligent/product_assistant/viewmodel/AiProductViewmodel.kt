@@ -154,12 +154,6 @@ class AiProductViewmodel(
         if (productId.isNotBlank()) {
             _selectedProductState.value = product
         }
-        val selectedText = buildString {
-            append("I choose product")
-            if (productName.isNotBlank()) append(" \"$productName\"")
-            if (productId.isNotBlank()) append(" with Product ID: $productId")
-        }
-        SendMessage(userText = selectedText, isCampaign = false)
         clearSearchResult()
     }
 

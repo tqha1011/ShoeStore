@@ -1,6 +1,8 @@
 package com.example.shoestoreapp.features.agent_intelligent.ui
 
+import android.app.Activity
 import android.os.Build
+import android.view.WindowManager
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -36,6 +38,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -73,9 +78,13 @@ fun BaseAIChatScreen(
     onQuickActionClick: (AiQuickAction) -> Unit = { action -> viewModel.SendMessage(action.prompt) },
 ) {
     val state = viewModel.state
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
 
     var inputText by remember { mutableStateOf("") }
     var showHistorySheet by remember { mutableStateOf(false) }
+    var shouldScrollToSentUserMessage by remember { mutableStateOf(false) }
 
     val listState = rememberLazyListState()
 
@@ -83,17 +92,33 @@ fun BaseAIChatScreen(
         viewModel.initialize(initialPrompt)
     }
 
+    DisposableEffect(Unit) {
+        val window = (context as? Activity)?.window
+        val previousSoftInputMode = window?.attributes?.softInputMode
+        window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
+
+        onDispose {
+            previousSoftInputMode?.let { window.setSoftInputMode(it) }
+        }
+    }
+
     val messages = state.messages
     val hasFooter = footerContent != null
-    LaunchedEffect(messages.size, messages.lastOrNull()?.text?.length, hasFooter) {
-        if (hasFooter) {
-            val lastIndex = listState.layoutInfo.totalItemsCount - 1
-            if (lastIndex >= 0) {
-                listState.animateScrollToItem(lastIndex)
-            }
-        } else if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size - 1)
+    val isKeyboardVisible = WindowInsets.ime.getBottom(density) > 0
+    val lastUserMessageId = messages.lastOrNull { it.isUser }?.id
+
+    LaunchedEffect(lastUserMessageId, shouldScrollToSentUserMessage, state.error, headerContent) {
+        if (!shouldScrollToSentUserMessage || lastUserMessageId == null) return@LaunchedEffect
+
+        withFrameNanos { }
+        val sentMessageIndex = messages.indexOfLast { it.id == lastUserMessageId }
+        if (sentMessageIndex >= 0) {
+            val messageStartIndex =
+                (if (!state.error.isNullOrBlank()) 1 else 0) +
+                    (if (headerContent != null) 1 else 0)
+            listState.scrollToItem(messageStartIndex + sentMessageIndex)
         }
+        shouldScrollToSentUserMessage = false
     }
     Scaffold(
         topBar = {
@@ -104,14 +129,46 @@ fun BaseAIChatScreen(
                 onLoadSessions = { viewModel.loadSessions(isNextPage = false) })
         },
         bottomBar = {
-            bottomBarContent?.invoke()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .imePadding()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 8.dp, bottom = 8.dp)
+                ) {
+                    SharedChatInputBar(
+                        value = inputText,
+                        onValueChange = { inputText = it },
+                        onSend = {
+                            shouldScrollToSentUserMessage = true
+                            viewModel.SendMessage(inputText)
+                            inputText = "" // clear input aften sending
+                        },
+                        placeholder = inputPlaceholder
+                    )
+                }
+
+                if (!isKeyboardVisible) {
+                    bottomBarContent?.invoke()
+                }
+            }
         },
         containerColor = Color.White
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(
+                    start = paddingValues.calculateStartPadding(layoutDirection),
+                    top = paddingValues.calculateTopPadding(),
+                    end = paddingValues.calculateEndPadding(layoutDirection),
+                    bottom = paddingValues.calculateBottomPadding()
+                )
                 .background(Color.White)
         ) {
             LazyColumn(
@@ -119,7 +176,7 @@ fun BaseAIChatScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(top = 24.dp, bottom = 100.dp),
+                contentPadding = PaddingValues(top = 24.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 if (!state.error.isNullOrBlank()) {
@@ -146,10 +203,13 @@ fun BaseAIChatScreen(
                         SharedAiEmptyState(
                             title = emptyTitle,
                             subtitle = emptySubtitle,
-                            quickActions = quickActions,
-                            onQuickActionClick = onQuickActionClick
-                        )
-                    }
+                        quickActions = quickActions,
+                        onQuickActionClick = { action ->
+                            shouldScrollToSentUserMessage = true
+                            onQuickActionClick(action)
+                        }
+                    )
+                }
                 } else {
                     items(state.messages) { message ->
                         if (message.isUser) {
@@ -175,17 +235,6 @@ fun BaseAIChatScreen(
                 }
             }
 
-            // Input Require
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-            ) {
-                SharedChatInputBar(value = inputText, onValueChange = { inputText = it }, onSend = {
-                    viewModel.SendMessage(inputText)
-                    inputText = "" // clear input aften sending
-                }, placeholder = inputPlaceholder)
-            }
         }
     }
 

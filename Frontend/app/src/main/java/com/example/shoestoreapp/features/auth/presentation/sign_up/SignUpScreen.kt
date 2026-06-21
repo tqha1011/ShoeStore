@@ -67,9 +67,9 @@ fun RegisterScreenContent(
             onTopBarButtonClick = onNavigateToSignIn,
             theme = signUpTheme
         ) {
-            Spacer(modifier = Modifier.weight(4f))
+            Spacer(modifier = Modifier.height(118.dp))
             TitleText("Sign Up", color = Color.White)
-            Spacer(modifier = Modifier.weight(4f))
+            Spacer(modifier = Modifier.height(94.dp))
 
             val inputStyle = AuthFieldStyle(label = "Email", containerColor = Color(0xFFF5F5F5), textColor = Color.Black, unfocusedBorderColor = Color.LightGray)
 
@@ -82,7 +82,7 @@ fun RegisterScreenContent(
                 showErrorAboveField = true
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             AuthPasswordField(
                 value = state.password,
@@ -94,7 +94,7 @@ fun RegisterScreenContent(
                 onToggleVisibility = { viewModel.onEvent(SignUpEvent.TogglePasswordVisibility) }
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             AuthPasswordField(
                 value = state.confirmPassword,
@@ -106,7 +106,7 @@ fun RegisterScreenContent(
                 onToggleVisibility = { viewModel.onEvent(SignUpEvent.ToggleConfirmPasswordVisibility) }
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             AuthActionButton(
                 text = if (state.isLoading) "Loading..." else "Sign up",
@@ -123,7 +123,16 @@ fun RegisterScreenContent(
                 textColor = Color.Black,
                 buttonContainerColor = Color(0xFFF5F5F5),
                 iconTint = Color.Black,
-                onGoogleClick = { coroutineScope.launch { googleAuthClient.signIn()?.let { viewModel.loginWithGoogle(it) } } },
+                onGoogleClick = {
+                    coroutineScope.launch {
+                        val idToken = googleAuthClient.signIn()
+                        if (idToken != null) {
+                            viewModel.loginWithGoogle(idToken)
+                        } else {
+                            viewModel.onSocialLoginFailed("Google sign-in failed. Check Google client configuration.")
+                        }
+                    }
+                },
                 onFacebookClick = { triggerFacebookLogin() }
             )
             Spacer(modifier = Modifier.height(30.dp))

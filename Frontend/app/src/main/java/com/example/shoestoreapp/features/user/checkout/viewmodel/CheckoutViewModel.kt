@@ -292,7 +292,7 @@ class CheckoutViewModel(
                     if (data.status.equals("Paid", ignoreCase = true) && data.remainingAmount == 0.0) {
                         onSuccess()
                     } else {
-                        _bannerMessage.value = "Hệ thống chưa ghi nhận tiền. Vui lòng đợi thêm hoặc kiểm tra lại ngân hàng!"
+                        _bannerMessage.value = "Payment has not been received yet. Please wait a moment or check your bank transaction."
                         _isBannerSuccess.value = false
                         _showBanner.value = true
                     }

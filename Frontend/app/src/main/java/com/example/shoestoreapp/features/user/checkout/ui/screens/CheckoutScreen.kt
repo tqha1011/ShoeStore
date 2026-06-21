@@ -48,6 +48,7 @@ import com.example.shoestoreapp.features.user.checkout.viewmodel.PlaceOrderUiSta
 import com.example.shoestoreapp.features.user.product.ui.components.ProductDetailTopAppBar
 import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
 import com.example.shoestoreapp.features.user.voucher.data.models.VoucherUiModel
+import kotlinx.coroutines.delay
 
 
 data class CheckoutScreenActions(
@@ -246,6 +247,8 @@ private fun ObserveCheckoutSideEffects(
             if (paymentType == PaymentType.SePay) {
                 actions.onNavigateToQRScreen(invoice)
             } else {
+                checkoutViewModel.showCustomBanner("Order placed successfully.", true)
+                delay(1200)
                 actions.onCompletePurchaseClick()
             }
         }
