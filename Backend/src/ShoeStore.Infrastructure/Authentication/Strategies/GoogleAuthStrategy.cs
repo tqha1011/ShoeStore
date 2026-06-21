@@ -22,7 +22,7 @@ public class GoogleAuthStrategy(
             return Error.Unexpected("Google.MissingClientId", "Google Client ID is not configured.");
         try
         {
-            var payload = await googleValidator.ValidateTokenAsync(accessToken, clientId, token);
+            var payload = await googleValidator.ValidateTokenAsync(clientId, accessToken, token);
             if (payload == null)
                 return Error.Unauthorized(
                     "Google.EmptyPayload",

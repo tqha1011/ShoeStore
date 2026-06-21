@@ -15,7 +15,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,6 +49,7 @@ import java.util.Locale
  * Admin Revenue Analytics Screen
  * Displays comprehensive analytics dashboard with revenue trends, top products, and growth insights
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminAnalyticsScreen(
     viewModel: AdminAnalyticsViewModel,
@@ -82,65 +85,72 @@ fun AdminAnalyticsScreen(
 
         val safeIndex = if (chartData.isEmpty()) 0 else state.selectedIndex.coerceIn(0, chartData.lastIndex)
 
-        LazyColumn(
+        PullToRefreshBox(
+            isRefreshing = state.isRefreshing,
+            onRefresh = { viewModel.refreshAnalytics() },
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(bottom = 80.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(16.dp)
         ) {
-            if (!state.error.isNullOrBlank()) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 80.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                if (!state.error.isNullOrBlank()) {
+                    item {
+                        Text(
+                            text = state.error,
+                            color = Color(0xFFB00020),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+
+                // Header Section
                 item {
-                    Text(
-                        text = state.error,
-                        color = Color(0xFFB00020),
-                        fontSize = 12.sp
+                    AdminAnalyticsHeader()
+                }
+
+                // Key Metrics Grid
+                item {
+                    KeyMetricsGrid(summary = summary)
+                }
+
+                // Performance Trends Chart
+                item {
+                    PerformanceTrendsSection(
+                        chartData = chartData,
+                        selectedIndex = safeIndex,
+                        selectedPeriod = state.chartPeriod,
+                        onPeriodSelected = { viewModel.selectChartPeriod(it) },
+                        onBarSelected = { viewModel.selectBar(it) }
                     )
                 }
-            }
 
-            // Header Section
-            item {
-                AdminAnalyticsHeader()
-            }
-
-            // Key Metrics Grid
-            item {
-                KeyMetricsGrid(summary = summary)
-            }
-
-            // Performance Trends Chart
-            item {
-                PerformanceTrendsSection(
-                    chartData = chartData,
-                    selectedIndex = safeIndex,
-                    selectedPeriod = state.chartPeriod,
-                    onPeriodSelected = { viewModel.selectChartPeriod(it) },
-                    onBarSelected = { viewModel.selectBar(it) }
-                )
-            }
-
-            // Top Sales Products
-            item {
-                TopSalesProductsSection(topProducts = topProducts)
-            }
-
-            // Growth Opportunity Card
-            item {
-                summary.let { data ->
-                    GrowthOpportunityCard(
-                        growthPercent = data.growthTotalRevenuePercent,
-                        onGenerateCampaignClick = {
-                            onGenerateCampaignClick()
-                        }
-                    )
+                // Top Sales Products
+                item {
+                    TopSalesProductsSection(topProducts = topProducts)
                 }
-            }
 
-            // Bottom spacing
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
+                // Growth Opportunity Card
+                item {
+                    summary.let { data ->
+                        GrowthOpportunityCard(
+                            growthPercent = data.growthTotalRevenuePercent,
+                            onGenerateCampaignClick = {
+                                onGenerateCampaignClick()
+                            }
+                        )
+                    }
+                }
+
+                // Bottom spacing
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         }
 

@@ -41,15 +41,20 @@ import coil.compose.AsyncImage
 import com.example.shoestoreapp.features.admin.invoice.ui.components.formatAdminDate
 import com.example.shoestoreapp.features.admin.invoice.ui.components.formatAdminPrice
 import com.example.shoestoreapp.features.invoice.model.Detail
+import com.example.shoestoreapp.features.invoice.model.Invoice
+import com.example.shoestoreapp.features.invoice.model.InvoiceStatus
 import com.example.shoestoreapp.features.user.invoice.viewmodel.UserInvoiceState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserInvoiceDetailsBottomSheet(
     state: UserInvoiceState,
-    onDismissRequest: () -> Unit
+    onDismissRequest: () -> Unit,
+    onPayPendingSePayClick: (Invoice) -> Unit = {}
 ) {
     val selectedInvoice = state.selectedInvoice ?: return
+    val canPayPendingSePay = selectedInvoice.paymentMethod.equals("SePay", ignoreCase = true) &&
+        selectedInvoice.status == InvoiceStatus.PENDING
     val subtotal = state.invoiceDetails.sumOf { detail ->
         detail.unitPrice.toLong() * detail.quantity.toLong()
     }
@@ -188,7 +193,11 @@ fun UserInvoiceDetailsBottomSheet(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         OutlinedButton(
-                            onClick = {},
+                            onClick = {
+                                if (canPayPendingSePay) {
+                                    onPayPendingSePayClick(selectedInvoice)
+                                }
+                            },
                             modifier = Modifier
                                 .weight(1f)
                                 .height(54.dp),
@@ -200,7 +209,7 @@ fun UserInvoiceDetailsBottomSheet(
                             )
                         ) {
                             Text(
-                                text = "Contact support",
+                                text = if (canPayPendingSePay) "Pay" else "Contact support",
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.ExtraBold,
                                 maxLines = 1

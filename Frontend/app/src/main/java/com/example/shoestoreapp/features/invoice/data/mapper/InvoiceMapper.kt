@@ -17,7 +17,10 @@ fun ItemDto.toDomain() : Invoice {
         shippingFee = this.shippingFee,
         finalPrice = this.finalPrice,
         address = this.address,
-        phones = this.phone
+        phones = this.phone,
+        shopBankCode = this.shopBankCode,
+        shopBankAccount = this.shopBankAccount,
+        shopAccountName = this.shopAccountName
     )
 }
 

@@ -16,6 +16,12 @@ public class InvoiceResponseDto
 
     public decimal ShippingFee { get; set; }
     public decimal FinalPrice { get; set; }
+
+    public string ShopBankCode { get; set; } = string.Empty;
+
+    public string ShopBankAccount { get; set; } = string.Empty;
+
+    public string ShopAccountName { get; set; } = string.Empty;
 }
 
 public sealed record InvoiceCheckResultDto(

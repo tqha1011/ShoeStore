@@ -6,7 +6,7 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.CustomCredential
 import androidx.credentials.exceptions.GetCredentialException
-import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.example.shoestoreapp.BuildConfig
 
@@ -17,17 +17,19 @@ class GoogleAuthClient(
 
     suspend fun signIn(): String? {
         return try {
-            val googleIdOption = GetGoogleIdOption.Builder()
-                .setFilterByAuthorizedAccounts(false) // Show all Google accounts on device
-                .setServerClientId(BuildConfig.GOOGLE_CLIENT_ID)
-                .setAutoSelectEnabled(false) // Disable auto select to let user choose account
+            if (BuildConfig.GOOGLE_CLIENT_ID.isBlank()) {
+                Log.e("GoogleAuth", "GOOGLE_CLIENT_ID is missing from local.properties")
+                return null
+            }
+
+            val googleIdOption = GetSignInWithGoogleOption.Builder(BuildConfig.GOOGLE_CLIENT_ID)
                 .build()
 
             val request = GetCredentialRequest.Builder()
                 .addCredentialOption(googleIdOption)
                 .build()
 
-            Log.d("GoogleAuth", "Calling Credential Manager with Client ID: ${BuildConfig.GOOGLE_CLIENT_ID}")
+            Log.d("GoogleAuth", "Calling Credential Manager")
 
             val result = credentialManager.getCredential(context, request)
             val credential = result.credential

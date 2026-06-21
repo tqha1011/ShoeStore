@@ -1,6 +1,7 @@
 ﻿using ErrorOr;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.Configuration;
 using ShoeStore.Application.Constants;
 using ShoeStore.Application.DTOs;
 using ShoeStore.Application.DTOs.InvoiceDetailDTOs;
@@ -19,7 +20,8 @@ public class InvoiceService(
     IInvoiceRepository invoiceRepository,
     IUnitOfWork uow,
     ICurrentUser currentUser,
-    HybridCache cache) : IInvoiceService
+    HybridCache cache,
+    IConfiguration configuration) : IInvoiceService
 {
     public async Task<ErrorOr<PageResult<InvoiceResponseDto>>> GetInvoiceAsync(InvoiceRequestDto request,
         CancellationToken token)
@@ -36,6 +38,13 @@ public class InvoiceService(
 
         query = query.OrderByDescending(iv => iv.CreatedAt).ApplyPagination(request.PageNumber, request.PageSize);
 
+        var shopBankCode = configuration["ShopBank:BankCode"] ??
+                           throw new InvalidOperationException("Shop bank code is not configured");
+        var shopBankAccount = configuration["ShopBank:BankAccount"] ??
+                              throw new InvalidOperationException("Shop bank account is not configured");
+        var shopAccountName = configuration["ShopBank:AccountName"] ??
+                              throw new InvalidOperationException("Shop account name is not configured");
+
         var invoices = await query.Select(i => new InvoiceResponseDto
         {
             PublicId = i.PublicId,
@@ -48,7 +57,10 @@ public class InvoiceService(
             Phone = i.Phone,
             OrderCode = i.OrderCode,
             ShippingFee = i.ShippingFee,
-            FinalPrice = i.FinalPrice
+            FinalPrice = i.FinalPrice,
+            ShopBankCode = shopBankCode,
+            ShopBankAccount = shopBankAccount,
+            ShopAccountName = shopAccountName
         }).ToListAsync(token);
 
         if (currentUser.IsAdmin)

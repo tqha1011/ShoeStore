@@ -23,6 +23,11 @@ abstract class BaseAuthViewModel<S>(
     protected abstract suspend fun handleSocialSuccess(role: String)
     protected abstract fun handleSocialError(message: String)
 
+    fun onSocialLoginFailed(message: String) {
+        updateLoading(false)
+        handleSocialError(message)
+    }
+
     fun loginWithGoogle(idToken: String) {
         viewModelScope.launch {
             updateLoading(true)

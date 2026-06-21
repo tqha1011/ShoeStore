@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -14,6 +15,7 @@ namespace ShoeStore.Tests.Unit.Services.InvoiceServiceTests;
 public class UpdateStateByUserTests
 {
     private readonly Mock<ICurrentUser> _currentUser = new();
+    private readonly Mock<IConfiguration> _configuration = new();
 
     // generate mock data by using Moq nuget
     private readonly Mock<IInvoiceRepository> _mockRepo = new();
@@ -27,7 +29,8 @@ public class UpdateStateByUserTests
         services.AddHybridCache();
         var serviceProvider = services.BuildServiceProvider();
         var cache = serviceProvider.GetRequiredService<HybridCache>();
-        _updateStateByUser = new InvoiceService(_mockRepo.Object, _mockUow.Object, _currentUser.Object, cache);
+        _updateStateByUser = new InvoiceService(_mockRepo.Object, _mockUow.Object, _currentUser.Object, cache,
+            _configuration.Object);
     }
 
 
@@ -59,6 +62,7 @@ public class UpdateStateByUserTests
             PublicId = Guid.NewGuid(),
             Email = "test@gmail.com"
         };
+        _currentUser.Setup(cu => cu.Id).Returns(fakeUser.PublicId);
         var fakeRequest = new UpdateStateRequestDto
         {
             Status = newStatus
@@ -82,7 +86,7 @@ public class UpdateStateByUserTests
             .ReturnsAsync(fakeInvoice);
 
         var result =
-            await _updateStateByUser.UpdateInvoiceStateByAdminAsync(fakeGuid, fakeRequest, CancellationToken.None);
+            await _updateStateByUser.UpdateInvoiceStateByUserAsync(fakeGuid, fakeRequest, CancellationToken.None);
 
         Assert.True(result.IsError);
         Assert.Equal("Invoice.Forbidden", result.FirstError.Code);

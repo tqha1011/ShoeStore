@@ -29,7 +29,7 @@ import com.example.shoestoreapp.features.agent_intelligent.product_assistant.vie
 
 enum class AdminAiMode {
     ANALYTICS,
-    PRODUCT
+    INVENTORY
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -68,7 +68,7 @@ fun AdminAiAssistantScreen(
             )
         }
 
-        AdminAiMode.PRODUCT -> {
+        AdminAiMode.INVENTORY -> {
             AiProductScreen(
                 viewModel = productViewModel,
                 onBackClick = onBackClick,
@@ -99,10 +99,10 @@ private fun AdminAiModeSelector(
             onClick = { onModeSelected(AdminAiMode.ANALYTICS) }
         )
         AdminAiModeChip(
-            text = "Product",
-            selected = selectedMode == AdminAiMode.PRODUCT,
+            text = "Inventory",
+            selected = selectedMode == AdminAiMode.INVENTORY,
             modifier = Modifier.weight(1f),
-            onClick = { onModeSelected(AdminAiMode.PRODUCT) }
+            onClick = { onModeSelected(AdminAiMode.INVENTORY) }
         )
     }
 }

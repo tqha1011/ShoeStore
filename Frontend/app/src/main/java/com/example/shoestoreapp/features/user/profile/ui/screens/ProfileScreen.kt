@@ -92,7 +92,10 @@ fun UserProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             profile?.let {
-                ProfileHeader(profile = it)
+                ProfileHeader(
+                    profile = it,
+                    onEditAvatarClick = onEditProfileClick
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))

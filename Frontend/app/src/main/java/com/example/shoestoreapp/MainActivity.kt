@@ -331,6 +331,9 @@ private fun NavGraphBuilder.userGraph(
             viewModel = remember { CartViewModel() },
             onNavigateBack = { navController.popBackStack() },
             onNavigateToCheckout = { navController.navigate(Routes.CHECKOUT) },
+            onContinueShoppingClick = {
+                navController.navigateAndPopTo(Routes.PRODUCT_LIST, Routes.CART)
+            },
             onTabSelected = { tab -> handleUserBagTabSelection(tab, navController) }
         )
     }
@@ -422,7 +425,17 @@ private fun NavGraphBuilder.userGraph(
         UserInvoiceScreen(
             viewModel = userInvoiceViewModel,
             initialStatus = initialStatus,
-            onTabSelected = { tab -> handleUserInvoiceTabSelection(tab, navController) }
+            onTabSelected = { tab -> handleUserInvoiceTabSelection(tab, navController) },
+            onNavigateToPendingPayment = { invoice ->
+                navController.currentBackStackEntry?.savedStateHandle?.apply {
+                    set("orderCode", invoice.orderCode)
+                    set("finalPrice", invoice.finalPrice?.toDoubleOrNull() ?: 0.0)
+                    set("bankCode", invoice.shopBankCode.orEmpty())
+                    set("bankAccount", invoice.shopBankAccount.orEmpty())
+                    set("accountName", invoice.shopAccountName.orEmpty())
+                }
+                navController.navigate(Routes.PAYMENT_QR)
+            }
         )
     }
 

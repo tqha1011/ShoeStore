@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.DependencyInjection;
 using MockQueryable;
@@ -15,6 +16,7 @@ public class GetInvoiceDetailsTests
     private readonly Mock<ICurrentUser> _currentUser = new();
 
     private readonly InvoiceService _getInvoiceDetails;
+    private readonly Mock<IConfiguration> _configuration = new();
 
     // generate mock data by using Moq nuget
     private readonly Mock<IInvoiceRepository> _mockRepo = new();
@@ -26,7 +28,8 @@ public class GetInvoiceDetailsTests
         services.AddHybridCache();
         var serviceProvider = services.BuildServiceProvider();
         var cache = serviceProvider.GetRequiredService<HybridCache>();
-        _getInvoiceDetails = new InvoiceService(_mockRepo.Object, _mockUow.Object, _currentUser.Object, cache);
+        _getInvoiceDetails = new InvoiceService(_mockRepo.Object, _mockUow.Object, _currentUser.Object, cache,
+            _configuration.Object);
     }
 
     [Fact]
