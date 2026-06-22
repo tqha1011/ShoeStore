@@ -6,6 +6,7 @@ using Moq;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
+using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Application.Services;
 using ShoeStore.Domain.Entities;
 
@@ -21,6 +22,7 @@ public class GetInvoiceDetailsTests
     // generate mock data by using Moq nuget
     private readonly Mock<IInvoiceRepository> _mockRepo = new();
     private readonly Mock<IUnitOfWork> _mockUow = new();
+    private readonly Mock<IUserVoucherRepository> _mockUserVoucherRepository = new();
 
     public GetInvoiceDetailsTests()
     {
@@ -29,7 +31,7 @@ public class GetInvoiceDetailsTests
         var serviceProvider = services.BuildServiceProvider();
         var cache = serviceProvider.GetRequiredService<HybridCache>();
         _getInvoiceDetails = new InvoiceService(_mockRepo.Object, _mockUow.Object, _currentUser.Object, cache,
-            _configuration.Object);
+            _configuration.Object, _mockUserVoucherRepository.Object);
     }
 
     [Fact]

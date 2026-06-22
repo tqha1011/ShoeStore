@@ -145,6 +145,9 @@ public class InvoiceRepository(AppDbContext context) : GenericRepository<Invoice
     {
         return await DbSet.Where(inv => inv.PublicId == publicId)
             .Include(inv => inv.User)
+            .Include(inv => inv.VoucherDetails)
+            .Include(inv => inv.InvoiceDetails)
+            .ThenInclude(invDet => invDet.ProductVariant)
             .Include(inv => inv.PaymentTransactions)
             .FirstOrDefaultAsync(token);
     }
