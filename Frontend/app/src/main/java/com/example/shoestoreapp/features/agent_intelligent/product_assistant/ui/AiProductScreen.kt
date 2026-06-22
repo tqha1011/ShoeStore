@@ -1,14 +1,15 @@
 package com.example.shoestoreapp.features.agent_intelligent.product_assistant.ui
 
 import android.os.Build
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -28,7 +29,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,7 +36,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -57,6 +56,7 @@ import com.example.shoestoreapp.features.agent_intelligent.ui.AiQuickAction
 import com.example.shoestoreapp.features.agent_intelligent.ui.BaseAIChatScreen
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavBar
 import com.example.shoestoreapp.features.user.product.ui.components.BottomNavTab
+import com.example.shoestoreapp.features.user.product.ui.components.TopBanner
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -82,13 +82,6 @@ fun AiProductScreen(
     val sizesList by viewModel.sizesList.collectAsState()
     val colorsList by viewModel.colorsList.collectAsState()
     val successMessage by viewModel.successMessage.collectAsState()
-    val context = LocalContext.current
-
-    LaunchedEffect(successMessage) {
-        val message = successMessage ?: return@LaunchedEffect
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-        viewModel.clearSuccessMessage()
-    }
 
     val dismissedPromptId = remember { mutableStateOf<String?>(null) }
     val dismissedSearchMessageId = remember { mutableStateOf<String?>(null) }
@@ -108,17 +101,14 @@ fun AiProductScreen(
         if (productId.isBlank()) null
         else AddVariantResultDto(
             status = "Draft",
-            message = lastAiMessage
-                ?.text
-                ?.takeIf(::shouldPromptVariantForm)
-                ?: "Enter size, color, stock, and price for the new variant.",
+            message = "Enter size, color, stock, and price for the new variant.",
             variant = VariantResultDto(productId = productId)
         )
     } else {
         null
     }
 
-    val effectiveDraft = variantDraft ?: manualDraft
+    val effectiveDraft = manualDraft ?: variantDraft
 
     val sizeInputState = remember(effectiveDraft?.variant?.size) {
         mutableStateOf(effectiveDraft?.variant?.size?.toPlainString().orEmpty())
@@ -139,50 +129,61 @@ fun AiProductScreen(
         mutableStateOf(effectiveDraft?.variant?.price?.toPlainString().orEmpty())
     }
 
-    BaseAIChatScreen(
-        viewModel = viewModel,
-        title = title,
-        aiRoleName = aiRoleName,
-        userRoleName = userRoleName,
-        initialPrompt = initialPrompt,
-        onBackClick = onBackClick,
-        headerContent = headerContent,
-        emptyTitle = "Hello! How can I help you?",
-        emptySubtitle = "Type a question or choose a suggestion below to get started.",
-        inputPlaceholder = "Ask me anything...",
-        quickActions = quickActions,
-        onQuickActionClick = onQuickActionClick,
-        bottomBarContent = if (showAdminPanels) {
-            adminBottomBarContent
-        } else {
-            {
-                BottomNavBar(
-                    selectedTab = BottomNavTab.AI,
-                    onTabSelected = onTabSelected
-                )
-            }
-        },
-        footerContent = if (showAdminPanels) {
-            {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    if (selectedProduct == null) visibleSearchResult?.let { result ->
-                        SearchResultPanel(
-                            result = result,
-                            onClear = { viewModel.clearSearchResult() },
-                            onProductSelected = { product ->
-                                if (product.publicId.isNullOrBlank()) {
-                                    dismissedSearchMessageId.value = lastAiMessage?.id
+    Box(modifier = Modifier.fillMaxSize()) {
+        BaseAIChatScreen(
+            viewModel = viewModel,
+            title = title,
+            aiRoleName = aiRoleName,
+            userRoleName = userRoleName,
+            initialPrompt = initialPrompt,
+            onBackClick = onBackClick,
+            headerContent = headerContent,
+            emptyTitle = "Hello! How can I help you?",
+            emptySubtitle = "Type a question or choose a suggestion below to get started.",
+            inputPlaceholder = "Ask me anything...",
+            quickActions = quickActions,
+            onQuickActionClick = onQuickActionClick,
+            bottomBarContent = if (showAdminPanels) {
+                adminBottomBarContent
+            } else {
+                {
+                    BottomNavBar(
+                        selectedTab = BottomNavTab.AI,
+                        onTabSelected = onTabSelected
+                    )
+                }
+            },
+            footerContent = if (showAdminPanels) {
+                {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        if (selectedProduct == null) visibleSearchResult?.let { result ->
+                            SearchResultPanel(
+                                result = result,
+                                onClear = { viewModel.clearSearchResult() },
+                                onProductSelected = { product ->
+                                    if (product.publicId.isNullOrBlank()) {
+                                        dismissedSearchMessageId.value = lastAiMessage?.id
+                                    }
+                                    viewModel.selectSearchProduct(product)
                                 }
-                                viewModel.selectSearchProduct(product)
-                            }
-                        )
+                            )
+                        }
                     }
                 }
+            } else {
+                null
             }
-        } else {
-            null
+        )
+
+        Box(modifier = Modifier.align(Alignment.TopCenter)) {
+            TopBanner(
+                message = successMessage.orEmpty(),
+                isSuccess = true,
+                isVisible = !successMessage.isNullOrBlank(),
+                onDismiss = { viewModel.clearSuccessMessage() }
+            )
         }
-    )
+    }
 
     if (showAdminPanels && effectiveDraft != null) {
         val draft = effectiveDraft ?: return
@@ -220,8 +221,12 @@ fun AiProductScreen(
                 )
             },
             onDismiss = {
-                if (variantDraft != null) viewModel.clearVariantDraft()
-                else viewModel.clearSelectedProduct()
+                if (manualDraft != null) {
+                    viewModel.clearSelectedProduct()
+                    viewModel.clearVariantDraft()
+                } else {
+                    viewModel.clearVariantDraft()
+                }
                 dismissedPromptId.value = productId
             }
         )
@@ -266,12 +271,6 @@ private fun defaultProductQuickActions(showAdminPanels: Boolean): List<AiQuickAc
             )
         )
     }
-}
-
-private fun shouldPromptVariantForm(text: String): Boolean {
-    val normalized = text.lowercase()
-    val keywords = listOf("kích thước", "size", "màu", "color", "stock", "giá", "price")
-    return keywords.any { normalized.contains(it) }
 }
 
 private fun parseSearchResultFromMessage(text: String): SearchProductResultDto? {

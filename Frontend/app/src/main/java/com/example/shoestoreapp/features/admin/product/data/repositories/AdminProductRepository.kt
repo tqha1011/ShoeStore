@@ -67,6 +67,7 @@ sealed class AdminProductRepositoryException(message: String) : Exception(messag
     class BadRequest(message: String = ERROR_BAD_REQUEST) : AdminProductRepositoryException(message)
     class Unauthorized(message: String = ERROR_UNAUTHORIZED) : AdminProductRepositoryException(message)
     class NotFound(message: String = ERROR_NOT_FOUND) : AdminProductRepositoryException(message)
+    class Conflict(message: String = ERROR_CONFLICT) : AdminProductRepositoryException(message)
     class ServerError(message: String = ERROR_SERVER) : AdminProductRepositoryException(message)
     class Unknown(message: String = ERROR_UNKNOWN) : AdminProductRepositoryException(message)
 }
@@ -74,5 +75,6 @@ sealed class AdminProductRepositoryException(message: String) : Exception(messag
 const val ERROR_BAD_REQUEST = "Invalid product data. Please check your input."
 const val ERROR_UNAUTHORIZED = "Unauthorized. Please sign in again."
 const val ERROR_NOT_FOUND = "Product not found."
+const val ERROR_CONFLICT = "This item already exists."
 const val ERROR_SERVER = "Server error. Please try again later."
 const val ERROR_UNKNOWN = "Unable to load product details right now."

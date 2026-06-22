@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using ShoeStore.Application.DTOs.ProductVariantDTOs;
 using ShoeStore.Application.Interface.ProductInterface;
 using ShoeStore.Application.Interface.UploadImage;
-using ShoeStore.Application.Services;
 
 namespace ShoeStore.Api.Controllers;
 
@@ -52,6 +51,7 @@ public class ProductVariantController(IProductVariantService variantService, IIm
     [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPost]
     [Consumes("multipart/form-data")]
@@ -77,6 +77,16 @@ public class ProductVariantController(IProductVariantService variantService, IIm
             errors => errors[0].Code switch
             {
                 "Product.NotFound" => NotFound(new
+                {
+                    code = errors[0].Code,
+                    message = errors[0].Description
+                }),
+                "ProductVariant.InvalidInput" => BadRequest(new
+                {
+                    code = errors[0].Code,
+                    message = errors[0].Description
+                }),
+                "ProductVariant.Exists" => Conflict(new
                 {
                     code = errors[0].Code,
                     message = errors[0].Description
@@ -116,6 +126,7 @@ public class ProductVariantController(IProductVariantService variantService, IIm
     [ProducesResponseType(typeof(object), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     [HttpPut("{variantGuid:guid}")]
     [Consumes("multipart/form-data")]
@@ -135,12 +146,22 @@ public class ProductVariantController(IProductVariantService variantService, IIm
         }
 
         // 2. Update product variant
-        var result = await variantService.UpdateAsync(variantGuid, dto, token);
+        var result = await variantService.UpdateAsync(variantGuid, productGuid, dto, token);
         return result.Match<IActionResult>(
             _ => Ok(new { message = "Product variant updated successfully" }),
             errors => errors[0].Code switch
             {
                 "ProductVariant.NotFound" => NotFound(new
+                {
+                    code = errors[0].Code,
+                    message = errors[0].Description
+                }),
+                "Product.NotFound" => NotFound(new
+                {
+                    code = errors[0].Code,
+                    message = errors[0].Description
+                }),
+                "ProductVariant.Exists" => Conflict(new
                 {
                     code = errors[0].Code,
                     message = errors[0].Description
@@ -153,19 +174,20 @@ public class ProductVariantController(IProductVariantService variantService, IIm
             }
         );
     }
+
     /// <summary>
-    /// Deletes a product variant by its public identifier.
+    ///     Deletes a product variant by its public identifier.
     /// </summary>
     /// <param name="productVariantGuid">
-    /// The public identifier of the product variant.
+    ///     The public identifier of the product variant.
     /// </param>
     /// <param name="token">
-    /// Cancellation token.
+    ///     Cancellation token.
     /// </param>
     /// <returns>
-    /// Returns 204 if deleted successfully,
-    /// 404 if the product variant is not found,
-    /// or 500 if an unexpected error occurs.
+    ///     Returns 204 if deleted successfully,
+    ///     404 if the product variant is not found,
+    ///     or 500 if an unexpected error occurs.
     /// </returns>
     [HttpDelete("{productVariantGuid:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

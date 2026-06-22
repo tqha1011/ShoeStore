@@ -2,18 +2,29 @@ package com.example.shoestoreapp.core.utils
 import org.json.JSONObject
 import retrofit2.Response
 
+data class ApiErrorDetails(
+    val code: String? = null,
+    val message: String? = null
+)
+
 object ApiErrorHandler {
 
     fun extractErrorMessage(response: Response<*>): String? {
+        val rawMessage = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
+        return parseBackendError(rawMessage).message
+    }
+
+    fun extractErrorDetails(response: Response<*>): ApiErrorDetails {
         val rawMessage = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
         return parseBackendError(rawMessage)
     }
 
     // Logic bóc tách JSON
-    private fun parseBackendError(rawMessage: String?): String? {
-        if (rawMessage.isNullOrBlank()) return null
+    private fun parseBackendError(rawMessage: String?): ApiErrorDetails {
+        if (rawMessage.isNullOrBlank()) return ApiErrorDetails()
         return try {
             val jsonObject = JSONObject(rawMessage)
+            val code = jsonObject.optString("code").takeIf { it.isNotBlank() }
 
             // 1. Quét mảng "errors"
             if (jsonObject.has("errors")) {
@@ -27,21 +38,29 @@ object ApiErrorHandler {
                         errorMessages.add(errorArray.getString(i))
                     }
                 }
-                if (errorMessages.isNotEmpty()) return errorMessages.joinToString("\n")
+                if (errorMessages.isNotEmpty()) {
+                    return ApiErrorDetails(code = code, message = errorMessages.joinToString("\n"))
+                }
             }
 
             // 2. Quét key "detail"
-            if (jsonObject.has("detail")) return jsonObject.getString("detail")
+            if (jsonObject.has("detail")) {
+                return ApiErrorDetails(code = code, message = jsonObject.getString("detail"))
+            }
 
             // 3. Quét key "message"
-            if (jsonObject.has("message")) return jsonObject.getString("message")
+            if (jsonObject.has("message")) {
+                return ApiErrorDetails(code = code, message = jsonObject.getString("message"))
+            }
 
             // 4. Quét key "title"
-            if (jsonObject.has("title")) return jsonObject.getString("title")
+            if (jsonObject.has("title")) {
+                return ApiErrorDetails(code = code, message = jsonObject.getString("title"))
+            }
 
-            rawMessage
+            ApiErrorDetails(code = code, message = rawMessage)
         } catch (_: Exception) {
-            rawMessage
+            ApiErrorDetails(message = rawMessage)
         }
     }
 }
