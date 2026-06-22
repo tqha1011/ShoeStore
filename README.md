@@ -26,11 +26,19 @@ Built with scalability and performance in mind, the project leverages a reactive
 
 ## ✨ Core Features & Technical Highlights
 
-* 🛡️ **Advanced Security:** Implemented **JWT Authentication** and sophisticated **Rate Limiting** algorithms. We utilize *Token Bucket* for authenticated users and *Fixed Window* (partitioned by IP) for anonymous traffic to prevent DDoS and Brute-force attacks.
+* 🛍️ **Complete Shopping Flow:** Product discovery, product details, variant selection, cart management, checkout preparation, order placement, invoice tracking, and QR-based payment flow.
+* 👤 **Authentication & Account Management:** Email/password login, Google sign-in, Facebook sign-in, JWT-based sessions, OTP sign-up verification, password recovery, profile editing, password changing, and address book management.
+* 🛡️ **Advanced Security:** Implemented **JWT Authentication** and sophisticated **Rate Limiting** algorithms. We utilize *Token Bucket* for authenticated users and *Fixed Window* (partitioned by IP) for anonymous traffic to prevent DDoS and brute-force attacks.
+* 🧑‍💼 **Admin Operations:** Admin dashboard for product CRUD, image uploads, product variants, invoice status updates, voucher campaigns, customer order management, profile management, and sales analytics.
+* 🎟️ **Voucher & Campaign System:** Admin voucher creation/update flows, voucher expiration cleanup, targeted voucher notification, user voucher collection, saved vouchers, and voucher selection during checkout.
+* 💳 **Payment & Order Automation:** Supports COD and **SePay** payment flow, webhook-driven payment processing, order state transition rules, stock deduction, and background cancellation of expired pending orders.
+* 🤖 **AI Shopping & Strategy Assistant:** Chat-based product assistant and admin strategy assistant powered by Semantic Kernel, Gemini/OpenAI/Ollama connectors, product embeddings, pgvector semantic search, chat sessions, message history, and automatic chat title generation.
+* 🔔 **Realtime Notifications:** Integrated **SignalR** hubs for payment/order updates and AI bot response notifications.
 * ☁️ **Cloud Media Storage:** Integrated with **Cloudinary** for scalable, auto-optimized image hosting, avoiding heavy local server loads.
-* 📱 **Modern UI & MVVM:** Frontend Android application strictly follows the **MVVM (Model-View-ViewModel)** architecture pattern combined with **Jetpack Compose**, ensuring a highly reactive, testable, and robust state-driven user interface.
-* 🏗️ **Clean Architecture:** Backend structured with maintainability in mind, utilizing Result Pattern, FluentValidation, and robust Dependency Injection.
-* 🔄 **Agile Workflow:** Project managed entirely via **ClickUp** using 2-week Sprints, Time Tracking, and strictly adhering to Conventional Commits.
+* 📱 **Modern UI & MVVM:** Frontend Android application follows **MVVM (Model-View-ViewModel)** with **Jetpack Compose**, state-driven screens, repository-based data access, and role-based user/admin navigation.
+* 🏗️ **Clean Architecture:** Backend is split into Api, Application, Domain, and Infrastructure projects, utilizing Result Pattern, FluentValidation, Dependency Injection, global exception handling, API versioning, hosted workers, and source-generated JSON serialization.
+* 🧪 **Quality & Performance Testing:** Unit tests with xUnit/Moq/SQLite test doubles, coverage collection, and k6 load testing for realistic e-commerce user journeys.
+* 🔄 **Agile Workflow:** Project managed via **ClickUp** using 2-week Sprints, Time Tracking, and Conventional Commits.
 
 ---
 
@@ -48,19 +56,35 @@ Built with scalability and performance in mind, the project leverages a reactive
 ## 🛠️ Tech Stack
 
 **Frontend Mobile (Android)**
-* Language: Kotlin
-* UI Framework: Jetpack Compose
-* Network: Retrofit
-* Image Loading: Coil / Glide
+* Language: Kotlin 2.2
+* Platform: Android SDK 36, minSdk 24, JDK 17
+* UI Framework: Jetpack Compose, Material 3, Navigation Compose
+* Architecture: MVVM, Repository Pattern, state-driven Compose screens
+* Network: Retrofit, OkHttp Logging Interceptor, Gson
+* Async & Local Storage: Kotlin Coroutines, AndroidX DataStore
+* Authentication SDKs: AndroidX Credential Manager, Google Identity, Facebook Login SDK
+* Realtime: Microsoft SignalR Client, RxJava
+* Image Loading: Coil Compose
+* Markdown Rendering: compose-markdown
 
 **Backend API**
-* Framework: ASP.NET Core Web API (.NET)
-* ORM: Entity Framework Core
-* Database: PostgreSQL
-* API Documentation: Scalar / OpenAPI
+* Framework: ASP.NET Core Web API (.NET 10)
+* Architecture: Clean Architecture, Dependency Injection, Result Pattern, FluentValidation
+* ORM: Entity Framework Core 10, EFCore Naming Conventions
+* Database: PostgreSQL, Npgsql, NodaTime, pgvector
+* Authentication & Security: JWT Bearer, BCrypt, ASP.NET Core Rate Limiting, ProblemDetails, global exception handler
+* Realtime: ASP.NET Core SignalR
+* AI: Microsoft Semantic Kernel, Google Gemini connector, OpenAI connector, Ollama connector, PgVector connector
+* Caching & Background Jobs: HybridCache, hosted worker services, Redis-ready distributed cache configuration
+* Integrations: Cloudinary, Google Auth validation, Facebook token validation, MailKit email service, SePay webhook flow
+* API Documentation: Scalar / OpenAPI, API Versioning
 
 **Infrastructure & Management**
 * Containerization: Docker & Docker Compose
+* Cloud Deployment: Azure App Service
+* Testing: xUnit, Moq, MockQueryable.Moq, EF Core SQLite, coverlet
+* Load Testing: k6
+* Code Quality: SonarQube Gradle plugin
 * Task Management: ClickUp
 * Version Control: GitHub
 
@@ -140,4 +164,3 @@ export const options = {
 [Support FE](docs/api-guildlines/checkout-flow.md)
 
 [Test Coverage](docs/testing/unit-testing-strategy-test-matrix.md)
-
