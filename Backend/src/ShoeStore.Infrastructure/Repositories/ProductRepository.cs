@@ -51,7 +51,8 @@ public class ProductRepository(AppDbContext context) : GenericRepository<Product
 
     public async Task<Product?> GetForUpdateByGuidAsync(Guid productGuid, CancellationToken token)
     {
-        return await DbSet.Where(p => !p.IsDeleted)
+        return await DbSet.IgnoreQueryFilters()
+            .Where(p => !p.IsDeleted)
             .Include(x => x.ProductVariants)
             .Include(x => x.Category)
             .FirstOrDefaultAsync(x => x.PublicId == productGuid, token);

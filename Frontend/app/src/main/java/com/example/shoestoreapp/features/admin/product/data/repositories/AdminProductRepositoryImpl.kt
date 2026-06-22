@@ -232,16 +232,31 @@ class AdminProductRepositoryImpl(
     }
 
     internal fun <T> Response<T>.toRepositoryException(): AdminProductRepositoryException {
-        val backendMessage = ApiErrorHandler.extractErrorMessage(this)
+        val backendError = ApiErrorHandler.extractErrorDetails(this)
+        val friendlyMessage = backendError.code.toFriendlyAdminProductMessage()
+        val backendMessage = friendlyMessage ?: backendError.message
 
         return when (code()) {
             400 -> AdminProductRepositoryException.BadRequest(backendMessage ?: ERROR_BAD_REQUEST)
             401 -> AdminProductRepositoryException.Unauthorized(backendMessage ?: ERROR_UNAUTHORIZED)
             404 -> AdminProductRepositoryException.NotFound(backendMessage ?: ERROR_NOT_FOUND)
+            409 -> AdminProductRepositoryException.Conflict(backendMessage ?: ERROR_CONFLICT)
             500 -> AdminProductRepositoryException.ServerError(backendMessage ?: ERROR_SERVER)
             else -> AdminProductRepositoryException.Unknown(
                 backendMessage ?: "$ERROR_UNKNOWN (HTTP ${code()})"
             )
+        }
+    }
+
+    private fun String?.toFriendlyAdminProductMessage(): String? {
+        return when (this) {
+            "Product.NotFound" ->
+                "The selected product could not be found. Refresh the product list and try again."
+            "ProductVariant.InvalidInput" ->
+                "Please check the variant size, color, price, and stock before trying again."
+            "ProductVariant.Exists" ->
+                "A variant with this size and color already exists for this product."
+            else -> null
         }
     }
 }

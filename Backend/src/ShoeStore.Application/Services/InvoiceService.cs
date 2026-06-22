@@ -48,7 +48,7 @@ public class InvoiceService(
         var invoices = await query.Select(i => new InvoiceResponseDto
         {
             PublicId = i.PublicId,
-            Username = i.User != null ? i.User.UserName : string.Empty,
+            Username = i.FullName,
             DateCreated = i.CreatedAt,
             UpdateCreated = i.UpdatedAt,
             Status = i.Status,

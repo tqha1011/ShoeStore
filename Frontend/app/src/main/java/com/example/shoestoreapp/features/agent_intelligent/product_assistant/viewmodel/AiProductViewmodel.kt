@@ -71,6 +71,7 @@ class AiProductViewmodel(
             signalRManager.variantDraftFlow.collectLatest { draftResult ->
                 if (shouldAcceptAdminSignal(draftResult?.status)) {
                     allowAdminSignals = true
+                    if (_selectedProductState.value != null) return@collectLatest
                     _variantDraftState.value = draftResult
                 }
             }
@@ -152,6 +153,7 @@ class AiProductViewmodel(
 
         allowAdminSignals = true
         if (productId.isNotBlank()) {
+            _variantDraftState.value = null
             _selectedProductState.value = product
         }
         clearSearchResult()
@@ -221,9 +223,9 @@ class AiProductViewmodel(
                 .onSuccess {
                     _variantDraftState.value = null
                     _selectedProductState.value = null
-                    _successMessage.value = "Variant created successfully."
+                    _successMessage.value = "Create variant success"
                     val successMessage = ChatMessage(
-                        text = "Variant created successfully.",
+                        text = "Create variant success",
                         isUser = false
                     )
                     state = state.copy(messages = state.messages + successMessage, error = null)

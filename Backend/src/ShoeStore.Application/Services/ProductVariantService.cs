@@ -28,6 +28,12 @@ public class ProductVariantService(
         if (dto.SizeId is null || dto.ColorId is null)
             return Error.Validation("ProductVariant.InvalidInput", "SizeId and ColorId are required.");
 
+        var variantExists = product.ProductVariants.Any(v =>
+            v.SizeId == dto.SizeId.Value && v.ColorId == dto.ColorId.Value);
+        if (variantExists)
+            return Error.Conflict("ProductVariant.Exists",
+                "Product variant with the same size and color already exists.");
+
         var productVariant = new ProductVariant
         {
             ProductId = product.Id,
@@ -91,20 +97,32 @@ public class ProductVariantService(
         return Result.Deleted;
     }
 
-    public async Task<ErrorOr<Updated>> UpdateAsync(Guid productVariantGuid, UpdateProductVariantDto dto,
+    public async Task<ErrorOr<Updated>> UpdateAsync(Guid productVariantGuid, Guid productGuid,
+        UpdateProductVariantDto dto,
         CancellationToken token)
     {
-        var variant = await productVariantRepository.GetByGuidAsync(productVariantGuid, token);
+        var product = await productRepository.GetForUpdateByGuidAsync(productGuid, token);
+        if (product == null) return Error.NotFound("Product.NotFound", "Product not found.");
 
+        var variant = product.ProductVariants.FirstOrDefault(v => v.PublicId == productVariantGuid && !v.IsDeleted);
         if (variant == null)
             return Error.NotFound("ProductVariant.NotFound", "Product variant not found.");
+
+        var targetSizeId = dto.SizeId ?? variant.SizeId;
+        var targetColorId = dto.ColorId ?? variant.ColorId;
+
+        var existVariant = product.ProductVariants.FirstOrDefault(v =>
+            v.SizeId == targetSizeId && v.ColorId == targetColorId && v.PublicId != productVariantGuid);
+        if (existVariant != null)
+            return Error.Conflict("ProductVariant.Exists",
+                "Product variant with the same size and color already exists.");
 
         var shouldSyncEmbedding = (dto.SizeId.HasValue && dto.SizeId != variant.SizeId) ||
                                   (dto.ColorId.HasValue && dto.ColorId != variant.ColorId) ||
                                   (dto.Price.HasValue && dto.Price != variant.Price) ||
                                   (dto.IsSelling.HasValue && dto.IsSelling != variant.IsSelling);
 
-        var productPublicId = variant.Product?.PublicId;
+        var productPublicId = product.PublicId;
         variant.SizeId = dto.SizeId ?? variant.SizeId;
         variant.ColorId = dto.ColorId ?? variant.ColorId;
         variant.Stock = dto.Stock ?? variant.Stock;
@@ -114,14 +132,12 @@ public class ProductVariantService(
 
         productVariantRepository.Update(variant);
         await uow.SaveChangesAsync(token);
-
-        var product = await productRepository.GetByIdAsync(variant.ProductId, token);
-        if (product != null) await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
+        await cache.RemoveAsync(CacheKey.GenerateProductDetailsCacheKey(product.PublicId), token);
         await cache.RemoveByTagAsync(CacheTag.Product, token);
-        if (productPublicId.HasValue && shouldSyncEmbedding)
+        if (shouldSyncEmbedding)
             try
             {
-                await queue.EnqueueAsync(productPublicId.Value, token);
+                await queue.EnqueueAsync(productPublicId, token);
             }
             catch (Exception ex)
             {
