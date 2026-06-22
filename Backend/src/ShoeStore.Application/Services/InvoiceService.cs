@@ -10,6 +10,7 @@ using ShoeStore.Application.Extensions;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
+using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Application.Rules;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
@@ -21,7 +22,8 @@ public class InvoiceService(
     IUnitOfWork uow,
     ICurrentUser currentUser,
     HybridCache cache,
-    IConfiguration configuration) : IInvoiceService
+    IConfiguration configuration,
+    IUserVoucherRepository userVoucherRepository) : IInvoiceService
 {
     public async Task<ErrorOr<PageResult<InvoiceResponseDto>>> GetInvoiceAsync(InvoiceRequestDto request,
         CancellationToken token)
@@ -107,6 +109,12 @@ public class InvoiceService(
         if (!UpdateInvoiceStateRule.CanClientUpdateState(invoice.Status, request.Status))
             return Error.Forbidden("Invoice.Forbidden", "Client cannot change to this status");
 
+        if (request.Status == InvoiceStatus.Cancelled)
+        {
+            await ReleaseReservedVouchersAsync(invoice, token);
+            RestoreInvoiceStocks(invoice);
+        }
+
         invoice.Status = request.Status;
         invoice.UpdatedAt = DateTime.UtcNow;
         invoiceRepository.Update(invoice);
@@ -129,6 +137,16 @@ public class InvoiceService(
             var invoicePaymentResult = CheckEnoughInvoicePayment(invoice.PaymentTransactions.ToList(),
                 invoice.FinalPrice);
             if (invoicePaymentResult.IsError) return invoicePaymentResult.FirstError;
+        }
+
+        if (request.Status == InvoiceStatus.Paid && invoice.PaymentId == (int)PaymentMethod.Cod)
+            await MarkReservedVouchersAsUsedAsync(invoice, token);
+
+        if (request.Status == InvoiceStatus.Cancelled)
+        {
+            if (invoice.Status == InvoiceStatus.Pending)
+                await ReleaseReservedVouchersAsync(invoice, token);
+            RestoreInvoiceStocks(invoice);
         }
 
         invoice.Status = request.Status;
@@ -174,5 +192,35 @@ public class InvoiceService(
             return Result.Success;
         return Error.Validation("Invoice.InvalidStatus",
             "Total payment amount is not enough to mark the invoice as paid");
+    }
+
+    private async Task MarkReservedVouchersAsUsedAsync(Invoice invoice, CancellationToken token)
+    {
+        var voucherIds = invoice.VoucherDetails.Select(v => v.VoucherId).ToList();
+        var userVouchers = await userVoucherRepository.GetUserVouchersByIds(voucherIds, invoice.UserId, token);
+        foreach (var userVoucher in userVouchers)
+        {
+            userVoucher.ReservedCount = Math.Max(0, userVoucher.ReservedCount - 1);
+            userVoucher.UsedAt = DateTime.UtcNow;
+            userVoucher.UsedCount += 1;
+            if (userVoucher.Voucher is { MaxUsagePerUser: > 0 } &&
+                userVoucher.UsedCount >= userVoucher.Voucher.MaxUsagePerUser)
+                userVoucher.IsUsed = true;
+        }
+    }
+
+    private async Task ReleaseReservedVouchersAsync(Invoice invoice, CancellationToken token)
+    {
+        var voucherIds = invoice.VoucherDetails.Select(v => v.VoucherId).ToList();
+        var userVouchers = await userVoucherRepository.GetUserVouchersByIds(voucherIds, invoice.UserId, token);
+        foreach (var userVoucher in userVouchers)
+            userVoucher.ReservedCount = Math.Max(0, userVoucher.ReservedCount - 1);
+    }
+
+    private static void RestoreInvoiceStocks(Invoice invoice)
+    {
+        foreach (var detail in invoice.InvoiceDetails)
+            if (detail.ProductVariant != null)
+                detail.ProductVariant.Stock += detail.Quantity;
     }
 }

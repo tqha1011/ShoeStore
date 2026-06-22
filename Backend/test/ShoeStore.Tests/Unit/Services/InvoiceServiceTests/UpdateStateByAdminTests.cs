@@ -7,6 +7,7 @@ using ShoeStore.Application.DTOs.InvoiceDTOs;
 using ShoeStore.Application.Interface;
 using ShoeStore.Application.Interface.Common;
 using ShoeStore.Application.Interface.InvoiceInterface;
+using ShoeStore.Application.Interface.VoucherInterface;
 using ShoeStore.Application.Services;
 using ShoeStore.Domain.Entities;
 using ShoeStore.Domain.Enum;
@@ -23,6 +24,7 @@ public class UpdateStateByAdminTests
     // generate mock data by using Moq nuget
     private readonly Mock<IInvoiceRepository> _mockRepo = new();
     private readonly Mock<IUnitOfWork> _mockUow = new();
+    private readonly Mock<IUserVoucherRepository> _mockUserVoucherRepository = new();
 
     public UpdateStateByAdminTests()
     {
@@ -30,8 +32,12 @@ public class UpdateStateByAdminTests
         services.AddHybridCache();
         var serviceProvider = services.BuildServiceProvider();
         var cache = serviceProvider.GetRequiredService<HybridCache>();
+        _mockUserVoucherRepository
+            .Setup(repo => repo.GetUserVouchersByIds(It.IsAny<List<int>>(), It.IsAny<int>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
         _invoiceService = new InvoiceService(_mockRepo.Object, _mockUow.Object, _currentUser.Object, cache,
-            _configuration.Object);
+            _configuration.Object, _mockUserVoucherRepository.Object);
     }
 
     [Fact]
@@ -476,6 +482,162 @@ public class UpdateStateByAdminTests
         Assert.Equal(fakeInvoice.User.PublicId, dto.PublicUserId);
 
         // check if database saved the data
+        VerifySafeDatabase(Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateInvoiceStateByAdmin_WhenCodInvoiceIsPaid_MarksReservedVoucherAsUsed()
+    {
+        var fakeGuid = Guid.NewGuid();
+        var fakeUser = new User
+        {
+            Id = 1,
+            UserName = "testuser",
+            Password = "testpass",
+            PublicId = Guid.NewGuid(),
+            Email = ""
+        };
+
+        var fakeInvoice = new Invoice
+        {
+            Id = 1,
+            UserId = fakeUser.Id,
+            FullName = "Test User",
+            User = fakeUser,
+            Status = InvoiceStatus.Delivering,
+            Phone = "",
+            PaymentId = (int)PaymentMethod.Cod,
+            ShippingAddress = "",
+            FinalPrice = 100,
+            OrderCode = "DH123",
+            VoucherDetails =
+            [
+                new VoucherDetail
+                {
+                    Id = 1,
+                    InvoiceId = 1,
+                    VoucherId = 10
+                }
+            ]
+        };
+
+        var userVoucher = new UserVoucher
+        {
+            UserId = fakeUser.Id,
+            VoucherId = 10,
+            ReservedCount = 1,
+            UsedCount = 0,
+            Voucher = new Voucher
+            {
+                Id = 10,
+                VoucherName = "Voucher 10",
+                Discount = 10,
+                IsDeleted = false,
+                MaxUsagePerUser = 1
+            }
+        };
+
+        _mockRepo.Setup(repo => repo.GetByPublicIdAsync(fakeGuid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fakeInvoice);
+        _mockUserVoucherRepository
+            .Setup(repo => repo.GetUserVouchersByIds(It.Is<List<int>>(ids => ids.SequenceEqual(new[] { 10 })),
+                fakeUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([userVoucher]);
+
+        var result = await _invoiceService.UpdateInvoiceStateByAdminAsync(fakeGuid,
+            new UpdateStateRequestDto { Status = InvoiceStatus.Paid }, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal(InvoiceStatus.Paid, fakeInvoice.Status);
+        Assert.Equal(0, userVoucher.ReservedCount);
+        Assert.Equal(1, userVoucher.UsedCount);
+        Assert.True(userVoucher.IsUsed);
+        Assert.NotNull(userVoucher.UsedAt);
+
+        VerifySafeDatabase(Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateInvoiceStateByAdmin_WhenPendingInvoiceIsCancelled_RestoresReservedResources()
+    {
+        var fakeGuid = Guid.NewGuid();
+        var fakeUser = new User
+        {
+            Id = 1,
+            UserName = "testuser",
+            Password = "testpass",
+            PublicId = Guid.NewGuid(),
+            Email = ""
+        };
+
+        var productVariant = new ProductVariant
+        {
+            Id = 1,
+            ProductId = 1,
+            SizeId = 1,
+            ColorId = 1,
+            Stock = 8,
+            IsSelling = true,
+            Price = 100
+        };
+
+        var fakeInvoice = new Invoice
+        {
+            Id = 1,
+            UserId = fakeUser.Id,
+            FullName = "Test User",
+            User = fakeUser,
+            Status = InvoiceStatus.Pending,
+            Phone = "",
+            PaymentId = (int)PaymentMethod.Cod,
+            ShippingAddress = "",
+            FinalPrice = 100,
+            OrderCode = "DH123",
+            VoucherDetails =
+            [
+                new VoucherDetail
+                {
+                    Id = 1,
+                    InvoiceId = 1,
+                    VoucherId = 10
+                }
+            ],
+            InvoiceDetails =
+            [
+                new InvoiceDetail
+                {
+                    Id = 1,
+                    InvoiceId = 1,
+                    ProductVariantId = productVariant.Id,
+                    ProductVariant = productVariant,
+                    Quantity = 2,
+                    UnitPrice = productVariant.Price
+                }
+            ]
+        };
+
+        var userVoucher = new UserVoucher
+        {
+            UserId = fakeUser.Id,
+            VoucherId = 10,
+            ReservedCount = 1
+        };
+
+        _mockRepo.Setup(repo => repo.GetByPublicIdAsync(fakeGuid, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(fakeInvoice);
+        _mockUserVoucherRepository
+            .Setup(repo => repo.GetUserVouchersByIds(It.Is<List<int>>(ids => ids.SequenceEqual(new[] { 10 })),
+                fakeUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([userVoucher]);
+
+        var result = await _invoiceService.UpdateInvoiceStateByAdminAsync(fakeGuid,
+            new UpdateStateRequestDto { Status = InvoiceStatus.Cancelled }, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal(InvoiceStatus.Cancelled, fakeInvoice.Status);
+        Assert.Equal(0, userVoucher.ReservedCount);
+        Assert.Equal(10, productVariant.Stock);
+
         VerifySafeDatabase(Times.Once);
     }
 

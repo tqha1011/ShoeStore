@@ -26,7 +26,12 @@ public class UserVoucherService(
 
         var query = userVoucherRepository.GetVouchersByUserGuid(userGuid);
 
-        var filteredVouchers = query.Where(v => !v.Voucher!.IsDeleted && v.Voucher.ValidTo > DateTime.UtcNow);
+        var filteredVouchers = query.Where(v => !v.Voucher!.IsDeleted
+                                                && !v.IsUsed
+                                                && (v.Voucher.MaxUsagePerUser == null ||
+                                                    v.UsedCount + v.ReservedCount < v.Voucher.MaxUsagePerUser)
+                                                && v.Voucher.ValidFrom <= DateTime.UtcNow
+                                                && v.Voucher.ValidTo > DateTime.UtcNow);
 
         var totalCount = await filteredVouchers.CountAsync(token);
 
