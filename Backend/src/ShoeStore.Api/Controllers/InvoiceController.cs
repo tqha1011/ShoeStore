@@ -144,6 +144,7 @@ public class InvoiceController(
     /// <response code="401">The caller is not authenticated.</response>
     /// <response code="403">The caller is authenticated but not allowed to access this resource.</response>
     /// <response code="404">The target invoice is not found.</response>
+    /// <response code="409">The invoice was changed concurrently by another request. Retry the update.</response>
     /// <response code="500">Unexpected server-side error while processing the request.</response>
     [HttpPut("{invoiceGuid}/status")]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
@@ -151,6 +152,7 @@ public class InvoiceController(
     [ProducesResponseType(typeof(object), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(object), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(object), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(object), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateStatusByCustomer(Guid invoiceGuid, [FromBody] UpdateStateRequestDto request,
         CancellationToken token)
@@ -182,6 +184,13 @@ public class InvoiceController(
                 "Invoice.Unauthorized" => Unauthorized(new
                 {
                     message = "You do not have permission to access this invoice.",
+                    description = firstError.Description
+                }),
+
+                "Invoice.Concurrency" => Conflict(new
+                {
+                    code = firstError.Code,
+                    message = "This invoice was just changed elsewhere. Please try again.",
                     description = firstError.Description
                 }),
 

@@ -52,5 +52,9 @@ public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
         builder.Property(c => c.ShippingFee).HasColumnType("numeric(18,2)");
 
         builder.HasIndex(c => new { c.Status, c.CreatedAt });
+
+        // optimistic locking to prevent race-condition
+        builder.Property<uint>("Version")
+            .IsRowVersion();
     }
 }

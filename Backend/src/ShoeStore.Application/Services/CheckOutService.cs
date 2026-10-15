@@ -101,6 +101,30 @@ public class CheckOutService(
     public async Task<ErrorOr<InvoiceDto>> PlaceOrderAsync(PlaceOrderRequestDto placeOrderRequestDto, Guid publicUserId,
         bool fromCart, CancellationToken token)
     {
+        const int maxAttempts = 5;
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            token.ThrowIfCancellationRequested();
+            var result = await PlaceOrderAttemptAsync(placeOrderRequestDto, publicUserId, fromCart, token);
+            if (!result.IsError) return result;
+
+            if (attempt > 0 && result.FirstError.Code == "Stock.NotEnough")
+                return Error.Conflict("Checkout.StockChanged", result.FirstError.Description);
+
+            if (result.FirstError.Code != "Checkout.Concurrency" || attempt == maxAttempts - 1)
+                return result;
+
+            // The failed transaction and its tracked changes are discarded before waiting.
+            // Jitter spreads competing buyers across fresh transactions instead of another burst.
+            await Task.Delay(Random.Shared.Next(25, 76) * (1 << attempt), token);
+        }
+
+        throw new InvalidOperationException("Checkout retry limit exceeded.");
+    }
+
+    private async Task<ErrorOr<InvoiceDto>> PlaceOrderAttemptAsync(PlaceOrderRequestDto placeOrderRequestDto,
+        Guid publicUserId, bool fromCart, CancellationToken token)
+    {
         return await unitOfWork.ExecuteWithStrategyAsync<ErrorOr<InvoiceDto>>(async () =>
         {
             using var transaction = await unitOfWork.BeginTransactionAsync(token);
@@ -124,6 +148,14 @@ public class CheckOutService(
                     return Error.NotFound("Variant.NotFound", "One or more variants are deleted.");
 
                 var variantQuantityById = ConvertToDictionary(placeOrderRequestDto.Items);
+                var userCartItems = fromCart
+                    ? user.CartItems.Where(cartItem =>
+                        variantIdList.Contains(cartItem.ProductVariant?.PublicId ?? Guid.Empty)).ToList()
+                    : [];
+                if (fromCart && variantIdList.Except(userCartItems.Select(x =>
+                        x.ProductVariant?.PublicId ?? Guid.Empty)).Any())
+                    return Error.NotFound("CartItem.NotFound", "One or more items are no longer in your cart.");
+
                 var vouchersApplied = MarkUsedVoucher(userVouchers);
 
                 if (vouchersApplied.Count < voucherIdList.Count)
@@ -132,11 +164,7 @@ public class CheckOutService(
                 // Stage 2: delete user's cartItem if the order is from cart
                 if (fromCart)
                 {
-                    var userCartItem = user.CartItems.Where(cartItem =>
-                            variantIdList.Contains(cartItem.ProductVariant?.PublicId ?? Guid.Empty))
-                        .Distinct()
-                        .ToList();
-                    cartItemRepository.DeleteListCartItem(userCartItem);
+                    cartItemRepository.DeleteListCartItem(userCartItems);
                 }
 
                 // Stage 3: decrease the variant's stocks
@@ -166,12 +194,22 @@ public class CheckOutService(
             }
             catch (DbUpdateConcurrencyException)
             {
-                await unitOfWork.RollbackTransactionAsync(token);
-                return Error.Conflict("Checkout.Concurrency", "Your product had been sold. Please try again");
+                await unitOfWork.RollbackTransactionAsync(CancellationToken.None);
+                // Rollback does not undo EF entity mutations (stock, vouchers, cart, added invoice).
+                // Detach them all so the next attempt reads current values and concurrency tokens.
+                unitOfWork.ClearTracking();
+                return Error.Conflict("Checkout.Concurrency", "Checkout is busy. Please try again.");
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+                await unitOfWork.RollbackTransactionAsync(CancellationToken.None);
+                unitOfWork.ClearTracking();
+                throw;
             }
             catch (Exception)
             {
-                await unitOfWork.RollbackTransactionAsync(token);
+                await unitOfWork.RollbackTransactionAsync(CancellationToken.None);
+                unitOfWork.ClearTracking();
                 return Error.Unexpected("InvoiceCreation.Failed",
                     "An unexpected error occurred while creating the order.");
             }

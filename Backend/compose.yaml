@@ -1,4 +1,21 @@
 ﻿services:
+  database:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_DB: shoestore_loadtest
+      POSTGRES_USER: shoestore
+      POSTGRES_PASSWORD: shoestore_local_only
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - shoestore_db_data:/var/lib/postgresql/data
+    networks:
+      - shoestore-backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shoestore -d shoestore_loadtest"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 #  shoestore.api:
 #    image: hatranquang2006/shoestore-api:${TAG:-latest}
 #    container_name: ShoeStore_api
@@ -88,6 +105,7 @@ networks:
     driver: bridge
 
 volumes:
+  shoestore_db_data:
   redis_shoestore_data:
   grafana_data:
   prometheus_data:

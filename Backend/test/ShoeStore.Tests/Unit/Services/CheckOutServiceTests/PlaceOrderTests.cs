@@ -141,7 +141,7 @@ public class PlaceOrderTests
     }
 
     [Fact]
-    public async Task PlaceOrderAsync_WhenSaveChangesThrowsConcurrency_ReturnConflictAndRollback()
+    public async Task PlaceOrderAsync_WhenConcurrencyPersists_StopsAfterFiveAttempts()
     {
         // Arrange
         ArrangeExecutionStrategy();
@@ -152,13 +152,11 @@ public class PlaceOrderTests
         var request = new PlaceOrderRequestDto([new CheckOutRequestDto(variantId)], [], "John", "Ha Noi", 1, "0909");
 
         var user = BuildUser(1, fakeUserId);
-        var variant = BuildVariant(1, variantId, 5, 100);
-
         _userRepository.Setup(x => x.GetUserByPublicIdAsync(fakeUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
         _productVariantRepository
             .Setup(x => x.GetListVariantsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync([variant]);
+            .ReturnsAsync(() => new List<ProductVariant> { BuildVariant(1, variantId, 5, 100) });
         _mockUow.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new DbUpdateConcurrencyException());
         _userVoucherRepository
@@ -172,9 +170,159 @@ public class PlaceOrderTests
         Assert.True(result.IsError);
         Assert.Equal("Checkout.Concurrency", result.FirstError.Code);
 
-        _invoiceRepository.Verify(repo => repo.Add(It.IsAny<Invoice>()), Times.Once);
+        _invoiceRepository.Verify(repo => repo.Add(It.IsAny<Invoice>()), Times.Exactly(5));
+        VerifyUnitOfWorkCalls(_mockUow, () => Times.Exactly(5), Times.Never, () => Times.Exactly(5));
+    }
+
+    [Fact]
+    public async Task PlaceOrderAsync_WhenStockRemainsAfterConcurrency_CommitsUsingFreshStock()
+    {
+        var userId = Guid.NewGuid();
+        var variantId = Guid.NewGuid();
+        var stale = BuildVariant(1, variantId, 5, 100);
+        var fresh = BuildVariant(1, variantId, 4, 100);
+        ArrangeRetryOrder(userId, variantId, stale, fresh);
+        Invoice? pending = null;
+        Invoice? committed = null;
+        _invoiceRepository.Setup(x => x.Add(It.IsAny<Invoice>())).Callback<Invoice>(x => pending = x);
+        _mockUow.Setup(x => x.CommitTransactionAsync(It.IsAny<CancellationToken>()))
+            .Callback(() => committed = pending).Returns(Task.CompletedTask);
+
+        var result = await _checkOutService.PlaceOrderAsync(
+            new PlaceOrderRequestDto([new CheckOutRequestDto(variantId, 2)], [], "John", "Ha Noi", 2, "0909"),
+            userId, false, CancellationToken.None);
+
+        Assert.False(result.IsError);
+        Assert.Equal(2, fresh.Stock);
+        Assert.NotNull(committed);
+        Assert.Equal(2, Assert.Single(committed.InvoiceDetails).Quantity);
+        VerifyUnitOfWorkCalls(_mockUow, () => Times.Exactly(2), Times.Once, Times.Once);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    public async Task PlaceOrderAsync_WhenFreshStockCannotFillBasket_ReturnsStockChangedConflict(int freshStock)
+    {
+        var userId = Guid.NewGuid();
+        var variantId = Guid.NewGuid();
+        ArrangeRetryOrder(userId, variantId, BuildVariant(1, variantId, 5, 100),
+            BuildVariant(1, variantId, freshStock, 100));
+
+        var result = await _checkOutService.PlaceOrderAsync(
+            new PlaceOrderRequestDto([new CheckOutRequestDto(variantId, 2)], [], "John", "Ha Noi", 2, "0909"),
+            userId, false, CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(ErrorType.Conflict, result.FirstError.Type);
+        Assert.Equal("Checkout.StockChanged", result.FirstError.Code);
         VerifyUnitOfWorkCalls(_mockUow, Times.Once, Times.Never, Times.Once);
     }
+
+    [Fact]
+    public async Task PlaceOrderAsync_WhenVoucherUnavailableAfterConcurrency_DoesNotCommit()
+    {
+        var userId = Guid.NewGuid();
+        var variantId = Guid.NewGuid();
+        ArrangeRetryOrder(userId, variantId, BuildVariant(1, variantId, 5, 100),
+            BuildVariant(1, variantId, 4, 100));
+        _userVoucherRepository.SetupSequence(x => x.GetUserVouchersByIds(
+                It.IsAny<List<int>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([BuildUserVoucher()]).ReturnsAsync([]);
+
+        var result = await _checkOutService.PlaceOrderAsync(
+            new PlaceOrderRequestDto([new CheckOutRequestDto(variantId)], [1], "John", "Ha Noi", 2, "0909"),
+            userId, false, CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal("Voucher.NotFound", result.FirstError.Code);
+        VerifyUnitOfWorkCalls(_mockUow, Times.Once, Times.Never, Times.Once);
+    }
+
+    [Fact]
+    public async Task PlaceOrderAsync_WhenCancelledAfterConcurrency_DoesNotRetry()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var userId = Guid.NewGuid();
+        var variantId = Guid.NewGuid();
+        ArrangeRetryOrder(userId, variantId, BuildVariant(1, variantId, 5, 100),
+            BuildVariant(1, variantId, 4, 100));
+        _mockUow.Setup(x => x.RollbackTransactionAsync(It.IsAny<CancellationToken>()))
+            .Callback(cancellation.Cancel).Returns(Task.CompletedTask);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => _checkOutService.PlaceOrderAsync(
+            new PlaceOrderRequestDto([new CheckOutRequestDto(variantId)], [], "John", "Ha Noi", 2, "0909"),
+            userId, false, cancellation.Token));
+
+        VerifyUnitOfWorkCalls(_mockUow, Times.Once, Times.Never, Times.Once);
+    }
+
+    [Fact]
+    public async Task PlaceOrderAsync_WhenCartConsumedBeforeRetry_DoesNotCreateAnotherOrder()
+    {
+        var userId = Guid.NewGuid();
+        var variantId = Guid.NewGuid();
+        var stale = BuildVariant(1, variantId, 5, 100);
+        ArrangeRetryOrder(userId, variantId, stale, BuildVariant(1, variantId, 4, 100));
+        _userRepository.SetupSequence(x => x.GetUserByPublicIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(BuildUser(1, userId,
+                [new CartItem { UserId = 1, ProductVariantId = 1, ProductVariant = stale, Quantity = 1 }]))
+            .ReturnsAsync(BuildUser(1, userId));
+
+        var result = await _checkOutService.PlaceOrderAsync(
+            new PlaceOrderRequestDto([new CheckOutRequestDto(variantId)], [], "John", "Ha Noi", 2, "0909"),
+            userId, true, CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal("CartItem.NotFound", result.FirstError.Code);
+        VerifyUnitOfWorkCalls(_mockUow, Times.Once, Times.Never, Times.Once);
+    }
+
+    [Fact]
+    public async Task PlaceOrderAsync_WhenDatabaseFailureIsNotConcurrency_DoesNotRetry()
+    {
+        var userId = Guid.NewGuid();
+        var variantId = Guid.NewGuid();
+        ArrangeRetryOrder(userId, variantId, BuildVariant(1, variantId, 5, 100),
+            BuildVariant(1, variantId, 4, 100));
+        _mockUow.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new DbUpdateException("Unknown database failure"));
+
+        var result = await _checkOutService.PlaceOrderAsync(
+            new PlaceOrderRequestDto([new CheckOutRequestDto(variantId)], [], "John", "Ha Noi", 2, "0909"),
+            userId, false, CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal("InvoiceCreation.Failed", result.FirstError.Code);
+        VerifyUnitOfWorkCalls(_mockUow, Times.Once, Times.Never, Times.Once);
+    }
+
+    private void ArrangeRetryOrder(Guid userId, Guid variantId, ProductVariant stale, ProductVariant fresh)
+    {
+        ArrangeExecutionStrategy();
+        ArrangeTransaction();
+        _userRepository.Setup(x => x.GetUserByPublicIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() => BuildUser(1, userId));
+        _productVariantRepository.SetupSequence(x => x.GetListVariantsAsync(
+                It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([stale]).ReturnsAsync([fresh]);
+        _userVoucherRepository.Setup(x => x.GetUserVouchersByIds(
+                It.IsAny<List<int>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        _mockUow.SetupSequence(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new DbUpdateConcurrencyException()).Returns(Task.CompletedTask);
+    }
+
+    private static UserVoucher BuildUserVoucher() => new()
+    {
+        Id = 1, UserId = 1, VoucherId = 1,
+        Voucher = new Voucher
+        {
+            Id = 1, VoucherName = "Test voucher", Discount = 10, DiscountType = DiscountType.FixedAmount,
+            MaxUsagePerUser = 1, IsDeleted = false,
+            ValidFrom = DateTime.UtcNow.AddDays(-1), ValidTo = DateTime.UtcNow.AddDays(1)
+        }
+    };
 
     [Fact]
     public async Task PlaceOrderAsync_WhenRequestIsValid_ReturnInvoiceDtoAndCommitTransaction()

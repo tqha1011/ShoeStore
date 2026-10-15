@@ -101,60 +101,118 @@ public class InvoiceService(
     public async Task<ErrorOr<string>> UpdateInvoiceStateByUserAsync(Guid invoiceGuid, UpdateStateRequestDto request,
         CancellationToken token)
     {
-        var invoice = await invoiceRepository.GetByPublicIdAsync(invoiceGuid, token);
-        if (invoice == null) return Error.NotFound("Invoice.NotFound", "Invoice not found");
-        if (invoice.User?.PublicId != currentUser.Id)
-            return Error.Unauthorized("User.Unauthorized", "You are not authorized to update this invoice");
-
-        if (!UpdateInvoiceStateRule.CanClientUpdateState(invoice.Status, request.Status))
-            return Error.Forbidden("Invoice.Forbidden", "Client cannot change to this status");
-
-        if (request.Status == InvoiceStatus.Cancelled)
+        const int maxAttempts = 3;
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
         {
-            await ReleaseReservedVouchersAsync(invoice, token);
-            RestoreInvoiceStocks(invoice);
+            var result = await UpdateInvoiceStateByUserAttemptAsync(invoiceGuid, request, token);
+            if (result.IsError && result.FirstError.Code == "Invoice.Concurrency" && attempt < maxAttempts - 1)
+            {
+                // Another request (e.g. cancellation worker, webhook, admin) saved the same invoice first.
+                // Jitter spreads retries so they don't collide again immediately.
+                await Task.Delay(Random.Shared.Next(25, 76) * (1 << attempt), token);
+                continue;
+            }
+
+            return result;
         }
 
-        invoice.Status = request.Status;
-        invoice.UpdatedAt = DateTime.UtcNow;
-        invoiceRepository.Update(invoice);
-        await uow.SaveChangesAsync(token);
-        return invoice.OrderCode;
+        throw new InvalidOperationException("Invoice update retry limit exceeded.");
+    }
+
+    private async Task<ErrorOr<string>> UpdateInvoiceStateByUserAttemptAsync(Guid invoiceGuid,
+        UpdateStateRequestDto request, CancellationToken token)
+    {
+        try
+        {
+            var invoice = await invoiceRepository.GetByPublicIdAsync(invoiceGuid, token);
+            if (invoice == null) return Error.NotFound("Invoice.NotFound", "Invoice not found");
+            if (invoice.User?.PublicId != currentUser.Id)
+                return Error.Unauthorized("User.Unauthorized", "You are not authorized to update this invoice");
+
+            if (!UpdateInvoiceStateRule.CanClientUpdateState(invoice.Status, request.Status))
+                return Error.Forbidden("Invoice.Forbidden", "Client cannot change to this status");
+
+            if (request.Status == InvoiceStatus.Cancelled)
+            {
+                await ReleaseReservedVouchersAsync(invoice, token);
+                RestoreInvoiceStocks(invoice);
+            }
+
+            invoice.Status = request.Status;
+            invoice.UpdatedAt = DateTime.UtcNow;
+            invoiceRepository.Update(invoice);
+            await uow.SaveChangesAsync(token);
+            return invoice.OrderCode;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // The row version changed under us; tracked entities are now stale, so detach them
+            // and let the retry loop re-fetch the invoice with the current version.
+            uow.ClearTracking();
+            return Error.Conflict("Invoice.Concurrency", "This invoice was just changed elsewhere. Please try again.");
+        }
     }
 
     public async Task<ErrorOr<UpdateStateAdminResponseDto>> UpdateInvoiceStateByAdminAsync(Guid invoiceGuid,
         UpdateStateRequestDto request,
         CancellationToken token)
     {
-        var invoice = await invoiceRepository.GetByPublicIdAsync(invoiceGuid, token);
-        if (invoice == null) return Error.NotFound("Invoice.NotFound", "Invoice not found");
-        if (!UpdateInvoiceStateRule.CanAdminUpdateState(invoice.Status, request.Status, invoice.PaymentId))
-            return Error.Forbidden("Invoice.Forbidden", "Admin cannot change to this status");
-
-        // check if client had paid enough for the invoice before marking as paid, only apply for online payment (paymentId = 1)
-        if (request.Status == InvoiceStatus.Paid && invoice.PaymentId == (int)PaymentMethod.SePay)
+        const int maxAttempts = 3;
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
         {
-            var invoicePaymentResult = CheckEnoughInvoicePayment(invoice.PaymentTransactions.ToList(),
-                invoice.FinalPrice);
-            if (invoicePaymentResult.IsError) return invoicePaymentResult.FirstError;
+            var result = await UpdateInvoiceStateByAdminAttemptAsync(invoiceGuid, request, token);
+            if (result.IsError && result.FirstError.Code == "Invoice.Concurrency" && attempt < maxAttempts - 1)
+            {
+                await Task.Delay(Random.Shared.Next(25, 76) * (1 << attempt), token);
+                continue;
+            }
+
+            return result;
         }
 
-        if (request.Status == InvoiceStatus.Paid && invoice.PaymentId == (int)PaymentMethod.Cod)
-            await MarkReservedVouchersAsUsedAsync(invoice, token);
+        throw new InvalidOperationException("Invoice update retry limit exceeded.");
+    }
 
-        if (request.Status == InvoiceStatus.Cancelled)
+    private async Task<ErrorOr<UpdateStateAdminResponseDto>> UpdateInvoiceStateByAdminAttemptAsync(Guid invoiceGuid,
+        UpdateStateRequestDto request, CancellationToken token)
+    {
+        try
         {
-            if (invoice.Status == InvoiceStatus.Pending)
-                await ReleaseReservedVouchersAsync(invoice, token);
-            RestoreInvoiceStocks(invoice);
-        }
+            var invoice = await invoiceRepository.GetByPublicIdAsync(invoiceGuid, token);
+            if (invoice == null) return Error.NotFound("Invoice.NotFound", "Invoice not found");
+            if (!UpdateInvoiceStateRule.CanAdminUpdateState(invoice.Status, request.Status, invoice.PaymentId))
+                return Error.Forbidden("Invoice.Forbidden", "Admin cannot change to this status");
 
-        invoice.Status = request.Status;
-        invoice.UpdatedAt = DateTime.UtcNow;
-        invoiceRepository.Update(invoice);
-        await uow.SaveChangesAsync(token);
-        if (request.Status == InvoiceStatus.Paid) await cache.RemoveByTagAsync(CacheTag.Statistic, token);
-        return new UpdateStateAdminResponseDto(invoice.OrderCode, invoice.Status, invoice.User!.PublicId);
+            // check if client had paid enough for the invoice before marking as paid, only apply for online payment (paymentId = 1)
+            if (request.Status == InvoiceStatus.Paid && invoice.PaymentId == (int)PaymentMethod.SePay)
+            {
+                var invoicePaymentResult = CheckEnoughInvoicePayment(invoice.PaymentTransactions.ToList(),
+                    invoice.FinalPrice);
+                if (invoicePaymentResult.IsError) return invoicePaymentResult.FirstError;
+            }
+
+            if (request.Status == InvoiceStatus.Paid && invoice.PaymentId == (int)PaymentMethod.Cod)
+                await MarkReservedVouchersAsUsedAsync(invoice, token);
+
+            if (request.Status == InvoiceStatus.Cancelled)
+            {
+                if (invoice.Status == InvoiceStatus.Pending)
+                    await ReleaseReservedVouchersAsync(invoice, token);
+                RestoreInvoiceStocks(invoice);
+            }
+
+            invoice.Status = request.Status;
+            invoice.UpdatedAt = DateTime.UtcNow;
+            invoiceRepository.Update(invoice);
+            await uow.SaveChangesAsync(token);
+            if (request.Status == InvoiceStatus.Paid) await cache.RemoveByTagAsync(CacheTag.Statistic, token);
+            return new UpdateStateAdminResponseDto(invoice.OrderCode, invoice.Status, invoice.User!.PublicId);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            uow.ClearTracking();
+            return Error.Conflict("Invoice.Concurrency", "This invoice was just changed elsewhere. Please try again.");
+        }
     }
 
     // Check the invoice status when confirm paid by Sepay
