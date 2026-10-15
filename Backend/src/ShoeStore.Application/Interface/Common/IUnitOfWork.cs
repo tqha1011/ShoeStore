@@ -11,5 +11,8 @@ public interface IUnitOfWork
 
     public Task RollbackTransactionAsync(CancellationToken token = default);
 
+    /// <summary>Discards tracked changes after rollback so retries read fresh database state.</summary>
+    void ClearTracking();
+
     Task<T> ExecuteWithStrategyAsync<T>(Func<Task<T>> action, CancellationToken token = default);
 }

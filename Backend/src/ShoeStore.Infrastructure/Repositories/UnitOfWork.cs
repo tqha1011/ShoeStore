@@ -29,6 +29,8 @@ public class UnitOfWork(AppDbContext context) : IUnitOfWork
         return context.Database.RollbackTransactionAsync(token);
     }
 
+    public void ClearTracking() => context.ChangeTracker.Clear();
+
     public async Task<T> ExecuteWithStrategyAsync<T>(Func<Task<T>> action, CancellationToken token = default)
     {
         var strategy = context.Database.CreateExecutionStrategy();

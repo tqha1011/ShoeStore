@@ -163,7 +163,14 @@ public class CheckOutController(ICheckOutService checkOutService) : ControllerBa
                 }),
                 "Checkout.Concurrency" => Conflict(new
                 {
-                    message = "Your product had been sold. Please try again.",
+                    code = errors[0].Code,
+                    message = "Checkout is busy. Please try again.",
+                    description = errors[0].Description
+                }),
+                "Checkout.StockChanged" => Conflict(new
+                {
+                    code = errors[0].Code,
+                    message = "Stock changed and is no longer sufficient for this order.",
                     description = errors[0].Description
                 }),
                 "Stock.NotEnough" => BadRequest(new

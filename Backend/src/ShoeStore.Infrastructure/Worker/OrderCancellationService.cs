@@ -45,8 +45,7 @@ public class OrderCancellationService(
                             invoice.Status = InvoiceStatus.Cancelled;
 
                             foreach (var detail in invoice.InvoiceDetails)
-                                if (detail.ProductVariant != null)
-                                    detail.ProductVariant.Stock += detail.Quantity;
+                                detail.ProductVariant?.Stock += detail.Quantity;
 
                             var voucherIds = invoice.VoucherDetails.Select(vd => vd.VoucherId).ToList();
                             dbContext.UserVouchers.Where(uv =>
@@ -59,6 +58,11 @@ public class OrderCancellationService(
 
                     await dbContext.SaveChangesAsync(stoppingToken);
                     await transaction.CommitAsync(stoppingToken);
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    await transaction.RollbackAsync(stoppingToken);
+                    logger.LogWarning(ex, "OrderCancellationService concurrency conflict");
                 }
                 catch (Exception ex)
                 {

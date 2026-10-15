@@ -1,22 +1,26 @@
+using System.Globalization;
+using System.Security.Cryptography;
+
 namespace ShoeStore.Application.Utilities;
 
 public static class GenerateOrderCode
 {
     /// <summary>
-    ///     Generates a unique order code in the format: [Prefix][YYMMDD][RandomString]
-    ///     Example: DH260407A1B2
+    ///     Generates an order code in the format: [Prefix][YYMMDD][16 random digits].
+    ///     Example: DH2604071234567890123456. The database enforces uniqueness.
     /// </summary>
     /// <param name="prefix"></param>
     /// <returns></returns>
     public static string Generate(string prefix)
     {
-        var datePart = DateTime.Now.ToString("yyMMdd");
+        var datePart = DateTime.Now.ToString("yyMMdd", CultureInfo.InvariantCulture);
 
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        var random = new Random();
+        // A large suffix avoids collisions across accumulated orders and checkout retries.
+        // Digits preserve compatibility with PaymentService's DH\d+ content parser.
+        const string chars = "0123456789";
 
-        var randomPart = new string(Enumerable.Repeat(chars, 4)
-            .Select(s => s[random.Next(s.Length)]).ToArray());
+        var randomPart = new string(Enumerable.Range(0, 16)
+            .Select(_ => chars[RandomNumberGenerator.GetInt32(chars.Length)]).ToArray());
 
         return $"{prefix}{datePart}{randomPart}";
     }

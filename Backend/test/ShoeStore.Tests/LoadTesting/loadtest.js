@@ -1,153 +1,147 @@
 import http from 'k6/http';
-import { sleep, check, group } from 'k6';
+import { check, sleep, group } from 'k6';
+import { SharedArray } from 'k6/data';
+import { Counter, Trend } from 'k6/metrics';
 
+const dir = __ENV.FIXTURE_DIR;
+if (!dir) throw new Error('Run run-local.sh journey 500 to generate the local fixture');
+const config = JSON.parse(open(`${dir}/config.json`));
+const users = new SharedArray('journey-users', () => JSON.parse(open(`${dir}/users.json`)));
+const products = new SharedArray('journey-products', () => JSON.parse(open(`${dir}/journey.json`)));
+const baskets = new SharedArray('journey-baskets', () => JSON.parse(open(`${dir}/baskets.json`)));
+const baseUrl = __ENV.BASE_URL || 'http://127.0.0.1:8080';
+if (!/^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(baseUrl))
+  throw new Error('This fixture targets a local ShoeStore API only');
+if (config.mode !== 'journey' || users.length !== config.users || products.length !== config.users
+  || baskets.length !== config.users) throw new Error('Journey fixture count/mode mismatch');
 
+const started = new Counter('journeys_started');
+const completed = new Counter('journeys_completed');
+const duration = new Trend('journey_duration', true);
+const attempted = new Counter('orders_attempted');
+const succeeded = new Counter('orders_succeeded');
+const unexpected = new Counter('orders_unexpected');
+const phases = ['search', 'detail', 'prepare', 'checkout'];
+const thresholds = {
+  journeys_started: [`count==${config.users}`],
+  journeys_completed: [`count==${config.users}`],
+  orders_attempted: [`count==${config.users}`],
+  orders_succeeded: [`count==${config.users}`],
+  orders_unexpected: ['count==0'],
+  checks: ['rate==1'],
+  'http_req_failed{workload:journey}': ['rate==0'],
+};
+// Retain the old benchmark's 2-second latency target, applied as p95 per step.
+for (const phase of phases) thresholds[`http_req_duration{phase:${phase}}`] = ['p(95)<2000'];
 export const options = {
-  stages: [
-    { duration: '15s', target: 50 },  // Up to 50 users in 15 seconds (warm-up)
-    { duration: '45s', target: 300 }, // Up to 300 users in 45 seconds (peak load)
-    { duration: '15s', target: 0 },   // back-down: decrease to 0 users in 15 seconds (cool-down)
-  ],
+  scenarios: {
+    shopping_burst: { executor: 'per-vu-iterations', vus: config.users, iterations: 1, maxDuration: '60s' },
+  },
+  thresholds,
 };
 
+function params(token, phase) {
+  return {
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    timeout: '45s', tags: { workload: 'journey', phase },
+    responseCallback: http.expectedStatuses(200),
+  };
+}
+
+function searchUrl(product) {
+  return `${baseUrl}/api/Products/search?keyword=${encodeURIComponent(product.productName)}`
+    + '&sort=default&pageIndex=1&pageSize=50';
+}
+
+function json(response) {
+  try { return response.json(); } catch (_) { return {}; }
+}
+
+function validate(response, phase, validBody) {
+  const ok = response.status === 200 && validBody;
+  check(response, { [`${phase}: HTTP 200 and correct data`]: () => ok });
+  if (!ok) {
+    unexpected.add(1);
+    console.error(`VU ${__VU} ${phase}: HTTP ${response.status}, ${response.body?.slice(0, 300)}`);
+  }
+  return ok;
+}
+
 export function setup() {
-  // Any setup code can go here, such as preparing test data or authentication tokens
-  const loginUrl = 'http://localhost:8080/api/auth/signin';
-  const password = __ENV.TEST_PASSWORD;
-  if (!password) {
-    throw new Error('TEST_PASSWORD environment variable is not set');
-  }
-  const tokenPool = [];
-  for (let i = 1; i <= 11; i++) {
-    const payload = JSON.stringify({
-      email: `test${i}@gmail.com`,
-      password: password
-    });
-    const res = http.post(loginUrl, payload, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    if (res.status === 200) {
-      const token = res.json().token;
-      if (token) tokenPool.push(token);
-      else {
-        console.error(`Login failed for test${i}@gmail.com`);
-      }
-    }
-  }
-  if (tokenPool.length === 0) {
-    throw new Error('No valid tokens obtained from login');
-  }
-  console.log(`Obtained ${tokenPool.length} tokens for load testing`);
-  var productPool = SetUpProductData();
-  var variantPool = SetUpVariantData();
-  var data = {
-    productPool: productPool,
-    variantPool: variantPool,
-    tokenPool: tokenPool
-  }
-  return data;
+  const response = http.get(searchUrl(products[0]), params(users[0].token, 'preflight'));
+  if (response.status !== 200 || !json(response).items?.some(p => p.publicId === products[0].productId))
+    throw new Error(`Catalogue preflight failed: HTTP ${response.status}`);
+  return { startAt: Date.now() + 5000 };
 }
 
 export default function (data) {
-  const tokenPool = data.tokenPool;
-  const productPool = data.productPool;
-  const variantPool = data.variantPool;
-  const tokenIndex = (__VU - 1) % tokenPool.length; // Rotate through tokens based on VU number
-  const currentProduct = randomElement(productPool); // Select a random product
-  const currentVariant = randomElement(variantPool); // Select a random variant
-  const currentToken = tokenPool[tokenIndex];
-  const url = 'http://localhost:8080/api/Products/search';
-  const params = {
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${currentToken}`,
-    },
+  const wait = (data.startAt - Date.now()) / 1000;
+  if (wait > 0) sleep(wait);
+  const start = Date.now();
+  const index = __VU - 1;
+  const product = products[index];
+  const token = users[index].token;
+  const items = baskets[index].items;
+  started.add(1);
+  unexpected.add(0);
+  attempted.add(0);
+  succeeded.add(0);
+  completed.add(0);
+
+  const found = group('Search products', () => {
+    const response = http.get(searchUrl(product), params(token, 'search'));
+    return validate(response, 'search', json(response).items?.some(p => p.publicId === product.productId));
+  });
+  if (!found) return;
+  sleep(1);
+
+  const viewed = group('View selected product', () => {
+    const response = http.get(`${baseUrl}/api/Products/${product.productId}`, params(token, 'detail'));
+    const body = json(response).data;
+    return validate(response, 'detail', body?.publicId === product.productId
+      && body.variants?.some(v => v.publicId === items[0].variantId && v.isSelling && v.stock >= items[0].quantity));
+  });
+  if (!viewed) return;
+  sleep(1);
+
+  const prepared = group('Prepare checkout', () => {
+    const response = http.post(`${baseUrl}/api/checkout/prepare`, JSON.stringify({
+      checkOutList: items, voucherIds: [],
+    }), params(token, 'prepare'));
+    const body = json(response);
+    return validate(response, 'prepare', body.items?.length === items.length
+      && body.items.every(item => items.some(expected => expected.variantId === item.variantId
+        && expected.quantity === item.quantity) && !item.isOutOfStock));
+  });
+  if (!prepared) return;
+
+  const bought = group('Place COD order', () => {
+    attempted.add(1);
+    const response = http.post(`${baseUrl}/api/checkout/place-order?fromUserCart=false`, JSON.stringify({
+      items, voucherIds: [], fullName: config.runId,
+      address: 'Thu Duc, Ho Chi Minh City', paymentId: 2, phoneNumber: '0901234567',
+    }), params(token, 'checkout'));
+    const ok = validate(response, 'checkout', !!json(response).orderCode);
+    succeeded.add(ok ? 1 : 0);
+    return ok;
+  });
+  if (bought) {
+    completed.add(1);
+    duration.add(Date.now() - start);
+  }
+}
+
+export function handleSummary(data) {
+  const count = name => data.metrics[name]?.values.count || 0;
+  return {
+    [`${dir}/summary.json`]: JSON.stringify(data, null, 2),
+    stdout: JSON.stringify({
+      mode: config.mode, users: config.users,
+      started: count('journeys_started'), completed: count('journeys_completed'),
+      attempted: count('orders_attempted'), succeeded: count('orders_succeeded'), unexpected: count('orders_unexpected'),
+      stepP95Ms: Object.fromEntries(phases.map(phase => [phase,
+        data.metrics[`http_req_duration{phase:${phase}}`]?.values['p(95)']])),
+      journeyP95Ms: data.metrics.journey_duration?.values['p(95)'],
+    }, null, 2) + '\n',
   };
-
-  group('Load Testing - Search Products', function () {
-    const url = 'http://localhost:8080/api/Products/search';
-    const resSearch = http.get(url, params);
-    check(resSearch, {
-      'Search Products - Status 200': (r) => r.status === 200,
-      'Search Products - Response < 2 seconds': (r) => r.timings.duration < 2000,
-    });
-  });
-
-  sleep(1);
-
-  group('Load Testing - Get Product Details', function () {
-    const productGuid = currentProduct;
-    const url = `http://localhost:8080/api/Products/${productGuid}`;
-    const resDetails = http.get(url, params);
-    check(resDetails, {
-      'Get Product Details - Status 200': (r) => r.status === 200,
-      'Get Product Details - Response < 2 seconds': (r) => r.timings.duration < 2000,
-    });
-  });
-
-  sleep(1);
-
-  group('Load Testing - Create invoice', function () {
-    const url = 'http://localhost:8080/api/checkout/place-order';
-    const payload = JSON.stringify({
-      items: [
-        {
-          variantId: currentVariant,
-          quantity: 1
-        },
-      ],
-      voucherIds: [],
-      fullName: 'Ha Tran Quang',
-      address: 'Dai hoc Cong nghe thong tin, TP.HCM',
-      paymentId: '2',
-      phoneNumber: '0329384723',
-    });
-    const resCreateInvoice = http.post(url, payload, params);
-    if (resCreateInvoice.status !== 200 && resCreateInvoice.status !== 201) {
-      console.error(`[LỖI GHI FILE - Mã ${resCreateInvoice.status}] Từ VU ${__VU}: ${resCreateInvoice.body}`);
-    }
-    check(resCreateInvoice, {
-      'Create Invoice - Status 200': (r) => r.status === 200,
-      'Create Invoice - Response < 2 seconds': (r) => r.timings.duration < 2000,
-    });
-  });
-
-  sleep(1);
-}
-
-function SetUpProductData() {
-  return [
-    '1d53d076-9c8d-425a-8abe-fb6442d820a7',
-    'f69728c7-6ea4-4af1-a59a-4f9234e67ece',
-    '18c406e1-57bf-4845-8b34-dc208ab01879',
-    '9aa0fb12-dd2b-4a59-8f28-01e3a6f96e8f',
-    '0b78f493-2f6a-4e98-ba3f-815cfa2faa88',
-    '3fec347c-ed2e-425e-84a0-7e99ed6a785a',
-    'fca4ddd6-7c13-45b6-a116-4241936f3fa3',
-    '84d00439-7d7c-4536-a1f5-00ffecee25b9'
-  ];
-}
-
-function SetUpVariantData() {
-  return [
-    '06ef03b1-91aa-4196-878f-c842454a8d5b',
-    '548201f3-f241-489d-afe8-6d42fb5144d3',
-    '97dc7029-cad9-4ee3-bb5e-4ab7e2acb328',
-    '65fbf7c7-501d-4d34-84d4-e1795ef386f8',
-    'a8c121e8-517c-4b43-8a58-1d142572b1f7',
-    '12bc8893-125e-41da-8cbd-a6d383ce4831',
-    '1568fe31-0872-4b30-b4a2-5ee820017dab',
-    '205c7383-da7e-462e-8ec0-2154d6418b5e',
-    'f5cbe2c7-7b24-4886-9f7e-dc84a899c417',
-    '0ea5b4b5-727a-49e6-8fc9-fd2e988a09ab',
-    'd58ff4f0-fffa-481b-b510-a3fb8074e340',
-    'cf6284ce-29c4-43ab-a5a3-95d5b374b65f',
-    'b5ed6ee7-88f8-4f8d-a79e-ef63ea1618e3'
-  ]
-}
-
-function randomElement(array) {
-  return array[Math.floor(Math.random() * array.length)];
 }

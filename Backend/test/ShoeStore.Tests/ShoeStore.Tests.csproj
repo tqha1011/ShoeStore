@@ -26,6 +26,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\src\ShoeStore.Application\ShoeStore.Application.csproj"/>
         <ProjectReference Include="..\..\src\ShoeStore.Infrastructure\ShoeStore.Infrastructure.csproj"/>
+        <ProjectReference Include="..\..\tools\ShoeStore.LoadTesting\ShoeStore.LoadTesting.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
