@@ -252,6 +252,9 @@ _ReSharper*/
 *.[Rr]e[Ss]harper
 *.DotSettings.user
 
+# Generated local load-test JWTs, snapshots, logs and reports
+.artifacts/
+
 # TeamCity is a build add-in
 _TeamCity*
 

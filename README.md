@@ -42,6 +42,41 @@ Built with scalability and performance in mind, the project leverages a reactive
 
 ---
 
+## 🧭 User Flow
+
+```mermaid
+flowchart TD
+    A[Open App] --> B{Logged in?}
+    B -- No --> C[Login / Register + OTP Verify / Google or Facebook Sign-in]
+    C --> D[Browse Products]
+    B -- Yes --> D
+    D --> E[View Product Details & Select Variant]
+    E --> F{Add to Cart or Buy Now?}
+    F -- Add to Cart --> G[Cart]
+    G --> H[Checkout]
+    F -- Buy Now --> H
+    H --> I[Select Address & Apply Voucher]
+    I --> J[Review Order Summary]
+    J --> K{Choose Payment Method}
+    K -- COD --> L[Place Order → Status: Pending]
+    K -- SePay QR --> M[Place Order → Status: Pending]
+    M --> N[Scan QR & Pay]
+    N --> O{SePay Webhook Confirms Payment?}
+    O -- Paid within 15 min --> P[Status: Paid]
+    O -- Not paid within 15 min --> Q[Background Job Auto-Cancels Order]
+    Q --> R[Stock & Reserved Voucher Restored]
+    L --> S[Admin Confirms / Updates Status]
+    P --> T[Order Shipped]
+    S --> T
+    T --> U[Order Delivered]
+    U --> V[Track Order / Invoice History]
+    V --> W{Need Help?}
+    W -- Yes --> X[AI Shopping Assistant Chat]
+    W -- No --> Y[Done]
+```
+
+---
+
 ## 👥 Authors & Contributors
 
 | Name | GitHub Profile |
@@ -117,6 +152,7 @@ Navigate to `http://localhost:<port>/scalar/v1` to see the **API Docs**
 - If you run emulator, simply change the `localhost` to `http://10.0.2.2:<port>`
 
 ## Performance Testing
+- **Local database, large synthetic seed and 500-user checkout race test:** see [the local load-test guide](Backend/test/ShoeStore.Tests/LoadTesting/README.md). Run `bash Backend/test/ShoeStore.Tests/LoadTesting/run-local.sh all 500` from the repository root. The workflow seeds 1,000 customers, 500 products, 7,500 variants and 50,000 historical orders, then validates PostgreSQL inventory against committed invoices.
 - We have implemented load testing for the backend API performance using **[k6](https://github.com/grafana/k6)**.
 - The load test script is written in `JavaScript` and is located in the `Backend/test/ShoeStore.Tests/LoadTesting` folder.
 - **Test Scenario:** Unlike a simple ping test, this script simulates a realistic e-commerce user funnel (User Journey). Multiple virtual users (VUs) will concurrently perform:
